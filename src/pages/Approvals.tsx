@@ -128,9 +128,23 @@ export default function Approvals() {
                             {order.description}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1.5">
-                          {new Date(order.created_at).toLocaleDateString("sv-SE")}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString("sv-SE")}
+                          </p>
+                          {order.order_reason === "end_of_employment" && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-destructive/10 text-destructive border-destructive/20">
+                              <LogOut className="h-2.5 w-2.5" />
+                              Offboarding
+                            </span>
+                          )}
+                          {order.recipient_type === "new" && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-primary/10 text-primary border-primary/20">
+                              <UserPlus className="h-2.5 w-2.5" />
+                              Nyanställning
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <Badge variant="secondary" className="capitalize text-xs shrink-0">
                         {order.category}
