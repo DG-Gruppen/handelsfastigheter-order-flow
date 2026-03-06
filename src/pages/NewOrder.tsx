@@ -104,8 +104,8 @@ export default function NewOrder() {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
 
-    if (!user || validItems.length === 0 || !approverId) {
-      toast.error("Lägg till minst en utrustning och välj godkännare");
+    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !approverId)) {
+      toast.error("Lägg till minst en utrustning" + (!isManagerOrAdmin ? " och välj godkännare" : ""));
       return;
     }
     if (recipientType === "new" && !recipientName.trim()) {
