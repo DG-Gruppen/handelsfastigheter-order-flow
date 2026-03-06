@@ -7,15 +7,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, User } from "lucide-react";
 
 const navItems = [
-  { to: "/dashboard", label: "Mina beställningar", icon: ClipboardList },
-  { to: "/orders/new", label: "Ny beställning", icon: Plus },
-  { to: "/approvals", label: "Att attestera", icon: CheckSquare, roles: ["manager", "admin"] },
-  { to: "/admin", label: "Admin", icon: Settings, roles: ["admin"] },
+  { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
+  { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
+  { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
+  { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[] },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -26,59 +27,61 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
 
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || item.roles.some((r) => roles.includes(r))
+  );
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Top header */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <Link to="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <Monitor className="h-4.5 w-4.5 text-primary-foreground" />
+        <div className="mx-auto flex h-14 md:h-16 max-w-6xl items-center justify-between px-4">
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-primary">
+              <Monitor className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
             </div>
-            <span className="font-heading text-lg font-bold text-foreground">IT-Beställning</span>
+            <span className="font-heading text-base md:text-lg font-bold text-foreground">
+              IT-Beställning
+            </span>
           </Link>
 
+          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navItems
-              .filter((item) => !item.roles || item.roles.some((r) => roles.includes(r)))
-              .map((item) => (
-                <Link key={item.to} to={item.to}>
-                  <Button
-                    variant={location.pathname === item.to ? "secondary" : "ghost"}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Button>
-                </Link>
-              ))}
+            {visibleNavItems.map((item) => (
+              <Link key={item.to} to={item.to}>
+                <Button
+                  variant={location.pathname === item.to ? "secondary" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Button>
+              </Link>
+            ))}
           </nav>
 
+          {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 px-2">
+              <button className="flex items-center gap-2 rounded-full p-1 hover:bg-secondary transition-colors min-h-[44px] min-w-[44px] justify-center">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline text-sm font-medium text-foreground">
+                <span className="hidden sm:inline text-sm font-medium text-foreground pr-1">
                   {profile?.full_name || "Användare"}
                 </span>
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="md:hidden" asChild>
-                {navItems
-                  .filter((item) => !item.roles || item.roles.some((r) => roles.includes(r)))
-                  .map((item) => (
-                    <Link key={item.to} to={item.to} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  ))}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={signOut} className="text-destructive gap-2">
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-foreground">{profile?.full_name || "Användare"}</p>
+                <p className="text-xs text-muted-foreground">{profile?.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut} className="text-destructive gap-2 min-h-[44px]">
                 <LogOut className="h-4 w-4" />
                 Logga ut
               </DropdownMenuItem>
@@ -87,7 +90,31 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      {/* Main content */}
+      <main className="mx-auto max-w-6xl px-4 py-5 md:py-8">{children}</main>
+
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-card/95 backdrop-blur-md safe-bottom">
+        <div className="flex items-stretch justify-around">
+          {visibleNavItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground active:text-foreground"
+                }`}
+              >
+                <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
+                <span className="text-[10px] font-medium leading-tight">{item.shortLabel}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

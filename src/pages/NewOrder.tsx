@@ -105,28 +105,30 @@ export default function NewOrder() {
     <AppLayout>
       <div className="max-w-2xl mx-auto">
         <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="font-heading text-xl">Ny beställning</CardTitle>
-            <CardDescription>
-              Fyll i formuläret nedan. Din beställning skickas till vald chef för attestering.
+          <CardHeader className="px-4 md:px-6">
+            <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
+            <CardDescription className="text-sm">
+              Din beställning skickas till vald chef för attestering.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="px-4 md:px-6">
+            <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="orderType">Typ av utrustning *</Label>
+                <Label htmlFor="orderType" className="text-sm font-medium">
+                  Typ av utrustning *
+                </Label>
                 <Select value={selectedType} onValueChange={handleTypeChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 md:h-10">
                     <SelectValue placeholder="Välj utrustning..." />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(groupedTypes).map(([cat, types]) => (
                       <div key={cat}>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        <div className="px-2 py-2 text-xs font-semibold text-muted-foreground">
                           {categoryLabels[cat] ?? cat}
                         </div>
                         {types.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
+                          <SelectItem key={t.id} value={t.id} className="py-3 md:py-2">
                             {t.name}
                           </SelectItem>
                         ))}
@@ -137,37 +139,41 @@ export default function NewOrder() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="title">Rubrik *</Label>
+                <Label htmlFor="title" className="text-sm font-medium">Rubrik *</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="T.ex. Ny laptop till nyanställd"
                   maxLength={200}
+                  className="h-12 md:h-10"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Beskrivning</Label>
+                <Label htmlFor="description" className="text-sm font-medium">Beskrivning</Label>
                 <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ytterligare information om beställningen..."
-                  rows={4}
+                  placeholder="Ytterligare information..."
+                  rows={3}
                   maxLength={1000}
+                  className="resize-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="approver">Godkännare (närmaste chef) *</Label>
+                <Label htmlFor="approver" className="text-sm font-medium">
+                  Godkännare (närmaste chef) *
+                </Label>
                 <Select value={approverId} onValueChange={setApproverId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 md:h-10">
                     <SelectValue placeholder="Välj chef..." />
                   </SelectTrigger>
                   <SelectContent>
                     {managers.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
+                      <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
                         {m.full_name || m.id}
                       </SelectItem>
                     ))}
@@ -175,7 +181,11 @@ export default function NewOrder() {
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full gap-2" size="lg" disabled={submitting}>
+              <Button
+                type="submit"
+                className="w-full gap-2 h-12 md:h-11 text-base"
+                disabled={submitting}
+              >
                 <Send className="h-4 w-4" />
                 {submitting ? "Skickar..." : "Skicka beställning"}
               </Button>

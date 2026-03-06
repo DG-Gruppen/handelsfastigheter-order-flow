@@ -83,56 +83,64 @@ export default function Approvals() {
 
   return (
     <AppLayout>
-      <div className="space-y-8">
+      <div className="space-y-5 md:space-y-8">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">Attestering</h1>
-          <p className="text-muted-foreground mt-1">Beställningar som väntar på ditt godkännande</p>
+          <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Attestering</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Beställningar som väntar på ditt godkännande
+          </p>
         </div>
 
         {/* Pending */}
         <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
+          <CardHeader className="px-4 md:px-6">
+            <CardTitle className="font-heading text-base md:text-lg flex items-center gap-2">
               <Clock className="h-5 w-5 text-warning" />
-              Väntar på godkännande ({pendingOrders.length})
+              Väntar ({pendingOrders.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-6">
             {loading ? (
               <p className="text-muted-foreground py-8 text-center">Laddar...</p>
             ) : pendingOrders.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
-                <Inbox className="h-12 w-12 mx-auto text-muted-foreground/40" />
-                <p className="text-muted-foreground">Inga beställningar att attestera</p>
+              <div className="text-center py-10 space-y-3">
+                <Inbox className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Inga beställningar att attestera</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {pendingOrders.map((order) => (
-                  <div key={order.id} className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-foreground">{order.title}</p>
+                  <div key={order.id} className="rounded-xl border border-border p-3.5 md:p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm md:text-base text-foreground">{order.title}</p>
                         {order.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{order.description}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {order.description}
+                          </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="text-xs text-muted-foreground mt-1.5">
                           {new Date(order.created_at).toLocaleDateString("sv-SE")}
                         </p>
                       </div>
-                      <Badge variant="secondary" className="capitalize">{order.category}</Badge>
+                      <Badge variant="secondary" className="capitalize text-xs shrink-0">
+                        {order.category}
+                      </Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" className="gap-1.5" onClick={() => handleApprove(order.id)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      <Button
+                        className="gap-1.5 flex-1 md:flex-none h-11 md:h-9"
+                        onClick={() => handleApprove(order.id)}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
                         Godkänn
                       </Button>
                       <Button
-                        size="sm"
                         variant="outline"
-                        className="gap-1.5 text-destructive"
+                        className="gap-1.5 flex-1 md:flex-none text-destructive h-11 md:h-9"
                         onClick={() => setRejectingId(order.id)}
                       >
-                        <XCircle className="h-3.5 w-3.5" />
+                        <XCircle className="h-4 w-4" />
                         Avslå
                       </Button>
                     </div>
@@ -146,20 +154,23 @@ export default function Approvals() {
         {/* Handled */}
         {handledOrders.length > 0 && (
           <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="font-heading text-lg">Hanterade</CardTitle>
+            <CardHeader className="px-4 md:px-6">
+              <CardTitle className="font-heading text-base md:text-lg">Hanterade</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="divide-y divide-border">
+            <CardContent className="px-4 md:px-6">
+              <div className="divide-y divide-border -mx-4 md:mx-0">
                 {handledOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between py-3">
-                    <div>
-                      <p className="font-medium text-foreground">{order.title}</p>
+                  <div key={order.id} className="flex items-center justify-between px-4 md:px-0 py-3.5">
+                    <div className="min-w-0 flex-1 mr-3">
+                      <p className="font-medium text-sm text-foreground truncate">{order.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString("sv-SE")}
                       </p>
                     </div>
-                    <Badge variant={order.status === "approved" ? "default" : "destructive"}>
+                    <Badge
+                      variant={order.status === "approved" ? "default" : "destructive"}
+                      className="shrink-0 text-xs"
+                    >
                       {order.status === "approved" ? "Godkänd" : "Avslagen"}
                     </Badge>
                   </div>
@@ -172,7 +183,7 @@ export default function Approvals() {
 
       {/* Reject dialog */}
       <Dialog open={!!rejectingId} onOpenChange={() => setRejectingId(null)}>
-        <DialogContent>
+        <DialogContent className="mx-4 max-w-lg">
           <DialogHeader>
             <DialogTitle>Avslå beställning</DialogTitle>
             <DialogDescription>Ange en anledning till avslaget (valfritt)</DialogDescription>
@@ -182,10 +193,15 @@ export default function Approvals() {
             onChange={(e) => setRejectionReason(e.target.value)}
             placeholder="Anledning..."
             maxLength={500}
+            className="resize-none"
           />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectingId(null)}>Avbryt</Button>
-            <Button variant="destructive" onClick={handleReject}>Avslå</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setRejectingId(null)} className="w-full sm:w-auto h-11">
+              Avbryt
+            </Button>
+            <Button variant="destructive" onClick={handleReject} className="w-full sm:w-auto h-11">
+              Avslå
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
