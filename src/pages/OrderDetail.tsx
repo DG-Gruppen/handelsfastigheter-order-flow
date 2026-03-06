@@ -159,12 +159,20 @@ export default function OrderDetail() {
       color: "text-primary",
     },
   ];
-  if (order.approved_at && order.status === "approved") {
+  if (order.approved_at && (order.status === "approved" || order.status === "delivered")) {
     timeline.push({
       date: order.approved_at,
       label: autoApproved ? "Auto-godkänd (chef)" : "Godkänd av attestant",
       icon: CheckCircle2,
       color: "text-success",
+    });
+  }
+  if (order.status === "delivered") {
+    timeline.push({
+      date: order.updated_at || order.approved_at || order.created_at,
+      label: "Levererad",
+      icon: Package,
+      color: "text-primary",
     });
   }
   if (order.status === "rejected") {
