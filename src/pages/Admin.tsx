@@ -5,11 +5,12 @@ import AppLayout from "@/components/AppLayout";
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users } from "lucide-react";
 
 interface ProfileWithRoles {
   id: string;
@@ -77,59 +78,83 @@ export default function Admin() {
           <p className="text-sm text-muted-foreground mt-0.5">Hantera kategorier, utrustning, användare och roller</p>
         </div>
 
-        <CategoriesManager />
-        <OrderTypesManager />
+        <Tabs defaultValue="categories" className="w-full">
+          <TabsList className="w-full justify-start">
+            <TabsTrigger value="categories" className="gap-1.5">
+              <FolderOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Kategorier</span>
+            </TabsTrigger>
+            <TabsTrigger value="equipment" className="gap-1.5">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Utrustning</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-1.5">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Användare</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <Card className="glass-card">
-          <CardHeader className="px-4 md:px-6">
-            <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
-            <CardDescription className="text-sm">Tilldela roller till användare</CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 md:px-6">
-            <div className="space-y-3">
-              {profiles.map((p) => (
-                <div key={p.id} className="rounded-xl border border-border p-3.5 md:p-4 space-y-3">
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm md:text-base text-foreground">
-                      {p.full_name || p.email}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{p.email}</p>
-                    <div className="flex gap-1.5 flex-wrap pt-1">
-                      {(userRoles[p.user_id] ?? []).map((role) => (
-                        <Badge key={role} variant="secondary" className="capitalize text-xs">
-                          {role}
-                        </Badge>
-                      ))}
+          <TabsContent value="categories">
+            <CategoriesManager />
+          </TabsContent>
+
+          <TabsContent value="equipment">
+            <OrderTypesManager />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card className="glass-card">
+              <CardHeader className="px-4 md:px-6">
+                <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
+                <CardDescription className="text-sm">Tilldela roller till användare</CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 md:px-6">
+                <div className="space-y-3">
+                  {profiles.map((p) => (
+                    <div key={p.id} className="rounded-xl border border-border p-3.5 md:p-4 space-y-3">
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm md:text-base text-foreground">
+                          {p.full_name || p.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{p.email}</p>
+                        <div className="flex gap-1.5 flex-wrap pt-1">
+                          {(userRoles[p.user_id] ?? []).map((role) => (
+                            <Badge key={role} variant="secondary" className="capitalize text-xs">
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={selectedRole[p.user_id] ?? ""}
+                          onValueChange={(v) => setSelectedRole((prev) => ({ ...prev, [p.user_id]: v }))}
+                        >
+                          <SelectTrigger className="flex-1 h-11 md:h-10 md:w-[160px] md:flex-none">
+                            <SelectValue placeholder="Välj roll..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>
+                            <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>
+                            <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          className="gap-1.5 h-11 md:h-10 shrink-0"
+                          onClick={() => handleAddRole(p.user_id)}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          <span className="hidden sm:inline">Lägg till</span>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={selectedRole[p.user_id] ?? ""}
-                      onValueChange={(v) => setSelectedRole((prev) => ({ ...prev, [p.user_id]: v }))}
-                    >
-                      <SelectTrigger className="flex-1 h-11 md:h-10 md:w-[160px] md:flex-none">
-                        <SelectValue placeholder="Välj roll..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>
-                        <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>
-                        <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      className="gap-1.5 h-11 md:h-10 shrink-0"
-                      onClick={() => handleAddRole(p.user_id)}
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span className="hidden sm:inline">Lägg till</span>
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
