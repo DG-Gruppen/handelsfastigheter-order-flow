@@ -1,14 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Monitor, ShieldCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Monitor, ShieldCheck, Mail } from "lucide-react";
+import { toast } from "sonner";
 
 const Login = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [showEmail, setShowEmail] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate("/dashboard");
@@ -19,6 +29,37 @@ const Login = () => {
       redirect_uri: window.location.origin,
     });
     if (error) console.error("Login error:", error);
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      toast.error("Fyll i e-post och lösenord");
+      return;
+    }
+    setSubmitting(true);
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Konto skapat! Kontrollera din e-post för att verifiera kontot.");
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        toast.error("Felaktig e-post eller lösenord");
+      }
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -40,7 +81,7 @@ const Login = () => {
           <CardHeader className="text-center pb-2">
             <CardTitle className="font-heading text-xl">Logga in</CardTitle>
             <CardDescription>
-              Använd ditt Google Workspace-konto
+              Använd ditt Google Workspace-konto eller e-post
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -58,9 +99,62 @@ const Login = () => {
               Logga in med Google
             </Button>
 
+            <div className="flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-xs text-muted-foreground">eller</span>
+              <Separator className="flex-1" />
+            </div>
+
+            {!showEmail ? (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setShowEmail(true)}
+              >
+                <Mail className="h-4 w-4" />
+                Logga in med e-post
+              </Button>
+            ) : (
+              <form onSubmit={handleEmailAuth} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-post</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="namn@exempel.se"
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Lösenord</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    minLength={6}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? "Vänta..." : isSignUp ? "Skapa konto" : "Logga in"}
+                </Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                >
+                  {isSignUp ? "Har du redan ett konto? Logga in" : "Inget konto? Skapa ett"}
+                </button>
+              </form>
+            )}
+
             <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center pt-2">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Säker inloggning via Google Workspace</span>
+              <span>Säker inloggning</span>
             </div>
           </CardContent>
         </Card>
