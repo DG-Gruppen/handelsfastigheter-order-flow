@@ -422,22 +422,24 @@ export default function NewOrder() {
                 />
               </div>
 
-              {/* 6. Approver */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
-                <Select value={approverId} onValueChange={setApproverId}>
-                  <SelectTrigger className="h-12 md:h-10">
-                    <SelectValue placeholder="Välj chef..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map((m) => (
-                      <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
-                        {m.full_name || m.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* 6. Approver - only for non-managers */}
+              {!isManagerOrAdmin && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
+                  <Select value={approverId} onValueChange={setApproverId}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj chef..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {managers.map((m) => (
+                        <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
+                          {m.full_name || m.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <Button
                 type="submit"
