@@ -6,7 +6,8 @@ import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Clock,
@@ -21,6 +22,7 @@ import {
   CalendarDays,
   FileText,
   ShoppingCart,
+  Truck,
 } from "lucide-react";
 
 const statusConfig: Record<
@@ -49,6 +51,7 @@ interface Order {
   recipient_department: string | null;
   recipient_start_date: string | null;
   rejection_reason: string | null;
+  updated_at: string;
 }
 
 interface OrderItem {
@@ -67,11 +70,13 @@ interface Profile {
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const isAdmin = roles.includes("admin");
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [requesterProfile, setRequesterProfile] = useState<Profile | null>(null);
   const [approverProfile, setApproverProfile] = useState<Profile | null>(null);
+  const [marking, setMarking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -102,6 +107,22 @@ export default function OrderDetail() {
     };
     load();
   }, [id, user]);
+
+  const handleMarkDelivered = async () => {
+    if (!order) return;
+    setMarking(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "delivered" as any })
+      .eq("id", order.id);
+    if (error) {
+      toast.error("Kunde inte uppdatera status");
+    } else {
+      setOrder({ ...order, status: "delivered" });
+      toast.success("Beställningen markerad som levererad");
+    }
+    setMarking(false);
+  };
 
   if (loading) {
     return (
@@ -139,12 +160,20 @@ export default function OrderDetail() {
       color: "text-primary",
     },
   ];
-  if (order.approved_at && order.status === "approved") {
+  if (order.approved_at && (order.status === "approved" || order.status === "delivered")) {
     timeline.push({
       date: order.approved_at,
       label: autoApproved ? "Auto-godkänd (chef)" : "Godkänd av attestant",
       icon: CheckCircle2,
       color: "text-success",
+    });
+  }
+  if (order.status === "delivered") {
+    timeline.push({
+      date: order.updated_at || order.approved_at || order.created_at,
+      label: "Levererad",
+      icon: Package,
+      color: "text-primary",
     });
   }
   if (order.status === "rejected") {
@@ -183,8 +212,20 @@ export default function OrderDetail() {
                 <StatusIcon className="h-3 w-3" />
                 {sc.label}
               </Badge>
-            </div>
           </div>
+
+          {/* Admin: mark as delivered */}
+          {isAdmin && order.status === "approved" && (
+            <Button
+              onClick={handleMarkDelivered}
+              disabled={marking}
+              className="gap-2 w-full sm:w-auto gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+            >
+              <Truck className="h-4 w-4" />
+              {marking ? "Uppdaterar..." : "Markera som levererad"}
+            </Button>
+          )}
+        </div>
           {/* Tags */}
           <div className="flex items-center gap-2 flex-wrap">
             {order.order_reason === "end_of_employment" && (
