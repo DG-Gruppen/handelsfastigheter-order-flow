@@ -104,8 +104,8 @@ export default function NewOrder() {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
 
-    if (!user || validItems.length === 0 || !approverId) {
-      toast.error("Lägg till minst en utrustning och välj godkännare");
+    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !approverId)) {
+      toast.error("Lägg till minst en utrustning" + (!isManagerOrAdmin ? " och välj godkännare" : ""));
       return;
     }
     if (recipientType === "new" && !recipientName.trim()) {
@@ -128,11 +128,13 @@ export default function NewOrder() {
         ? firstType?.name ?? "Beställning"
         : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
 
+    const autoApprove = isManagerOrAdmin;
+
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
         requester_id: user.id,
-        approver_id: manager?.user_id ?? null,
+        approver_id: autoApprove ? user.id : (manager?.user_id ?? null),
         order_type_id: validItems[0].typeId,
         category_id: firstType?.category_id ?? null,
         title,
@@ -142,6 +144,8 @@ export default function NewOrder() {
         recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
         recipient_department: (recipientType === "new" || isOffboarding) ? recipientDepartment.trim() : "",
         order_reason: orderReason,
+        status: autoApprove ? "approved" : "pending",
+        approved_at: autoApprove ? new Date().toISOString() : null,
       } as any)
       .select("id")
       .single();
@@ -167,7 +171,10 @@ export default function NewOrder() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
-    toast.success(isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+    const successMsg = isManagerOrAdmin
+      ? (isOffboarding ? "Offboarding-ärendet har godkänts och är redo att skickas till extern IT!" : "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!")
+      : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+    toast.success(successMsg);
     navigate("/dashboard");
     setSubmitting(false);
   };
@@ -415,22 +422,24 @@ export default function NewOrder() {
                 />
               </div>
 
-              {/* 6. Approver */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
-                <Select value={approverId} onValueChange={setApproverId}>
-                  <SelectTrigger className="h-12 md:h-10">
-                    <SelectValue placeholder="Välj chef..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map((m) => (
-                      <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
-                        {m.full_name || m.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* 6. Approver - only for non-managers */}
+              {!isManagerOrAdmin && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
+                  <Select value={approverId} onValueChange={setApproverId}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj chef..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {managers.map((m) => (
+                        <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
+                          {m.full_name || m.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <Button
                 type="submit"
