@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
@@ -24,6 +26,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, roles, signOut } = useAuth();
   const location = useLocation();
   const { theme, setTheme } = useTheme();
+
+  // Load saved theme on login
+  useEffect(() => {
+    if (profile?.theme_preference) {
+      setTheme(profile.theme_preference);
+    }
+  }, [profile?.theme_preference, setTheme]);
+
+  // Save theme when toggled
+  const handleToggleTheme = useCallback(async () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    if (profile?.user_id) {
+      await supabase
+        .from("profiles")
+        .update({ theme_preference: newTheme })
+        .eq("user_id", profile.user_id);
+    }
+  }, [theme, setTheme, profile?.user_id]);
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -87,7 +108,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                onClick={handleToggleTheme}
                 className="gap-2 min-h-[44px]"
               >
                 <Sun className="h-4 w-4 dark:hidden" />
