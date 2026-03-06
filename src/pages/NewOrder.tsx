@@ -54,9 +54,11 @@ export default function NewOrder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
+  const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
 
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
+  const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
   const [recipientName, setRecipientName] = useState("");
   const [recipientStartDate, setRecipientStartDate] = useState("");
   const [recipientEndDate, setRecipientEndDate] = useState("");
