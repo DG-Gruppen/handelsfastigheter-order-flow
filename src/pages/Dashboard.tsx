@@ -138,9 +138,10 @@ export default function Dashboard() {
                   const autoApproved = isAutoApproved(order);
                   const tag = getOrderTag(order);
                   return (
-                    <div
+                    <Link
                       key={order.id}
-                      className="flex items-center justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group"
+                      to={`/orders/${order.id}`}
+                      className="flex items-center justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group hover:bg-secondary/20"
                     >
                       <div className="space-y-1 min-w-0 flex-1 mr-3">
                         <p className="font-medium text-sm md:text-base text-foreground truncate">
