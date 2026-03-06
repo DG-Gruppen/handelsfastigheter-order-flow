@@ -197,7 +197,7 @@ export default function Approvals() {
                     >
                       {order.status === "approved" ? "Godkänd" : "Avslagen"}
                     </Badge>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>

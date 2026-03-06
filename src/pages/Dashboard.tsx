@@ -171,7 +171,7 @@ export default function Dashboard() {
                           {sc.label}
                         </Badge>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
