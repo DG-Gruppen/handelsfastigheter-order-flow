@@ -5,12 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Send, Plus, Trash2 } from "lucide-react";
+import { Send, Plus, Trash2, UserPlus, User } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 
 interface Category {
@@ -37,12 +38,25 @@ interface OrderItem {
   typeId: string;
 }
 
+const ORDER_REASONS = [
+  { value: "new_employee", label: "Nyanställning" },
+  { value: "broken_equipment", label: "Trasig utrustning" },
+  { value: "end_of_employment", label: "Avslut av anställning" },
+] as const;
+
 export default function NewOrder() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
+
+  // Form state
+  const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientStartDate, setRecipientStartDate] = useState("");
+  const [recipientDepartment, setRecipientDepartment] = useState("");
+  const [orderReason, setOrderReason] = useState("new_employee");
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
@@ -72,27 +86,25 @@ export default function NewOrder() {
     if (user) fetchData();
   }, [user]);
 
-  const addItem = () => {
-    setItems((prev) => [...prev, { typeId: "", quantity: 1 }]);
-  };
-
-  const removeItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  };
-
+  const addItem = () => setItems((prev) => [...prev, { typeId: "" }]);
+  const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
   const updateItem = (index: number, value: string) => {
-    setItems((prev) =>
-      prev.map((item, i) => (i === index ? { typeId: value } : item))
-    );
+    setItems((prev) => prev.map((item, i) => (i === index ? { typeId: value } : item)));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
+
     if (!user || validItems.length === 0 || !approverId) {
       toast.error("Lägg till minst en utrustning och välj godkännare");
       return;
     }
+    if (recipientType === "new" && !recipientName.trim()) {
+      toast.error("Ange namn på den nya medarbetaren");
+      return;
+    }
+
     setSubmitting(true);
 
     const manager = managers.find((m) => m.id === approverId);
@@ -112,6 +124,11 @@ export default function NewOrder() {
         category_id: firstType?.category_id ?? null,
         title,
         description: description.trim(),
+        recipient_type: recipientType,
+        recipient_name: recipientType === "new" ? recipientName.trim() : "",
+        recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
+        recipient_department: recipientType === "new" ? recipientDepartment.trim() : "",
+        order_reason: orderReason,
       } as any)
       .select("id")
       .single();
@@ -135,13 +152,7 @@ export default function NewOrder() {
       };
     });
 
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItemsToInsert as any);
-
-    if (itemsError) {
-      console.error("Could not insert order items:", itemsError);
-    }
+    await supabase.from("order_items").insert(orderItemsToInsert as any);
 
     toast.success("Beställningen har skickats till din chef för godkännande!");
     navigate("/dashboard");
@@ -183,9 +194,7 @@ export default function NewOrder() {
         })}
         {uncategorized.length > 0 && (
           <div>
-            <div className="px-2 py-2 text-xs font-semibold text-muted-foreground">
-              Övrigt
-            </div>
+            <div className="px-2 py-2 text-xs font-semibold text-muted-foreground">Övrigt</div>
             {uncategorized.map((t) => (
               <SelectItem key={t.id} value={t.id} className="py-3 md:py-2">
                 {t.name}
@@ -204,12 +213,105 @@ export default function NewOrder() {
           <CardHeader className="px-4 md:px-6">
             <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
             <CardDescription className="text-sm">
-              Lägg till den utrustning du vill beställa. Din beställning skickas till vald chef för attestering.
+              Beställ IT-utrustning för en ny eller befintlig medarbetare. Beställningen skickas till vald chef för attestering.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 md:px-6">
             <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
-              {/* Equipment items */}
+
+              {/* 1. Recipient type */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Beställningen gäller *</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRecipientType("existing")}
+                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                      recipientType === "existing"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/30 hover:bg-secondary/30"
+                    }`}
+                  >
+                    <User className={`h-6 w-6 ${recipientType === "existing" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-sm font-medium ${recipientType === "existing" ? "text-primary" : "text-foreground"}`}>
+                      Befintlig medarbetare
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecipientType("new")}
+                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                      recipientType === "new"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/30 hover:bg-secondary/30"
+                    }`}
+                  >
+                    <UserPlus className={`h-6 w-6 ${recipientType === "new" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-sm font-medium ${recipientType === "new" ? "text-primary" : "text-foreground"}`}>
+                      Ny medarbetare
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. New employee details */}
+              {recipientType === "new" && (
+                <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uppgifter om ny medarbetare</p>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Namn *</Label>
+                    <Input
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      placeholder="Förnamn Efternamn"
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Startdatum</Label>
+                      <Input
+                        type="date"
+                        value={recipientStartDate}
+                        onChange={(e) => setRecipientStartDate(e.target.value)}
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Avdelning</Label>
+                      <Input
+                        value={recipientDepartment}
+                        onChange={(e) => setRecipientDepartment(e.target.value)}
+                        placeholder="T.ex. Ekonomi"
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Reason */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Orsak *</Label>
+                <RadioGroup value={orderReason} onValueChange={setOrderReason} className="flex flex-wrap gap-2">
+                  {ORDER_REASONS.map((reason) => (
+                    <Label
+                      key={reason.value}
+                      htmlFor={reason.value}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-all text-sm ${
+                        orderReason === reason.value
+                          ? "border-primary bg-primary/5 text-primary font-medium"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      <RadioGroupItem value={reason.value} id={reason.value} className="sr-only" />
+                      {reason.label}
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* 4. Equipment items */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Utrustning *</Label>
                 {items.map((item, index) => (
@@ -228,30 +330,26 @@ export default function NewOrder() {
                     )}
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addItem}
-                  className="gap-1.5 text-sm"
-                >
+                <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1.5 text-sm">
                   <Plus className="h-4 w-4" />
                   Lägg till utrustning
                 </Button>
               </div>
 
+              {/* 5. Comment */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Kommentar</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ytterligare information..."
+                  placeholder="Ytterligare information, t.ex. speciella behov..."
                   rows={3}
                   maxLength={1000}
                   className="resize-none"
                 />
               </div>
 
+              {/* 6. Approver */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
                 <Select value={approverId} onValueChange={setApproverId}>
