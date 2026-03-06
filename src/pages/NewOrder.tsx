@@ -286,7 +286,28 @@ export default function NewOrder() {
                 </div>
               ) : null}
 
-              {/* 2. New employee details */}
+              {/* 1b. Existing employee picker for managers */}
+              {isManagerOrAdmin && recipientType === "existing" && !isOffboarding && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Beställ till *</Label>
+                  <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj medarbetare..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="self" className="py-3 md:py-2">Mig själv</SelectItem>
+                      {allProfiles
+                        .filter((p) => p.user_id !== user?.id)
+                        .map((p) => (
+                          <SelectItem key={p.user_id} value={p.user_id} className="py-3 md:py-2">
+                            {p.full_name || p.user_id}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {recipientType === "new" && (
                 <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uppgifter om ny medarbetare</p>
