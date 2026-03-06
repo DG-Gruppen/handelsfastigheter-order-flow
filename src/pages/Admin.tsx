@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import OrderTypesManager from "@/components/OrderTypesManager";
+import CategoriesManager from "@/components/CategoriesManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -73,13 +74,12 @@ export default function Admin() {
       <div className="space-y-5 md:space-y-8">
         <div>
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Administration</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Hantera utrustning, användare och roller</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Hantera kategorier, utrustning, användare och roller</p>
         </div>
 
-        {/* Order types management */}
+        <CategoriesManager />
         <OrderTypesManager />
 
-        {/* User roles management */}
         <Card className="glass-card">
           <CardHeader className="px-4 md:px-6">
             <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
@@ -88,10 +88,7 @@ export default function Admin() {
           <CardContent className="px-4 md:px-6">
             <div className="space-y-3">
               {profiles.map((p) => (
-                <div
-                  key={p.id}
-                  className="rounded-xl border border-border p-3.5 md:p-4 space-y-3"
-                >
+                <div key={p.id} className="rounded-xl border border-border p-3.5 md:p-4 space-y-3">
                   <div className="space-y-1">
                     <p className="font-medium text-sm md:text-base text-foreground">
                       {p.full_name || p.email}
@@ -108,9 +105,7 @@ export default function Admin() {
                   <div className="flex items-center gap-2">
                     <Select
                       value={selectedRole[p.user_id] ?? ""}
-                      onValueChange={(v) =>
-                        setSelectedRole((prev) => ({ ...prev, [p.user_id]: v }))
-                      }
+                      onValueChange={(v) => setSelectedRole((prev) => ({ ...prev, [p.user_id]: v }))}
                     >
                       <SelectTrigger className="flex-1 h-11 md:h-10 md:w-[160px] md:flex-none">
                         <SelectValue placeholder="Välj roll..." />

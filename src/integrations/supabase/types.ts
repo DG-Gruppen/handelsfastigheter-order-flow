@@ -14,9 +14,37 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       order_types: {
         Row: {
           category: Database["public"]["Enums"]["order_category"]
+          category_id: string | null
           created_at: string
           description: string | null
           icon: string | null
@@ -26,6 +54,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["order_category"]
+          category_id?: string | null
           created_at?: string
           description?: string | null
           icon?: string | null
@@ -35,6 +64,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["order_category"]
+          category_id?: string | null
           created_at?: string
           description?: string | null
           icon?: string | null
@@ -42,13 +72,22 @@ export type Database = {
           is_active?: boolean
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "order_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
           approved_at: string | null
           approver_id: string | null
           category: Database["public"]["Enums"]["order_category"]
+          category_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -63,6 +102,7 @@ export type Database = {
           approved_at?: string | null
           approver_id?: string | null
           category?: Database["public"]["Enums"]["order_category"]
+          category_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -77,6 +117,7 @@ export type Database = {
           approved_at?: string | null
           approver_id?: string | null
           category?: Database["public"]["Enums"]["order_category"]
+          category_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -88,6 +129,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_order_type_id_fkey"
             columns: ["order_type_id"]
