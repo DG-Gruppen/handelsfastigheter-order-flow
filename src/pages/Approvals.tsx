@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Inbox, LogOut, UserPlus } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Inbox, LogOut, UserPlus, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -183,7 +184,7 @@ export default function Approvals() {
             <CardContent className="px-4 md:px-6">
               <div className="divide-y divide-border/50 -mx-4 md:mx-0">
                 {handledOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between px-4 md:px-0 py-3.5">
+                  <Link key={order.id} to={`/orders/${order.id}`} className="flex items-center justify-between px-4 md:px-0 py-3.5 hover:bg-secondary/20 transition-colors">
                     <div className="min-w-0 flex-1 mr-3">
                       <p className="font-medium text-sm text-foreground truncate">{order.title}</p>
                       <p className="text-xs text-muted-foreground">
@@ -196,7 +197,7 @@ export default function Approvals() {
                     >
                       {order.status === "approved" ? "Godkänd" : "Avslagen"}
                     </Badge>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
