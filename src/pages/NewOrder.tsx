@@ -128,11 +128,13 @@ export default function NewOrder() {
         ? firstType?.name ?? "Beställning"
         : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
 
+    const autoApprove = isManagerOrAdmin;
+
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
         requester_id: user.id,
-        approver_id: manager?.user_id ?? null,
+        approver_id: autoApprove ? user.id : (manager?.user_id ?? null),
         order_type_id: validItems[0].typeId,
         category_id: firstType?.category_id ?? null,
         title,
@@ -142,6 +144,8 @@ export default function NewOrder() {
         recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
         recipient_department: (recipientType === "new" || isOffboarding) ? recipientDepartment.trim() : "",
         order_reason: orderReason,
+        status: autoApprove ? "approved" : "pending",
+        approved_at: autoApprove ? new Date().toISOString() : null,
       } as any)
       .select("id")
       .single();
