@@ -47,14 +47,25 @@ export default function NewOrder() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, managersRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, rolesRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
+        supabase.from("user_roles").select("user_id, role"),
       ]);
       setCategories((catsRes.data as Category[]) ?? []);
       setOrderTypes((typesRes.data as OrderType[]) ?? []);
-      setManagers((managersRes.data as ProfileOption[]) ?? []);
+
+      // Filter to only show users with manager or admin roles
+      const managerUserIds = new Set(
+        (rolesRes.data ?? [])
+          .filter((r: any) => r.role === "manager" || r.role === "admin")
+          .map((r: any) => r.user_id)
+      );
+      const filteredManagers = ((profilesRes.data as ProfileOption[]) ?? []).filter(
+        (p) => managerUserIds.has(p.user_id)
+      );
+      setManagers(filteredManagers);
     };
     if (user) fetchData();
   }, [user]);
