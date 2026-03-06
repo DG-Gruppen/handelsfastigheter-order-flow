@@ -103,14 +103,20 @@ export default function Approvals() {
             {loading ? (
               <p className="text-muted-foreground py-8 text-center">Laddar...</p>
             ) : pendingOrders.length === 0 ? (
-              <div className="text-center py-10 space-y-3">
-                <Inbox className="h-10 w-10 mx-auto text-muted-foreground/40" />
+              <div className="text-center py-10 space-y-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60">
+                  <Inbox className="h-8 w-8 text-muted-foreground/40" />
+                </div>
                 <p className="text-sm text-muted-foreground">Inga beställningar att attestera</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {pendingOrders.map((order) => (
-                  <div key={order.id} className="rounded-xl border border-border p-3.5 md:p-4 space-y-3">
+                {pendingOrders.map((order, i) => (
+                  <div
+                    key={order.id}
+                    className="rounded-2xl border border-border/50 bg-secondary/20 p-3.5 md:p-4 space-y-3 animate-fade-up"
+                    style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm md:text-base text-foreground">{order.title}</p>
@@ -129,7 +135,7 @@ export default function Approvals() {
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        className="gap-1.5 flex-1 md:flex-none h-11 md:h-9"
+                        className="gap-1.5 flex-1 md:flex-none h-11 md:h-9 gradient-primary hover:opacity-90 shadow-sm shadow-primary/20"
                         onClick={() => handleApprove(order.id)}
                       >
                         <CheckCircle2 className="h-4 w-4" />
@@ -158,7 +164,7 @@ export default function Approvals() {
               <CardTitle className="font-heading text-base md:text-lg">Hanterade</CardTitle>
             </CardHeader>
             <CardContent className="px-4 md:px-6">
-              <div className="divide-y divide-border -mx-4 md:mx-0">
+              <div className="divide-y divide-border/50 -mx-4 md:mx-0">
                 {handledOrders.map((order) => (
                   <div key={order.id} className="flex items-center justify-between px-4 md:px-0 py-3.5">
                     <div className="min-w-0 flex-1 mr-3">
@@ -183,7 +189,7 @@ export default function Approvals() {
 
       {/* Reject dialog */}
       <Dialog open={!!rejectingId} onOpenChange={() => setRejectingId(null)}>
-        <DialogContent className="mx-4 max-w-lg">
+        <DialogContent className="mx-4 max-w-lg glass-surface">
           <DialogHeader>
             <DialogTitle>Avslå beställning</DialogTitle>
             <DialogDescription>Ange en anledning till avslaget (valfritt)</DialogDescription>

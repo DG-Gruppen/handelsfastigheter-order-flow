@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, User } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings } from "lucide-react";
 
 const navItems = [
   { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
@@ -32,12 +32,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen gradient-bg pb-20 md:pb-0">
       {/* Top header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-card/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b glass-nav">
         <div className="mx-auto flex h-14 md:h-16 max-w-6xl items-center justify-between px-4">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-primary">
+          <Link to="/dashboard" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl gradient-primary shadow-md shadow-primary/20">
               <Monitor className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
             </div>
             <span className="font-heading text-base md:text-lg font-bold text-foreground">
@@ -47,26 +47,29 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {visibleNavItems.map((item) => (
-              <Link key={item.to} to={item.to}>
-                <Button
-                  variant={location.pathname === item.to ? "secondary" : "ghost"}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Button>
-              </Link>
-            ))}
+            {visibleNavItems.map((item) => {
+              const isActive = location.pathname === item.to;
+              return (
+                <Link key={item.to} to={item.to}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    size="sm"
+                    className={`gap-2 transition-all ${isActive ? "bg-secondary/80 shadow-sm" : "hover:bg-secondary/50"}`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              );
+            })}
           </nav>
 
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-full p-1 hover:bg-secondary transition-colors min-h-[44px] min-w-[44px] justify-center">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+              <button className="flex items-center gap-2 rounded-full p-1 hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] justify-center">
+                <Avatar className="h-8 w-8 ring-2 ring-primary/10">
+                  <AvatarFallback className="gradient-primary text-primary-foreground text-xs font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -75,7 +78,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 glass-surface">
               <div className="px-3 py-2">
                 <p className="text-sm font-medium text-foreground">{profile?.full_name || "Användare"}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
@@ -94,7 +97,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-6xl px-4 py-5 md:py-8">{children}</main>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-card/95 backdrop-blur-md safe-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t glass-nav safe-bottom">
         <div className="flex items-stretch justify-around">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.to;
@@ -102,13 +105,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors ${
+                className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-all ${
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground"
                 }`}
               >
-                <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
+                <div className={`flex items-center justify-center rounded-xl px-3 py-1 transition-all ${isActive ? "bg-primary/10" : ""}`}>
+                  <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
+                </div>
                 <span className="text-[10px] font-medium leading-tight">{item.shortLabel}</span>
               </Link>
             );

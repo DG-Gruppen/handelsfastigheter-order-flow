@@ -98,7 +98,6 @@ export default function NewOrder() {
     setSubmitting(false);
   };
 
-  // Group order types by category
   const grouped = categories
     .map((cat) => ({
       category: cat,
@@ -112,8 +111,8 @@ export default function NewOrder() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto">
-        <Card className="glass-card">
+      <div className="max-w-2xl mx-auto animate-fade-up">
+        <Card className="glass-card shadow-xl shadow-primary/[0.03]">
           <CardHeader className="px-4 md:px-6">
             <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
             <CardDescription className="text-sm">
@@ -202,7 +201,7 @@ export default function NewOrder() {
 
               <Button
                 type="submit"
-                className="w-full gap-2 h-12 md:h-11 text-base"
+                className="w-full gap-2 h-12 md:h-11 text-base gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
                 disabled={submitting}
               >
                 <Send className="h-4 w-4" />
