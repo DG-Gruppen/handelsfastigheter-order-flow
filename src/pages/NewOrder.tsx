@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Send, Plus, Trash2, UserPlus, User } from "lucide-react";
+import { Send, Plus, Trash2, UserPlus, User, LogOut } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 
 interface Category {
@@ -38,10 +38,13 @@ interface OrderItem {
   typeId: string;
 }
 
-const ORDER_REASONS = [
+const ORDER_REASONS_NEW = [
   { value: "new_employee", label: "Nyanställning" },
+] as const;
+
+const ORDER_REASONS_EXISTING = [
   { value: "broken_equipment", label: "Trasig utrustning" },
-  { value: "end_of_employment", label: "Avslut av anställning" },
+  { value: "end_of_employment", label: "Avslut av anställning (Offboarding)" },
 ] as const;
 
 export default function NewOrder() {
@@ -55,8 +58,12 @@ export default function NewOrder() {
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [recipientName, setRecipientName] = useState("");
   const [recipientStartDate, setRecipientStartDate] = useState("");
+  const [recipientEndDate, setRecipientEndDate] = useState("");
   const [recipientDepartment, setRecipientDepartment] = useState("");
-  const [orderReason, setOrderReason] = useState("new_employee");
+  const [orderReason, setOrderReason] = useState("broken_equipment");
+
+  const isOffboarding = recipientType === "existing" && orderReason === "end_of_employment";
+  const activeReasons = recipientType === "new" ? ORDER_REASONS_NEW : ORDER_REASONS_EXISTING;
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
@@ -104,14 +111,19 @@ export default function NewOrder() {
       toast.error("Ange namn på den nya medarbetaren");
       return;
     }
+    if (isOffboarding && !recipientName.trim()) {
+      toast.error("Ange namn på medarbetaren som ska offboardas");
+      return;
+    }
 
     setSubmitting(true);
 
     const manager = managers.find((m) => m.id === approverId);
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
-    const title =
-      validItems.length === 1
+    const title = isOffboarding
+      ? `Offboarding – ${recipientName.trim()}`
+      : validItems.length === 1
         ? firstType?.name ?? "Beställning"
         : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
 
@@ -125,9 +137,9 @@ export default function NewOrder() {
         title,
         description: description.trim(),
         recipient_type: recipientType,
-        recipient_name: recipientType === "new" ? recipientName.trim() : "",
+        recipient_name: recipientType === "new" || isOffboarding ? recipientName.trim() : "",
         recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
-        recipient_department: recipientType === "new" ? recipientDepartment.trim() : "",
+        recipient_department: (recipientType === "new" || isOffboarding) ? recipientDepartment.trim() : "",
         order_reason: orderReason,
       } as any)
       .select("id")
@@ -154,7 +166,7 @@ export default function NewOrder() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
-    toast.success("Beställningen har skickats till din chef för godkännande!");
+    toast.success(isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
     navigate("/dashboard");
     setSubmitting(false);
   };
@@ -225,7 +237,10 @@ export default function NewOrder() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setRecipientType("existing")}
+                    onClick={() => {
+                      setRecipientType("existing");
+                      setOrderReason("broken_equipment");
+                    }}
                     className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
                       recipientType === "existing"
                         ? "border-primary bg-primary/5 shadow-sm"
@@ -239,7 +254,10 @@ export default function NewOrder() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRecipientType("new")}
+                    onClick={() => {
+                      setRecipientType("new");
+                      setOrderReason("new_employee");
+                    }}
                     className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
                       recipientType === "new"
                         ? "border-primary bg-primary/5 shadow-sm"
@@ -294,7 +312,7 @@ export default function NewOrder() {
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Orsak *</Label>
                 <RadioGroup value={orderReason} onValueChange={setOrderReason} className="flex flex-wrap gap-2">
-                  {ORDER_REASONS.map((reason) => (
+                  {activeReasons.map((reason) => (
                     <Label
                       key={reason.value}
                       htmlFor={reason.value}
@@ -311,9 +329,50 @@ export default function NewOrder() {
                 </RadioGroup>
               </div>
 
+              {/* 3b. Offboarding details */}
+              {isOffboarding && (
+                <div className="space-y-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                  <div className="flex items-center gap-2">
+                    <LogOut className="h-4 w-4 text-destructive" />
+                    <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – utrustning att återlämna</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Medarbetarens namn *</Label>
+                      <Input
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        placeholder="Förnamn Efternamn"
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Sista arbetsdag</Label>
+                      <Input
+                        type="date"
+                        value={recipientEndDate}
+                        onChange={(e) => setRecipientEndDate(e.target.value)}
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Avdelning</Label>
+                    <Input
+                      value={recipientDepartment}
+                      onChange={(e) => setRecipientDepartment(e.target.value)}
+                      placeholder="T.ex. Ekonomi"
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* 4. Equipment items */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Utrustning *</Label>
+                <Label className="text-sm font-medium">
+                  {isOffboarding ? "Utrustning att återlämna *" : "Utrustning *"}
+                </Label>
                 {items.map((item, index) => (
                   <div key={index} className="flex items-center gap-2">
                     {renderTypeSelect(item, index)}
@@ -342,7 +401,9 @@ export default function NewOrder() {
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ytterligare information, t.ex. speciella behov..."
+                  placeholder={isOffboarding 
+                    ? "T.ex. vilken utrustning som ska samlas in, var den finns..." 
+                    : "Ytterligare information, t.ex. speciella behov..."}
                   rows={3}
                   maxLength={1000}
                   className="resize-none"
@@ -372,7 +433,7 @@ export default function NewOrder() {
                 disabled={submitting}
               >
                 <Send className="h-4 w-4" />
-                {submitting ? "Skickar..." : "Skicka beställning"}
+                {submitting ? "Skickar..." : isOffboarding ? "Skicka offboarding-ärende" : "Skicka beställning"}
               </Button>
             </form>
           </CardContent>
