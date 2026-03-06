@@ -126,11 +126,19 @@ export default function NewOrder() {
     const manager = managers.find((m) => m.id === approverId);
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
+    const existingRecipientName = isManagerOrAdmin && recipientType === "existing" && selectedExistingRecipient !== "self"
+      ? allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name
+      : null;
+
+    const baseTitle = validItems.length === 1
+      ? firstType?.name ?? "Beställning"
+      : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
+
     const title = isOffboarding
       ? `Offboarding – ${recipientName.trim()}`
-      : validItems.length === 1
-        ? firstType?.name ?? "Beställning"
-        : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
+      : existingRecipientName
+        ? `${baseTitle} – ${existingRecipientName}`
+        : baseTitle;
 
     const autoApprove = isManagerOrAdmin;
 
