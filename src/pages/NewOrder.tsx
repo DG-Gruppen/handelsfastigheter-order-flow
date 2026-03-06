@@ -144,7 +144,13 @@ export default function NewOrder() {
         title,
         description: description.trim(),
         recipient_type: recipientType,
-        recipient_name: recipientType === "new" || isOffboarding ? recipientName.trim() : "",
+        recipient_name: recipientType === "new" || isOffboarding
+          ? recipientName.trim()
+          : isManagerOrAdmin && recipientType === "existing"
+            ? (selectedExistingRecipient === "self"
+              ? ""
+              : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
+            : "",
         recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
         recipient_department: (recipientType === "new" || isOffboarding) ? recipientDepartment.trim() : "",
         order_reason: orderReason,
