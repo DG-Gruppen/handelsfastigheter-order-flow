@@ -69,7 +69,8 @@ interface Profile {
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const isAdmin = roles.includes("admin");
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [requesterProfile, setRequesterProfile] = useState<Profile | null>(null);
