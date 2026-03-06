@@ -171,7 +171,10 @@ export default function NewOrder() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
-    toast.success(isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+    const successMsg = isManagerOrAdmin
+      ? (isOffboarding ? "Offboarding-ärendet har godkänts och är redo att skickas till extern IT!" : "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!")
+      : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+    toast.success(successMsg);
     navigate("/dashboard");
     setSubmitting(false);
   };
