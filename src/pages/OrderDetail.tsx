@@ -203,8 +203,20 @@ export default function OrderDetail() {
                 <StatusIcon className="h-3 w-3" />
                 {sc.label}
               </Badge>
-            </div>
           </div>
+
+          {/* Admin: mark as delivered */}
+          {isAdmin && order.status === "approved" && (
+            <Button
+              onClick={handleMarkDelivered}
+              disabled={marking}
+              className="gap-2 w-full sm:w-auto gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+            >
+              <Truck className="h-4 w-4" />
+              {marking ? "Uppdaterar..." : "Markera som levererad"}
+            </Button>
+          )}
+        </div>
           {/* Tags */}
           <div className="flex items-center gap-2 flex-wrap">
             {order.order_reason === "end_of_employment" && (
