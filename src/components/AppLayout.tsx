@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 const navItems = [
   { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
@@ -22,6 +23,7 @@ const navItems = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, roles, signOut } = useAuth();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -84,6 +86,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="gap-2 min-h-[44px]"
+              >
+                <Sun className="h-4 w-4 dark:hidden" />
+                <Moon className="h-4 w-4 hidden dark:block" />
+                {theme === "dark" ? "Ljust tema" : "Mörkt tema"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut} className="text-destructive gap-2 min-h-[44px]">
                 <LogOut className="h-4 w-4" />
                 Logga ut
