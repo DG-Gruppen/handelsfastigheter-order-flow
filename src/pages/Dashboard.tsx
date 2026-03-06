@@ -6,10 +6,10 @@ import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock, CheckCircle2, XCircle, Package, ArrowRight } from "lucide-react";
+import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
-  pending: { label: "Väntar", variant: "secondary", icon: Clock },
+  pending: { label: "Väntar på attestering", variant: "secondary", icon: Clock },
   approved: { label: "Godkänd", variant: "default", icon: CheckCircle2 },
   rejected: { label: "Avslagen", variant: "destructive", icon: XCircle },
   delivered: { label: "Levererad", variant: "outline", icon: Package },
@@ -22,6 +22,25 @@ interface Order {
   status: string;
   category: string;
   created_at: string;
+  approved_at: string | null;
+  requester_id: string;
+  approver_id: string | null;
+  order_reason: string | null;
+  recipient_type: string | null;
+}
+
+function isAutoApproved(order: Order): boolean {
+  return order.status === "approved" && order.requester_id === order.approver_id;
+}
+
+function getOrderTag(order: Order): { label: string; icon: any; className: string } | null {
+  if (order.order_reason === "end_of_employment") {
+    return { label: "Offboarding", icon: LogOut, className: "bg-destructive/10 text-destructive border-destructive/20" };
+  }
+  if (order.recipient_type === "new") {
+    return { label: "Nyanställning", icon: UserPlus, className: "bg-primary/10 text-primary border-primary/20" };
+  }
+  return null;
 }
 
 export default function Dashboard() {
@@ -116,23 +135,41 @@ export default function Dashboard() {
                 {orders.map((order) => {
                   const sc = statusConfig[order.status] ?? statusConfig.pending;
                   const Icon = sc.icon;
+                  const autoApproved = isAutoApproved(order);
+                  const tag = getOrderTag(order);
                   return (
                     <div
                       key={order.id}
                       className="flex items-center justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group"
                     >
-                      <div className="space-y-0.5 min-w-0 flex-1 mr-3">
+                      <div className="space-y-1 min-w-0 flex-1 mr-3">
                         <p className="font-medium text-sm md:text-base text-foreground truncate">
                           {order.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString("sv-SE")}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString("sv-SE")}
+                          </p>
+                          {tag && (
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${tag.className}`}>
+                              <tag.icon className="h-2.5 w-2.5" />
+                              {tag.label}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant={sc.variant} className="gap-1 text-xs shrink-0">
-                        <Icon className="h-3 w-3" />
-                        {sc.label}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {autoApproved && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-md">
+                            <Zap className="h-2.5 w-2.5" />
+                            Auto
+                          </span>
+                        )}
+                        <Badge variant={sc.variant} className="gap-1 text-xs">
+                          <Icon className="h-3 w-3" />
+                          {sc.label}
+                        </Badge>
+                      </div>
                     </div>
                   );
                 })}

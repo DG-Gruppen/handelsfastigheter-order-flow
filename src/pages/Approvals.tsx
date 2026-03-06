@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Inbox } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Inbox, LogOut, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
