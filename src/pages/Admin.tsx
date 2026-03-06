@@ -211,7 +211,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="glass-card w-full justify-start p-1 h-auto">
+          <TabsList className="glass-card w-full grid grid-cols-3 p-1 h-auto">
             {sections.map((s) => (
               <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
                 <s.icon className="h-4 w-4" />
