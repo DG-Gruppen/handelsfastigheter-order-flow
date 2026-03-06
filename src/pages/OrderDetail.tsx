@@ -51,6 +51,7 @@ interface Order {
   recipient_department: string | null;
   recipient_start_date: string | null;
   rejection_reason: string | null;
+  updated_at: string;
 }
 
 interface OrderItem {
