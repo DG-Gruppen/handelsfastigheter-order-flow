@@ -25,6 +25,9 @@ interface Order {
   category: string;
   created_at: string;
   requester_id: string;
+  approver_id: string | null;
+  order_reason: string | null;
+  recipient_type: string | null;
 }
 
 export default function Approvals() {
