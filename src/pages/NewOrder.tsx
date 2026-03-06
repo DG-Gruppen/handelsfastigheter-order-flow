@@ -48,7 +48,8 @@ const ORDER_REASONS_EXISTING = [
 ] as const;
 
 export default function NewOrder() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
@@ -232,45 +233,47 @@ export default function NewOrder() {
             <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
 
               {/* 1. Recipient type */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Beställningen gäller *</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRecipientType("existing");
-                      setOrderReason("broken_equipment");
-                    }}
-                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                      recipientType === "existing"
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/30 hover:bg-secondary/30"
-                    }`}
-                  >
-                    <User className={`h-6 w-6 ${recipientType === "existing" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm font-medium ${recipientType === "existing" ? "text-primary" : "text-foreground"}`}>
-                      Befintlig medarbetare
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRecipientType("new");
-                      setOrderReason("new_employee");
-                    }}
-                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                      recipientType === "new"
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/30 hover:bg-secondary/30"
-                    }`}
-                  >
-                    <UserPlus className={`h-6 w-6 ${recipientType === "new" ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm font-medium ${recipientType === "new" ? "text-primary" : "text-foreground"}`}>
-                      Ny medarbetare
-                    </span>
-                  </button>
+              {isManagerOrAdmin ? (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Beställningen gäller *</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecipientType("existing");
+                        setOrderReason("broken_equipment");
+                      }}
+                      className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                        recipientType === "existing"
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30 hover:bg-secondary/30"
+                      }`}
+                    >
+                      <User className={`h-6 w-6 ${recipientType === "existing" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-sm font-medium ${recipientType === "existing" ? "text-primary" : "text-foreground"}`}>
+                        Befintlig medarbetare
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecipientType("new");
+                        setOrderReason("new_employee");
+                      }}
+                      className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                        recipientType === "new"
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border hover:border-primary/30 hover:bg-secondary/30"
+                      }`}
+                    >
+                      <UserPlus className={`h-6 w-6 ${recipientType === "new" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-sm font-medium ${recipientType === "new" ? "text-primary" : "text-foreground"}`}>
+                        Ny medarbetare
+                      </span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               {/* 2. New employee details */}
               {recipientType === "new" && (
@@ -308,26 +311,28 @@ export default function NewOrder() {
                 </div>
               )}
 
-              {/* 3. Reason */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Orsak *</Label>
-                <RadioGroup value={orderReason} onValueChange={setOrderReason} className="flex flex-wrap gap-2">
-                  {activeReasons.map((reason) => (
-                    <Label
-                      key={reason.value}
-                      htmlFor={reason.value}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-all text-sm ${
-                        orderReason === reason.value
-                          ? "border-primary bg-primary/5 text-primary font-medium"
-                          : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      <RadioGroupItem value={reason.value} id={reason.value} className="sr-only" />
-                      {reason.label}
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
+              {/* 3. Reason - only for managers/admins */}
+              {isManagerOrAdmin && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Orsak *</Label>
+                  <RadioGroup value={orderReason} onValueChange={setOrderReason} className="flex flex-wrap gap-2">
+                    {activeReasons.map((reason) => (
+                      <Label
+                        key={reason.value}
+                        htmlFor={reason.value}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-all text-sm ${
+                          orderReason === reason.value
+                            ? "border-primary bg-primary/5 text-primary font-medium"
+                            : "border-border hover:border-primary/30"
+                        }`}
+                      >
+                        <RadioGroupItem value={reason.value} id={reason.value} className="sr-only" />
+                        {reason.label}
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
 
               {/* 3b. Offboarding details */}
               {isOffboarding && (
