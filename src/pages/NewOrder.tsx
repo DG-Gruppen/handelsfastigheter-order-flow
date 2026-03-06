@@ -54,9 +54,11 @@ export default function NewOrder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
+  const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
 
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
+  const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
   const [recipientName, setRecipientName] = useState("");
   const [recipientStartDate, setRecipientStartDate] = useState("");
   const [recipientEndDate, setRecipientEndDate] = useState("");
@@ -72,14 +74,16 @@ export default function NewOrder() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, rolesRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
+        supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
         supabase.from("user_roles").select("user_id, role"),
       ]);
       setCategories((catsRes.data as Category[]) ?? []);
       setOrderTypes((typesRes.data as OrderType[]) ?? []);
+      setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
 
       const managerUserIds = new Set(
         (rolesRes.data ?? [])
@@ -122,11 +126,19 @@ export default function NewOrder() {
     const manager = managers.find((m) => m.id === approverId);
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
+    const existingRecipientName = isManagerOrAdmin && recipientType === "existing" && selectedExistingRecipient !== "self"
+      ? allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name
+      : null;
+
+    const baseTitle = validItems.length === 1
+      ? firstType?.name ?? "Beställning"
+      : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
+
     const title = isOffboarding
       ? `Offboarding – ${recipientName.trim()}`
-      : validItems.length === 1
-        ? firstType?.name ?? "Beställning"
-        : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
+      : existingRecipientName
+        ? `${baseTitle} – ${existingRecipientName}`
+        : baseTitle;
 
     const autoApprove = isManagerOrAdmin;
 
@@ -140,7 +152,13 @@ export default function NewOrder() {
         title,
         description: description.trim(),
         recipient_type: recipientType,
-        recipient_name: recipientType === "new" || isOffboarding ? recipientName.trim() : "",
+        recipient_name: recipientType === "new" || isOffboarding
+          ? recipientName.trim()
+          : isManagerOrAdmin && recipientType === "existing"
+            ? (selectedExistingRecipient === "self"
+              ? ""
+              : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
+            : "",
         recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
         recipient_department: (recipientType === "new" || isOffboarding) ? recipientDepartment.trim() : "",
         order_reason: orderReason,
@@ -282,7 +300,28 @@ export default function NewOrder() {
                 </div>
               ) : null}
 
-              {/* 2. New employee details */}
+              {/* 1b. Existing employee picker for managers */}
+              {isManagerOrAdmin && recipientType === "existing" && !isOffboarding && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Beställ till *</Label>
+                  <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj medarbetare..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="self" className="py-3 md:py-2">Mig själv</SelectItem>
+                      {allProfiles
+                        .filter((p) => p.user_id !== user?.id)
+                        .map((p) => (
+                          <SelectItem key={p.user_id} value={p.user_id} className="py-3 md:py-2">
+                            {p.full_name || p.user_id}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {recipientType === "new" && (
                 <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uppgifter om ny medarbetare</p>
