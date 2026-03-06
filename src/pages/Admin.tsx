@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
+import OrderTypesManager from "@/components/OrderTypesManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,9 +73,13 @@ export default function Admin() {
       <div className="space-y-5 md:space-y-8">
         <div>
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Administration</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Hantera användare och roller</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Hantera utrustning, användare och roller</p>
         </div>
 
+        {/* Order types management */}
+        <OrderTypesManager />
+
+        {/* User roles management */}
         <Card className="glass-card">
           <CardHeader className="px-4 md:px-6">
             <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>

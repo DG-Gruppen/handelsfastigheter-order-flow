@@ -19,6 +19,7 @@ export type Database = {
           category: Database["public"]["Enums"]["order_category"]
           created_at: string
           description: string | null
+          icon: string | null
           id: string
           is_active: boolean
           name: string
@@ -27,6 +28,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["order_category"]
           created_at?: string
           description?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -35,6 +37,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["order_category"]
           created_at?: string
           description?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
           name?: string
