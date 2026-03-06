@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
@@ -16,61 +15,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Laptop,
-  Smartphone,
-  Monitor,
-  Keyboard,
-  Mouse,
-  Headphones,
-  Package,
-  Wifi,
-  Printer,
-  HardDrive,
-  Usb,
-  Tablet,
-  Watch,
-  Camera,
-  Speaker,
-  Cable,
-  Plus,
-  Pencil,
-  Trash2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Package } from "lucide-react";
+import { iconMap, iconOptions, getIcon } from "@/lib/icons";
 
-const iconMap: Record<string, LucideIcon> = {
-  laptop: Laptop,
-  smartphone: Smartphone,
-  monitor: Monitor,
-  keyboard: Keyboard,
-  mouse: Mouse,
-  headphones: Headphones,
-  package: Package,
-  wifi: Wifi,
-  printer: Printer,
-  "hard-drive": HardDrive,
-  usb: Usb,
-  tablet: Tablet,
-  watch: Watch,
-  camera: Camera,
-  speaker: Speaker,
-  cable: Cable,
-};
-
-const iconOptions = Object.keys(iconMap);
-
-const categoryLabels: Record<string, string> = {
-  computer: "Dator",
-  phone: "Telefon",
-  peripheral: "Kringutrustning",
-  other: "Övrigt",
-};
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+}
 
 interface OrderType {
   id: string;
   name: string;
-  category: string;
+  category_id: string | null;
   description: string;
   icon: string;
   is_active: boolean;
@@ -78,7 +35,7 @@ interface OrderType {
 
 const emptyForm = {
   name: "",
-  category: "other",
+  category_id: "",
   description: "",
   icon: "package",
   is_active: true,
@@ -86,24 +43,25 @@ const emptyForm = {
 
 export default function OrderTypesManager() {
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchTypes = async () => {
-    const { data } = await supabase
-      .from("order_types")
-      .select("*")
-      .order("category")
-      .order("name");
-    setOrderTypes((data as OrderType[]) ?? []);
+  const fetchData = async () => {
+    const [typesRes, catsRes] = await Promise.all([
+      supabase.from("order_types").select("*").order("name"),
+      supabase.from("categories").select("id, name, icon").eq("is_active", true).order("sort_order"),
+    ]);
+    setOrderTypes((typesRes.data as OrderType[]) ?? []);
+    setCategories((catsRes.data as Category[]) ?? []);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchTypes();
+    fetchData();
   }, []);
 
   const openNew = () => {
@@ -116,7 +74,7 @@ export default function OrderTypesManager() {
     setEditingId(ot.id);
     setForm({
       name: ot.name,
-      category: ot.category,
+      category_id: ot.category_id || "",
       description: ot.description || "",
       icon: ot.icon || "package",
       is_active: ot.is_active,
@@ -131,34 +89,27 @@ export default function OrderTypesManager() {
     }
     setSubmitting(true);
 
+    const payload = {
+      name: form.name.trim(),
+      category_id: form.category_id || null,
+      description: form.description.trim(),
+      icon: form.icon,
+      is_active: form.is_active,
+    };
+
     if (editingId) {
-      const { error } = await supabase
-        .from("order_types")
-        .update({
-          name: form.name.trim(),
-          category: form.category,
-          description: form.description.trim(),
-          icon: form.icon,
-          is_active: form.is_active,
-        } as any)
-        .eq("id", editingId);
+      const { error } = await supabase.from("order_types").update(payload as any).eq("id", editingId);
       if (error) toast.error("Kunde inte uppdatera");
       else toast.success("Utrustningstyp uppdaterad");
     } else {
-      const { error } = await supabase.from("order_types").insert({
-        name: form.name.trim(),
-        category: form.category,
-        description: form.description.trim(),
-        icon: form.icon,
-        is_active: form.is_active,
-      } as any);
+      const { error } = await supabase.from("order_types").insert(payload as any);
       if (error) toast.error("Kunde inte skapa");
       else toast.success("Utrustningstyp skapad");
     }
 
     setDialogOpen(false);
     setSubmitting(false);
-    fetchTypes();
+    fetchData();
   };
 
   const handleDelete = async (id: string) => {
@@ -166,18 +117,21 @@ export default function OrderTypesManager() {
     if (error) toast.error("Kunde inte ta bort");
     else {
       toast.success("Utrustningstyp borttagen");
-      fetchTypes();
+      fetchData();
     }
   };
 
   const handleToggleActive = async (id: string, current: boolean) => {
     await supabase.from("order_types").update({ is_active: !current } as any).eq("id", id);
-    fetchTypes();
+    fetchData();
   };
 
+  const catMap = Object.fromEntries(categories.map((c) => [c.id, c]));
+
   const grouped = orderTypes.reduce<Record<string, OrderType[]>>((acc, ot) => {
-    if (!acc[ot.category]) acc[ot.category] = [];
-    acc[ot.category].push(ot);
+    const catId = ot.category_id || "uncategorized";
+    if (!acc[catId]) acc[catId] = [];
+    acc[catId].push(ot);
     return acc;
   }, {});
 
@@ -203,75 +157,70 @@ export default function OrderTypesManager() {
             <p className="text-muted-foreground py-8 text-center">Laddar...</p>
           ) : (
             <div className="space-y-5">
-              {Object.entries(grouped).map(([cat, types]) => (
-                <div key={cat}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                    {categoryLabels[cat] ?? cat}
-                  </p>
-                  <div className="space-y-2">
-                    {types.map((ot) => {
-                      const IconComp = iconMap[ot.icon] ?? Package;
-                      return (
-                        <div
-                          key={ot.id}
-                          className={`rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 transition-opacity ${
-                            !ot.is_active ? "opacity-50" : ""
-                          }`}
-                        >
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                            <IconComp className="h-5 w-5 text-secondary-foreground" />
+              {Object.entries(grouped).map(([catId, types]) => {
+                const cat = catMap[catId];
+                const CatIcon = cat ? getIcon(cat.icon) : Package;
+                return (
+                  <div key={catId}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CatIcon className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {cat?.name ?? "Utan kategori"}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {types.map((ot) => {
+                        const IconComp = getIcon(ot.icon);
+                        return (
+                          <div
+                            key={ot.id}
+                            className={`rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 transition-opacity ${
+                              !ot.is_active ? "opacity-50" : ""
+                            }`}
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                              <IconComp className="h-5 w-5 text-secondary-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-foreground truncate">{ot.name}</p>
+                              {ot.description && (
+                                <p className="text-xs text-muted-foreground truncate">{ot.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Switch
+                                checked={ot.is_active}
+                                onCheckedChange={() => handleToggleActive(ot.id, ot.is_active)}
+                                className="mr-1"
+                              />
+                              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(ot)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 text-destructive"
+                                onClick={() => handleDelete(ot.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-foreground truncate">
-                              {ot.name}
-                            </p>
-                            {ot.description && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {ot.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Switch
-                              checked={ot.is_active}
-                              onCheckedChange={() => handleToggleActive(ot.id, ot.is_active)}
-                              className="mr-1"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-10 w-10"
-                              onClick={() => openEdit(ot)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-10 w-10 text-destructive"
-                              onClick={() => handleDelete(ot.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Create / Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="mx-4 max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {editingId ? "Redigera utrustningstyp" : "Ny utrustningstyp"}
-            </DialogTitle>
+            <DialogTitle>{editingId ? "Redigera utrustningstyp" : "Ny utrustningstyp"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -288,17 +237,24 @@ export default function OrderTypesManager() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">Kategori</Label>
               <Select
-                value={form.category}
-                onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
+                value={form.category_id}
+                onValueChange={(v) => setForm((f) => ({ ...f, category_id: v }))}
               >
                 <SelectTrigger className="h-12 md:h-10">
-                  <SelectValue />
+                  <SelectValue placeholder="Välj kategori..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="computer" className="py-3 md:py-2">💻 Dator</SelectItem>
-                  <SelectItem value="phone" className="py-3 md:py-2">📱 Telefon</SelectItem>
-                  <SelectItem value="peripheral" className="py-3 md:py-2">🖥️ Kringutrustning</SelectItem>
-                  <SelectItem value="other" className="py-3 md:py-2">📦 Övrigt</SelectItem>
+                  {categories.map((c) => {
+                    const CIcon = getIcon(c.icon);
+                    return (
+                      <SelectItem key={c.id} value={c.id} className="py-3 md:py-2">
+                        <span className="flex items-center gap-2">
+                          <CIcon className="h-4 w-4" />
+                          {c.name}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -351,7 +307,7 @@ export default function OrderTypesManager() {
               Avbryt
             </Button>
             <Button onClick={handleSave} disabled={submitting} className="w-full sm:w-auto h-11">
-              {submitting ? "Sparar..." : editingId ? "Spara ändringar" : "Skapa"}
+              {submitting ? "Sparar..." : editingId ? "Spara" : "Skapa"}
             </Button>
           </DialogFooter>
         </DialogContent>
