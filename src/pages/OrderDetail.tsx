@@ -107,6 +107,22 @@ export default function OrderDetail() {
     load();
   }, [id, user]);
 
+  const handleMarkDelivered = async () => {
+    if (!order) return;
+    setMarking(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "delivered" as any })
+      .eq("id", order.id);
+    if (error) {
+      toast.error("Kunde inte uppdatera status");
+    } else {
+      setOrder({ ...order, status: "delivered" });
+      toast.success("Beställningen markerad som levererad");
+    }
+    setMarking(false);
+  };
+
   if (loading) {
     return (
       <AppLayout>
