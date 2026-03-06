@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +35,6 @@ interface ProfileOption {
 
 interface OrderItem {
   typeId: string;
-  quantity: number;
 }
 
 export default function NewOrder() {
@@ -44,7 +43,7 @@ export default function NewOrder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
-  const [items, setItems] = useState<OrderItem[]>([{ typeId: "", quantity: 1 }]);
+  const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -81,9 +80,9 @@ export default function NewOrder() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateItem = (index: number, field: keyof OrderItem, value: string | number) => {
+  const updateItem = (index: number, value: string) => {
     setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+      prev.map((item, i) => (i === index ? { typeId: value } : item))
     );
   };
 
@@ -132,7 +131,7 @@ export default function NewOrder() {
         category_id: ot?.category_id ?? null,
         name: ot?.name ?? "",
         description: ot?.description ?? "",
-        quantity: it.quantity,
+        quantity: 1,
       };
     });
 
@@ -161,7 +160,7 @@ export default function NewOrder() {
   );
 
   const renderTypeSelect = (item: OrderItem, index: number) => (
-    <Select value={item.typeId} onValueChange={(v) => updateItem(index, "typeId", v)}>
+    <Select value={item.typeId} onValueChange={(v) => updateItem(index, v)}>
       <SelectTrigger className="h-12 md:h-10 flex-1">
         <SelectValue placeholder="Välj utrustning..." />
       </SelectTrigger>
@@ -216,17 +215,6 @@ export default function NewOrder() {
                 {items.map((item, index) => (
                   <div key={index} className="flex items-center gap-2">
                     {renderTypeSelect(item, index)}
-                    <Input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateItem(index, "quantity", Math.max(1, parseInt(e.target.value) || 1))
-                      }
-                      className="w-20 h-12 md:h-10 text-center"
-                      title="Antal"
-                    />
                     {items.length > 1 && (
                       <Button
                         type="button"
