@@ -146,7 +146,12 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          order_reason: string | null
           order_type_id: string | null
+          recipient_department: string | null
+          recipient_name: string | null
+          recipient_start_date: string | null
+          recipient_type: string | null
           rejection_reason: string | null
           requester_id: string
           status: Database["public"]["Enums"]["order_status"]
@@ -161,7 +166,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          order_reason?: string | null
           order_type_id?: string | null
+          recipient_department?: string | null
+          recipient_name?: string | null
+          recipient_start_date?: string | null
+          recipient_type?: string | null
           rejection_reason?: string | null
           requester_id: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -176,7 +186,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          order_reason?: string | null
           order_type_id?: string | null
+          recipient_department?: string | null
+          recipient_name?: string | null
+          recipient_start_date?: string | null
+          recipient_type?: string | null
           rejection_reason?: string | null
           requester_id?: string
           status?: Database["public"]["Enums"]["order_status"]
