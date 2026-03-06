@@ -74,14 +74,16 @@ export default function NewOrder() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, rolesRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
+        supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
         supabase.from("user_roles").select("user_id, role"),
       ]);
       setCategories((catsRes.data as Category[]) ?? []);
       setOrderTypes((typesRes.data as OrderType[]) ?? []);
+      setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
 
       const managerUserIds = new Set(
         (rolesRes.data ?? [])
