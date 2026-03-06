@@ -75,6 +75,7 @@ export default function OrderDetail() {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [requesterProfile, setRequesterProfile] = useState<Profile | null>(null);
   const [approverProfile, setApproverProfile] = useState<Profile | null>(null);
+  const [marking, setMarking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
