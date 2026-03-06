@@ -154,6 +154,7 @@ export type Database = {
           id: string
           manager_id: string | null
           phone: string | null
+          theme_preference: string | null
           updated_at: string
           user_id: string
         }
@@ -165,6 +166,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           phone?: string | null
+          theme_preference?: string | null
           updated_at?: string
           user_id: string
         }
@@ -176,6 +178,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           phone?: string | null
+          theme_preference?: string | null
           updated_at?: string
           user_id?: string
         }

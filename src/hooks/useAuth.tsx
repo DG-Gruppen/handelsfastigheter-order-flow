@@ -10,6 +10,7 @@ interface Profile {
   department: string;
   phone: string;
   manager_id: string | null;
+  theme_preference: string | null;
 }
 
 interface AuthContextType {
