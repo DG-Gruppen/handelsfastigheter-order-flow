@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, DragEvent } from "react";
+import { useEffect, useState, useCallback, useRef, DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +28,41 @@ export default function OrgTree() {
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(0.7);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('[draggable="true"]')) return;
+    if (e.button === 0 || e.button === 1) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom((z) => Math.min(2, Math.max(0.3, z - e.deltaY * 0.001)));
+    }
+  };
+
+  const resetView = () => {
+    setZoom(0.7);
+    setPan({ x: 0, y: 0 });
+  };
 
   useEffect(() => {
     if (!isAdmin) {
@@ -180,7 +215,7 @@ export default function OrgTree() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setZoom(0.7)}
+              onClick={resetView}
               className="h-8 w-8 p-0"
             >
               <RotateCcw className="h-3.5 w-3.5" />
@@ -200,11 +235,25 @@ export default function OrgTree() {
           </p>
         </div>
 
-        {/* Org chart - full width, scrollable */}
-        <div className="overflow-x-auto pb-8 flex justify-center">
+        {/* Pannable canvas */}
+        <div
+          ref={canvasRef}
+          data-canvas
+          className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/20"
+          style={{ height: "calc(100vh - 220px)", cursor: isPanning ? "grabbing" : "grab" }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+        >
           <div
-            className="flex flex-col items-center gap-0 min-w-max px-8"
-            style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+            className="absolute flex flex-col items-center gap-0 min-w-max"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "top left",
+              padding: "2rem",
+            }}
           >
             {roots.map((root) => (
               <OrgBranch
