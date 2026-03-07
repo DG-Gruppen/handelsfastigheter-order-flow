@@ -234,11 +234,25 @@ export default function OrgTree() {
           </p>
         </div>
 
-        {/* Org chart - full width, scrollable */}
-        <div className="overflow-x-auto pb-8 flex justify-center">
+        {/* Pannable canvas */}
+        <div
+          ref={canvasRef}
+          data-canvas
+          className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/20"
+          style={{ height: "calc(100vh - 220px)", cursor: isPanning ? "grabbing" : "grab" }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+        >
           <div
-            className="flex flex-col items-center gap-0 min-w-max px-8"
-            style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+            className="absolute flex flex-col items-center gap-0 min-w-max"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "top left",
+              padding: "2rem",
+            }}
           >
             {roots.map((root) => (
               <OrgBranch
