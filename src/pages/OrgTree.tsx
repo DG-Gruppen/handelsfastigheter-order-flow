@@ -3,33 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import OrgCard, { OrgProfile, RoleMap } from "@/components/OrgChart/OrgCard";
+import OrgBranch from "@/components/OrgChart/OrgBranch";
 import { toast } from "sonner";
-import { Users, GripVertical, ChevronRight, ChevronDown, Building2 } from "lucide-react";
-
-interface OrgProfile {
-  id: string;
-  user_id: string;
-  full_name: string;
-  email: string;
-  department: string | null;
-  manager_id: string | null;
-}
-
-interface RoleMap {
-  [userId: string]: string;
-}
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { Building2, Users, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function buildTree(profiles: OrgProfile[]): Map<string | null, OrgProfile[]> {
   const map = new Map<string | null, OrgProfile[]>();
@@ -41,143 +19,6 @@ function buildTree(profiles: OrgProfile[]): Map<string | null, OrgProfile[]> {
   return map;
 }
 
-function OrgNode({
-  profile,
-  childrenMap,
-  roleMap,
-  draggedId,
-  onDragStart,
-  onDrop,
-  level,
-}: {
-  profile: OrgProfile;
-  childrenMap: Map<string | null, OrgProfile[]>;
-  roleMap: RoleMap;
-  draggedId: string | null;
-  onDragStart: (id: string) => void;
-  onDrop: (targetManagerId: string) => void;
-  level: number;
-}) {
-  const [expanded, setExpanded] = useState(true);
-  const [dragOver, setDragOver] = useState(false);
-  const children = childrenMap.get(profile.id) ?? [];
-  const role = roleMap[profile.user_id];
-  const isDragged = draggedId === profile.id;
-
-  const handleDragOver = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (draggedId && draggedId !== profile.id) {
-      setDragOver(true);
-    }
-  };
-
-  const handleDragLeave = () => setDragOver(false);
-
-  const handleDrop = (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-    if (draggedId && draggedId !== profile.id) {
-      onDrop(profile.id);
-    }
-  };
-
-  const roleBadge = role === "admin" ? (
-    <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">Admin</Badge>
-  ) : role === "manager" ? (
-    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-accent/15 text-accent border-accent/20">Chef</Badge>
-  ) : (
-    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Anställd</Badge>
-  );
-
-  return (
-    <div className="select-none">
-      <div
-        draggable
-        onDragStart={(e) => {
-          e.stopPropagation();
-          onDragStart(profile.id);
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`
-          group flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all cursor-grab active:cursor-grabbing
-          ${isDragged ? "opacity-40" : ""}
-          ${dragOver ? "ring-2 ring-primary bg-primary/5 scale-[1.01]" : "hover:bg-secondary/50"}
-        `}
-      >
-        <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0" />
-
-        {children.length > 0 ? (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="shrink-0 p-0.5 rounded hover:bg-secondary"
-          >
-            {expanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-        ) : (
-          <span className="w-5 shrink-0" />
-        )}
-
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarFallback className={`text-xs font-semibold ${
-            role === "admin" ? "bg-primary/10 text-primary" :
-            role === "manager" ? "bg-accent/10 text-accent" :
-            "bg-secondary text-secondary-foreground"
-          }`}>
-            {getInitials(profile.full_name || "?")}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground truncate">
-              {profile.full_name || profile.email}
-            </span>
-            {roleBadge}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {profile.department && <span>{profile.department}</span>}
-            {profile.department && profile.email && <span>·</span>}
-            <span className="truncate">{profile.email}</span>
-          </div>
-        </div>
-
-        {children.length > 0 && (
-          <span className="text-xs text-muted-foreground shrink-0">
-            {children.length} {children.length === 1 ? "person" : "personer"}
-          </span>
-        )}
-      </div>
-
-      {expanded && children.length > 0 && (
-        <div className="ml-6 pl-4 border-l-2 border-border/50 space-y-0.5 mt-0.5">
-          {children
-            .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""))
-            .map((child) => (
-              <OrgNode
-                key={child.id}
-                profile={child}
-                childrenMap={childrenMap}
-                roleMap={roleMap}
-                draggedId={draggedId}
-                onDragStart={onDragStart}
-                onDrop={onDrop}
-                level={level + 1}
-              />
-            ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function OrgTree() {
   const { roles } = useAuth();
   const navigate = useNavigate();
@@ -186,6 +27,7 @@ export default function OrgTree() {
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(0.85);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -211,20 +53,40 @@ export default function OrgTree() {
 
   const childrenMap = buildTree(profiles);
 
-  const roots = profiles.filter(
-    (p) => !p.manager_id || !profiles.some((other) => other.id === p.manager_id)
+  // Find the VD (top-level admin with no manager or manager not in profiles)
+  const vd = profiles.find(
+    (p) =>
+      roleMap[p.user_id] === "admin" &&
+      (!p.manager_id || !profiles.some((o) => o.id === p.manager_id))
   );
 
-  const unassigned = childrenMap.get(null) ?? [];
-  const assignedRoots = roots.filter((r) => r.manager_id === null || !profiles.some((o) => o.id === r.manager_id));
-  // Deduplicate
-  const rootIds = new Set(assignedRoots.map((r) => r.id));
+  // Direct reports to VD
+  const vdChildren = vd ? (childrenMap.get(vd.id) ?? []) : [];
+
+  // Split into intermediate managers (managers without subordinates = ledningsstöd)
+  // and department heads (managers with subordinates)
+  const intermediateManagers = vdChildren.filter((c) => {
+    const role = roleMap[c.user_id];
+    const hasReports = (childrenMap.get(c.id) ?? []).length > 0;
+    return (role === "manager" || role === "admin") && !hasReports;
+  });
+
+  const departmentHeads = vdChildren.filter(
+    (c) => !intermediateManagers.some((im) => im.id === c.id)
+  );
+
+  // Other roots (not under VD)
+  const otherRoots = profiles.filter(
+    (p) =>
+      p.id !== vd?.id &&
+      (!p.manager_id || !profiles.some((o) => o.id === p.manager_id)) &&
+      !vdChildren.some((vc) => vc.id === p.id)
+  );
 
   const handleDrop = useCallback(
     async (targetManagerId: string) => {
       if (!draggedId || draggedId === targetManagerId) return;
 
-      // Prevent circular: can't drop onto own descendant
       const isDescendant = (parentId: string, checkId: string): boolean => {
         const kids = childrenMap.get(parentId) ?? [];
         for (const k of kids) {
@@ -240,7 +102,6 @@ export default function OrgTree() {
         return;
       }
 
-      // Optimistic update
       setProfiles((prev) =>
         prev.map((p) => (p.id === draggedId ? { ...p, manager_id: targetManagerId } : p))
       );
@@ -297,9 +158,9 @@ export default function OrgTree() {
   return (
     <AppLayout>
       <div className="animate-fade-up">
-        {/* Compact centered header */}
+        {/* Compact centered header + controls */}
         <div className="max-w-md mx-auto mb-4">
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-3 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
               <Building2 className="h-5 w-5 text-primary" />
             </div>
@@ -310,51 +171,173 @@ export default function OrgTree() {
               </p>
             </div>
           </div>
+
+          {/* Zoom controls */}
+          <div className="flex items-center justify-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
+              className="h-8 w-8 p-0"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-xs text-muted-foreground w-12 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
+              className="h-8 w-8 p-0"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setZoom(0.85)}
+              className="h-8 w-8 p-0"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
 
-        <Card className="glass-card shadow-xl shadow-primary/[0.03] max-w-3xl mx-auto">
-          <CardContent className="px-4 md:px-6">
-            {/* Drop zone for root level */}
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-              }}
-              onDrop={handleDropToRoot}
-              className="min-h-[2rem] rounded-xl border-2 border-dashed border-border/50 p-1 mb-2 transition-colors"
-            >
-              <p className="text-xs text-muted-foreground px-3 py-1">
-                <Users className="h-3.5 w-3.5 inline mr-1 -mt-0.5" />
-                Släpp här för att placera på toppnivå
-              </p>
-            </div>
+        {/* Drop zone for root level */}
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDropToRoot}
+          className="max-w-sm mx-auto min-h-[1.5rem] rounded-xl border-2 border-dashed border-border/50 p-1 mb-4 transition-colors"
+        >
+          <p className="text-xs text-muted-foreground text-center py-0.5">
+            <Users className="h-3 w-3 inline mr-1 -mt-0.5" />
+            Släpp här för toppnivå
+          </p>
+        </div>
 
-            <div className="space-y-0.5">
-              {assignedRoots
-                .sort((a, b) => {
-                  const rA = roleMap[a.user_id] ?? "employee";
-                  const rB = roleMap[b.user_id] ?? "employee";
-                  const order: Record<string, number> = { admin: 0, manager: 1, employee: 2 };
-                  return (order[rA] ?? 3) - (order[rB] ?? 3) || (a.full_name || "").localeCompare(b.full_name || "");
-                })
-                .map((profile) => (
-                  <OrgNode
-                    key={profile.id}
-                    profile={profile}
+        {/* Org chart - full width, scrollable */}
+        <div className="overflow-x-auto pb-8">
+          <div
+            className="flex flex-col items-center gap-0 min-w-max px-8"
+            style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+          >
+            {/* VD */}
+            {vd && (
+              <>
+                <OrgCard
+                  profile={vd}
+                  roleMap={roleMap}
+                  draggedId={draggedId}
+                  onDragStart={setDraggedId}
+                  onDrop={handleDrop}
+                />
+
+                {/* Connector down from VD */}
+                <div className="w-px h-8 bg-border" />
+
+                {/* Intermediate managers (Christel, Petra) */}
+                {intermediateManagers.length > 0 && (
+                  <>
+                    {intermediateManagers.length > 1 && (
+                      <div className="relative flex justify-center">
+                        <div
+                          className="absolute top-0 h-px bg-border"
+                          style={{
+                            width: `${(intermediateManagers.length - 1) * 140}px`,
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="flex gap-4 justify-center">
+                      {intermediateManagers
+                        .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""))
+                        .map((p, i) => (
+                          <div key={p.id} className="flex flex-col items-center">
+                            {intermediateManagers.length > 1 && (
+                              <div className="w-px h-0 bg-border" />
+                            )}
+                            <OrgCard
+                              profile={p}
+                              roleMap={roleMap}
+                              draggedId={draggedId}
+                              onDragStart={setDraggedId}
+                              onDrop={handleDrop}
+                            />
+                          </div>
+                        ))}
+                    </div>
+
+                    {/* Connector down from intermediate to departments */}
+                    <div className="w-px h-8 bg-border" />
+                  </>
+                )}
+
+                {/* Department heads with their teams */}
+                {departmentHeads.length > 0 && (
+                  <>
+                    {/* Horizontal connector bar */}
+                    {departmentHeads.length > 1 && (
+                      <div className="relative w-full flex justify-center">
+                        <div className="flex gap-6">
+                          {departmentHeads.map((_, i) => (
+                            <div key={i} className="w-36" />
+                          ))}
+                        </div>
+                        <div
+                          className="absolute top-0 h-px bg-border"
+                          style={{
+                            left: `calc(50% - ${((departmentHeads.length - 1) * (144 + 24)) / 2}px)`,
+                            right: `calc(50% - ${((departmentHeads.length - 1) * (144 + 24)) / 2}px)`,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-6 items-start">
+                      {departmentHeads
+                        .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""))
+                        .map((head) => (
+                          <div key={head.id} className="flex flex-col items-center">
+                            <div className="w-px h-6 bg-border" />
+                            <OrgBranch
+                              profile={head}
+                              childrenMap={childrenMap}
+                              roleMap={roleMap}
+                              draggedId={draggedId}
+                              onDragStart={setDraggedId}
+                              onDrop={handleDrop}
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Other root-level people not under VD */}
+            {otherRoots.length > 0 && (
+              <div className="flex gap-4 mt-8">
+                {otherRoots.map((p) => (
+                  <OrgBranch
+                    key={p.id}
+                    profile={p}
                     childrenMap={childrenMap}
                     roleMap={roleMap}
                     draggedId={draggedId}
                     onDragStart={setDraggedId}
                     onDrop={handleDrop}
-                    level={0}
                   />
                 ))}
-            </div>
+              </div>
+            )}
 
             {profiles.length === 0 && (
               <p className="text-center text-muted-foreground py-8">Inga profiler hittades</p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
