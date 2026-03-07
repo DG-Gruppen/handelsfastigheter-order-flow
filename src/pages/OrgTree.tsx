@@ -27,7 +27,7 @@ export default function OrgTree() {
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(0.7);
 
   useEffect(() => {
     if (!isAdmin) {
