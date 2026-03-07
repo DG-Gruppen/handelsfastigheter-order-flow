@@ -28,6 +28,40 @@ export default function OrgTree() {
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(0.7);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only pan with middle mouse or when not dragging org cards
+    if (e.button === 1 || (e.button === 0 && !draggedId && (e.target as HTMLElement).closest('[data-canvas]'))) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom((z) => Math.min(2, Math.max(0.3, z - e.deltaY * 0.001)));
+    }
+  };
+
+  const resetView = () => {
+    setZoom(0.7);
+    setPan({ x: 0, y: 0 });
+  };
 
   useEffect(() => {
     if (!isAdmin) {
