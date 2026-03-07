@@ -27,7 +27,7 @@ export default function OrgTree() {
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(0.7);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -180,7 +180,7 @@ export default function OrgTree() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setZoom(0.85)}
+              onClick={() => setZoom(0.7)}
               className="h-8 w-8 p-0"
             >
               <RotateCcw className="h-3.5 w-3.5" />

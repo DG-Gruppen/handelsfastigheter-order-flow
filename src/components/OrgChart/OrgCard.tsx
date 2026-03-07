@@ -83,14 +83,14 @@ export default function OrgCard({
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
       className={`
-        flex flex-col items-center gap-1.5 rounded-xl border bg-card px-4 py-3 shadow-sm transition-all cursor-grab active:cursor-grabbing select-none
-        ${compact ? "px-3 py-2" : "px-4 py-3"}
+        flex flex-col items-center gap-1 rounded-lg border bg-card shadow-sm transition-all cursor-grab active:cursor-grabbing select-none
+        ${compact ? "px-2 py-1.5" : "px-3 py-2"}
         ${isDragged ? "opacity-40 scale-95" : ""}
         ${dragOver ? "ring-2 ring-primary bg-primary/5 scale-[1.02]" : "hover:shadow-md hover:border-primary/20"}
       `}
     >
-      <Avatar className={compact ? "h-8 w-8" : "h-10 w-10"}>
-        <AvatarFallback className={`text-xs font-semibold ${avatarColors}`}>
+      <Avatar className={compact ? "h-7 w-7" : "h-8 w-8"}>
+        <AvatarFallback className={`text-[10px] font-semibold ${avatarColors}`}>
           {getInitials(profile.full_name || "?")}
         </AvatarFallback>
       </Avatar>

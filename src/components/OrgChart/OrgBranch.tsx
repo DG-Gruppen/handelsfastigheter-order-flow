@@ -34,7 +34,7 @@ export default function OrgBranch({
       {children.length > 0 && (
         <>
           {/* Vertical line down from parent */}
-          <div className="w-px h-8 bg-border" />
+           <div className="w-px h-6 bg-border" />
 
           {children.length === 1 ? (
             /* Single child - just stack vertically */
@@ -51,11 +51,11 @@ export default function OrgBranch({
             <div className="flex flex-col items-center">
               {/* Horizontal connector bar spanning from first to last child center */}
               <div className="relative flex">
-                <div className="flex items-start gap-8">
+                <div className="flex items-start gap-4">
                   {children.map((child, i) => (
                     <div key={child.id} className="flex flex-col items-center relative">
                       {/* Vertical stub up to the horizontal bar */}
-                      <div className="w-px h-8 bg-border" />
+                      <div className="w-px h-6 bg-border" />
                       <OrgBranch
                         profile={child}
                         childrenMap={childrenMap}
