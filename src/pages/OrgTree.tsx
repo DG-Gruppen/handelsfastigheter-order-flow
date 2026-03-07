@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -296,21 +296,23 @@ export default function OrgTree() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto animate-fade-up">
-        <Card className="glass-card shadow-xl shadow-primary/[0.03]">
-          <CardHeader className="px-4 md:px-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <Building2 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="font-heading text-lg md:text-xl">Organisation</CardTitle>
-                <CardDescription className="text-sm">
-                  Dra och släpp personer för att ändra rapporteringsstruktur
-                </CardDescription>
-              </div>
+      <div className="animate-fade-up">
+        {/* Compact centered header */}
+        <div className="max-w-md mx-auto mb-4">
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <Building2 className="h-5 w-5 text-primary" />
             </div>
-          </CardHeader>
+            <div>
+              <h1 className="font-heading text-lg md:text-xl font-semibold text-foreground">Organisation</h1>
+              <p className="text-sm text-muted-foreground">
+                Dra och släpp för att ändra struktur
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Card className="glass-card shadow-xl shadow-primary/[0.03] max-w-3xl mx-auto">
           <CardContent className="px-4 md:px-6">
             {/* Drop zone for root level */}
             <div
