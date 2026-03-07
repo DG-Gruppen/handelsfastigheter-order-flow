@@ -201,7 +201,7 @@ export default function OrgTree() {
         </div>
 
         {/* Org chart - full width, scrollable */}
-        <div className="overflow-x-auto pb-8">
+        <div className="overflow-x-auto pb-8 flex justify-center">
           <div
             className="flex flex-col items-center gap-0 min-w-max px-8"
             style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
