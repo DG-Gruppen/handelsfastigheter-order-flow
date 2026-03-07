@@ -34,8 +34,9 @@ export default function OrgTree() {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only pan with middle mouse or when not dragging org cards
-    if (e.button === 1 || (e.button === 0 && !draggedId && (e.target as HTMLElement).closest('[data-canvas]'))) {
+    const target = e.target as HTMLElement;
+    if (target.closest('[draggable="true"]')) return;
+    if (e.button === 0 || e.button === 1) {
       e.preventDefault();
       setIsPanning(true);
       setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
