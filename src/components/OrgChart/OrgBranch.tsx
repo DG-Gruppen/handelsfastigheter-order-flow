@@ -34,7 +34,7 @@ export default function OrgBranch({
       {children.length > 0 && (
         <>
           {/* Vertical line down from parent */}
-          <div className="w-px h-8 bg-border" />
+           <div className="w-px h-6 bg-border" />
 
           {children.length === 1 ? (
             /* Single child - just stack vertically */
