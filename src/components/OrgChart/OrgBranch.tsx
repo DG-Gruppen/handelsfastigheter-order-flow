@@ -55,7 +55,7 @@ export default function OrgBranch({
                   {children.map((child, i) => (
                     <div key={child.id} className="flex flex-col items-center relative">
                       {/* Vertical stub up to the horizontal bar */}
-                      <div className="w-px h-8 bg-border" />
+                      <div className="w-px h-6 bg-border" />
                       <OrgBranch
                         profile={child}
                         childrenMap={childrenMap}

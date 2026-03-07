@@ -89,8 +89,8 @@ export default function OrgCard({
         ${dragOver ? "ring-2 ring-primary bg-primary/5 scale-[1.02]" : "hover:shadow-md hover:border-primary/20"}
       `}
     >
-      <Avatar className={compact ? "h-8 w-8" : "h-10 w-10"}>
-        <AvatarFallback className={`text-xs font-semibold ${avatarColors}`}>
+      <Avatar className={compact ? "h-7 w-7" : "h-8 w-8"}>
+        <AvatarFallback className={`text-[10px] font-semibold ${avatarColors}`}>
           {getInitials(profile.full_name || "?")}
         </AvatarFallback>
       </Avatar>
