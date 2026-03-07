@@ -53,35 +53,19 @@ export default function OrgTree() {
 
   const childrenMap = buildTree(profiles);
 
-  // Find the VD (top-level admin with no manager or manager not in profiles)
-  const vd = profiles.find(
-    (p) =>
-      roleMap[p.user_id] === "admin" &&
-      (!p.manager_id || !profiles.some((o) => o.id === p.manager_id))
-  );
-
-  // Direct reports to VD
-  const vdChildren = vd ? (childrenMap.get(vd.id) ?? []) : [];
-
-  // Split into intermediate managers (managers without subordinates = ledningsstöd)
-  // and department heads (managers with subordinates)
-  const intermediateManagers = vdChildren.filter((c) => {
-    const role = roleMap[c.user_id];
-    const hasReports = (childrenMap.get(c.id) ?? []).length > 0;
-    return (role === "manager" || role === "admin") && !hasReports;
-  });
-
-  const departmentHeads = vdChildren.filter(
-    (c) => !intermediateManagers.some((im) => im.id === c.id)
-  );
-
-  // Other roots (not under VD)
-  const otherRoots = profiles.filter(
-    (p) =>
-      p.id !== vd?.id &&
-      (!p.manager_id || !profiles.some((o) => o.id === p.manager_id)) &&
-      !vdChildren.some((vc) => vc.id === p.id)
-  );
+  // Find roots: profiles whose manager_id is null or points to a non-existent profile
+  const roots = profiles
+    .filter((p) => !p.manager_id || !profiles.some((o) => o.id === p.manager_id))
+    .sort((a, b) => {
+      // Admins first, then managers, then employees
+      const rolePriority = (uid: string) => {
+        const r = roleMap[uid];
+        return r === "admin" ? 0 : r === "manager" ? 1 : 2;
+      };
+      const diff = rolePriority(a.user_id) - rolePriority(b.user_id);
+      if (diff !== 0) return diff;
+      return (a.full_name || "").localeCompare(b.full_name || "");
+    });
 
   const handleDrop = useCallback(
     async (targetManagerId: string) => {
@@ -222,116 +206,17 @@ export default function OrgTree() {
             className="flex flex-col items-center gap-0 min-w-max px-8"
             style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
           >
-            {/* VD */}
-            {vd && (
-              <>
-                <OrgCard
-                  profile={vd}
-                  roleMap={roleMap}
-                  draggedId={draggedId}
-                  onDragStart={setDraggedId}
-                  onDrop={handleDrop}
-                />
-
-                {/* Connector down from VD */}
-                <div className="w-px h-8 bg-border" />
-
-                {/* Intermediate managers (Christel, Petra) */}
-                {intermediateManagers.length > 0 && (
-                  <>
-                    {intermediateManagers.length > 1 && (
-                      <div className="relative flex justify-center">
-                        <div
-                          className="absolute top-0 h-px bg-border"
-                          style={{
-                            width: `${(intermediateManagers.length - 1) * 140}px`,
-                          }}
-                        />
-                      </div>
-                    )}
-                    <div className="flex gap-4 justify-center">
-                      {intermediateManagers
-                        .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""))
-                        .map((p, i) => (
-                          <div key={p.id} className="flex flex-col items-center">
-                            {intermediateManagers.length > 1 && (
-                              <div className="w-px h-0 bg-border" />
-                            )}
-                            <OrgCard
-                              profile={p}
-                              roleMap={roleMap}
-                              draggedId={draggedId}
-                              onDragStart={setDraggedId}
-                              onDrop={handleDrop}
-                            />
-                          </div>
-                        ))}
-                    </div>
-
-                    {/* Connector down from intermediate to departments */}
-                    <div className="w-px h-8 bg-border" />
-                  </>
-                )}
-
-                {/* Department heads with their teams */}
-                {departmentHeads.length > 0 && (
-                  <>
-                    {/* Horizontal connector bar */}
-                    {departmentHeads.length > 1 && (
-                      <div className="relative w-full flex justify-center">
-                        <div className="flex gap-6">
-                          {departmentHeads.map((_, i) => (
-                            <div key={i} className="w-36" />
-                          ))}
-                        </div>
-                        <div
-                          className="absolute top-0 h-px bg-border"
-                          style={{
-                            left: `calc(50% - ${((departmentHeads.length - 1) * (144 + 24)) / 2}px)`,
-                            right: `calc(50% - ${((departmentHeads.length - 1) * (144 + 24)) / 2}px)`,
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex gap-6 items-start">
-                      {departmentHeads
-                        .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""))
-                        .map((head) => (
-                          <div key={head.id} className="flex flex-col items-center">
-                            <div className="w-px h-6 bg-border" />
-                            <OrgBranch
-                              profile={head}
-                              childrenMap={childrenMap}
-                              roleMap={roleMap}
-                              draggedId={draggedId}
-                              onDragStart={setDraggedId}
-                              onDrop={handleDrop}
-                            />
-                          </div>
-                        ))}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Other root-level people not under VD */}
-            {otherRoots.length > 0 && (
-              <div className="flex gap-4 mt-8">
-                {otherRoots.map((p) => (
-                  <OrgBranch
-                    key={p.id}
-                    profile={p}
-                    childrenMap={childrenMap}
-                    roleMap={roleMap}
-                    draggedId={draggedId}
-                    onDragStart={setDraggedId}
-                    onDrop={handleDrop}
-                  />
-                ))}
-              </div>
-            )}
+            {roots.map((root) => (
+              <OrgBranch
+                key={root.id}
+                profile={root}
+                childrenMap={childrenMap}
+                roleMap={roleMap}
+                draggedId={draggedId}
+                onDragStart={setDraggedId}
+                onDrop={handleDrop}
+              />
+            ))}
 
             {profiles.length === 0 && (
               <p className="text-center text-muted-foreground py-8">Inga profiler hittades</p>
