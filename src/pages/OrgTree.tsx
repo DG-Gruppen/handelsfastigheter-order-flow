@@ -214,7 +214,7 @@ export default function OrgTree() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setZoom(0.7)}
+              onClick={resetView}
               className="h-8 w-8 p-0"
             >
               <RotateCcw className="h-3.5 w-3.5" />
