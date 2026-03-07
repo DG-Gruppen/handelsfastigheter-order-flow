@@ -51,7 +51,7 @@ export default function OrgBranch({
             <div className="flex flex-col items-center">
               {/* Horizontal connector bar spanning from first to last child center */}
               <div className="relative flex">
-                <div className="flex items-start gap-8">
+                <div className="flex items-start gap-4">
                   {children.map((child, i) => (
                     <div key={child.id} className="flex flex-col items-center relative">
                       {/* Vertical stub up to the horizontal bar */}
