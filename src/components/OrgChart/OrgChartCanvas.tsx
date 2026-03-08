@@ -421,7 +421,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
         {node.avatar}
       </text>
 
-      {/* Position / title */}
+      {/* Name */}
       <text
         x={x + (node.type === "root" ? 48 : 44)}
         y={y + h / 2 - (node.dept ? 7 : 0)}
@@ -430,18 +430,18 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
         fill="hsl(225, 12%, 93%)"
         fontFamily="var(--font-heading)"
       >
-        {node.position}
+        {node.name}
       </text>
 
-      {/* Name */}
+      {/* Position / title */}
       <text
         x={x + (node.type === "root" ? 48 : 44)}
         y={y + h / 2 + 7}
-        fontSize={node.type === "root" ? 11 : 9}
+        fontSize={node.type === "root" ? 10 : 8}
         fill="hsl(225, 12%, 52%)"
         fontFamily="var(--font-body)"
       >
-        {node.name}
+        {node.position}
       </text>
 
       {/* Dept label */}
