@@ -17,7 +17,7 @@ interface OrgProfile {
 
 interface RoleMap { [userId: string]: string; }
 
-const MANAGER_COLORS: ColorKey[] = ["accent", "warning", "glow"];
+const MANAGER_COLORS: ColorKey[] = ["blue", "emerald", "amber"];
 
 function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -53,13 +53,13 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null 
     let color: ColorKey;
 
     if (type === "root") {
-      color = "primary";
+      color = "cyan";
     } else if (type === "staff") {
-      color = "staff";
+      color = "violet";
     } else if (role === "admin" || role === "manager") {
       color = MANAGER_COLORS[colorIdx++ % MANAGER_COLORS.length];
     } else {
-      color = "muted";
+      color = "slate";
     }
 
     const posLabel = role === "admin" ? "VD / Admin" : role === "manager" ? "Chef" : "Anställd";

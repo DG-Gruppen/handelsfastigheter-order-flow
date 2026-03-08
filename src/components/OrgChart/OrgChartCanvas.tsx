@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 // ─── Types ──────────────────────────────────────────────────
-export type ColorKey = "primary" | "accent" | "warning" | "glow" | "muted" | "staff";
+export type ColorKey = "cyan" | "blue" | "emerald" | "amber" | "slate" | "violet";
 export type NodeType = "root" | "staff" | "line";
 
 export interface OrgNode {
@@ -30,42 +30,16 @@ const GAP_V = 110;
 const STAFF_GAP_V = 130;
 const LINE_AFTER_STAFF = 130;
 
-// ─── Design-system derived palette ──────────────────────────
-// Colors derived from index.css: --primary(230,75%,55%), --accent(165,55%,42%),
-// --warning(38,92%,50%), --primary-glow(250,80%,65%), --muted-foreground(225,12%,48%)
+// ─── Color palette (matching original Claude artifact) ──────
 interface ColorSet { a: string; b: string; t: string; g: string; r: string; n: string; }
 
 const C: Record<ColorKey, ColorSet> = {
-  // Root/VD — from --primary (230 75% 55%)
-  primary: {
-    a: "#3b6cf5", b: "#0c1428", t: "#6d94f8",
-    g: "rgba(59,108,245,0.18)", r: "rgba(59,108,245,0.45)", n: "#5580e8",
-  },
-  // Manager — from --accent (165 55% 42%)
-  accent: {
-    a: "#30a882", b: "#061e16", t: "#5ec9a4",
-    g: "rgba(48,168,130,0.16)", r: "rgba(48,168,130,0.42)", n: "#45b08e",
-  },
-  // Manager — from --warning (38 92% 50%)
-  warning: {
-    a: "#f0a020", b: "#281a03", t: "#f5c050",
-    g: "rgba(240,160,32,0.16)", r: "rgba(240,160,32,0.42)", n: "#d4a040",
-  },
-  // Manager — from --primary-glow (250 80% 65%)
-  glow: {
-    a: "#7c5dfa", b: "#120c2e", t: "#a088fd",
-    g: "rgba(124,93,250,0.16)", r: "rgba(124,93,250,0.42)", n: "#8a70f0",
-  },
-  // Employee — from --muted-foreground (225 12% 48%)
-  muted: {
-    a: "#6b7a8d", b: "#0d1420", t: "#6b7a8d",
-    g: "rgba(107,122,141,0.10)", r: "rgba(107,122,141,0.28)", n: "#4d6078",
-  },
-  // Staff — lighter variant of primary-glow
-  staff: {
-    a: "#a088fd", b: "#16103a", t: "#c0b0fe",
-    g: "rgba(160,136,253,0.16)", r: "rgba(160,136,253,0.42)", n: "#b09af5",
-  },
+  cyan:    { a:"#22d3ee", b:"#0d3d4a", t:"#67e8f9", g:"rgba(34,211,238,0.18)",  r:"rgba(34,211,238,0.45)", n:"#8dd8e8" },
+  blue:    { a:"#60a5fa", b:"#122040", t:"#93c5fd", g:"rgba(96,165,250,0.16)",  r:"rgba(96,165,250,0.42)",  n:"#9dbff7" },
+  emerald: { a:"#34d399", b:"#053325", t:"#6ee7b7", g:"rgba(52,211,153,0.16)",  r:"rgba(52,211,153,0.42)",  n:"#7ddcb5" },
+  amber:   { a:"#fbbf24", b:"#3b1e02", t:"#fcd34d", g:"rgba(251,191,36,0.16)",  r:"rgba(251,191,36,0.42)",  n:"#f5d070" },
+  slate:   { a:"#8899b0", b:"#101a28", t:"#8899b0", g:"rgba(136,153,176,0.10)", r:"rgba(136,153,176,0.28)", n:"#5d718a" },
+  violet:  { a:"#a78bfa", b:"#1e0c40", t:"#c4b5fd", g:"rgba(167,139,250,0.16)", r:"rgba(167,139,250,0.42)", n:"#baa7f8" },
 };
 
 // ─── Tree utilities ─────────────────────────────────────────
@@ -103,7 +77,7 @@ function countDesc(node: OrgNode): number {
 function cardDims(node: OrgNode) {
   if (node.type === "root") return RC;
   if (node.type === "staff") return SC;
-  if (node.color === "muted") return EC;
+  if (node.color === "slate") return EC;
   return LC;
 }
 
@@ -228,7 +202,7 @@ function SvgCard({ node, pos, dragging, isDrop, onMD }: {
         {node.name.length > 23 ? node.name.slice(0, 22) + "…" : node.name}
       </text>
       {/* Department badge (not for employees) */}
-      {node.color !== "muted" && node.dept && (
+      {node.color !== "slate" && node.dept && (
         <g opacity={isStaff ? 0.7 : 0.9}>
           <rect x={x + w - (isRoot ? 46 : 40)} y={y + h / 2 - 9} width={isRoot ? 38 : 33} height={18} rx={9}
             fill={col.b} stroke={col.r} strokeWidth={1} strokeOpacity={0.55} />
@@ -242,7 +216,7 @@ function SvgCard({ node, pos, dragging, isDrop, onMD }: {
       {isStaff && (
         <g>
           <rect x={x + w / 2 - 14} y={y - 10} width={28} height={13} rx={4}
-            fill="#0e0a24" stroke={col.r} strokeWidth={1} strokeOpacity={0.55} />
+            fill="#14082a" stroke={col.r} strokeWidth={1} strokeOpacity={0.55} />
           <text x={x + w / 2} y={y - 3.5} textAnchor="middle" dominantBaseline="central"
             fontFamily="'DM Sans',sans-serif" fontWeight="700" fontSize={6.5} fill={col.a} letterSpacing="0.14em">
             STAB
@@ -336,18 +310,18 @@ function Connectors({ tree, positions, collapsed }: {
       {segs.map((s, i) => {
         if (s.type === "sh" || s.type === "sd") return (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke={C.staff.r} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="5 4" />
+      stroke="rgba(167,139,250,0.45)" strokeWidth={1.5} strokeLinecap="round" strokeDasharray="5 4" />
         );
         return (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke="rgba(59,108,245,0.20)" strokeWidth={1.5} strokeLinecap="round" />
+            stroke="rgba(255,255,255,0.16)" strokeWidth={1.5} strokeLinecap="round" />
         );
       })}
       {segs.filter(s => s.type === "ld").map((s, i) => (
-        <circle key={`jd-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill="rgba(59,108,245,0.25)" />
+        <circle key={`jd-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill="rgba(255,255,255,0.2)" />
       ))}
       {segs.filter(s => s.type === "sd").map((s, i) => (
-        <circle key={`js-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill={C.staff.r} />
+        <circle key={`js-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill="rgba(167,139,250,0.4)" />
       ))}
     </g>
   );
@@ -396,10 +370,10 @@ function Toolbar({ onExpAll, onCollAll, total }: {
     return (
       <button onClick={fn} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
         style={{
-          background: h ? "rgba(59,108,245,0.10)" : "transparent",
-          border: `1px solid ${h ? "rgba(59,108,245,0.25)" : "rgba(255,255,255,0.06)"}`,
+          background: h ? "rgba(255,255,255,0.07)" : "transparent",
+          border: `1px solid ${h ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)"}`,
           borderRadius: 8, padding: "4px 13px", cursor: "pointer",
-          color: h ? "#6d94f8" : "#4a6080",
+          color: h ? "#8da0b8" : "#2e4060",
           fontSize: 11, fontFamily: "'DM Sans',sans-serif", fontWeight: 500,
           transition: "all 0.14s", outline: "none",
         }}>
@@ -408,19 +382,19 @@ function Toolbar({ onExpAll, onCollAll, total }: {
     );
   };
   const legs: { c: ColorKey; l: string; d: boolean }[] = [
-    { c: "primary", l: "Ledning", d: false },
-    { c: "staff", l: "Stab", d: true },
-    { c: "accent", l: "Chef", d: false },
-    { c: "muted", l: "Anställd", d: false },
+    { c: "cyan", l: "Ledning", d: false },
+    { c: "violet", l: "Stab", d: true },
+    { c: "blue", l: "Linjechef", d: false },
+    { c: "slate", l: "Anställd", d: false },
   ];
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 12,
-      background: "rgba(8,14,26,0.92)", backdropFilter: "blur(14px)",
+      background: "rgba(4,9,20,0.92)", backdropFilter: "blur(14px)",
       border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12,
       padding: "6px 16px", boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
     }}>
-      <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10.5, color: "#4a6080", fontWeight: 600 }}>
+      <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10.5, color: "#162030", fontWeight: 600 }}>
         {total} noder
       </span>
       <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.06)" }} />
@@ -435,7 +409,7 @@ function Toolbar({ onExpAll, onCollAll, total }: {
             border: d ? `1.5px dashed ${C[c].a}` : "none",
             boxShadow: d ? "none" : `0 0 5px ${C[c].a}77`,
           }} />
-          <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "#4a6080", fontWeight: 500 }}>{l}</span>
+          <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "#1a2d44", fontWeight: 500 }}>{l}</span>
         </div>
       ))}
     </div>
@@ -452,11 +426,11 @@ function ZoomControls({ zoom, onIn, onOut, onReset, onFit }: {
       <button onClick={fn} title={title} disabled={off}
         onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
         style={{
-          background: h && !off ? "rgba(59,108,245,0.10)" : "transparent",
+          background: h && !off ? "rgba(255,255,255,0.08)" : "transparent",
           border: "none", borderRadius: 8, width: 32, height: 32,
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: off ? "default" : "pointer",
-          color: off ? "#152030" : h ? "#6d94f8" : "#3a5070",
+          color: off ? "#152030" : h ? "#7a96b5" : "#3a5070",
           fontSize: 15, outline: "none", transition: "all 0.13s",
         }}>
         {ch}
@@ -467,13 +441,13 @@ function ZoomControls({ zoom, onIn, onOut, onReset, onFit }: {
     <div style={{
       position: "absolute", bottom: 20, right: 20, zIndex: 300,
       display: "flex", flexDirection: "column", gap: 1, alignItems: "center",
-      background: "rgba(8,14,26,0.94)", backdropFilter: "blur(14px)",
+      background: "rgba(3,8,18,0.94)", backdropFilter: "blur(14px)",
       border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 5,
       boxShadow: "0 8px 30px rgba(0,0,0,0.65)",
     }}>
       <BtnZ ch="＋" fn={onIn} title="Zooma in" off={zoom >= 2.0} />
       <div style={{
-        fontFamily: "'DM Sans',sans-serif", fontSize: 9, color: "#3a5070", fontWeight: 600,
+        fontFamily: "'DM Sans',sans-serif", fontSize: 9, color: "#1a2d44", fontWeight: 600,
         letterSpacing: "0.06em", padding: "2px 0", textAlign: "center",
       }}>{Math.round(zoom * 100)}%</div>
       <BtnZ ch="－" fn={onOut} title="Zooma ut" off={zoom <= 0.2} />
@@ -664,7 +638,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
     const { x: sx, y: sy } = screenToSvg(drag.curX, drag.curY);
     const tx = p.x + p.w / 2, ty = p.y + p.h, midY = ty + (sy - ty) / 2;
     const dropNode = findNode(tree, drop);
-    return { d: `M${tx},${ty}L${tx},${midY}L${sx},${midY}L${sx},${sy}`, accent: C[dropNode?.color ?? "primary"].a };
+    return { d: `M${tx},${ty}L${tx},${midY}L${sx},${midY}L${sx},${sy}`, accent: C[dropNode?.color ?? "cyan"].a };
   }, [drag, drop, positions, screenToSvg, tree]);
 
   const dragNode = drag ? findNode(tree, drag.id) : null;
@@ -673,22 +647,22 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
   return (
     <div style={{
       width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative",
-      background: "#0c1220",
-      backgroundImage: `radial-gradient(ellipse 90% 55% at 50% -8%,rgba(59,108,245,0.08) 0%,transparent 62%),
-        radial-gradient(ellipse 55% 45% at 92% 92%,rgba(124,93,250,0.05) 0%,transparent 55%),
-        radial-gradient(ellipse 40% 35% at 8% 80%,rgba(48,168,130,0.03) 0%,transparent 50%)`,
+      background: "#040a17",
+      backgroundImage: `radial-gradient(ellipse 90% 55% at 50% -8%,rgba(34,211,238,0.07) 0%,transparent 62%),
+        radial-gradient(ellipse 55% 45% at 92% 92%,rgba(167,139,250,0.045) 0%,transparent 55%),
+        radial-gradient(ellipse 40% 35% at 8% 80%,rgba(96,165,250,0.025) 0%,transparent 50%)`,
       fontFamily: "'DM Sans',sans-serif", overflow: "hidden", borderRadius: 12,
     }}>
       {/* Header */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "10px 22px", borderBottom: "1px solid rgba(255,255,255,0.045)",
-        background: "rgba(8,14,26,0.94)", backdropFilter: "blur(14px)", zIndex: 100,
+        background: "rgba(3,8,18,0.94)", backdropFilter: "blur(14px)", zIndex: 100,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
-            width: 7, height: 7, borderRadius: "50%", background: C.primary.a,
-            boxShadow: `0 0 12px ${C.primary.a}88,0 0 24px ${C.primary.a}33`,
+            width: 7, height: 7, borderRadius: "50%", background: C.cyan.a,
+            boxShadow: `0 0 12px ${C.cyan.a}88,0 0 24px ${C.cyan.a}33`,
           }} />
           <span style={{
             fontFamily: "'Space Grotesk',sans-serif", fontWeight: 800, fontSize: 14.5,
@@ -703,7 +677,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
         style={{ flex: 1, position: "relative", overflow: "hidden", cursor: drag ? "grabbing" : "grab" }}>
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-          backgroundImage: "radial-gradient(circle, rgba(59,108,245,0.04) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.038) 1px, transparent 1px)",
           backgroundSize: `${26 * zoom}px ${26 * zoom}px`,
           backgroundPosition: `${pan.x % (26 * zoom)}px ${pan.y % (26 * zoom)}px`,
         }} />
