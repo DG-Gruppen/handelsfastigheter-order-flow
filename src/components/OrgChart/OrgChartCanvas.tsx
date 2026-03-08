@@ -216,7 +216,7 @@ function SvgCard({ node, pos, dragging, isDrop, onMD }: {
       {isStaff && (
         <g>
           <rect x={x + w / 2 - 14} y={y - 10} width={28} height={13} rx={4}
-            fill="#0e0a24" stroke={col.r} strokeWidth={1} strokeOpacity={0.55} />
+            fill="#14082a" stroke={col.r} strokeWidth={1} strokeOpacity={0.55} />
           <text x={x + w / 2} y={y - 3.5} textAnchor="middle" dominantBaseline="central"
             fontFamily="'DM Sans',sans-serif" fontWeight="700" fontSize={6.5} fill={col.a} letterSpacing="0.14em">
             STAB
