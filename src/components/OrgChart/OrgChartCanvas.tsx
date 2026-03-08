@@ -390,7 +390,7 @@ function Toolbar({ onExpAll, onCollAll, total }: {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 12,
-      background: "rgba(8,14,26,0.92)", backdropFilter: "blur(14px)",
+      background: "rgba(4,9,20,0.92)", backdropFilter: "blur(14px)",
       border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12,
       padding: "6px 16px", boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
     }}>
