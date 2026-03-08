@@ -728,6 +728,7 @@ function DragGhost({ node, x, y, palette, isDark }: { node: OrgNode; x: number; 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 interface OrgChartCanvasProps {
   initialTree: OrgNode;
+  unassignedNodes?: OrgNode[];
   onMoveNode?: (movedNodeId: string, newParentId: string, action: DropAction) => void;
   onKebabClick?: (nodeId: string, screenX: number, screenY: number) => void;
   onSettingsClick?: () => void;
