@@ -109,6 +109,18 @@ export default function OrgTree() {
   useEffect(() => {
     if (!isAdmin) { navigate("/dashboard"); return; }
     fetchData();
+
+    // Subscribe to realtime changes on profiles for live updates
+    const channel = supabase
+      .channel('org-profiles')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => { fetchData(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [isAdmin]);
 
   const fetchData = async () => {
