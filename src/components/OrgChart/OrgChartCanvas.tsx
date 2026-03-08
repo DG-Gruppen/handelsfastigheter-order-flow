@@ -1114,9 +1114,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
                   isDropTarget={dropTarget === id}
                   onMouseDown={(e) => onCardMouseDown(e, id)}
                   onKebabClick={onKebabClick ? (e) => {
-                    const rect = (e.target as SVGElement).closest("svg")?.getBoundingClientRect();
                     onKebabClick(id, e.clientX, e.clientY);
                   } : undefined}
+                  palette={palette}
+                  isDark={isDark}
                 />
               );
             })}
