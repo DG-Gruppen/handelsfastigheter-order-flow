@@ -120,7 +120,6 @@ function swapNodes(tree: OrgNode, idA: string, idB: string): OrgNode {
 }
 
 function placeAbove(tree: OrgNode, movedId: string, targetId: string): OrgNode {
-  // Move movedId to take targetId's parent position, targetId becomes child of movedId
   const cl = deepClone(tree);
   const [without, removed] = removeNode(cl, movedId);
   if (!removed || !without) return tree;
@@ -135,8 +134,7 @@ function placeAbove(tree: OrgNode, movedId: string, targetId: string): OrgNode {
   removed.children.push(target);
   targetParent.children[idx] = removed;
 
-  return without; // removed is now in the tree via targetParent
-  // Actually we need to return the modified tree properly
+  return without;
 }
 
 function collectIds(node: OrgNode, set = new Set<string>()): Set<string> {
