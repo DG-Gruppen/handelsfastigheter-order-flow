@@ -19,7 +19,7 @@ const navItems = [
   { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
   { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
   { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
-  { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[] },
+  
   { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[] },
 ];
 
