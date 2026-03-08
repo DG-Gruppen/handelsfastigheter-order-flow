@@ -555,7 +555,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
             y={y + h / 2 - (node.dept ? 7 : 0)}
             fontSize={fontSize}
             fontWeight="700"
-            fill="hsl(225, 12%, 93%)"
+            fill={palette.nameText}
             fontFamily="var(--font-heading)"
           >
             {node.name}
