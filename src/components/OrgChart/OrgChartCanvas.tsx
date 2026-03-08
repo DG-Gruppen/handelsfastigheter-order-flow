@@ -535,7 +535,11 @@ export default function OrgChartCanvas({ initialTree, onMove }: OrgChartCanvasPr
   useEffect(() => { setTimeout(centerLayout, 50); }, []);
 
   const toggle = useCallback((id: string) => {
-    setColl(p => { const s = new Set(p); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setColl(p => {
+      const s = new Set(p);
+      if (s.has(id)) { s.delete(id); } else { s.add(id); }
+      return s;
+    });
   }, []);
 
   const expandAll = useCallback(() => setColl(new Set()), []);
