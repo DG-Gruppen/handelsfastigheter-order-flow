@@ -464,15 +464,15 @@ function CollapseButton({ pos, collapsed, count, onClick, palette }: {
     <g style={{ cursor: "pointer" }} onClick={e => { e.stopPropagation(); onClick(); }}>
       <rect
         x={bx - bw / 2} y={by - bh / 2} width={bw} height={bh} rx={bh / 2}
-        fill="hsl(230, 25%, 11%)"
-        stroke="hsl(230, 22%, 24%)"
+        fill={palette.collapseBg}
+        stroke={palette.collapseBord}
         strokeWidth={1}
       />
       <text
         x={bx} y={by + 0.5}
         textAnchor="middle" dominantBaseline="central"
         fontSize={collapsed ? 8 : 11}
-        fill="hsl(225, 12%, 52%)"
+        fill={palette.collapseText}
         fontFamily="var(--font-body)"
         fontWeight="600"
       >
