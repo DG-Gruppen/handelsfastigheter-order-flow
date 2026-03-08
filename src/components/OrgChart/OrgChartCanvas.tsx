@@ -645,7 +645,7 @@ function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 interface OrgChartCanvasProps {
   initialTree: OrgNode;
-  onMoveNode?: (movedNodeId: string, newParentId: string) => void;
+  onMoveNode?: (movedNodeId: string, newParentId: string, action: DropAction) => void;
 }
 
 export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanvasProps) {
@@ -653,6 +653,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
   const [collapsed, setCollapsed]   = useState(new Set<string>());
   const [drag, setDrag]             = useState<{ id: string; curX: number; curY: number } | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [dropMenu, setDropMenu]     = useState<DropMenuState | null>(null);
   const [zoom, setZoom]             = useState(1);
   const [pan, setPan]               = useState({ x: 0, y: 0 });
 
