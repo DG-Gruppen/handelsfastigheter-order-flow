@@ -798,9 +798,9 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
 
   const ghostIds = useMemo(() => {
     if (!drag) return new Set<string>();
-    const n = findNode(tree, drag.id);
+    const n = findNode(tree, drag.id) || unassignedNodes.find(u => u.id === drag.id);
     return n ? collectIds(n, new Set()) : new Set<string>();
-  }, [drag, tree]);
+  }, [drag, tree, unassignedNodes]);
 
   // ── Center on mount ──
   useEffect(() => {
