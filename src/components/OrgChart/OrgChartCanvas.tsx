@@ -447,7 +447,7 @@ function ZoomControls({ zoom, onIn, onOut, onReset, onFit }: {
     }}>
       <BtnZ ch="＋" fn={onIn} title="Zooma in" off={zoom >= 2.0} />
       <div style={{
-        fontFamily: "'DM Sans',sans-serif", fontSize: 9, color: "#3a5070", fontWeight: 600,
+        fontFamily: "'DM Sans',sans-serif", fontSize: 9, color: "#1a2d44", fontWeight: 600,
         letterSpacing: "0.06em", padding: "2px 0", textAlign: "center",
       }}>{Math.round(zoom * 100)}%</div>
       <BtnZ ch="－" fn={onOut} title="Zooma ut" off={zoom <= 0.2} />
