@@ -426,11 +426,11 @@ function ZoomControls({ zoom, onIn, onOut, onReset, onFit }: {
       <button onClick={fn} title={title} disabled={off}
         onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
         style={{
-          background: h && !off ? "rgba(59,108,245,0.10)" : "transparent",
+          background: h && !off ? "rgba(255,255,255,0.08)" : "transparent",
           border: "none", borderRadius: 8, width: 32, height: 32,
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: off ? "default" : "pointer",
-          color: off ? "#152030" : h ? "#6d94f8" : "#3a5070",
+          color: off ? "#152030" : h ? "#7a96b5" : "#3a5070",
           fontSize: 15, outline: "none", transition: "all 0.13s",
         }}>
         {ch}
