@@ -547,13 +547,13 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
           onMouseDown={(e) => e.stopPropagation()}
         >
           <rect
-            x={x + w - 16} y={y + 4} width={14} height={14} rx={4}
+            x={x + w - 22} y={y + 4} width={20} height={14} rx={4}
             fill="transparent"
             className="hover:fill-[hsl(230,22%,20%)]"
           />
-          <circle cx={x + w - 9} cy={y + 8} r={1.2} fill="hsl(225, 12%, 52%)" />
-          <circle cx={x + w - 9} cy={y + 11} r={1.2} fill="hsl(225, 12%, 52%)" />
-          <circle cx={x + w - 9} cy={y + 14} r={1.2} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 17} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 12} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 7} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
         </g>
       )}
 
