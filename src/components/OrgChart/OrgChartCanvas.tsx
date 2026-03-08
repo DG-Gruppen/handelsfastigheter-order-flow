@@ -695,10 +695,10 @@ function DropActionMenu({ menu, tree, onAction, onClose }: {
   );
 }
 
-function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
+function DragGhost({ node, x, y, palette, isDark }: { node: OrgNode; x: number; y: number; palette: ReturnType<typeof useOrgPalette>; isDark: boolean }) {
   if (!node) return null;
   const { W, H } = cardDims(node);
-  const c = getColors(node.color);
+  const c = getColors(node.color, isDark);
   return (
     <div style={{
       position: "fixed", left: x, top: y, pointerEvents: "none", zIndex: 9999,
@@ -706,18 +706,18 @@ function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
     }}>
       <div style={{
         width: W, height: H, borderRadius: 10,
-        background: "hsl(230, 25%, 14%)",
+        background: palette.ghostBg,
         border: `1.5px solid ${c.bg}`,
         display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
         opacity: 0.9,
-        boxShadow: `0 8px 32px hsla(230, 75%, 55%, 0.3)`,
+        boxShadow: `0 8px 32px ${palette.ghostShadow}`,
       }}>
         <span style={{
-          fontWeight: 700, color: "hsl(225, 12%, 93%)", fontSize: 12,
+          fontWeight: 700, color: palette.nameText, fontSize: 12,
           fontFamily: "var(--font-heading)",
         }}>{node.position}</span>
         <span style={{
-          color: "hsl(225, 12%, 52%)", fontSize: 10,
+          color: palette.posText, fontSize: 10,
           fontFamily: "var(--font-body)",
         }}>{node.name}</span>
       </div>
