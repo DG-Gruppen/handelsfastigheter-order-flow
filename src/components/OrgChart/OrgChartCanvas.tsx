@@ -202,7 +202,7 @@ function SvgCard({ node, pos, dragging, isDrop, onMD }: {
         {node.name.length > 23 ? node.name.slice(0, 22) + "…" : node.name}
       </text>
       {/* Department badge (not for employees) */}
-      {node.color !== "muted" && node.dept && (
+      {node.color !== "slate" && node.dept && (
         <g opacity={isStaff ? 0.7 : 0.9}>
           <rect x={x + w - (isRoot ? 46 : 40)} y={y + h / 2 - 9} width={isRoot ? 38 : 33} height={18} rx={9}
             fill={col.b} stroke={col.r} strokeWidth={1} strokeOpacity={0.55} />
