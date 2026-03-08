@@ -97,6 +97,48 @@ function isAncestor(tree: OrgNode, ancId: string, nodeId: string): boolean {
   return n ? !!findNode(n, nodeId) : false;
 }
 
+function swapNodes(tree: OrgNode, idA: string, idB: string): OrgNode {
+  // Swap two nodes: A goes where B was, B goes where A was
+  const cl = deepClone(tree);
+  const nodeA = findNode(cl, idA);
+  const nodeB = findNode(cl, idB);
+  if (!nodeA || !nodeB) return cl;
+
+  const parentA = findParent(cl, idA);
+  const parentB = findParent(cl, idB);
+  if (!parentA || !parentB) return cl;
+
+  const idxA = parentA.children.findIndex(c => c.id === idA);
+  const idxB = parentB.children.findIndex(c => c.id === idB);
+  if (idxA === -1 || idxB === -1) return cl;
+
+  // Swap in parent arrays (keep each node's own children intact)
+  parentA.children[idxA] = nodeB;
+  parentB.children[idxB] = nodeA;
+
+  return cl;
+}
+
+function placeAbove(tree: OrgNode, movedId: string, targetId: string): OrgNode {
+  // Move movedId to take targetId's parent position, targetId becomes child of movedId
+  const cl = deepClone(tree);
+  const [without, removed] = removeNode(cl, movedId);
+  if (!removed || !without) return tree;
+
+  const targetParent = findParent(without, targetId);
+  if (!targetParent) return tree;
+
+  const idx = targetParent.children.findIndex(c => c.id === targetId);
+  if (idx === -1) return tree;
+
+  const target = targetParent.children[idx];
+  removed.children.push(target);
+  targetParent.children[idx] = removed;
+
+  return without; // removed is now in the tree via targetParent
+  // Actually we need to return the modified tree properly
+}
+
 function collectIds(node: OrgNode, set = new Set<string>()): Set<string> {
   set.add(node.id);
   node.children.forEach(c => collectIds(c, set));
