@@ -1016,6 +1016,15 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
 
       {/* Drag ghost */}
       {drag && dragNode && <DragGhost node={dragNode} x={drag.curX} y={drag.curY} />}
-    </>
+
+      {/* Drop action menu */}
+      {dropMenu && (
+        <DropActionMenu
+          menu={dropMenu}
+          tree={tree}
+          onAction={handleDropAction}
+          onClose={() => setDropMenu(null)}
+        />
+      )}
   );
 }
