@@ -324,20 +324,30 @@ function Connectors({ tree, positions, collapsed }: {
 
   return (
     <g>
-      {segments.map((s, i) => {
-        const isStaff = s.type === "sh" || s.type === "sd";
-        return (
-          <line
-            key={i}
-            x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke={isStaff ? "hsl(250, 80%, 65%)" : "hsl(225, 12%, 48%)"}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeDasharray={isStaff ? "5 4" : undefined}
-            opacity={0.6}
-          />
-        );
-      })}
+      {/* Draw dashed (staff) lines first */}
+      {segments.filter(s => s.type === "sh" || s.type === "sd").map((s, i) => (
+        <line
+          key={`staff-${i}`}
+          x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+          stroke="hsl(250, 80%, 65%)"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeDasharray="5 4"
+          opacity={0.6}
+        />
+      ))}
+      {/* Draw solid lines on top so they're always visible */}
+      {segments.filter(s => s.type !== "sh" && s.type !== "sd").map((s, i) => (
+        <line
+          key={`solid-${i}`}
+          x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+          stroke="hsl(225, 12%, 48%)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          opacity={0.7}
+        />
+      ))}
+      {/* Junction dots */}
       {segments.filter(s => s.type === "ld" || s.type === "sd").map((s, i) => (
         <circle
           key={`dot-${i}`}
