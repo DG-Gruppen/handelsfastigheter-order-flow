@@ -656,7 +656,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [findDrop, onMove]);
+  }, [findDrop, onMoveNode]);
 
   const snapLine = useMemo(() => {
     if (!drag || !drop) return null;
