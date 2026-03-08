@@ -479,7 +479,7 @@ interface OrgChartCanvasProps {
   onMoveNode: (movedNodeId: string, newParentId: string) => void;
 }
 
-export default function OrgChartCanvas({ initialTree, onMove }: OrgChartCanvasProps) {
+export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanvasProps) {
   const [tree, setTree] = useState(initialTree);
   const [coll, setColl] = useState<Set<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
