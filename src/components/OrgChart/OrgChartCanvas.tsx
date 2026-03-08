@@ -1057,9 +1057,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
       >
         {/* Dot grid background */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0"
           style={{
-            backgroundImage: "radial-gradient(circle, hsl(225, 12%, 52%) 1px, transparent 1px)",
+            opacity: palette.dotOpacity,
+            backgroundImage: `radial-gradient(circle, ${palette.dotGrid} 1px, transparent 1px)`,
             backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
             backgroundPosition: `${pan.x % (20 * zoom)}px ${pan.y % (20 * zoom)}px`,
           }}
