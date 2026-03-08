@@ -489,17 +489,29 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
         {node.avatar}
       </text>
 
-      {/* Name */}
-      <text
-        x={x + (node.type === "root" ? 48 : 44)}
-        y={y + h / 2 - (node.dept ? 7 : 0)}
-        fontSize={node.type === "root" ? 13 : 11}
-        fontWeight="700"
-        fill="hsl(225, 12%, 93%)"
-        fontFamily="var(--font-heading)"
-      >
-        {node.name}
-      </text>
+      {/* Name — auto-shrink if too long */}
+      {(() => {
+        const baseFontSize = node.type === "root" ? 13 : 11;
+        const textStartX = node.type === "root" ? 48 : 44;
+        const availableWidth = w - textStartX - (node.dept && node.type !== "staff" ? 40 : 8);
+        const approxCharWidth = baseFontSize * 0.6;
+        const nameWidth = node.name.length * approxCharWidth;
+        const fontSize = nameWidth > availableWidth
+          ? Math.max(7, baseFontSize * (availableWidth / nameWidth))
+          : baseFontSize;
+        return (
+          <text
+            x={x + textStartX}
+            y={y + h / 2 - (node.dept ? 7 : 0)}
+            fontSize={fontSize}
+            fontWeight="700"
+            fill="hsl(225, 12%, 93%)"
+            fontFamily="var(--font-heading)"
+          >
+            {node.name}
+          </text>
+        );
+      })()}
 
       {/* Position / title */}
       <text
