@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2 } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ const navItems = [
   { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
   { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
   { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
-  { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[] },
+  
   { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[] },
 ];
 
@@ -126,7 +126,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main content */}
-      <main className={`mx-auto px-4 py-5 md:py-8 ${location.pathname === "/org" ? "" : "max-w-6xl"}`}>{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-5 md:py-8">{children}</main>
 
       {/* Mobile bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t glass-nav safe-bottom">
