@@ -765,7 +765,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
 
   // ── Pan ──
   const onViewportMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.target === vpRef.current)) {
+    // Allow panning with middle mouse or left-click on any non-interactive element
+    const target = e.target as HTMLElement | SVGElement;
+    const isCard = target.closest("[data-org-card]");
+    if (e.button === 1 || (e.button === 0 && !isCard)) {
       e.preventDefault();
       panRef.current = {
         panning: true,
