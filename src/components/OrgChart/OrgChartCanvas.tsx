@@ -960,7 +960,7 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
     return { sx, sy, tx, ty };
   }, [drag, dropTarget, positions]);
 
-  const dragNode = drag ? findNode(tree, drag.id) : null;
+  const dragNode = drag ? (findNode(tree, drag.id) || unassignedNodes.find(n => n.id === drag.id)) : null;
 
   // ── Fit to view ──
   const fitToView = useCallback(() => {
