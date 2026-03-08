@@ -1026,5 +1026,6 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
           onClose={() => setDropMenu(null)}
         />
       )}
+    </>
   );
 }
