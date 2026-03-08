@@ -76,9 +76,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null 
       type,
       children: children.map(c => {
         if (type === "root"
-          && (childrenByManager.get(c.id) ?? []).length === 0
-          && roleMap[c.user_id] !== "admin"
-          && roleMap[c.user_id] !== "manager") {
+          && (childrenByManager.get(c.id) ?? []).length === 0) {
           return toNode(c, "staff");
         }
         return toNode(c);
