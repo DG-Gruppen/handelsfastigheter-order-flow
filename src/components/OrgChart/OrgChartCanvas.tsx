@@ -483,16 +483,18 @@ function CollapseButton({ pos, collapsed, count, onClick, palette }: {
 }
 
 // ─── NODE CARD (styled with our design tokens) ──────────────────────────────
-function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabClick }: {
+function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabClick, palette, isDark }: {
   node: OrgNode; pos: Pos; isDragging: boolean; isDropTarget: boolean;
   onMouseDown?: (e: React.MouseEvent) => void;
   onKebabClick?: (e: React.MouseEvent) => void;
+  palette: ReturnType<typeof useOrgPalette>;
+  isDark: boolean;
 }) {
   const { x, y, w, h } = pos;
-  const c = getColors(node.color);
+  const c = getColors(node.color, isDark);
   const dims = cardDims(node);
 
-  const fillColor = isDropTarget ? "hsl(230, 75%, 20%)" : "hsl(230, 25%, 11%)";
+  const fillColor = isDropTarget ? palette.cardBgHover : palette.cardBg;
   const strokeColor = isDropTarget ? "hsl(230, 75%, 60%)" : c.border;
 
   return (
