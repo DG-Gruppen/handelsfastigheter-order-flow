@@ -46,8 +46,8 @@ const CARD = {
 const GAP_H            = 28;
 const GAP_V            = 110;
 const GAP_V_STACK      = 16;  // vertical gap between stacked employees
-const STAFF_GAP_V      = 130;
-const LINE_AFTER_STAFF = 130;
+const STAFF_GAP_V      = 100;
+const LINE_AFTER_STAFF = 160;
 
 function isLeafNode(node: OrgNode): boolean {
   return node.children.length === 0 && node.color === "muted";
@@ -255,15 +255,12 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
       if (sps.length) {
         const staffTopY = sps[0].y;
         const barY = py + (staffTopY - py) / 2;
-        const allX = sps.map(sp => sp.x + sp.w / 2);
-        const minX = Math.min(px, ...allX);
-        const maxX = Math.max(px, ...allX);
 
-        push("vs", px, py, px, barY);
-        push("sh", minX, barY, maxX, barY);
+        // Dashed horizontal segments from center to each staff node (not one continuous bar)
         sps.forEach(sp => {
           const scx = sp.x + sp.w / 2;
-          push("sd", scx, barY, scx, sp.y);
+          push("sh", px, barY, scx, barY);  // dashed horizontal from center to staff
+          push("sd", scx, barY, scx, sp.y); // dashed vertical down to staff card
         });
 
         if (line.length) {
@@ -272,10 +269,14 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
             const lineTopY = lps[0].y;
             const lBarY = barY + (lineTopY - barY) / 2;
             const lAllX = lps.map(lp => lp.x + lp.w / 2);
-            push("vs", px, barY, px, lBarY);
+            // Solid vertical: VD bottom all the way to manager bar (continuous through barY)
+            push("vs", px, py, px, lBarY);
             if (line.length > 1) push("lh", Math.min(...lAllX), lBarY, Math.max(...lAllX), lBarY);
             lps.forEach(lp => push("ld", lp.x + lp.w / 2, lBarY, lp.x + lp.w / 2, lp.y));
           }
+        } else {
+          // No line kids, just draw solid vertical to barY
+          push("vs", px, py, px, barY);
         }
       }
     } else if (line.length) {
@@ -323,20 +324,30 @@ function Connectors({ tree, positions, collapsed }: {
 
   return (
     <g>
-      {segments.map((s, i) => {
-        const isStaff = s.type === "sh" || s.type === "sd";
-        return (
-          <line
-            key={i}
-            x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke={isStaff ? "hsl(250, 80%, 65%)" : "hsl(225, 12%, 48%)"}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeDasharray={isStaff ? "5 4" : undefined}
-            opacity={0.6}
-          />
-        );
-      })}
+      {/* Draw dashed (staff) lines first */}
+      {segments.filter(s => s.type === "sh" || s.type === "sd").map((s, i) => (
+        <line
+          key={`staff-${i}`}
+          x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+          stroke="hsl(250, 80%, 65%)"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeDasharray="5 4"
+          opacity={0.6}
+        />
+      ))}
+      {/* Draw solid lines on top so they're always visible */}
+      {segments.filter(s => s.type !== "sh" && s.type !== "sd").map((s, i) => (
+        <line
+          key={`solid-${i}`}
+          x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+          stroke="hsl(225, 12%, 48%)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          opacity={0.7}
+        />
+      ))}
+      {/* Junction dots */}
       {segments.filter(s => s.type === "ld" || s.type === "sd").map((s, i) => (
         <circle
           key={`dot-${i}`}
