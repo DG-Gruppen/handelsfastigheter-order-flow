@@ -449,6 +449,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
 
   return (
     <g
+      data-org-card="true"
       style={{
         cursor: node.type === "root" ? "default" : "grab",
         opacity: isDragging ? 0.15 : 1,
