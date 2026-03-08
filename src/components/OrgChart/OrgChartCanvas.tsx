@@ -394,7 +394,7 @@ function Toolbar({ onExpAll, onCollAll, total }: {
       border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12,
       padding: "6px 16px", boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
     }}>
-      <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10.5, color: "#4a6080", fontWeight: 600 }}>
+      <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10.5, color: "#162030", fontWeight: 600 }}>
         {total} noder
       </span>
       <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.06)" }} />
