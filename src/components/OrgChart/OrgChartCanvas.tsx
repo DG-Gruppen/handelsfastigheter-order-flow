@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 // ─── Types ──────────────────────────────────────────────────
-export type ColorKey = "primary" | "accent" | "warning" | "glow" | "muted" | "staff";
+export type ColorKey = "cyan" | "blue" | "emerald" | "amber" | "slate" | "violet";
 export type NodeType = "root" | "staff" | "line";
 
 export interface OrgNode {
