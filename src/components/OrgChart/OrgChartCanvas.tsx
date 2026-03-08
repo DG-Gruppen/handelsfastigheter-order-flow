@@ -734,7 +734,7 @@ interface OrgChartCanvasProps {
   onSettingsClick?: () => void;
 }
 
-export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
+export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
   const palette = useOrgPalette();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
