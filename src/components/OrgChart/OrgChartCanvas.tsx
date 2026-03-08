@@ -677,7 +677,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
         style={{ flex: 1, position: "relative", overflow: "hidden", cursor: drag ? "grabbing" : "grab" }}>
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-          backgroundImage: "radial-gradient(circle, rgba(59,108,245,0.04) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.038) 1px, transparent 1px)",
           backgroundSize: `${26 * zoom}px ${26 * zoom}px`,
           backgroundPosition: `${pan.x % (26 * zoom)}px ${pan.y % (26 * zoom)}px`,
         }} />
