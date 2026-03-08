@@ -535,7 +535,83 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
   );
 }
 
-// ─── DRAG GHOST ──────────────────────────────────────────────────────────────
+// ─── DROP ACTION MENU ────────────────────────────────────────────────────────
+import { ArrowDown, ArrowUpDown, ArrowUp } from "lucide-react";
+
+function DropActionMenu({ menu, tree, onAction, onClose }: {
+  menu: DropMenuState;
+  tree: OrgNode;
+  onAction: (action: DropAction) => void;
+  onClose: () => void;
+}) {
+  const dragNode = findNode(tree, menu.dragId);
+  const targetNode = findNode(tree, menu.targetId);
+  if (!dragNode || !targetNode) return null;
+
+  const canSwap = targetNode.type !== "root";
+  const canPlaceAbove = targetNode.type !== "root" && !isAncestor(tree, menu.dragId, menu.targetId);
+
+  const actions: { key: DropAction; label: string; desc: string; icon: React.ReactNode; enabled: boolean }[] = [
+    {
+      key: "move_under",
+      label: "Flytta under",
+      desc: `${dragNode.name} blir underställd ${targetNode.name}`,
+      icon: <ArrowDown className="h-4 w-4" />,
+      enabled: true,
+    },
+    {
+      key: "swap",
+      label: "Byt plats",
+      desc: `${dragNode.name} och ${targetNode.name} byter position`,
+      icon: <ArrowUpDown className="h-4 w-4" />,
+      enabled: canSwap,
+    },
+    {
+      key: "place_above",
+      label: "Placera ovanför",
+      desc: `${dragNode.name} tar ${targetNode.name}s plats, som blir underställd`,
+      icon: <ArrowUp className="h-4 w-4" />,
+      enabled: canPlaceAbove,
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[10000]"
+      onClick={onClose}
+    >
+      <div
+        className="absolute z-[10001]"
+        style={{ left: menu.screenX, top: menu.screenY, transform: "translate(-50%, -50%)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="rounded-xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden min-w-[220px]">
+          <div className="px-3 py-2 border-b border-border/40">
+            <p className="text-xs font-semibold text-foreground">Välj åtgärd</p>
+          </div>
+          <div className="p-1">
+            {actions.filter(a => a.enabled).map(a => (
+              <button
+                key={a.key}
+                onClick={() => onAction(a.key)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/80 transition-colors text-left group"
+              >
+                <span className="text-muted-foreground group-hover:text-primary transition-colors">
+                  {a.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{a.label}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{a.desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
   if (!node) return null;
   const { W, H } = cardDims(node);
