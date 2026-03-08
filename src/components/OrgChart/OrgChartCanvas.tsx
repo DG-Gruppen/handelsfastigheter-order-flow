@@ -865,6 +865,30 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
     });
   }, [svgW, svgH]);
 
+  const handleDropAction = useCallback((action: DropAction) => {
+    if (!dropMenu) return;
+    const { dragId, targetId } = dropMenu;
+
+    setTree(prev => {
+      if (action === "move_under") {
+        const cl = deepClone(prev);
+        const [without, removed] = removeNode(cl, dragId);
+        if (!removed || !without || !findNode(without, targetId)) return prev;
+        return insertNode(without, targetId, removed);
+      }
+      if (action === "swap") {
+        return swapNodes(prev, dragId, targetId);
+      }
+      if (action === "place_above") {
+        return placeAbove(prev, dragId, targetId);
+      }
+      return prev;
+    });
+
+    if (onMoveNode) onMoveNode(dragId, targetId, action);
+    setDropMenu(null);
+  }, [dropMenu, onMoveNode]);
+
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
     <>
