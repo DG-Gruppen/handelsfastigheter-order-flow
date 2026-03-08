@@ -172,10 +172,19 @@ export default function OrgTree() {
         const movedProfile = profiles.find(p => p.id === movedNodeId);
         const targetProfile = profiles.find(p => p.id === targetId);
         if (!movedProfile || !targetProfile) throw new Error("Profile not found");
+        // Swap parents
         await Promise.all([
           supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId),
           supabase.from("profiles").update({ manager_id: movedProfile.manager_id } as any).eq("id", targetId),
         ]);
+        // Swap children so subtrees follow
+        const movedChildren = profiles.filter(p => p.manager_id === movedNodeId);
+        const targetChildren = profiles.filter(p => p.manager_id === targetId);
+        const childUpdates = [
+          ...movedChildren.map(c => supabase.from("profiles").update({ manager_id: targetId } as any).eq("id", c.id)),
+          ...targetChildren.map(c => supabase.from("profiles").update({ manager_id: movedNodeId } as any).eq("id", c.id)),
+        ];
+        if (childUpdates.length) await Promise.all(childUpdates);
       } else if (action === "place_above") {
         const targetProfile = profiles.find(p => p.id === targetId);
         if (!targetProfile) throw new Error("Profile not found");
