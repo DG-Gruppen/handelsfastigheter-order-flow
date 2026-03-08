@@ -126,19 +126,36 @@ export default function OrgTree() {
     setTreeVersion(v => v + 1);
   };
 
-  const handleMove = useCallback(async (movedNodeId: string, newParentId: string) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ manager_id: newParentId } as any)
-      .eq("id", movedNodeId);
-
-    if (error) {
+  const handleMove = useCallback(async (movedNodeId: string, targetId: string, action: DropAction) => {
+    try {
+      if (action === "move_under") {
+        // Move movedNode under targetNode
+        await supabase.from("profiles").update({ manager_id: targetId } as any).eq("id", movedNodeId);
+      } else if (action === "swap") {
+        // Swap: each takes the other's parent
+        const movedProfile = profiles.find(p => p.id === movedNodeId);
+        const targetProfile = profiles.find(p => p.id === targetId);
+        if (!movedProfile || !targetProfile) throw new Error("Profile not found");
+        await Promise.all([
+          supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId),
+          supabase.from("profiles").update({ manager_id: movedProfile.manager_id } as any).eq("id", targetId),
+        ]);
+      } else if (action === "place_above") {
+        // movedNode takes targetNode's parent, targetNode becomes child of movedNode
+        const targetProfile = profiles.find(p => p.id === targetId);
+        if (!targetProfile) throw new Error("Profile not found");
+        await Promise.all([
+          supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId),
+          supabase.from("profiles").update({ manager_id: movedNodeId } as any).eq("id", targetId),
+        ]);
+      }
+      toast.success("Organisationen uppdaterad");
+      fetchData();
+    } catch {
       toast.error("Kunde inte uppdatera organisationen");
       fetchData();
-    } else {
-      toast.success("Organisationen uppdaterad");
     }
-  }, []);
+  }, [profiles]);
 
   const tree = buildOrgTree(profiles, roleMap);
 
