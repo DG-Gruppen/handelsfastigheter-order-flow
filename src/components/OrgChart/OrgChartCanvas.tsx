@@ -255,15 +255,12 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
       if (sps.length) {
         const staffTopY = sps[0].y;
         const barY = py + (staffTopY - py) / 2;
-        const allX = sps.map(sp => sp.x + sp.w / 2);
-        const minX = Math.min(px, ...allX);
-        const maxX = Math.max(px, ...allX);
 
-        push("vs", px, py, px, barY);
-        push("sh", minX, barY, maxX, barY);
+        // Dashed horizontal segments from center to each staff node (not one continuous bar)
         sps.forEach(sp => {
           const scx = sp.x + sp.w / 2;
-          push("sd", scx, barY, scx, sp.y);
+          push("sh", px, barY, scx, barY);  // dashed horizontal from center to staff
+          push("sd", scx, barY, scx, sp.y); // dashed vertical down to staff card
         });
 
         if (line.length) {
@@ -272,10 +269,14 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
             const lineTopY = lps[0].y;
             const lBarY = barY + (lineTopY - barY) / 2;
             const lAllX = lps.map(lp => lp.x + lp.w / 2);
-            push("vs", px, barY, px, lBarY);
+            // Solid vertical: VD bottom all the way to manager bar (continuous through barY)
+            push("vs", px, py, px, lBarY);
             if (line.length > 1) push("lh", Math.min(...lAllX), lBarY, Math.max(...lAllX), lBarY);
             lps.forEach(lp => push("ld", lp.x + lp.w / 2, lBarY, lp.x + lp.w / 2, lp.y));
           }
+        } else {
+          // No line kids, just draw solid vertical to barY
+          push("vs", px, py, px, barY);
         }
       }
     } else if (line.length) {
