@@ -8,6 +8,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand, Settings } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
@@ -314,8 +315,9 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
 }
 
 // ─── CONNECTORS SVG COMPONENT ────────────────────────────────────────────────
-function Connectors({ tree, positions, collapsed }: {
+function Connectors({ tree, positions, collapsed, palette }: {
   tree: OrgNode; positions: Map<string, Pos>; collapsed: Set<string>;
+  palette: ReturnType<typeof useOrgPalette>;
 }) {
   const segments = useMemo(
     () => buildConnectorSegments(tree, positions, collapsed),
@@ -324,35 +326,32 @@ function Connectors({ tree, positions, collapsed }: {
 
   return (
     <g>
-      {/* Draw dashed (staff) lines first */}
       {segments.filter(s => s.type === "sh" || s.type === "sd").map((s, i) => (
         <line
           key={`staff-${i}`}
           x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke="hsl(250, 80%, 65%)"
+          stroke={palette.connDash}
           strokeWidth={1.5}
           strokeLinecap="round"
           strokeDasharray="5 4"
           opacity={0.6}
         />
       ))}
-      {/* Draw solid lines on top so they're always visible */}
       {segments.filter(s => s.type !== "sh" && s.type !== "sd").map((s, i) => (
         <line
           key={`solid-${i}`}
           x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke="hsl(225, 12%, 48%)"
+          stroke={palette.connSolid}
           strokeWidth={2}
           strokeLinecap="round"
           opacity={0.7}
         />
       ))}
-      {/* Junction dots */}
       {segments.filter(s => s.type === "ld" || s.type === "sd").map((s, i) => (
         <circle
           key={`dot-${i}`}
           cx={s.x1} cy={s.y1} r={2.5}
-          fill={s.type === "sd" ? "hsl(250, 80%, 65%)" : "hsl(225, 12%, 48%)"}
+          fill={s.type === "sd" ? palette.connDash : palette.junctionDot}
           opacity={0.6}
         />
       ))}
@@ -360,53 +359,99 @@ function Connectors({ tree, positions, collapsed }: {
   );
 }
 
+// ─── THEME-AWARE PALETTE ─────────────────────────────────────────────────────
+function useOrgPalette() {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+  return useMemo(() => ({
+    cardBg:        dark ? "hsl(230, 25%, 11%)"  : "hsl(0, 0%, 100%)",
+    cardBgHover:   dark ? "hsl(230, 75%, 20%)"  : "hsl(230, 75%, 95%)",
+    nameText:      dark ? "hsl(225, 12%, 93%)"  : "hsl(225, 35%, 10%)",
+    posText:       dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 45%)",
+    deptText:      dark ? "hsl(225, 12%, 40%)"  : "hsl(225, 12%, 55%)",
+    kebabDot:      dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 60%)",
+    kebabHover:    dark ? "hsl(230, 22%, 20%)"  : "hsl(225, 20%, 92%)",
+    connSolid:     dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 72%)",
+    connDash:      dark ? "hsl(250, 80%, 65%)"  : "hsl(250, 60%, 60%)",
+    junctionDot:   dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 72%)",
+    collapseBg:    dark ? "hsl(230, 25%, 11%)"  : "hsl(225, 25%, 96%)",
+    collapseBord:  dark ? "hsl(230, 22%, 24%)"  : "hsl(225, 18%, 85%)",
+    collapseText:  dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 45%)",
+    dotGrid:       dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 15%, 72%)",
+    dotOpacity:    dark ? 0.03 : 0.08,
+    ghostBg:       dark ? "hsl(230, 25%, 14%)"  : "hsl(225, 25%, 97%)",
+    ghostShadow:   dark ? "hsla(230, 75%, 55%, 0.3)" : "hsla(230, 75%, 55%, 0.15)",
+  }), [dark]);
+}
+
 // ─── COLOR MAP (maps node.color to HSL values from our design tokens) ────────
-const COLOR_MAP: Record<string, { bg: string; border: string; text: string; accent: string }> = {
+const COLOR_MAP: Record<string, { bg: string; border: string; borderLight: string; text: string; accent: string }> = {
   primary: {
     bg: "hsl(230, 75%, 55%)",
     border: "hsl(230, 75%, 65%)",
+    borderLight: "hsl(230, 75%, 75%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(230, 75%, 75%)",
   },
   accent: {
     bg: "hsl(250, 80%, 65%)",
     border: "hsl(250, 80%, 75%)",
+    borderLight: "hsl(250, 80%, 82%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(250, 80%, 80%)",
   },
   blue: {
     bg: "hsl(230, 75%, 55%)",
     border: "hsl(230, 75%, 65%)",
+    borderLight: "hsl(230, 75%, 78%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(230, 75%, 75%)",
   },
   green: {
     bg: "hsl(165, 55%, 42%)",
     border: "hsl(165, 55%, 52%)",
+    borderLight: "hsl(165, 55%, 65%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(165, 55%, 62%)",
   },
   amber: {
     bg: "hsl(38, 92%, 50%)",
     border: "hsl(38, 92%, 60%)",
+    borderLight: "hsl(38, 92%, 72%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(38, 92%, 70%)",
   },
   muted: {
     bg: "hsl(230, 22%, 16%)",
     border: "hsl(230, 22%, 24%)",
+    borderLight: "hsl(225, 18%, 78%)",
     text: "hsl(225, 12%, 85%)",
     accent: "hsl(225, 12%, 52%)",
   },
 };
 
-function getColors(color: string) {
-  return COLOR_MAP[color] || COLOR_MAP.muted;
+function getColors(color: string, isDark: boolean) {
+  const c = COLOR_MAP[color] || COLOR_MAP.muted;
+  if (!isDark && color === "muted") {
+    return {
+      bg: "hsl(225, 20%, 94%)",
+      border: "hsl(225, 18%, 85%)",
+      text: "hsl(225, 30%, 22%)",
+      accent: "hsl(225, 12%, 60%)",
+    };
+  }
+  return {
+    bg: c.bg,
+    border: isDark ? c.border : c.borderLight,
+    text: c.text,
+    accent: c.accent,
+  };
 }
 
 // ─── COLLAPSE BUTTON (from blueprint logic, styled with tokens) ──────────────
-function CollapseButton({ pos, collapsed, count, onClick }: {
+function CollapseButton({ pos, collapsed, count, onClick, palette }: {
   pos: Pos; collapsed: boolean; count: number; onClick: () => void;
+  palette: ReturnType<typeof useOrgPalette>;
 }) {
   const bx = pos.x + pos.w / 2;
   const by = pos.y + pos.h + 11;
@@ -417,15 +462,15 @@ function CollapseButton({ pos, collapsed, count, onClick }: {
     <g style={{ cursor: "pointer" }} onClick={e => { e.stopPropagation(); onClick(); }}>
       <rect
         x={bx - bw / 2} y={by - bh / 2} width={bw} height={bh} rx={bh / 2}
-        fill="hsl(230, 25%, 11%)"
-        stroke="hsl(230, 22%, 24%)"
+        fill={palette.collapseBg}
+        stroke={palette.collapseBord}
         strokeWidth={1}
       />
       <text
         x={bx} y={by + 0.5}
         textAnchor="middle" dominantBaseline="central"
         fontSize={collapsed ? 8 : 11}
-        fill="hsl(225, 12%, 52%)"
+        fill={palette.collapseText}
         fontFamily="var(--font-body)"
         fontWeight="600"
       >
@@ -436,16 +481,18 @@ function CollapseButton({ pos, collapsed, count, onClick }: {
 }
 
 // ─── NODE CARD (styled with our design tokens) ──────────────────────────────
-function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabClick }: {
+function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabClick, palette, isDark }: {
   node: OrgNode; pos: Pos; isDragging: boolean; isDropTarget: boolean;
   onMouseDown?: (e: React.MouseEvent) => void;
   onKebabClick?: (e: React.MouseEvent) => void;
+  palette: ReturnType<typeof useOrgPalette>;
+  isDark: boolean;
 }) {
   const { x, y, w, h } = pos;
-  const c = getColors(node.color);
+  const c = getColors(node.color, isDark);
   const dims = cardDims(node);
 
-  const fillColor = isDropTarget ? "hsl(230, 75%, 20%)" : "hsl(230, 25%, 11%)";
+  const fillColor = isDropTarget ? palette.cardBgHover : palette.cardBg;
   const strokeColor = isDropTarget ? "hsl(230, 75%, 60%)" : c.border;
 
   return (
@@ -506,7 +553,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
             y={y + h / 2 - (node.dept ? 7 : 0)}
             fontSize={fontSize}
             fontWeight="700"
-            fill="hsl(225, 12%, 93%)"
+            fill={palette.nameText}
             fontFamily="var(--font-heading)"
           >
             {node.name}
@@ -519,7 +566,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
         x={x + (node.type === "root" ? 48 : 44)}
         y={y + h / 2 + 7}
         fontSize={node.type === "root" ? 10 : 8}
-        fill="hsl(225, 12%, 52%)"
+        fill={palette.posText}
         fontFamily="var(--font-body)"
       >
         {node.position}
@@ -532,7 +579,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
           y={y + h - 8}
           textAnchor="end"
           fontSize={7}
-          fill="hsl(225, 12%, 40%)"
+          fill={palette.deptText}
           fontFamily="var(--font-body)"
         >
           {node.dept}
@@ -551,9 +598,9 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
             fill="transparent"
             className="hover:fill-[hsl(230,22%,20%)]"
           />
-          <circle cx={x + w - 17} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
-          <circle cx={x + w - 12} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
-          <circle cx={x + w - 7} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 17} cy={y + 11} r={1.8} fill={palette.kebabDot} />
+          <circle cx={x + w - 12} cy={y + 11} r={1.8} fill={palette.kebabDot} />
+          <circle cx={x + w - 7} cy={y + 11} r={1.8} fill={palette.kebabDot} />
         </g>
       )}
 
@@ -648,10 +695,10 @@ function DropActionMenu({ menu, tree, onAction, onClose }: {
   );
 }
 
-function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
+function DragGhost({ node, x, y, palette, isDark }: { node: OrgNode; x: number; y: number; palette: ReturnType<typeof useOrgPalette>; isDark: boolean }) {
   if (!node) return null;
   const { W, H } = cardDims(node);
-  const c = getColors(node.color);
+  const c = getColors(node.color, isDark);
   return (
     <div style={{
       position: "fixed", left: x, top: y, pointerEvents: "none", zIndex: 9999,
@@ -659,18 +706,18 @@ function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
     }}>
       <div style={{
         width: W, height: H, borderRadius: 10,
-        background: "hsl(230, 25%, 14%)",
+        background: palette.ghostBg,
         border: `1.5px solid ${c.bg}`,
         display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
         opacity: 0.9,
-        boxShadow: `0 8px 32px hsla(230, 75%, 55%, 0.3)`,
+        boxShadow: `0 8px 32px ${palette.ghostShadow}`,
       }}>
         <span style={{
-          fontWeight: 700, color: "hsl(225, 12%, 93%)", fontSize: 12,
+          fontWeight: 700, color: palette.nameText, fontSize: 12,
           fontFamily: "var(--font-heading)",
         }}>{node.position}</span>
         <span style={{
-          color: "hsl(225, 12%, 52%)", fontSize: 10,
+          color: palette.posText, fontSize: 10,
           fontFamily: "var(--font-body)",
         }}>{node.name}</span>
       </div>
@@ -687,6 +734,10 @@ interface OrgChartCanvasProps {
 }
 
 export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
+  const palette = useOrgPalette();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   const [tree, setTree]             = useState(initialTree);
   const [collapsed, setCollapsed]   = useState(new Set<string>());
   const [drag, setDrag]             = useState<{ id: string; curX: number; curY: number } | null>(null);
@@ -1006,9 +1057,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
       >
         {/* Dot grid background */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0"
           style={{
-            backgroundImage: "radial-gradient(circle, hsl(225, 12%, 52%) 1px, transparent 1px)",
+            opacity: palette.dotOpacity,
+            backgroundImage: `radial-gradient(circle, ${palette.dotGrid} 1px, transparent 1px)`,
             backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
             backgroundPosition: `${pan.x % (20 * zoom)}px ${pan.y % (20 * zoom)}px`,
           }}
@@ -1027,7 +1079,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
             style={{ overflow: "visible", display: "block" }}
           >
             {/* 1. Connectors */}
-            <Connectors tree={tree} positions={positions} collapsed={collapsed} />
+            <Connectors tree={tree} positions={positions} collapsed={collapsed} palette={palette} />
 
             {/* 2. Snap line + drop target glow */}
             {snapLine && (
@@ -1063,9 +1115,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
                   isDropTarget={dropTarget === id}
                   onMouseDown={(e) => onCardMouseDown(e, id)}
                   onKebabClick={onKebabClick ? (e) => {
-                    const rect = (e.target as SVGElement).closest("svg")?.getBoundingClientRect();
                     onKebabClick(id, e.clientX, e.clientY);
                   } : undefined}
+                  palette={palette}
+                  isDark={isDark}
                 />
               );
             })}
@@ -1081,6 +1134,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
                   collapsed={collapsed.has(id)}
                   count={countDescendants(node)}
                   onClick={() => toggleCollapse(id)}
+                  palette={palette}
                 />
               );
             })}
@@ -1089,7 +1143,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
       </div>
 
       {/* Drag ghost */}
-      {drag && dragNode && <DragGhost node={dragNode} x={drag.curX} y={drag.curY} />}
+      {drag && dragNode && <DragGhost node={dragNode} x={drag.curX} y={drag.curY} palette={palette} isDark={isDark} />}
 
       {/* Drop action menu */}
       {dropMenu && (
