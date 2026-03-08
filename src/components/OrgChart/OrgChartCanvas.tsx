@@ -661,8 +661,8 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
-            width: 7, height: 7, borderRadius: "50%", background: C.primary.a,
-            boxShadow: `0 0 12px ${C.primary.a}88,0 0 24px ${C.primary.a}33`,
+            width: 7, height: 7, borderRadius: "50%", background: C.cyan.a,
+            boxShadow: `0 0 12px ${C.cyan.a}88,0 0 24px ${C.cyan.a}33`,
           }} />
           <span style={{
             fontFamily: "'Space Grotesk',sans-serif", fontWeight: 800, fontSize: 14.5,
