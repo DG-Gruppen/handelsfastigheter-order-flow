@@ -41,6 +41,24 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           category_id: string | null
@@ -215,6 +233,27 @@ export type Database = {
           },
         ]
       }
+      org_chart_settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -225,6 +264,7 @@ export type Database = {
           manager_id: string | null
           phone: string | null
           theme_preference: string | null
+          title_override: string | null
           updated_at: string
           user_id: string
         }
@@ -237,6 +277,7 @@ export type Database = {
           manager_id?: string | null
           phone?: string | null
           theme_preference?: string | null
+          title_override?: string | null
           updated_at?: string
           user_id: string
         }
@@ -249,6 +290,7 @@ export type Database = {
           manager_id?: string | null
           phone?: string | null
           theme_preference?: string | null
+          title_override?: string | null
           updated_at?: string
           user_id?: string
         }

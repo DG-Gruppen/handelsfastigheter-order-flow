@@ -7,7 +7,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand, Settings } from "lucide-react";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
@@ -436,9 +436,10 @@ function CollapseButton({ pos, collapsed, count, onClick }: {
 }
 
 // ─── NODE CARD (styled with our design tokens) ──────────────────────────────
-function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
+function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabClick }: {
   node: OrgNode; pos: Pos; isDragging: boolean; isDropTarget: boolean;
   onMouseDown?: (e: React.MouseEvent) => void;
+  onKebabClick?: (e: React.MouseEvent) => void;
 }) {
   const { x, y, w, h } = pos;
   const c = getColors(node.color);
@@ -493,7 +494,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
       {(() => {
         const baseFontSize = node.type === "root" ? 13 : 11;
         const textStartX = node.type === "root" ? 48 : 44;
-        const availableWidth = w - textStartX - (node.dept && node.type !== "staff" ? 40 : 8);
+        const availableWidth = w - textStartX - (node.dept && node.type !== "staff" ? 40 : 18);
         const approxCharWidth = baseFontSize * 0.6;
         const nameWidth = node.name.length * approxCharWidth;
         const fontSize = nameWidth > availableWidth
@@ -527,7 +528,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
       {/* Dept label */}
       {node.dept && node.type !== "staff" && (
         <text
-          x={x + w - 8}
+          x={x + w - 18}
           y={y + h - 8}
           textAnchor="end"
           fontSize={7}
@@ -538,6 +539,23 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
         </text>
       )}
 
+      {/* Kebab menu (3 dots) */}
+      {onKebabClick && (
+        <g
+          style={{ cursor: "pointer" }}
+          onClick={(e) => { e.stopPropagation(); onKebabClick(e); }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <rect
+            x={x + w - 16} y={y + 4} width={14} height={14} rx={4}
+            fill="transparent"
+            className="hover:fill-[hsl(230,22%,20%)]"
+          />
+          <circle cx={x + w - 9} cy={y + 8} r={1.2} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 9} cy={y + 11} r={1.2} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 9} cy={y + 14} r={1.2} fill="hsl(225, 12%, 52%)" />
+        </g>
+      )}
 
       {/* Drop target glow */}
       {isDropTarget && (
@@ -664,9 +682,11 @@ function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
 interface OrgChartCanvasProps {
   initialTree: OrgNode;
   onMoveNode?: (movedNodeId: string, newParentId: string, action: DropAction) => void;
+  onKebabClick?: (nodeId: string, screenX: number, screenY: number) => void;
+  onSettingsClick?: () => void;
 }
 
-export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanvasProps) {
+export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
   const [tree, setTree]             = useState(initialTree);
   const [collapsed, setCollapsed]   = useState(new Set<string>());
   const [drag, setDrag]             = useState<{ id: string; curX: number; curY: number } | null>(null);
@@ -962,6 +982,19 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
             <span className="hidden sm:inline">Dölj alla</span>
           </button>
         </div>
+
+        {onSettingsClick && (
+          <div className="flex items-center gap-1 rounded-xl bg-card/80 backdrop-blur-xl border border-border/40 p-1 shadow-lg">
+            <button
+              onClick={onSettingsClick}
+              className="flex h-8 items-center gap-1 px-2 rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
+              title="Inställningar"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Inställningar</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Viewport */}
@@ -1029,6 +1062,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
                   isDragging={ghostIds.has(id)}
                   isDropTarget={dropTarget === id}
                   onMouseDown={(e) => onCardMouseDown(e, id)}
+                  onKebabClick={onKebabClick ? (e) => {
+                    const rect = (e.target as SVGElement).closest("svg")?.getBoundingClientRect();
+                    onKebabClick(id, e.clientX, e.clientY);
+                  } : undefined}
                 />
               );
             })}

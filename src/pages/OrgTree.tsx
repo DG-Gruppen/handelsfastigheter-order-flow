@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import OrgChartCanvas from "@/components/OrgChart/OrgChartCanvas";
+import OrgCardMenu from "@/components/OrgChart/OrgCardMenu";
+import OrgSettingsModal from "@/components/OrgChart/OrgSettingsModal";
 import { toast } from "sonner";
 import type { OrgNode, DropAction } from "@/components/OrgChart/OrgChartCanvas";
 
@@ -14,19 +16,33 @@ interface OrgProfile {
   email: string;
   department: string | null;
   manager_id: string | null;
+  title_override?: string | null;
 }
 
 interface RoleMap { [userId: string]: string; }
 
-const MANAGER_COLORS = ["blue", "green", "amber"];
+interface ColorSettings {
+  color_root: string;
+  color_staff: string;
+  color_manager: string;
+  color_employee: string;
+}
+
+const DEFAULT_COLORS: ColorSettings = {
+  color_root: "primary",
+  color_staff: "accent",
+  color_manager: "blue,green,amber",
+  color_employee: "muted",
+};
 
 function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null {
+function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings): OrgNode | null {
   if (!profiles.length) return null;
 
+  const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const childrenByManager = new Map<string | null, OrgProfile[]>();
 
@@ -54,16 +70,17 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null 
     let color: string;
 
     if (type === "root") {
-      color = "primary";
+      color = colorSettings.color_root;
     } else if (type === "staff") {
-      color = "accent";
+      color = colorSettings.color_staff;
     } else if (role === "admin" || role === "manager") {
-      color = MANAGER_COLORS[colorIdx++ % MANAGER_COLORS.length];
+      color = managerColors[colorIdx++ % managerColors.length] || "blue";
     } else {
-      color = "muted";
+      color = colorSettings.color_employee;
     }
 
-    const posLabel = role === "admin" ? "VD / Admin" : role === "manager" ? (profile.department ? `${profile.department}chef` : "Chef") : "Anställd";
+    const posLabel = profile.title_override
+      || (role === "admin" ? "VD / Admin" : role === "manager" ? (profile.department ? `${profile.department}chef` : "Chef") : "Anställd");
 
     return {
       id: profile.id,
@@ -103,30 +120,31 @@ export default function OrgTree() {
   const isAdmin = roles.includes("admin");
   const [profiles, setProfiles] = useState<OrgProfile[]>([]);
   const [roleMap, setRoleMap] = useState<RoleMap>({});
+  const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);
+  const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [treeVersion, setTreeVersion] = useState(0);
+  const [cardMenu, setCardMenu] = useState<{ profileId: string; x: number; y: number } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) { navigate("/dashboard"); return; }
     fetchData();
 
-    // Subscribe to realtime changes on profiles for live updates
     const channel = supabase
       .channel('org-profiles')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
-        () => { fetchData(); }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => { fetchData(); })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [isAdmin]);
 
   const fetchData = async () => {
-    const [profilesRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id"),
+    const [profilesRes, rolesRes, settingsRes, deptsRes] = await Promise.all([
+      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override"),
       supabase.from("user_roles").select("user_id, role"),
+      supabase.from("org_chart_settings").select("setting_key, setting_value"),
+      supabase.from("departments").select("name").order("name"),
     ]);
     setProfiles((profilesRes.data as OrgProfile[]) ?? []);
     const rm: RoleMap = {};
@@ -134,6 +152,14 @@ export default function OrgTree() {
       rm[r.user_id] = r.role;
     }
     setRoleMap(rm);
+
+    const cs = { ...DEFAULT_COLORS };
+    for (const s of (settingsRes.data as any[]) ?? []) {
+      if (s.setting_key in cs) (cs as any)[s.setting_key] = s.setting_value;
+    }
+    setColorSettings(cs);
+    setDepartments((deptsRes.data as any[])?.map(d => d.name) ?? []);
+
     setLoading(false);
     setTreeVersion(v => v + 1);
   };
@@ -141,10 +167,8 @@ export default function OrgTree() {
   const handleMove = useCallback(async (movedNodeId: string, targetId: string, action: DropAction) => {
     try {
       if (action === "move_under") {
-        // Move movedNode under targetNode
         await supabase.from("profiles").update({ manager_id: targetId } as any).eq("id", movedNodeId);
       } else if (action === "swap") {
-        // Swap: each takes the other's parent
         const movedProfile = profiles.find(p => p.id === movedNodeId);
         const targetProfile = profiles.find(p => p.id === targetId);
         if (!movedProfile || !targetProfile) throw new Error("Profile not found");
@@ -153,7 +177,6 @@ export default function OrgTree() {
           supabase.from("profiles").update({ manager_id: movedProfile.manager_id } as any).eq("id", targetId),
         ]);
       } else if (action === "place_above") {
-        // movedNode takes targetNode's parent, targetNode becomes child of movedNode
         const targetProfile = profiles.find(p => p.id === targetId);
         if (!targetProfile) throw new Error("Profile not found");
         await Promise.all([
@@ -169,7 +192,12 @@ export default function OrgTree() {
     }
   }, [profiles]);
 
-  const tree = buildOrgTree(profiles, roleMap);
+  const handleKebabClick = useCallback((nodeId: string, screenX: number, screenY: number) => {
+    setCardMenu({ profileId: nodeId, x: screenX, y: screenY });
+  }, []);
+
+  const tree = buildOrgTree(profiles, roleMap, colorSettings);
+  const menuProfile = cardMenu ? profiles.find(p => p.id === cardMenu.profileId) : null;
 
   if (loading) {
     return (
@@ -194,8 +222,35 @@ export default function OrgTree() {
   return (
     <AppLayout>
       <div className="animate-fade-in relative" style={{ height: "calc(100vh - 80px)" }}>
-        <OrgChartCanvas key={treeVersion} initialTree={tree} onMoveNode={handleMove} />
+        <OrgChartCanvas
+          key={treeVersion}
+          initialTree={tree}
+          onMoveNode={handleMove}
+          onKebabClick={handleKebabClick}
+          onSettingsClick={() => setShowSettings(true)}
+        />
       </div>
+
+      {cardMenu && menuProfile && (
+        <OrgCardMenu
+          profileId={cardMenu.profileId}
+          currentName={menuProfile.full_name}
+          currentDepartment={menuProfile.department || ""}
+          currentTitleOverride={menuProfile.title_override || null}
+          departments={departments}
+          screenX={cardMenu.x}
+          screenY={cardMenu.y}
+          onClose={() => setCardMenu(null)}
+          onUpdated={() => { setCardMenu(null); fetchData(); }}
+        />
+      )}
+
+      {showSettings && (
+        <OrgSettingsModal
+          onClose={() => setShowSettings(false)}
+          onUpdated={fetchData}
+        />
+      )}
     </AppLayout>
   );
 }
