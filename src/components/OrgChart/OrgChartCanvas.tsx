@@ -7,7 +7,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand, Settings } from "lucide-react";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
