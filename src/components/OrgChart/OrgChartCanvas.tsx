@@ -982,6 +982,19 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
             <span className="hidden sm:inline">Dölj alla</span>
           </button>
         </div>
+
+        {onSettingsClick && (
+          <div className="flex items-center gap-1 rounded-xl bg-card/80 backdrop-blur-xl border border-border/40 p-1 shadow-lg">
+            <button
+              onClick={onSettingsClick}
+              className="flex h-8 items-center gap-1 px-2 rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors text-xs font-medium"
+              title="Inställningar"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Inställningar</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Viewport */}
