@@ -861,13 +861,14 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
   // ── Snap line ──
   const snapLine = useMemo(() => {
     if (!drag || !dropTarget) return null;
-    const p = positions.get(dropTarget);
-    if (!p) return null;
-    const { x: sx, y: sy } = screenToCanvas(drag.curX, drag.curY);
-    const tx = p.x + p.w / 2, ty = p.y + p.h;
-    const midY = ty + (sy - ty) / 2;
-    return `M${tx},${ty}L${tx},${midY}L${sx},${midY}L${sx},${sy}`;
-  }, [drag, dropTarget, positions, screenToCanvas]);
+    const dragP = positions.get(drag.id);
+    const targetP = positions.get(dropTarget);
+    if (!targetP || !dragP) return null;
+    // Line from dragged card center to target card center
+    const sx = dragP.x + dragP.w / 2, sy = dragP.y + dragP.h / 2;
+    const tx = targetP.x + targetP.w / 2, ty = targetP.y + targetP.h / 2;
+    return { sx, sy, tx, ty };
+  }, [drag, dropTarget, positions]);
 
   const dragNode = drag ? findNode(tree, drag.id) : null;
 
@@ -995,10 +996,25 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
             {/* 1. Connectors */}
             <Connectors tree={tree} positions={positions} collapsed={collapsed} />
 
-            {/* 2. Snap line */}
+            {/* 2. Snap line + drop target glow */}
             {snapLine && (
-              <path d={snapLine} fill="none" stroke="hsl(230, 75%, 60%)"
-                strokeWidth={1.5} strokeDasharray="5 4" strokeLinecap="round" />
+              <g>
+                {/* Glow behind line */}
+                <line x1={snapLine.sx} y1={snapLine.sy} x2={snapLine.tx} y2={snapLine.ty}
+                  stroke="hsl(230, 75%, 55%)" strokeWidth={4} strokeLinecap="round" opacity={0.25} />
+                {/* Main dashed line */}
+                <line x1={snapLine.sx} y1={snapLine.sy} x2={snapLine.tx} y2={snapLine.ty}
+                  stroke="hsl(230, 75%, 60%)" strokeWidth={1.5} strokeDasharray="6 5"
+                  strokeLinecap="round" style={{ animation: "snap-dash 0.6s linear infinite" }} />
+                {/* Target pulse circle */}
+                <circle cx={snapLine.tx} cy={snapLine.ty} r={8}
+                  fill="none" stroke="hsl(230, 75%, 60%)" strokeWidth={1.5} opacity={0.6}>
+                  <animate attributeName="r" from="6" to="18" dur="1s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" from="0.6" to="0" dur="1s" repeatCount="indefinite" />
+                </circle>
+                <circle cx={snapLine.tx} cy={snapLine.ty} r={5}
+                  fill="hsl(230, 75%, 60%)" opacity={0.4} />
+              </g>
             )}
 
             {/* 3. Node cards */}
