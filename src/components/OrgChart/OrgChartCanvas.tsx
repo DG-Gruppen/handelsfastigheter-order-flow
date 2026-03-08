@@ -1133,6 +1133,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
                   collapsed={collapsed.has(id)}
                   count={countDescendants(node)}
                   onClick={() => toggleCollapse(id)}
+                  palette={palette}
                 />
               );
             })}
