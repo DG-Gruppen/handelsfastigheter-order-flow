@@ -37,8 +37,18 @@ const CARD = {
 
 const GAP_H            = 28;
 const GAP_V            = 110;
+const GAP_V_STACK      = 16;  // vertical gap between stacked employees
 const STAFF_GAP_V      = 130;
 const LINE_AFTER_STAFF = 130;
+
+function isLeafNode(node: OrgNode): boolean {
+  return node.children.length === 0 && node.color === "muted";
+}
+
+function allChildrenAreLeaves(node: OrgNode): boolean {
+  const lineKids = node.children.filter(c => c.type !== "staff");
+  return lineKids.length > 0 && lineKids.every(c => isLeafNode(c));
+}
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2.0;
