@@ -861,13 +861,14 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
   // ── Snap line ──
   const snapLine = useMemo(() => {
     if (!drag || !dropTarget) return null;
-    const p = positions.get(dropTarget);
-    if (!p) return null;
-    const { x: sx, y: sy } = screenToCanvas(drag.curX, drag.curY);
-    const tx = p.x + p.w / 2, ty = p.y + p.h;
-    const midY = ty + (sy - ty) / 2;
-    return `M${tx},${ty}L${tx},${midY}L${sx},${midY}L${sx},${sy}`;
-  }, [drag, dropTarget, positions, screenToCanvas]);
+    const dragP = positions.get(drag.id);
+    const targetP = positions.get(dropTarget);
+    if (!targetP || !dragP) return null;
+    // Line from dragged card center to target card center
+    const sx = dragP.x + dragP.w / 2, sy = dragP.y + dragP.h / 2;
+    const tx = targetP.x + targetP.w / 2, ty = targetP.y + targetP.h / 2;
+    return { sx, sy, tx, ty };
+  }, [drag, dropTarget, positions]);
 
   const dragNode = drag ? findNode(tree, drag.id) : null;
 
