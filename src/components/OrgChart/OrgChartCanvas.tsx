@@ -310,18 +310,18 @@ function Connectors({ tree, positions, collapsed }: {
       {segs.map((s, i) => {
         if (s.type === "sh" || s.type === "sd") return (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke={C.staff.r} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="5 4" />
+      stroke="rgba(167,139,250,0.45)" strokeWidth={1.5} strokeLinecap="round" strokeDasharray="5 4" />
         );
         return (
           <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-            stroke="rgba(59,108,245,0.20)" strokeWidth={1.5} strokeLinecap="round" />
+            stroke="rgba(255,255,255,0.16)" strokeWidth={1.5} strokeLinecap="round" />
         );
       })}
       {segs.filter(s => s.type === "ld").map((s, i) => (
-        <circle key={`jd-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill="rgba(59,108,245,0.25)" />
+        <circle key={`jd-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill="rgba(255,255,255,0.2)" />
       ))}
       {segs.filter(s => s.type === "sd").map((s, i) => (
-        <circle key={`js-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill={C.staff.r} />
+        <circle key={`js-${i}`} cx={s.x1} cy={s.y1} r={2.5} fill="rgba(167,139,250,0.4)" />
       ))}
     </g>
   );
