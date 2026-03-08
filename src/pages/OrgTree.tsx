@@ -59,7 +59,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null 
     } else if (role === "admin" || role === "manager") {
       color = MANAGER_COLORS[colorIdx++ % MANAGER_COLORS.length];
     } else {
-      color = "muted";
+      color = "slate";
     }
 
     const posLabel = role === "admin" ? "VD / Admin" : role === "manager" ? "Chef" : "Anställd";

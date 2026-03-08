@@ -638,7 +638,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
     const { x: sx, y: sy } = screenToSvg(drag.curX, drag.curY);
     const tx = p.x + p.w / 2, ty = p.y + p.h, midY = ty + (sy - ty) / 2;
     const dropNode = findNode(tree, drop);
-    return { d: `M${tx},${ty}L${tx},${midY}L${sx},${midY}L${sx},${sy}`, accent: C[dropNode?.color ?? "primary"].a };
+    return { d: `M${tx},${ty}L${tx},${midY}L${sx},${midY}L${sx},${sy}`, accent: C[dropNode?.color ?? "cyan"].a };
   }, [drag, drop, positions, screenToSvg, tree]);
 
   const dragNode = drag ? findNode(tree, drag.id) : null;
