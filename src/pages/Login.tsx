@@ -27,6 +27,9 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
+      extraParams: {
+        hd: "handelsfastigheter.se",
+      },
     });
     if (error) console.error("Login error:", error);
   };
