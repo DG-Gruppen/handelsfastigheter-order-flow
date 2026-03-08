@@ -8,6 +8,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand, Settings } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
