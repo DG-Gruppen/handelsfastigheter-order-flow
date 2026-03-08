@@ -409,7 +409,7 @@ function Toolbar({ onExpAll, onCollAll, total }: {
             border: d ? `1.5px dashed ${C[c].a}` : "none",
             boxShadow: d ? "none" : `0 0 5px ${C[c].a}77`,
           }} />
-          <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "#4a6080", fontWeight: 500 }}>{l}</span>
+          <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "#1a2d44", fontWeight: 500 }}>{l}</span>
         </div>
       ))}
     </div>
