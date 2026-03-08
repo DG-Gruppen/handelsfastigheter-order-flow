@@ -600,9 +600,9 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
             fill="transparent"
             className="hover:fill-[hsl(230,22%,20%)]"
           />
-          <circle cx={x + w - 17} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
-          <circle cx={x + w - 12} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
-          <circle cx={x + w - 7} cy={y + 11} r={1.8} fill="hsl(225, 12%, 52%)" />
+          <circle cx={x + w - 17} cy={y + 11} r={1.8} fill={palette.kebabDot} />
+          <circle cx={x + w - 12} cy={y + 11} r={1.8} fill={palette.kebabDot} />
+          <circle cx={x + w - 7} cy={y + 11} r={1.8} fill={palette.kebabDot} />
         </g>
       )}
 
