@@ -11,6 +11,7 @@ import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand } from "lucide-react";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
+export type DropAction = "move_under" | "swap" | "place_above";
 
 export interface OrgNode {
   id: string;
@@ -22,6 +23,13 @@ export interface OrgNode {
   color: string;   // design token key
   type: NodeType;
   children: OrgNode[];
+}
+
+interface DropMenuState {
+  dragId: string;
+  targetId: string;
+  screenX: number;
+  screenY: number;
 }
 
 interface Pos { x: number; y: number; w: number; h: number; }
@@ -87,6 +95,46 @@ function insertNode(tree: OrgNode, targetId: string, node: OrgNode): OrgNode {
 function isAncestor(tree: OrgNode, ancId: string, nodeId: string): boolean {
   const n = findNode(tree, ancId);
   return n ? !!findNode(n, nodeId) : false;
+}
+
+function swapNodes(tree: OrgNode, idA: string, idB: string): OrgNode {
+  // Swap two nodes: A goes where B was, B goes where A was
+  const cl = deepClone(tree);
+  const nodeA = findNode(cl, idA);
+  const nodeB = findNode(cl, idB);
+  if (!nodeA || !nodeB) return cl;
+
+  const parentA = findParent(cl, idA);
+  const parentB = findParent(cl, idB);
+  if (!parentA || !parentB) return cl;
+
+  const idxA = parentA.children.findIndex(c => c.id === idA);
+  const idxB = parentB.children.findIndex(c => c.id === idB);
+  if (idxA === -1 || idxB === -1) return cl;
+
+  // Swap in parent arrays (keep each node's own children intact)
+  parentA.children[idxA] = nodeB;
+  parentB.children[idxB] = nodeA;
+
+  return cl;
+}
+
+function placeAbove(tree: OrgNode, movedId: string, targetId: string): OrgNode {
+  const cl = deepClone(tree);
+  const [without, removed] = removeNode(cl, movedId);
+  if (!removed || !without) return tree;
+
+  const targetParent = findParent(without, targetId);
+  if (!targetParent) return tree;
+
+  const idx = targetParent.children.findIndex(c => c.id === targetId);
+  if (idx === -1) return tree;
+
+  const target = targetParent.children[idx];
+  removed.children.push(target);
+  targetParent.children[idx] = removed;
+
+  return without;
 }
 
 function collectIds(node: OrgNode, set = new Set<string>()): Set<string> {
@@ -485,7 +533,83 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
   );
 }
 
-// ─── DRAG GHOST ──────────────────────────────────────────────────────────────
+// ─── DROP ACTION MENU ────────────────────────────────────────────────────────
+import { ArrowDown, ArrowUpDown, ArrowUp } from "lucide-react";
+
+function DropActionMenu({ menu, tree, onAction, onClose }: {
+  menu: DropMenuState;
+  tree: OrgNode;
+  onAction: (action: DropAction) => void;
+  onClose: () => void;
+}) {
+  const dragNode = findNode(tree, menu.dragId);
+  const targetNode = findNode(tree, menu.targetId);
+  if (!dragNode || !targetNode) return null;
+
+  const canSwap = targetNode.type !== "root";
+  const canPlaceAbove = targetNode.type !== "root" && !isAncestor(tree, menu.dragId, menu.targetId);
+
+  const actions: { key: DropAction; label: string; desc: string; icon: React.ReactNode; enabled: boolean }[] = [
+    {
+      key: "move_under",
+      label: "Flytta under",
+      desc: `${dragNode.name} blir underställd ${targetNode.name}`,
+      icon: <ArrowDown className="h-4 w-4" />,
+      enabled: true,
+    },
+    {
+      key: "swap",
+      label: "Byt plats",
+      desc: `${dragNode.name} och ${targetNode.name} byter position`,
+      icon: <ArrowUpDown className="h-4 w-4" />,
+      enabled: canSwap,
+    },
+    {
+      key: "place_above",
+      label: "Placera ovanför",
+      desc: `${dragNode.name} tar ${targetNode.name}s plats, som blir underställd`,
+      icon: <ArrowUp className="h-4 w-4" />,
+      enabled: canPlaceAbove,
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[10000]"
+      onClick={onClose}
+    >
+      <div
+        className="absolute z-[10001]"
+        style={{ left: menu.screenX, top: menu.screenY, transform: "translate(-50%, -50%)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="rounded-xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden min-w-[220px]">
+          <div className="px-3 py-2 border-b border-border/40">
+            <p className="text-xs font-semibold text-foreground">Välj åtgärd</p>
+          </div>
+          <div className="p-1">
+            {actions.filter(a => a.enabled).map(a => (
+              <button
+                key={a.key}
+                onClick={() => onAction(a.key)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/80 transition-colors text-left group"
+              >
+                <span className="text-muted-foreground group-hover:text-primary transition-colors">
+                  {a.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{a.label}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{a.desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
   if (!node) return null;
   const { W, H } = cardDims(node);
@@ -519,7 +643,7 @@ function DragGhost({ node, x, y }: { node: OrgNode; x: number; y: number }) {
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 interface OrgChartCanvasProps {
   initialTree: OrgNode;
-  onMoveNode?: (movedNodeId: string, newParentId: string) => void;
+  onMoveNode?: (movedNodeId: string, newParentId: string, action: DropAction) => void;
 }
 
 export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanvasProps) {
@@ -527,6 +651,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
   const [collapsed, setCollapsed]   = useState(new Set<string>());
   const [drag, setDrag]             = useState<{ id: string; curX: number; curY: number } | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [dropMenu, setDropMenu]     = useState<DropMenuState | null>(null);
   const [zoom, setZoom]             = useState(1);
   const [pan, setPan]               = useState({ x: 0, y: 0 });
 
@@ -684,7 +809,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       setDropTarget(dt);
     };
 
-    const onUp = () => {
+    const onUp = (e: MouseEvent) => {
       if (panRef.current.panning) { panRef.current = { panning: false, start: {} }; return; }
       if (!dragRef.current) return;
 
@@ -692,16 +817,8 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       const dt = dropRef.current;
 
       if (dt && dt !== id) {
-        setTree(prev => {
-          const cl = deepClone(prev);
-          const [without, removed] = removeNode(cl, id);
-          if (!removed || !without || !findNode(without, dt)) return prev;
-          if (findNode(without, dt)?.type === "staff") return prev;
-          const newTree = insertNode(without, dt, removed);
-          // Notify parent about the move
-          if (onMoveNode) onMoveNode(id, dt);
-          return newTree;
-        });
+        // Show drop action menu instead of immediately moving
+        setDropMenu({ dragId: id, targetId: dt, screenX: e.clientX, screenY: e.clientY });
       }
 
       dragRef.current = null;
@@ -745,6 +862,30 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       y: (height - svgH * newZoom) / 2,
     });
   }, [svgW, svgH]);
+
+  const handleDropAction = useCallback((action: DropAction) => {
+    if (!dropMenu) return;
+    const { dragId, targetId } = dropMenu;
+
+    setTree(prev => {
+      if (action === "move_under") {
+        const cl = deepClone(prev);
+        const [without, removed] = removeNode(cl, dragId);
+        if (!removed || !without || !findNode(without, targetId)) return prev;
+        return insertNode(without, targetId, removed);
+      }
+      if (action === "swap") {
+        return swapNodes(prev, dragId, targetId);
+      }
+      if (action === "place_above") {
+        return placeAbove(prev, dragId, targetId);
+      }
+      return prev;
+    });
+
+    if (onMoveNode) onMoveNode(dragId, targetId, action);
+    setDropMenu(null);
+  }, [dropMenu, onMoveNode]);
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
@@ -873,6 +1014,16 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
 
       {/* Drag ghost */}
       {drag && dragNode && <DragGhost node={dragNode} x={drag.curX} y={drag.curY} />}
+
+      {/* Drop action menu */}
+      {dropMenu && (
+        <DropActionMenu
+          menu={dropMenu}
+          tree={tree}
+          onAction={handleDropAction}
+          onClose={() => setDropMenu(null)}
+        />
+      )}
     </>
   );
 }
