@@ -758,7 +758,25 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   useEffect(() => { setTree(initialTree); }, [initialTree]);
 
   // ── Layout ──
-  const positions = useMemo(() => computeLayout(tree, collapsed), [tree, collapsed]);
+  const positions = useMemo(() => {
+    const pos = computeLayout(tree, collapsed);
+
+    // Position unassigned nodes to the right of the tree
+    if (unassignedNodes.length > 0) {
+      let mxX = -Infinity;
+      for (const [, p] of pos) {
+        mxX = Math.max(mxX, p.x + p.w);
+      }
+      const startX = mxX + 120;
+      const startY = 0;
+      unassignedNodes.forEach((node, i) => {
+        const dims = cardDims(node);
+        pos.set(node.id, { x: startX, y: startY + i * (dims.H + GAP_V_STACK), w: dims.W, h: dims.H });
+      });
+    }
+
+    return pos;
+  }, [tree, collapsed, unassignedNodes]);
 
   const { minX, minY, svgW, svgH } = useMemo(() => {
     let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
