@@ -441,7 +441,7 @@ function ZoomControls({ zoom, onIn, onOut, onReset, onFit }: {
     <div style={{
       position: "absolute", bottom: 20, right: 20, zIndex: 300,
       display: "flex", flexDirection: "column", gap: 1, alignItems: "center",
-      background: "rgba(8,14,26,0.94)", backdropFilter: "blur(14px)",
+      background: "rgba(3,8,18,0.94)", backdropFilter: "blur(14px)",
       border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 5,
       boxShadow: "0 8px 30px rgba(0,0,0,0.65)",
     }}>
