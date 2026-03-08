@@ -1123,7 +1123,7 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
 
             {/* 3. Node cards */}
             {Array.from(positions.entries()).map(([id, pos]) => {
-              const node = findNode(tree, id);
+              const node = findNode(tree, id) || unassignedNodes.find(n => n.id === id);
               if (!node) return null;
               return (
                 <NodeCard
@@ -1142,7 +1142,27 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
               );
             })}
 
-            {/* 4. Collapse buttons */}
+            {/* 4. "Ej placerade" label above unassigned nodes */}
+            {unassignedNodes.length > 0 && (() => {
+              const firstPos = positions.get(unassignedNodes[0].id);
+              if (!firstPos) return null;
+              return (
+                <text
+                  x={firstPos.x + firstPos.w / 2}
+                  y={firstPos.y - 18}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fontWeight="600"
+                  fill={palette.posText}
+                  fontFamily="var(--font-heading)"
+                  opacity={0.7}
+                >
+                  Ej placerade
+                </text>
+              );
+            })()}
+
+            {/* 5. Collapse buttons */}
             {Array.from(positions.entries()).map(([id, pos]) => {
               const node = findNode(tree, id);
               if (!node || !node.children.length) return null;
