@@ -217,7 +217,7 @@ export default function OrgTree() {
     setCardMenu({ profileId: nodeId, x: screenX, y: screenY });
   }, []);
 
-  const tree = buildOrgTree(profiles, roleMap, colorSettings);
+  const { tree, unassigned } = buildOrgTree(profiles, roleMap, colorSettings);
   const menuProfile = cardMenu ? profiles.find(p => p.id === cardMenu.profileId) : null;
 
   if (loading) {
