@@ -17,7 +17,7 @@ interface OrgProfile {
 
 interface RoleMap { [userId: string]: string; }
 
-const MANAGER_COLORS: ColorKey[] = ["accent", "warning", "glow"];
+const MANAGER_COLORS: ColorKey[] = ["blue", "emerald", "amber"];
 
 function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
