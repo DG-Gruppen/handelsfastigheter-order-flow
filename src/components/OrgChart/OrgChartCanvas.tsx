@@ -476,7 +476,7 @@ function ZoomControls({ zoom, onIn, onOut, onReset, onFit }: {
 // ─── Main canvas component ──────────────────────────────────
 interface OrgChartCanvasProps {
   initialTree: OrgNode;
-  onMove: (movedNodeId: string, newParentId: string) => void;
+  onMoveNode: (movedNodeId: string, newParentId: string) => void;
 }
 
 export default function OrgChartCanvas({ initialTree, onMove }: OrgChartCanvasProps) {
