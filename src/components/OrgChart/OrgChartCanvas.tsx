@@ -30,42 +30,16 @@ const GAP_V = 110;
 const STAFF_GAP_V = 130;
 const LINE_AFTER_STAFF = 130;
 
-// ─── Design-system derived palette ──────────────────────────
-// Colors derived from index.css: --primary(230,75%,55%), --accent(165,55%,42%),
-// --warning(38,92%,50%), --primary-glow(250,80%,65%), --muted-foreground(225,12%,48%)
+// ─── Color palette (matching original Claude artifact) ──────
 interface ColorSet { a: string; b: string; t: string; g: string; r: string; n: string; }
 
 const C: Record<ColorKey, ColorSet> = {
-  // Root/VD — from --primary (230 75% 55%)
-  primary: {
-    a: "#3b6cf5", b: "#0c1428", t: "#6d94f8",
-    g: "rgba(59,108,245,0.18)", r: "rgba(59,108,245,0.45)", n: "#5580e8",
-  },
-  // Manager — from --accent (165 55% 42%)
-  accent: {
-    a: "#30a882", b: "#061e16", t: "#5ec9a4",
-    g: "rgba(48,168,130,0.16)", r: "rgba(48,168,130,0.42)", n: "#45b08e",
-  },
-  // Manager — from --warning (38 92% 50%)
-  warning: {
-    a: "#f0a020", b: "#281a03", t: "#f5c050",
-    g: "rgba(240,160,32,0.16)", r: "rgba(240,160,32,0.42)", n: "#d4a040",
-  },
-  // Manager — from --primary-glow (250 80% 65%)
-  glow: {
-    a: "#7c5dfa", b: "#120c2e", t: "#a088fd",
-    g: "rgba(124,93,250,0.16)", r: "rgba(124,93,250,0.42)", n: "#8a70f0",
-  },
-  // Employee — from --muted-foreground (225 12% 48%)
-  muted: {
-    a: "#6b7a8d", b: "#0d1420", t: "#6b7a8d",
-    g: "rgba(107,122,141,0.10)", r: "rgba(107,122,141,0.28)", n: "#4d6078",
-  },
-  // Staff — lighter variant of primary-glow
-  staff: {
-    a: "#a088fd", b: "#16103a", t: "#c0b0fe",
-    g: "rgba(160,136,253,0.16)", r: "rgba(160,136,253,0.42)", n: "#b09af5",
-  },
+  cyan:    { a:"#22d3ee", b:"#0d3d4a", t:"#67e8f9", g:"rgba(34,211,238,0.18)",  r:"rgba(34,211,238,0.45)", n:"#8dd8e8" },
+  blue:    { a:"#60a5fa", b:"#122040", t:"#93c5fd", g:"rgba(96,165,250,0.16)",  r:"rgba(96,165,250,0.42)",  n:"#9dbff7" },
+  emerald: { a:"#34d399", b:"#053325", t:"#6ee7b7", g:"rgba(52,211,153,0.16)",  r:"rgba(52,211,153,0.42)",  n:"#7ddcb5" },
+  amber:   { a:"#fbbf24", b:"#3b1e02", t:"#fcd34d", g:"rgba(251,191,36,0.16)",  r:"rgba(251,191,36,0.42)",  n:"#f5d070" },
+  slate:   { a:"#8899b0", b:"#101a28", t:"#8899b0", g:"rgba(136,153,176,0.10)", r:"rgba(136,153,176,0.28)", n:"#5d718a" },
+  violet:  { a:"#a78bfa", b:"#1e0c40", t:"#c4b5fd", g:"rgba(167,139,250,0.16)", r:"rgba(167,139,250,0.42)", n:"#baa7f8" },
 };
 
 // ─── Tree utilities ─────────────────────────────────────────
