@@ -246,6 +246,7 @@ export default function OrgTree() {
         <OrgChartCanvas
           key={treeVersion}
           initialTree={tree}
+          unassignedNodes={unassigned}
           onMoveNode={handleMove}
           onKebabClick={handleKebabClick}
           onSettingsClick={() => setShowSettings(true)}
