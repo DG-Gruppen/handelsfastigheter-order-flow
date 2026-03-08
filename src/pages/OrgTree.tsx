@@ -63,7 +63,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null 
       color = "muted";
     }
 
-    const posLabel = role === "admin" ? "VD / Admin" : role === "manager" ? "Chef" : "Anställd";
+    const posLabel = role === "admin" ? "VD / Admin" : role === "manager" ? (profile.department ? `${profile.department}chef` : "Chef") : "Anställd";
 
     return {
       id: profile.id,
