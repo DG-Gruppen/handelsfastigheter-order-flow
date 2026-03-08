@@ -361,48 +361,93 @@ function Connectors({ tree, positions, collapsed }: {
   );
 }
 
+// ─── THEME-AWARE PALETTE ─────────────────────────────────────────────────────
+function useOrgPalette() {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+  return useMemo(() => ({
+    cardBg:        dark ? "hsl(230, 25%, 11%)"  : "hsl(0, 0%, 100%)",
+    cardBgHover:   dark ? "hsl(230, 75%, 20%)"  : "hsl(230, 75%, 95%)",
+    nameText:      dark ? "hsl(225, 12%, 93%)"  : "hsl(225, 35%, 10%)",
+    posText:       dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 45%)",
+    deptText:      dark ? "hsl(225, 12%, 40%)"  : "hsl(225, 12%, 55%)",
+    kebabDot:      dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 60%)",
+    kebabHover:    dark ? "hsl(230, 22%, 20%)"  : "hsl(225, 20%, 92%)",
+    connSolid:     dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 72%)",
+    connDash:      dark ? "hsl(250, 80%, 65%)"  : "hsl(250, 60%, 60%)",
+    junctionDot:   dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 72%)",
+    collapseBg:    dark ? "hsl(230, 25%, 11%)"  : "hsl(225, 25%, 96%)",
+    collapseBord:  dark ? "hsl(230, 22%, 24%)"  : "hsl(225, 18%, 85%)",
+    collapseText:  dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 45%)",
+    dotGrid:       dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 15%, 72%)",
+    dotOpacity:    dark ? 0.03 : 0.08,
+    ghostBg:       dark ? "hsl(230, 25%, 14%)"  : "hsl(225, 25%, 97%)",
+    ghostShadow:   dark ? "hsla(230, 75%, 55%, 0.3)" : "hsla(230, 75%, 55%, 0.15)",
+  }), [dark]);
+}
+
 // ─── COLOR MAP (maps node.color to HSL values from our design tokens) ────────
-const COLOR_MAP: Record<string, { bg: string; border: string; text: string; accent: string }> = {
+const COLOR_MAP: Record<string, { bg: string; border: string; borderLight: string; text: string; accent: string }> = {
   primary: {
     bg: "hsl(230, 75%, 55%)",
     border: "hsl(230, 75%, 65%)",
+    borderLight: "hsl(230, 75%, 75%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(230, 75%, 75%)",
   },
   accent: {
     bg: "hsl(250, 80%, 65%)",
     border: "hsl(250, 80%, 75%)",
+    borderLight: "hsl(250, 80%, 82%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(250, 80%, 80%)",
   },
   blue: {
     bg: "hsl(230, 75%, 55%)",
     border: "hsl(230, 75%, 65%)",
+    borderLight: "hsl(230, 75%, 78%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(230, 75%, 75%)",
   },
   green: {
     bg: "hsl(165, 55%, 42%)",
     border: "hsl(165, 55%, 52%)",
+    borderLight: "hsl(165, 55%, 65%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(165, 55%, 62%)",
   },
   amber: {
     bg: "hsl(38, 92%, 50%)",
     border: "hsl(38, 92%, 60%)",
+    borderLight: "hsl(38, 92%, 72%)",
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(38, 92%, 70%)",
   },
   muted: {
     bg: "hsl(230, 22%, 16%)",
     border: "hsl(230, 22%, 24%)",
+    borderLight: "hsl(225, 18%, 78%)",
     text: "hsl(225, 12%, 85%)",
     accent: "hsl(225, 12%, 52%)",
   },
 };
 
-function getColors(color: string) {
-  return COLOR_MAP[color] || COLOR_MAP.muted;
+function getColors(color: string, isDark: boolean) {
+  const c = COLOR_MAP[color] || COLOR_MAP.muted;
+  if (!isDark && color === "muted") {
+    return {
+      bg: "hsl(225, 20%, 94%)",
+      border: "hsl(225, 18%, 85%)",
+      text: "hsl(225, 30%, 22%)",
+      accent: "hsl(225, 12%, 60%)",
+    };
+  }
+  return {
+    bg: c.bg,
+    border: isDark ? c.border : c.borderLight,
+    text: c.text,
+    accent: c.accent,
+  };
 }
 
 // ─── COLLAPSE BUTTON (from blueprint logic, styled with tokens) ──────────────
