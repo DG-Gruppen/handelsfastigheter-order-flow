@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import OrgChartCanvas from "@/components/OrgChart/OrgChartCanvas";
 import { toast } from "sonner";
-import type { OrgNode } from "@/components/OrgChart/OrgChartCanvas";
+import type { OrgNode, DropAction } from "@/components/OrgChart/OrgChartCanvas";
 
 interface OrgProfile {
   id: string;
