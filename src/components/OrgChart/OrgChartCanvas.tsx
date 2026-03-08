@@ -11,6 +11,7 @@ import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand } from "lucide-react";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
+export type DropAction = "move_under" | "swap" | "place_above";
 
 export interface OrgNode {
   id: string;
@@ -22,6 +23,13 @@ export interface OrgNode {
   color: string;   // design token key
   type: NodeType;
   children: OrgNode[];
+}
+
+interface DropMenuState {
+  dragId: string;
+  targetId: string;
+  screenX: number;
+  screenY: number;
 }
 
 interface Pos { x: number; y: number; w: number; h: number; }
