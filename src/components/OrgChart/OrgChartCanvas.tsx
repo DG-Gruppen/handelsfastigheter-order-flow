@@ -811,7 +811,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       setDropTarget(dt);
     };
 
-    const onUp = () => {
+    const onUp = (e: MouseEvent) => {
       if (panRef.current.panning) { panRef.current = { panning: false, start: {} }; return; }
       if (!dragRef.current) return;
 
@@ -819,16 +819,8 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       const dt = dropRef.current;
 
       if (dt && dt !== id) {
-        setTree(prev => {
-          const cl = deepClone(prev);
-          const [without, removed] = removeNode(cl, id);
-          if (!removed || !without || !findNode(without, dt)) return prev;
-          if (findNode(without, dt)?.type === "staff") return prev;
-          const newTree = insertNode(without, dt, removed);
-          // Notify parent about the move
-          if (onMoveNode) onMoveNode(id, dt);
-          return newTree;
-        });
+        // Show drop action menu instead of immediately moving
+        setDropMenu({ dragId: id, targetId: dt, screenX: e.clientX, screenY: e.clientY });
       }
 
       dragRef.current = null;
