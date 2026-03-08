@@ -183,13 +183,21 @@ function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> 
     const lineKids  = node.children.filter(c => c.type !== "staff");
 
     if (staffKids.length && node.type === "root") {
-      const rowW = staffKids.length * CARD.STAFF.W + (staffKids.length - 1) * GAP_H;
-      let sx = centerX - rowW / 2;
       const staffTop = top + H + STAFF_GAP_V;
-      staffKids.forEach(s => {
-        pos.set(s.id, { x: sx, y: staffTop, w: CARD.STAFF.W, h: CARD.STAFF.H });
-        sx += CARD.STAFF.W + GAP_H;
-      });
+      const SIDE_OFFSET = 180; // distance from center to each staff node center
+      if (staffKids.length === 1) {
+        // Single staff node to the right
+        pos.set(staffKids[0].id, { x: centerX + SIDE_OFFSET - CARD.STAFF.W / 2, y: staffTop, w: CARD.STAFF.W, h: CARD.STAFF.H });
+      } else {
+        // Spread symmetrically: left half to the left, right half to the right
+        const half = Math.ceil(staffKids.length / 2);
+        staffKids.forEach((s, i) => {
+          const side = i < half ? -1 : 1;
+          const indexInSide = i < half ? (half - 1 - i) : (i - half);
+          const offset = SIDE_OFFSET + indexInSide * (CARD.STAFF.W + GAP_H);
+          pos.set(s.id, { x: centerX + side * offset - CARD.STAFF.W / 2, y: staffTop, w: CARD.STAFF.W, h: CARD.STAFF.H });
+        });
+      }
     }
 
     if (!lineKids.length) return;
