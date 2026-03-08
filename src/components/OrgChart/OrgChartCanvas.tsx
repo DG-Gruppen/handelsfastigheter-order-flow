@@ -647,10 +647,10 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
   return (
     <div style={{
       width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative",
-      background: "#0c1220",
-      backgroundImage: `radial-gradient(ellipse 90% 55% at 50% -8%,rgba(59,108,245,0.08) 0%,transparent 62%),
-        radial-gradient(ellipse 55% 45% at 92% 92%,rgba(124,93,250,0.05) 0%,transparent 55%),
-        radial-gradient(ellipse 40% 35% at 8% 80%,rgba(48,168,130,0.03) 0%,transparent 50%)`,
+      background: "#040a17",
+      backgroundImage: `radial-gradient(ellipse 90% 55% at 50% -8%,rgba(34,211,238,0.07) 0%,transparent 62%),
+        radial-gradient(ellipse 55% 45% at 92% 92%,rgba(167,139,250,0.045) 0%,transparent 55%),
+        radial-gradient(ellipse 40% 35% at 8% 80%,rgba(96,165,250,0.025) 0%,transparent 50%)`,
       fontFamily: "'DM Sans',sans-serif", overflow: "hidden", borderRadius: 12,
     }}>
       {/* Header */}
