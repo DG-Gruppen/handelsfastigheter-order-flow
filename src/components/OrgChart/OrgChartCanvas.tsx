@@ -538,18 +538,6 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown }: {
         </text>
       )}
 
-      {/* Staff label */}
-      {node.type === "staff" && (
-        <text
-          x={x + w - 8} y={y + 10}
-          fontSize={7} textAnchor="end"
-          fill={c.bg}
-          fontFamily="var(--font-heading)"
-          fontWeight="700"
-        >
-          STAB
-        </text>
-      )}
 
       {/* Drop target glow */}
       {isDropTarget && (
