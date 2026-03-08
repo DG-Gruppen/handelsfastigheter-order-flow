@@ -1078,7 +1078,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
             style={{ overflow: "visible", display: "block" }}
           >
             {/* 1. Connectors */}
-            <Connectors tree={tree} positions={positions} collapsed={collapsed} />
+            <Connectors tree={tree} positions={positions} collapsed={collapsed} palette={palette} />
 
             {/* 2. Snap line + drop target glow */}
             {snapLine && (
