@@ -657,7 +657,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "10px 22px", borderBottom: "1px solid rgba(255,255,255,0.045)",
-        background: "rgba(8,14,26,0.94)", backdropFilter: "blur(14px)", zIndex: 100,
+        background: "rgba(3,8,18,0.94)", backdropFilter: "blur(14px)", zIndex: 100,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
