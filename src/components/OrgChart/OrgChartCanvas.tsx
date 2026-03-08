@@ -117,6 +117,11 @@ function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> 
     if (collapsed.has(node.id)) return cardDims(node).W;
     const kids = node.children.filter(c => c.type !== "staff");
     if (!kids.length) return cardDims(node).W;
+    // If all children are leaves, they stack vertically → width is just the widest card
+    if (allChildrenAreLeaves(node)) {
+      const maxChildW = Math.max(...kids.map(c => cardDims(c).W));
+      return Math.max(cardDims(node).W, maxChildW);
+    }
     const total = kids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (kids.length - 1);
     return Math.max(cardDims(node).W, total);
   }
@@ -146,6 +151,17 @@ function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> 
       lineTop = top + H + STAFF_GAP_V + CARD.STAFF.H + LINE_AFTER_STAFF;
     } else {
       lineTop = top + H + GAP_V;
+    }
+
+    // If all children are leaves, stack them vertically
+    if (allChildrenAreLeaves(node)) {
+      let curY = lineTop;
+      lineKids.forEach(child => {
+        const { W: cW, H: cH } = cardDims(child);
+        pos.set(child.id, { x: centerX - cW / 2, y: curY, w: cW, h: cH });
+        curY += cH + GAP_V_STACK;
+      });
+      return;
     }
 
     const totalW = lineKids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (lineKids.length - 1);
