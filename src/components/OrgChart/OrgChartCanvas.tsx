@@ -734,6 +734,10 @@ interface OrgChartCanvasProps {
 }
 
 export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
+  const palette = useOrgPalette();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   const [tree, setTree]             = useState(initialTree);
   const [collapsed, setCollapsed]   = useState(new Set<string>());
   const [drag, setDrag]             = useState<{ id: string; curX: number; curY: number } | null>(null);
