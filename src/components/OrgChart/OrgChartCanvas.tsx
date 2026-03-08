@@ -37,8 +37,18 @@ const CARD = {
 
 const GAP_H            = 28;
 const GAP_V            = 110;
+const GAP_V_STACK      = 16;  // vertical gap between stacked employees
 const STAFF_GAP_V      = 130;
 const LINE_AFTER_STAFF = 130;
+
+function isLeafNode(node: OrgNode): boolean {
+  return node.children.length === 0 && node.color === "muted";
+}
+
+function allChildrenAreLeaves(node: OrgNode): boolean {
+  const lineKids = node.children.filter(c => c.type !== "staff");
+  return lineKids.length > 0 && lineKids.every(c => isLeafNode(c));
+}
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2.0;
@@ -107,6 +117,11 @@ function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> 
     if (collapsed.has(node.id)) return cardDims(node).W;
     const kids = node.children.filter(c => c.type !== "staff");
     if (!kids.length) return cardDims(node).W;
+    // If all children are leaves, they stack vertically → width is just the widest card
+    if (allChildrenAreLeaves(node)) {
+      const maxChildW = Math.max(...kids.map(c => cardDims(c).W));
+      return Math.max(cardDims(node).W, maxChildW);
+    }
     const total = kids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (kids.length - 1);
     return Math.max(cardDims(node).W, total);
   }
@@ -136,6 +151,17 @@ function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> 
       lineTop = top + H + STAFF_GAP_V + CARD.STAFF.H + LINE_AFTER_STAFF;
     } else {
       lineTop = top + H + GAP_V;
+    }
+
+    // If all children are leaves, stack them vertically
+    if (allChildrenAreLeaves(node)) {
+      let curY = lineTop;
+      lineKids.forEach(child => {
+        const { W: cW, H: cH } = cardDims(child);
+        pos.set(child.id, { x: centerX - cW / 2, y: curY, w: cW, h: cH });
+        curY += cH + GAP_V_STACK;
+      });
+      return;
     }
 
     const totalW = lineKids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (lineKids.length - 1);
@@ -197,14 +223,29 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
         }
       }
     } else if (line.length) {
-      const lps = line.map(l => positions.get(l.id)).filter(Boolean) as Pos[];
-      if (lps.length) {
-        const lineTopY = lps[0].y;
-        const barY = py + (lineTopY - py) / 2;
-        const lAllX = lps.map(lp => lp.x + lp.w / 2);
-        push("vs", px, py, px, barY);
-        if (line.length > 1) push("lh", Math.min(...lAllX), barY, Math.max(...lAllX), barY);
-        lps.forEach(lp => push("ld", lp.x + lp.w / 2, barY, lp.x + lp.w / 2, lp.y));
+      // Check if children are stacked vertically
+      if (allChildrenAreLeaves(node)) {
+        // Draw a single vertical line from parent down through all stacked children
+        const lps = line.map(l => positions.get(l.id)).filter(Boolean) as Pos[];
+        if (lps.length) {
+          // Vertical stem from parent to first child
+          push("vs", px, py, px, lps[0].y);
+          // Vertical lines between consecutive stacked children
+          for (let i = 0; i < lps.length - 1; i++) {
+            const cx = lps[i].x + lps[i].w / 2;
+            push("vs", cx, lps[i].y + lps[i].h, cx, lps[i + 1].y);
+          }
+        }
+      } else {
+        const lps = line.map(l => positions.get(l.id)).filter(Boolean) as Pos[];
+        if (lps.length) {
+          const lineTopY = lps[0].y;
+          const barY = py + (lineTopY - py) / 2;
+          const lAllX = lps.map(lp => lp.x + lp.w / 2);
+          push("vs", px, py, px, barY);
+          if (line.length > 1) push("lh", Math.min(...lAllX), barY, Math.max(...lAllX), barY);
+          lps.forEach(lp => push("ld", lp.x + lp.w / 2, barY, lp.x + lp.w / 2, lp.y));
+        }
       }
     }
 
