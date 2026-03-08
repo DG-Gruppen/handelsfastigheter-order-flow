@@ -53,9 +53,9 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap): OrgNode | null 
     let color: ColorKey;
 
     if (type === "root") {
-      color = "primary";
+      color = "cyan";
     } else if (type === "staff") {
-      color = "staff";
+      color = "violet";
     } else if (role === "admin" || role === "manager") {
       color = MANAGER_COLORS[colorIdx++ % MANAGER_COLORS.length];
     } else {
