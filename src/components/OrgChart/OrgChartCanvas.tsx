@@ -370,10 +370,10 @@ function Toolbar({ onExpAll, onCollAll, total }: {
     return (
       <button onClick={fn} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
         style={{
-          background: h ? "rgba(59,108,245,0.10)" : "transparent",
-          border: `1px solid ${h ? "rgba(59,108,245,0.25)" : "rgba(255,255,255,0.06)"}`,
+          background: h ? "rgba(255,255,255,0.07)" : "transparent",
+          border: `1px solid ${h ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)"}`,
           borderRadius: 8, padding: "4px 13px", cursor: "pointer",
-          color: h ? "#6d94f8" : "#4a6080",
+          color: h ? "#8da0b8" : "#2e4060",
           fontSize: 11, fontFamily: "'DM Sans',sans-serif", fontWeight: 500,
           transition: "all 0.14s", outline: "none",
         }}>
