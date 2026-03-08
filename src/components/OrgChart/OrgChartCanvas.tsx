@@ -1142,7 +1142,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
       </div>
 
       {/* Drag ghost */}
-      {drag && dragNode && <DragGhost node={dragNode} x={drag.curX} y={drag.curY} />}
+      {drag && dragNode && <DragGhost node={dragNode} x={drag.curX} y={drag.curY} palette={palette} isDark={isDark} />}
 
       {/* Drop action menu */}
       {dropMenu && (
