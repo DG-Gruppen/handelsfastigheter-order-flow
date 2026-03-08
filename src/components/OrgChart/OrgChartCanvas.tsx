@@ -648,7 +648,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode }: OrgChartCanv
           if (!rem || !wo || !findNode(wo, dt)) return prev;
           return insertNode(wo, dt, rem);
         });
-        onMove(id, dt);
+        onMoveNode(id, dt);
       }
       dragRef.current = null; dropRef.current = null; setDrag(null); setDrop(null);
     };
