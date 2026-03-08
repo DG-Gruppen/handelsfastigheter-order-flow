@@ -451,8 +451,9 @@ function getColors(color: string, isDark: boolean) {
 }
 
 // ─── COLLAPSE BUTTON (from blueprint logic, styled with tokens) ──────────────
-function CollapseButton({ pos, collapsed, count, onClick }: {
+function CollapseButton({ pos, collapsed, count, onClick, palette }: {
   pos: Pos; collapsed: boolean; count: number; onClick: () => void;
+  palette: ReturnType<typeof useOrgPalette>;
 }) {
   const bx = pos.x + pos.w / 2;
   const by = pos.y + pos.h + 11;
