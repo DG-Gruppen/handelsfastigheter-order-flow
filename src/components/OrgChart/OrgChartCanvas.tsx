@@ -315,8 +315,9 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
 }
 
 // ─── CONNECTORS SVG COMPONENT ────────────────────────────────────────────────
-function Connectors({ tree, positions, collapsed }: {
+function Connectors({ tree, positions, collapsed, palette }: {
   tree: OrgNode; positions: Map<string, Pos>; collapsed: Set<string>;
+  palette: ReturnType<typeof useOrgPalette>;
 }) {
   const segments = useMemo(
     () => buildConnectorSegments(tree, positions, collapsed),
@@ -325,35 +326,32 @@ function Connectors({ tree, positions, collapsed }: {
 
   return (
     <g>
-      {/* Draw dashed (staff) lines first */}
       {segments.filter(s => s.type === "sh" || s.type === "sd").map((s, i) => (
         <line
           key={`staff-${i}`}
           x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke="hsl(250, 80%, 65%)"
+          stroke={palette.connDash}
           strokeWidth={1.5}
           strokeLinecap="round"
           strokeDasharray="5 4"
           opacity={0.6}
         />
       ))}
-      {/* Draw solid lines on top so they're always visible */}
       {segments.filter(s => s.type !== "sh" && s.type !== "sd").map((s, i) => (
         <line
           key={`solid-${i}`}
           x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke="hsl(225, 12%, 48%)"
+          stroke={palette.connSolid}
           strokeWidth={2}
           strokeLinecap="round"
           opacity={0.7}
         />
       ))}
-      {/* Junction dots */}
       {segments.filter(s => s.type === "ld" || s.type === "sd").map((s, i) => (
         <circle
           key={`dot-${i}`}
           cx={s.x1} cy={s.y1} r={2.5}
-          fill={s.type === "sd" ? "hsl(250, 80%, 65%)" : "hsl(225, 12%, 48%)"}
+          fill={s.type === "sd" ? palette.connDash : palette.junctionDot}
           opacity={0.6}
         />
       ))}
