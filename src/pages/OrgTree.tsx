@@ -168,7 +168,7 @@ export default function OrgTree() {
   return (
     <AppLayout>
       <div className="animate-fade-in" style={{ height: "calc(100vh - 80px)" }}>
-        <OrgChartCanvas key={treeVersion} initialTree={tree} onMove={handleMove} />
+        <OrgChartCanvas key={treeVersion} initialTree={tree} onMoveNode={handleMove} />
       </div>
     </AppLayout>
   );
