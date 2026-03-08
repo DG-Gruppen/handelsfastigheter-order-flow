@@ -77,7 +77,7 @@ function countDesc(node: OrgNode): number {
 function cardDims(node: OrgNode) {
   if (node.type === "root") return RC;
   if (node.type === "staff") return SC;
-  if (node.color === "muted") return EC;
+  if (node.color === "slate") return EC;
   return LC;
 }
 
