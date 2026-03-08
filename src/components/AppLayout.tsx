@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2 } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
