@@ -568,7 +568,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
         x={x + (node.type === "root" ? 48 : 44)}
         y={y + h / 2 + 7}
         fontSize={node.type === "root" ? 10 : 8}
-        fill="hsl(225, 12%, 52%)"
+        fill={palette.posText}
         fontFamily="var(--font-body)"
       >
         {node.position}
