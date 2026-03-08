@@ -46,8 +46,8 @@ const CARD = {
 const GAP_H            = 28;
 const GAP_V            = 110;
 const GAP_V_STACK      = 16;  // vertical gap between stacked employees
-const STAFF_GAP_V      = 130;
-const LINE_AFTER_STAFF = 130;
+const STAFF_GAP_V      = 100;
+const LINE_AFTER_STAFF = 160;
 
 function isLeafNode(node: OrgNode): boolean {
   return node.children.length === 0 && node.color === "muted";
