@@ -39,8 +39,13 @@ function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings): OrgNode | null {
-  if (!profiles.length) return null;
+interface BuildResult {
+  tree: OrgNode | null;
+  unassigned: OrgNode[];
+}
+
+function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings): BuildResult {
+  if (!profiles.length) return { tree: null, unassigned: [] };
 
   const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
   const profileMap = new Map(profiles.map(p => [p.id, p]));
@@ -103,15 +108,22 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
 
   const adminRoot = roots.find(r => roleMap[r.user_id] === "admin");
   const primaryRoot = adminRoot || roots[0];
-  if (!primaryRoot) return null;
+  if (!primaryRoot) return { tree: null, unassigned: [] };
 
   const rootNode = toNode(primaryRoot, "root");
 
+  // Other roots without manager: those that have children go into tree, rest are unassigned
+  const unassigned: OrgNode[] = [];
   for (const r of roots.filter(r => r.id !== primaryRoot.id)) {
-    rootNode.children.push(toNode(r));
+    const hasChildren = (childrenByManager.get(r.id) ?? []).length > 0;
+    if (hasChildren) {
+      rootNode.children.push(toNode(r));
+    } else {
+      unassigned.push(toNode(r));
+    }
   }
 
-  return rootNode;
+  return { tree: rootNode, unassigned };
 }
 
 export default function OrgTree() {
@@ -205,7 +217,7 @@ export default function OrgTree() {
     setCardMenu({ profileId: nodeId, x: screenX, y: screenY });
   }, []);
 
-  const tree = buildOrgTree(profiles, roleMap, colorSettings);
+  const { tree, unassigned } = buildOrgTree(profiles, roleMap, colorSettings);
   const menuProfile = cardMenu ? profiles.find(p => p.id === cardMenu.profileId) : null;
 
   if (loading) {
@@ -234,6 +246,7 @@ export default function OrgTree() {
         <OrgChartCanvas
           key={treeVersion}
           initialTree={tree}
+          unassignedNodes={unassigned}
           onMoveNode={handleMove}
           onKebabClick={handleKebabClick}
           onSettingsClick={() => setShowSettings(true)}

@@ -728,12 +728,13 @@ function DragGhost({ node, x, y, palette, isDark }: { node: OrgNode; x: number; 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 interface OrgChartCanvasProps {
   initialTree: OrgNode;
+  unassignedNodes?: OrgNode[];
   onMoveNode?: (movedNodeId: string, newParentId: string, action: DropAction) => void;
   onKebabClick?: (nodeId: string, screenX: number, screenY: number) => void;
   onSettingsClick?: () => void;
 }
 
-export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
+export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
   const palette = useOrgPalette();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -757,7 +758,25 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
   useEffect(() => { setTree(initialTree); }, [initialTree]);
 
   // ── Layout ──
-  const positions = useMemo(() => computeLayout(tree, collapsed), [tree, collapsed]);
+  const positions = useMemo(() => {
+    const pos = computeLayout(tree, collapsed);
+
+    // Position unassigned nodes to the right of the tree
+    if (unassignedNodes.length > 0) {
+      let mxX = -Infinity;
+      for (const [, p] of pos) {
+        mxX = Math.max(mxX, p.x + p.w);
+      }
+      const startX = mxX + 120;
+      const startY = 0;
+      unassignedNodes.forEach((node, i) => {
+        const dims = cardDims(node);
+        pos.set(node.id, { x: startX, y: startY + i * (dims.H + GAP_V_STACK), w: dims.W, h: dims.H });
+      });
+    }
+
+    return pos;
+  }, [tree, collapsed, unassignedNodes]);
 
   const { minX, minY, svgW, svgH } = useMemo(() => {
     let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
@@ -779,9 +798,9 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
 
   const ghostIds = useMemo(() => {
     if (!drag) return new Set<string>();
-    const n = findNode(tree, drag.id);
+    const n = findNode(tree, drag.id) || unassignedNodes.find(u => u.id === drag.id);
     return n ? collectIds(n, new Set()) : new Set<string>();
-  }, [drag, tree]);
+  }, [drag, tree, unassignedNodes]);
 
   // ── Center on mount ──
   useEffect(() => {
@@ -941,7 +960,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
     return { sx, sy, tx, ty };
   }, [drag, dropTarget, positions]);
 
-  const dragNode = drag ? findNode(tree, drag.id) : null;
+  const dragNode = drag ? (findNode(tree, drag.id) || unassignedNodes.find(n => n.id === drag.id)) : null;
 
   // ── Fit to view ──
   const fitToView = useCallback(() => {
@@ -1104,7 +1123,7 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
 
             {/* 3. Node cards */}
             {Array.from(positions.entries()).map(([id, pos]) => {
-              const node = findNode(tree, id);
+              const node = findNode(tree, id) || unassignedNodes.find(n => n.id === id);
               if (!node) return null;
               return (
                 <NodeCard
@@ -1123,7 +1142,27 @@ export default function OrgChartCanvas({ initialTree, onMoveNode, onKebabClick, 
               );
             })}
 
-            {/* 4. Collapse buttons */}
+            {/* 4. "Ej placerade" label above unassigned nodes */}
+            {unassignedNodes.length > 0 && (() => {
+              const firstPos = positions.get(unassignedNodes[0].id);
+              if (!firstPos) return null;
+              return (
+                <text
+                  x={firstPos.x + firstPos.w / 2}
+                  y={firstPos.y - 18}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fontWeight="600"
+                  fill={palette.posText}
+                  fontFamily="var(--font-heading)"
+                  opacity={0.7}
+                >
+                  Ej placerade
+                </text>
+              );
+            })()}
+
+            {/* 5. Collapse buttons */}
             {Array.from(positions.entries()).map(([id, pos]) => {
               const node = findNode(tree, id);
               if (!node || !node.children.length) return null;
