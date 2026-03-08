@@ -11,7 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import NewOrder from "./pages/NewOrder";
 import Approvals from "./pages/Approvals";
 import Admin from "./pages/Admin";
-import OrgTree from "./pages/OrgTree";
+
 import OrderDetail from "./pages/OrderDetail";
 import NotFound from "./pages/NotFound";
 
