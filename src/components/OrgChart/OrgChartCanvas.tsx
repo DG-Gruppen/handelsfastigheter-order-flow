@@ -382,10 +382,10 @@ function Toolbar({ onExpAll, onCollAll, total }: {
     );
   };
   const legs: { c: ColorKey; l: string; d: boolean }[] = [
-    { c: "primary", l: "Ledning", d: false },
-    { c: "staff", l: "Stab", d: true },
-    { c: "accent", l: "Chef", d: false },
-    { c: "muted", l: "Anställd", d: false },
+    { c: "cyan", l: "Ledning", d: false },
+    { c: "violet", l: "Stab", d: true },
+    { c: "blue", l: "Linjechef", d: false },
+    { c: "slate", l: "Anställd", d: false },
   ];
   return (
     <div style={{
