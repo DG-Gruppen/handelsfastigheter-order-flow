@@ -126,7 +126,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main content */}
-      <main className="mx-auto px-4 py-5 md:py-8 max-w-6xl">{children}</main>
+      <main className={`mx-auto px-4 py-5 md:py-8 ${location.pathname === "/org" ? "" : "max-w-6xl"}`}>{children}</main>
 
       {/* Mobile bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t glass-nav safe-bottom">
