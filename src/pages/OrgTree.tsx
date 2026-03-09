@@ -169,7 +169,7 @@ export default function OrgTree() {
 
   const fetchData = async () => {
     const [profilesRes, rolesRes, settingsRes, deptsRes] = await Promise.all([
-      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override"),
+      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
       supabase.from("departments").select("name").order("name"),
