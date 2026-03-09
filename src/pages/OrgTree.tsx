@@ -152,9 +152,9 @@ export default function OrgTree() {
   const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);
   const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [treeVersion, setTreeVersion] = useState(0);
   const [cardMenu, setCardMenu] = useState<{ profileId: string; x: number; y: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isAdmin) { navigate("/dashboard"); return; }
@@ -162,10 +162,17 @@ export default function OrgTree() {
 
     const channel = supabase
       .channel('org-profiles')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => { fetchData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        // Debounce realtime updates to avoid flickering during batch operations
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchData(), 500);
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [isAdmin]);
 
   const fetchData = async () => {
