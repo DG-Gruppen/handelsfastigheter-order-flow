@@ -1003,6 +1003,14 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
       if (action === "place_above") {
         return placeAbove(prev, dragId, targetId);
       }
+      if (action === "place_beside") {
+        const cl = deepClone(prev);
+        const targetParent = findParent(cl, targetId);
+        if (!targetParent) return prev;
+        const [without, removed] = removeNode(cl, dragId);
+        if (!removed || !without) return prev;
+        return insertNode(without, targetParent.id, removed);
+      }
       return prev;
     });
 
