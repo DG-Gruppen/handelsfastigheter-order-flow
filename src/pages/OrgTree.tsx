@@ -199,7 +199,7 @@ export default function OrgTree() {
       supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff, sort_order"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
-      supabase.from("departments").select("id, name, parent_id").order("name"),
+      supabase.from("departments").select("id, name, parent_id, color").order("name"),
     ]);
     setProfiles((profilesRes.data as OrgProfile[]) ?? []);
     const rm: RoleMap = {};
