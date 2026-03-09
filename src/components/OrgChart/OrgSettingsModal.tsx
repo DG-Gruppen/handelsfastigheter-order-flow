@@ -46,7 +46,7 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
   // Build hierarchical list: top-level first, then children indented
   const topLevel = departments.filter(d => !d.parent_id);
   const getChildren = (parentId: string) => departments.filter(d => d.parent_id === parentId);
-  const orderedDepts: { dept: { id: string; name: string; parent_id: string | null }; indent: number }[] = [];
+  const orderedDepts: { dept: { id: string; name: string; parent_id: string | null; color: string | null }; indent: number }[] = [];
   for (const d of topLevel) {
     orderedDepts.push({ dept: d, indent: 0 });
     for (const child of getChildren(d.id)) {
