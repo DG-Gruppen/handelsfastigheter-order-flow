@@ -32,7 +32,7 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
 
   const fetchData = async () => {
     const [deptRes, settingsRes] = await Promise.all([
-      supabase.from("departments").select("id, name, parent_id").order("name"),
+      supabase.from("departments").select("id, name, parent_id, color").order("name"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
     setDepartments((deptRes.data as any[]) ?? []);
