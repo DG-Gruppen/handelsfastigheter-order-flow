@@ -12,8 +12,7 @@ import { useTheme } from "next-themes";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
-export type DropAction = "move_under" | "swap" | "place_above";
-
+export type DropAction = "move_under" | "swap" | "place_above" | "place_beside";
 export interface OrgNode {
   id: string;
   userId?: string;
@@ -619,7 +618,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 }
 
 // ─── DROP ACTION MENU ────────────────────────────────────────────────────────
-import { ArrowDown, ArrowUpDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight } from "lucide-react";
 
 function DropActionMenu({ menu, tree, onAction, onClose }: {
   menu: DropMenuState;
@@ -633,6 +632,8 @@ function DropActionMenu({ menu, tree, onAction, onClose }: {
 
   const canSwap = targetNode.type !== "root";
   const canPlaceAbove = targetNode.type !== "root" && !isAncestor(tree, menu.dragId, menu.targetId);
+  const targetParent = findParent(tree, menu.targetId);
+  const canPlaceBeside = targetNode.type !== "root" && !!targetParent;
 
   const actions: { key: DropAction; label: string; desc: string; icon: React.ReactNode; enabled: boolean }[] = [
     {
@@ -641,6 +642,13 @@ function DropActionMenu({ menu, tree, onAction, onClose }: {
       desc: `${dragNode.name} blir underställd ${targetNode.name}`,
       icon: <ArrowDown className="h-4 w-4" />,
       enabled: true,
+    },
+    {
+      key: "place_beside",
+      label: "Placera bredvid",
+      desc: `${dragNode.name} hamnar på samma nivå som ${targetNode.name}`,
+      icon: <ArrowRight className="h-4 w-4" />,
+      enabled: canPlaceBeside,
     },
     {
       key: "swap",
