@@ -106,8 +106,19 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
     };
   }
 
-  const adminRoot = roots.find(r => roleMap[r.user_id] === "admin");
-  const primaryRoot = adminRoot || roots[0];
+  // Pick the root with the most descendants (the real VD), not just first admin alphabetically
+  const adminRoots = roots.filter(r => roleMap[r.user_id] === "admin");
+  let primaryRoot: OrgProfile | undefined;
+  if (adminRoots.length > 1) {
+    // The admin with children is the real root; others go to unassigned
+    primaryRoot = adminRoots.reduce((best, cur) => {
+      const bestChildren = (childrenByManager.get(best.id) ?? []).length;
+      const curChildren = (childrenByManager.get(cur.id) ?? []).length;
+      return curChildren > bestChildren ? cur : best;
+    });
+  } else {
+    primaryRoot = adminRoots[0] || roots[0];
+  }
   if (!primaryRoot) return { tree: null, unassigned: [] };
 
   const rootNode = toNode(primaryRoot, "root");
