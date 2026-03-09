@@ -201,6 +201,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          sort_order: number
         }
         Insert: {
           category?: Database["public"]["Enums"]["order_category"]
@@ -211,6 +212,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          sort_order?: number
         }
         Update: {
           category?: Database["public"]["Enums"]["order_category"]
@@ -221,6 +223,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          sort_order?: number
         }
         Relationships: [
           {
