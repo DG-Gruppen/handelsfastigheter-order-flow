@@ -179,28 +179,52 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
                 </select>
               </div>
               {orderedDepts.map(({ dept: d, indent }) => (
-                <div key={d.id} className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2" style={{ marginLeft: indent * 20 }}>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {indent > 0 && <span className="text-[10px] text-muted-foreground">└</span>}
-                    <span className="text-sm text-foreground truncate">{d.name}</span>
+                <div key={d.id} className="rounded-lg bg-secondary/40 px-3 py-2 space-y-2" style={{ marginLeft: indent * 20 }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {indent > 0 && <span className="text-[10px] text-muted-foreground">└</span>}
+                      {d.color && (
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                      )}
+                      <span className="text-sm text-foreground truncate">{d.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={d.parent_id || ""}
+                        onChange={e => updateParent(d.id, e.target.value || null)}
+                        className="rounded bg-secondary/60 border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground focus:outline-none max-w-[100px]"
+                      >
+                        <option value="">Toppnivå</option>
+                        {departments.filter(p => p.id !== d.id && !p.parent_id).map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => removeDepartment(d.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <select
-                      value={d.parent_id || ""}
-                      onChange={e => updateParent(d.id, e.target.value || null)}
-                      className="rounded bg-secondary/60 border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground focus:outline-none max-w-[100px]"
-                    >
-                      <option value="">Toppnivå</option>
-                      {departments.filter(p => p.id !== d.id && !p.parent_id).map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => removeDepartment(d.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DEPT_COLORS.map(c => (
+                      <button
+                        key={c.label}
+                        onClick={() => updateDeptColor(d.id, c.value)}
+                        className={`h-5 w-5 rounded-full border-2 transition-all ${
+                          d.color === c.value || (!d.color && !c.value)
+                            ? "border-primary scale-110"
+                            : "border-border/40 hover:border-border"
+                        }`}
+                        style={{ backgroundColor: c.preview }}
+                        title={c.label}
+                      >
+                        {!c.value && (
+                          <span className="flex items-center justify-center text-[8px] text-muted-foreground">✕</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
