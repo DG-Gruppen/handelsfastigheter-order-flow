@@ -327,6 +327,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_staff: boolean | null
           manager_id: string | null
           phone: string | null
           theme_preference: string | null
@@ -340,6 +341,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_staff?: boolean | null
           manager_id?: string | null
           phone?: string | null
           theme_preference?: string | null
@@ -353,6 +355,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_staff?: boolean | null
           manager_id?: string | null
           phone?: string | null
           theme_preference?: string | null

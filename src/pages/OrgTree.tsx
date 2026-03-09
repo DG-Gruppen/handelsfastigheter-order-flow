@@ -17,6 +17,7 @@ interface OrgProfile {
   department: string | null;
   manager_id: string | null;
   title_override?: string | null;
+  is_staff?: boolean | null;
 }
 
 interface RoleMap { [userId: string]: string; }
@@ -97,11 +98,13 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       color,
       type,
       children: children.map(c => {
-        const childRole = roleMap[c.user_id] || "employee";
-        if (type === "root"
-          && childRole === "employee"
-          && (childrenByManager.get(c.id) ?? []).length === 0) {
-          return toNode(c, "staff");
+        // Explicit is_staff flag takes priority; otherwise auto-detect (childless direct report = staff)
+        const isStaffExplicit = c.is_staff;
+        const isChildless = (childrenByManager.get(c.id) ?? []).length === 0;
+        if (type === "root" && isChildless) {
+          if (isStaffExplicit === true || (isStaffExplicit == null)) {
+            return toNode(c, "staff");
+          }
         }
         return toNode(c);
       }),
@@ -166,7 +169,7 @@ export default function OrgTree() {
 
   const fetchData = async () => {
     const [profilesRes, rolesRes, settingsRes, deptsRes] = await Promise.all([
-      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override"),
+      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
       supabase.from("departments").select("name").order("name"),
@@ -218,10 +221,19 @@ export default function OrgTree() {
           supabase.from("profiles").update({ manager_id: movedNodeId } as any).eq("id", targetId),
         ]);
       } else if (action === "place_beside") {
-        // Place beside: give the moved node the same parent as the target
+        // Place beside: give the moved node the same parent and staff status as the target
         const targetProfile = profiles.find(p => p.id === targetId);
         if (!targetProfile) throw new Error("Profile not found");
-        await supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId);
+        // Determine if target is staff in the tree
+        const targetIsStaff = targetProfile.is_staff === true
+          || (targetProfile.is_staff == null
+            && targetProfile.manager_id
+            && profiles.find(p => p.id === targetProfile.manager_id && !p.manager_id) // target's parent is root
+            && !profiles.some(p => p.manager_id === targetId)); // target has no children
+        await supabase.from("profiles").update({
+          manager_id: targetProfile.manager_id,
+          is_staff: targetIsStaff ? true : false,
+        } as any).eq("id", movedNodeId);
       }
       toast.success("Organisationen uppdaterad");
       fetchData();
