@@ -221,10 +221,19 @@ export default function OrgTree() {
           supabase.from("profiles").update({ manager_id: movedNodeId } as any).eq("id", targetId),
         ]);
       } else if (action === "place_beside") {
-        // Place beside: give the moved node the same parent as the target
+        // Place beside: give the moved node the same parent and staff status as the target
         const targetProfile = profiles.find(p => p.id === targetId);
         if (!targetProfile) throw new Error("Profile not found");
-        await supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId);
+        // Determine if target is staff in the tree
+        const targetIsStaff = targetProfile.is_staff === true
+          || (targetProfile.is_staff == null
+            && targetProfile.manager_id
+            && profiles.find(p => p.id === targetProfile.manager_id && !p.manager_id) // target's parent is root
+            && !profiles.some(p => p.manager_id === targetId)); // target has no children
+        await supabase.from("profiles").update({
+          manager_id: targetProfile.manager_id,
+          is_staff: targetIsStaff ? true : false,
+        } as any).eq("id", movedNodeId);
       }
       toast.success("Organisationen uppdaterad");
       fetchData();
