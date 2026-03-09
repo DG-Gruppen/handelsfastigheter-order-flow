@@ -67,7 +67,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Monitor className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
             </div>
             <span className="font-heading text-base md:text-lg font-bold text-foreground">
-              IT-Beställning
+              IT
             </span>
           </Link>
 
