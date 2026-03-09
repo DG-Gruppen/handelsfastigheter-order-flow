@@ -74,16 +74,55 @@ export default function NewOrder() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
         supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.from("profiles").select("id, department").eq("user_id", user?.id ?? "").single(),
+        supabase.from("category_departments").select("category_id, department_id"),
+        supabase.from("order_type_departments").select("order_type_id, department_id"),
       ]);
-      setCategories((catsRes.data as Category[]) ?? []);
-      setOrderTypes((typesRes.data as OrderType[]) ?? []);
+
+      const allCats = (catsRes.data as Category[]) ?? [];
+      const allTypes = (typesRes.data as OrderType[]) ?? [];
       setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
+
+      // Build department restriction maps
+      const catDeptMap: Record<string, string[]> = {};
+      for (const row of (catDeptsRes.data as any[]) ?? []) {
+        if (!catDeptMap[row.category_id]) catDeptMap[row.category_id] = [];
+        catDeptMap[row.category_id].push(row.department_id);
+      }
+      const otDeptMap: Record<string, string[]> = {};
+      for (const row of (otDeptsRes.data as any[]) ?? []) {
+        if (!otDeptMap[row.order_type_id]) otDeptMap[row.order_type_id] = [];
+        otDeptMap[row.order_type_id].push(row.department_id);
+      }
+
+      // Get user's department id
+      const userDept = (myProfileRes.data as any)?.department ?? "";
+
+      // Find matching department id from departments table
+      const { data: deptRows } = await supabase.from("departments").select("id, name");
+      const userDeptId = (deptRows ?? []).find((d: any) => d.name === userDept)?.id;
+
+      // Filter: no rows in junction = visible to all; otherwise must include user's dept
+      const isAdmin = roles.includes("admin");
+      const filteredCats = isAdmin ? allCats : allCats.filter((c) => {
+        const restricted = catDeptMap[c.id];
+        if (!restricted || restricted.length === 0) return true;
+        return userDeptId ? restricted.includes(userDeptId) : true;
+      });
+      const filteredTypes = isAdmin ? allTypes : allTypes.filter((ot) => {
+        const restricted = otDeptMap[ot.id];
+        if (!restricted || restricted.length === 0) return true;
+        return userDeptId ? restricted.includes(userDeptId) : true;
+      });
+
+      setCategories(filteredCats);
+      setOrderTypes(filteredTypes);
 
       const managerUserIds = new Set(
         (rolesRes.data ?? [])
@@ -96,7 +135,7 @@ export default function NewOrder() {
       setManagers(filteredManagers);
     };
     if (user) fetchData();
-  }, [user]);
+  }, [user, roles]);
 
   const addItem = () => setItems((prev) => [...prev, { typeId: "" }]);
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
