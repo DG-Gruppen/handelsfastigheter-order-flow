@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Copy } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
 import DepartmentPicker from "@/components/DepartmentPicker";
 
@@ -101,6 +101,20 @@ export default function OrderTypesManager() {
     });
     const existing = otDepts[ot.id];
     setFormDepts(existing && existing.length > 0 ? existing : departments.map((d) => d.id));
+    setDialogOpen(true);
+  };
+
+  const openDuplicate = (ot: OrderType) => {
+    setEditingId(null);
+    setForm({
+      name: `${ot.name} (kopia)`,
+      category_id: ot.category_id || "",
+      description: ot.description || "",
+      icon: ot.icon || "package",
+      is_active: ot.is_active,
+    });
+    const existing = otDepts[ot.id];
+    setFormDepts(existing && existing.length > 0 ? [...existing] : departments.map((d) => d.id));
     setDialogOpen(true);
   };
 
@@ -237,6 +251,9 @@ export default function OrderTypesManager() {
                                 onCheckedChange={() => handleToggleActive(ot.id, ot.is_active)}
                                 className="mr-1"
                               />
+                              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openDuplicate(ot)}>
+                                <Copy className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(ot)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
