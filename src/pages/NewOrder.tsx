@@ -60,7 +60,9 @@ export default function NewOrder() {
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
-  const [recipientName, setRecipientName] = useState("");
+  const [recipientFirstName, setRecipientFirstName] = useState("");
+  const [recipientLastName, setRecipientLastName] = useState("");
+  const recipientName = `${recipientFirstName} ${recipientLastName}`.trim();
   const [recipientStartDate, setRecipientStartDate] = useState("");
   const [recipientEndDate, setRecipientEndDate] = useState("");
   const [recipientDepartment, setRecipientDepartment] = useState("");
@@ -366,14 +368,25 @@ export default function NewOrder() {
               {recipientType === "new" && (
                 <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uppgifter om ny medarbetare</p>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Namn *</Label>
-                    <Input
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                      placeholder="Förnamn Efternamn"
-                      className="h-12 md:h-10"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Förnamn *</Label>
+                      <Input
+                        value={recipientFirstName}
+                        onChange={(e) => setRecipientFirstName(e.target.value)}
+                        placeholder="Förnamn"
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Efternamn *</Label>
+                      <Input
+                        value={recipientLastName}
+                        onChange={(e) => setRecipientLastName(e.target.value)}
+                        placeholder="Efternamn"
+                        className="h-12 md:h-10"
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -434,11 +447,20 @@ export default function NewOrder() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">Medarbetarens namn *</Label>
+                      <Label className="text-sm font-medium">Förnamn *</Label>
                       <Input
-                        value={recipientName}
-                        onChange={(e) => setRecipientName(e.target.value)}
-                        placeholder="Förnamn Efternamn"
+                        value={recipientFirstName}
+                        onChange={(e) => setRecipientFirstName(e.target.value)}
+                        placeholder="Förnamn"
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Efternamn *</Label>
+                      <Input
+                        value={recipientLastName}
+                        onChange={(e) => setRecipientLastName(e.target.value)}
+                        placeholder="Efternamn"
                         className="h-12 md:h-10"
                       />
                     </div>
