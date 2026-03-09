@@ -620,14 +620,15 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 // ─── DROP ACTION MENU ────────────────────────────────────────────────────────
 import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight } from "lucide-react";
 
-function DropActionMenu({ menu, tree, onAction, onClose }: {
+function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   menu: DropMenuState;
   tree: OrgNode;
+  unassignedNodes: OrgNode[];
   onAction: (action: DropAction) => void;
   onClose: () => void;
 }) {
-  const dragNode = findNode(tree, menu.dragId);
-  const targetNode = findNode(tree, menu.targetId);
+  const dragNode = findNode(tree, menu.dragId) || unassignedNodes.find(n => n.id === menu.dragId);
+  const targetNode = findNode(tree, menu.targetId) || unassignedNodes.find(n => n.id === menu.targetId);
   if (!dragNode || !targetNode) return null;
 
   const canSwap = targetNode.type !== "root";
@@ -1002,6 +1003,14 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
       if (action === "place_above") {
         return placeAbove(prev, dragId, targetId);
       }
+      if (action === "place_beside") {
+        const cl = deepClone(prev);
+        const targetParent = findParent(cl, targetId);
+        if (!targetParent) return prev;
+        const [without, removed] = removeNode(cl, dragId);
+        if (!removed || !without) return prev;
+        return insertNode(without, targetParent.id, removed);
+      }
       return prev;
     });
 
@@ -1197,6 +1206,7 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
         <DropActionMenu
           menu={dropMenu}
           tree={tree}
+          unassignedNodes={unassignedNodes}
           onAction={handleDropAction}
           onClose={() => setDropMenu(null)}
         />
