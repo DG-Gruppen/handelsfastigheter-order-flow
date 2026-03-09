@@ -117,6 +117,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       name: profile.full_name || profile.email,
       position: posLabel,
       dept: profile.department ? deptDisplayName(profile.department) : "",
+      deptColor: profile.department ? deptColor(profile.department) : null,
       avatar: getInitials(profile.full_name || "?"),
       color,
       type,
