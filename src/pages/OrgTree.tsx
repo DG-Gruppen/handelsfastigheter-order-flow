@@ -52,7 +52,7 @@ interface BuildResult {
   unassigned: OrgNode[];
 }
 
-function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings): BuildResult {
+function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings, deptList: DeptInfo[]): BuildResult {
   if (!profiles.length) return { tree: null, unassigned: [] };
 
   const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
