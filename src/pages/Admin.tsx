@@ -183,7 +183,7 @@ export default function Admin() {
       </CardHeader>
       <CardContent className="px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {profiles.map((p) => {
+          {[...profiles].sort((a, b) => a.full_name.localeCompare(b.full_name, 'sv')).map((p) => {
             const currentRoles = userRoles[p.user_id] ?? [];
             return (
             <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
