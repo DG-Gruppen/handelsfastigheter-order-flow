@@ -12,8 +12,7 @@ import { useTheme } from "next-themes";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
-export type DropAction = "move_under" | "swap" | "place_above";
-
+export type DropAction = "move_under" | "swap" | "place_above" | "place_beside";
 export interface OrgNode {
   id: string;
   userId?: string;
