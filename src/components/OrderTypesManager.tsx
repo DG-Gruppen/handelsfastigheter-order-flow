@@ -104,6 +104,20 @@ export default function OrderTypesManager() {
     setDialogOpen(true);
   };
 
+  const openDuplicate = (ot: OrderType) => {
+    setEditingId(null);
+    setForm({
+      name: `${ot.name} (kopia)`,
+      category_id: ot.category_id || "",
+      description: ot.description || "",
+      icon: ot.icon || "package",
+      is_active: ot.is_active,
+    });
+    const existing = otDepts[ot.id];
+    setFormDepts(existing && existing.length > 0 ? [...existing] : departments.map((d) => d.id));
+    setDialogOpen(true);
+  };
+
   const saveDepartments = async (orderTypeId: string, deptIds: string[]) => {
     await supabase.from("order_type_departments").delete().eq("order_type_id", orderTypeId);
     if (deptIds.length < departments.length && deptIds.length > 0) {
