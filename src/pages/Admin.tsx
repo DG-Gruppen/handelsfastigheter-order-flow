@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileWithRoles {
@@ -85,6 +85,24 @@ export default function Admin() {
         ...prev,
         [userId]: [...(prev[userId] ?? []), role],
       }));
+      setSelectedRole((prev) => ({ ...prev, [userId]: "" }));
+    }
+  };
+
+  const handleRemoveRole = async (userId: string, role: string) => {
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role", role as any);
+    if (error) {
+      toast.error("Kunde inte ta bort rollen");
+    } else {
+      toast.success("Roll borttagen");
+      setUserRoles((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] ?? []).filter((r) => r !== role),
+      }));
     }
   };
 
@@ -107,7 +125,9 @@ export default function Admin() {
       </CardHeader>
       <CardContent className="px-4 md:px-6">
         <div className="space-y-3">
-          {profiles.map((p) => (
+          {profiles.map((p) => {
+            const currentRoles = userRoles[p.user_id] ?? [];
+            return (
             <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
               <div className="space-y-1">
                 <p className="font-medium text-sm md:text-base text-foreground">
@@ -116,8 +136,14 @@ export default function Admin() {
                 <p className="text-xs text-muted-foreground">{p.email}</p>
                 <div className="flex gap-1.5 flex-wrap pt-1">
                   {(userRoles[p.user_id] ?? []).map((role) => (
-                    <Badge key={role} variant="secondary" className="capitalize text-xs">
+                    <Badge key={role} variant="secondary" className="capitalize text-xs gap-1 pr-1">
                       {role}
+                      <button
+                        onClick={() => handleRemoveRole(p.user_id, role)}
+                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </Badge>
                   ))}
                 </div>
@@ -131,9 +157,9 @@ export default function Admin() {
                     <SelectValue placeholder="Välj roll..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>
-                    <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>
-                    <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>
+                    {!currentRoles.includes("employee") && <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>}
+                    {!currentRoles.includes("manager") && <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>}
+                    {!currentRoles.includes("admin") && <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>}
                   </SelectContent>
                 </Select>
                 <Button
@@ -146,7 +172,8 @@ export default function Admin() {
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
