@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileWithRoles {
@@ -57,6 +57,22 @@ export default function Admin() {
   const [userRoles, setUserRoles] = useState<Record<string, string[]>>({});
   const [selectedRole, setSelectedRole] = useState<Record<string, string>>({});
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortAsc, setSortAsc] = useState(true);
+
+  const filteredProfiles = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    const filtered = profiles.filter((p) =>
+      p.full_name.toLowerCase().includes(q) ||
+      p.email.toLowerCase().includes(q) ||
+      (p.department ?? "").toLowerCase().includes(q) ||
+      (p.title_override ?? "").toLowerCase().includes(q)
+    );
+    return filtered.sort((a, b) => {
+      const cmp = a.full_name.localeCompare(b.full_name, "sv");
+      return sortAsc ? cmp : -cmp;
+    });
+  }, [profiles, searchQuery, sortAsc]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -181,9 +197,31 @@ export default function Admin() {
           </label>
         </div>
       </CardHeader>
-      <CardContent className="px-4 md:px-6">
+      <CardContent className="px-4 md:px-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Sök namn, e-post, avdelning..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 shrink-0"
+            onClick={() => setSortAsc((v) => !v)}
+            title={sortAsc ? "Sortering: A–Ö" : "Sortering: Ö–A"}
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">{filteredProfiles.length} av {profiles.length} användare</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {[...profiles].sort((a, b) => a.full_name.localeCompare(b.full_name, 'sv')).map((p) => {
+          {filteredProfiles.map((p) => {
             const currentRoles = userRoles[p.user_id] ?? [];
             return (
             <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
