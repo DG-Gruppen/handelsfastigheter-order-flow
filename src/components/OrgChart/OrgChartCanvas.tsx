@@ -609,9 +609,9 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
       {hasDept && (
         <g>
           <rect
-            x={x + w - node.dept.length * 4.2 - 14}
+            x={x + w - node.dept.length * 3.6 - 14}
             y={y + h - 16}
-            width={node.dept.length * 4.2 + 8}
+            width={node.dept.length * 3.6 + 8}
             height={12}
             rx={3}
             fill={c.bg}
