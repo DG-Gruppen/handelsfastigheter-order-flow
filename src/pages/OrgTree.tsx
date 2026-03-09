@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -152,9 +152,9 @@ export default function OrgTree() {
   const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);
   const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [treeVersion, setTreeVersion] = useState(0);
   const [cardMenu, setCardMenu] = useState<{ profileId: string; x: number; y: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isAdmin) { navigate("/dashboard"); return; }
@@ -162,10 +162,17 @@ export default function OrgTree() {
 
     const channel = supabase
       .channel('org-profiles')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => { fetchData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        // Debounce realtime updates to avoid flickering during batch operations
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchData(), 500);
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [isAdmin]);
 
   const fetchData = async () => {
@@ -190,7 +197,6 @@ export default function OrgTree() {
     setDepartments((deptsRes.data as any[])?.map(d => d.name) ?? []);
 
     setLoading(false);
-    setTreeVersion(v => v + 1);
   };
 
   const handleMove = useCallback(async (movedNodeId: string, targetId: string, action: DropAction) => {
@@ -295,7 +301,7 @@ export default function OrgTree() {
     <AppLayout>
       <div className="animate-fade-in relative" style={{ height: "calc(100vh - 80px)" }}>
         <OrgChartCanvas
-          key={treeVersion}
+          key={profiles.length + '-' + profiles.map(p => p.sort_order).join(',')}
           initialTree={tree}
           unassignedNodes={unassigned}
           onMoveNode={handleMove}
