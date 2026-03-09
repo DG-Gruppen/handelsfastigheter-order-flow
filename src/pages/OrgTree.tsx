@@ -55,6 +55,17 @@ interface BuildResult {
 function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings, deptList: DeptInfo[]): BuildResult {
   if (!profiles.length) return { tree: null, unassigned: [] };
 
+  // Build dept name → parent name map for display labels
+  const deptByName = new Map(deptList.map(d => [d.name, d]));
+  const deptDisplayName = (deptName: string): string => {
+    const dept = deptByName.get(deptName);
+    if (dept?.parent_id) {
+      const parent = deptList.find(d => d.id === dept.parent_id);
+      if (parent) return `${parent.name} › ${deptName}`;
+    }
+    return deptName;
+  };
+
   const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
   const profileMap = new Map(profiles.map(p => [p.id, p]));
   const childrenByManager = new Map<string | null, OrgProfile[]>();
