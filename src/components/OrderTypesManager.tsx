@@ -17,11 +17,17 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
+import DepartmentPicker from "@/components/DepartmentPicker";
 
 interface Category {
   id: string;
   name: string;
   icon: string;
+}
+
+interface Department {
+  id: string;
+  name: string;
 }
 
 interface OrderType {
@@ -44,19 +50,32 @@ const emptyForm = {
 export default function OrderTypesManager() {
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [otDepts, setOtDepts] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [formDepts, setFormDepts] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
-    const [typesRes, catsRes] = await Promise.all([
+    const [typesRes, catsRes, deptRes, otdRes] = await Promise.all([
       supabase.from("order_types").select("*").order("name"),
       supabase.from("categories").select("id, name, icon").eq("is_active", true).order("sort_order"),
+      supabase.from("departments").select("id, name").order("name"),
+      supabase.from("order_type_departments").select("order_type_id, department_id"),
     ]);
     setOrderTypes((typesRes.data as OrderType[]) ?? []);
     setCategories((catsRes.data as Category[]) ?? []);
+    setDepartments((deptRes.data as Department[]) ?? []);
+
+    const map: Record<string, string[]> = {};
+    for (const row of (otdRes.data as any[]) ?? []) {
+      if (!map[row.order_type_id]) map[row.order_type_id] = [];
+      map[row.order_type_id].push(row.department_id);
+    }
+    setOtDepts(map);
     setLoading(false);
   };
 
@@ -67,6 +86,7 @@ export default function OrderTypesManager() {
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setFormDepts(departments.map((d) => d.id));
     setDialogOpen(true);
   };
 
@@ -79,7 +99,18 @@ export default function OrderTypesManager() {
       icon: ot.icon || "package",
       is_active: ot.is_active,
     });
+    const existing = otDepts[ot.id];
+    setFormDepts(existing && existing.length > 0 ? existing : departments.map((d) => d.id));
     setDialogOpen(true);
+  };
+
+  const saveDepartments = async (orderTypeId: string, deptIds: string[]) => {
+    await supabase.from("order_type_departments").delete().eq("order_type_id", orderTypeId);
+    if (deptIds.length < departments.length && deptIds.length > 0) {
+      await supabase.from("order_type_departments").insert(
+        deptIds.map((d) => ({ order_type_id: orderTypeId, department_id: d })) as any
+      );
+    }
   };
 
   const handleSave = async () => {
@@ -100,11 +131,17 @@ export default function OrderTypesManager() {
     if (editingId) {
       const { error } = await supabase.from("order_types").update(payload as any).eq("id", editingId);
       if (error) toast.error("Kunde inte uppdatera");
-      else toast.success("Utrustningstyp uppdaterad");
+      else {
+        await saveDepartments(editingId, formDepts);
+        toast.success("Utrustningstyp uppdaterad");
+      }
     } else {
-      const { error } = await supabase.from("order_types").insert(payload as any);
+      const { data, error } = await supabase.from("order_types").insert(payload as any).select("id").single();
       if (error) toast.error("Kunde inte skapa");
-      else toast.success("Utrustningstyp skapad");
+      else {
+        if (data) await saveDepartments((data as any).id, formDepts);
+        toast.success("Utrustningstyp skapad");
+      }
     }
 
     setDialogOpen(false);
@@ -124,6 +161,13 @@ export default function OrderTypesManager() {
   const handleToggleActive = async (id: string, current: boolean) => {
     await supabase.from("order_types").update({ is_active: !current } as any).eq("id", id);
     fetchData();
+  };
+
+  const getDeptLabel = (otId: string) => {
+    const depts = otDepts[otId];
+    if (!depts || depts.length === 0) return "Alla avdelningar";
+    if (depts.length === departments.length) return "Alla avdelningar";
+    return `${depts.length} avd.`;
   };
 
   const catMap = Object.fromEntries(categories.map((c) => [c.id, c]));
@@ -183,9 +227,9 @@ export default function OrderTypesManager() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm text-foreground truncate">{ot.name}</p>
-                              {ot.description && (
-                                <p className="text-xs text-muted-foreground truncate">{ot.description}</p>
-                              )}
+                              <p className="text-xs text-muted-foreground truncate">
+                                {ot.description ? `${ot.description} · ` : ""}{getDeptLabel(ot.id)}
+                              </p>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
                               <Switch
@@ -291,6 +335,15 @@ export default function OrderTypesManager() {
                 rows={2}
                 maxLength={300}
                 className="resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Synlig för avdelningar</Label>
+              <DepartmentPicker
+                departments={departments}
+                selected={formDepts}
+                onChange={setFormDepts}
               />
             </div>
 

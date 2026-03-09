@@ -13,8 +13,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
+import DepartmentPicker from "@/components/DepartmentPicker";
 
 interface Category {
   id: string;
@@ -24,39 +25,72 @@ interface Category {
   is_active: boolean;
 }
 
+interface Department {
+  id: string;
+  name: string;
+}
+
 const emptyForm = { name: "", icon: "package" };
 
 export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [categoryDepts, setCategoryDepts] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [formDepts, setFormDepts] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchCategories = async () => {
-    const { data } = await supabase
-      .from("categories")
-      .select("*")
-      .order("sort_order");
-    setCategories((data as Category[]) ?? []);
+  const fetchData = async () => {
+    const [catRes, deptRes, cdRes] = await Promise.all([
+      supabase.from("categories").select("*").order("sort_order"),
+      supabase.from("departments").select("id, name").order("name"),
+      supabase.from("category_departments").select("category_id, department_id"),
+    ]);
+    setCategories((catRes.data as Category[]) ?? []);
+    setDepartments((deptRes.data as Department[]) ?? []);
+
+    const map: Record<string, string[]> = {};
+    for (const row of (cdRes.data as any[]) ?? []) {
+      if (!map[row.category_id]) map[row.category_id] = [];
+      map[row.category_id].push(row.department_id);
+    }
+    setCategoryDepts(map);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchData();
   }, []);
 
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setFormDepts(departments.map((d) => d.id)); // all selected by default
     setDialogOpen(true);
   };
 
   const openEdit = (c: Category) => {
     setEditingId(c.id);
     setForm({ name: c.name, icon: c.icon });
+    // If no rows exist yet for this category, treat as "all"
+    const existing = categoryDepts[c.id];
+    setFormDepts(existing && existing.length > 0 ? existing : departments.map((d) => d.id));
     setDialogOpen(true);
+  };
+
+  const saveDepartments = async (categoryId: string, deptIds: string[]) => {
+    // Delete existing
+    await supabase.from("category_departments").delete().eq("category_id", categoryId);
+    // Insert new (only if not "all")
+    if (deptIds.length < departments.length && deptIds.length > 0) {
+      await supabase.from("category_departments").insert(
+        deptIds.map((d) => ({ category_id: categoryId, department_id: d })) as any
+      );
+    }
+    // If all selected, we store nothing (means "all")
   };
 
   const handleSave = async () => {
@@ -72,21 +106,27 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
         .update({ name: form.name.trim(), icon: form.icon } as any)
         .eq("id", editingId);
       if (error) toast.error("Kunde inte uppdatera");
-      else toast.success("Kategori uppdaterad");
+      else {
+        await saveDepartments(editingId, formDepts);
+        toast.success("Kategori uppdaterad");
+      }
     } else {
       const maxOrder = categories.length > 0 ? Math.max(...categories.map((c) => c.sort_order)) : 0;
-      const { error } = await supabase.from("categories").insert({
+      const { data, error } = await supabase.from("categories").insert({
         name: form.name.trim(),
         icon: form.icon,
         sort_order: maxOrder + 1,
-      } as any);
+      } as any).select("id").single();
       if (error) toast.error("Kunde inte skapa");
-      else toast.success("Kategori skapad");
+      else {
+        if (data) await saveDepartments((data as any).id, formDepts);
+        toast.success("Kategori skapad");
+      }
     }
 
     setDialogOpen(false);
     setSubmitting(false);
-    fetchCategories();
+    fetchData();
     onUpdate?.();
   };
 
@@ -96,15 +136,22 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
       toast.error("Kan inte ta bort – kategorin används av utrustningstyper");
     } else {
       toast.success("Kategori borttagen");
-      fetchCategories();
+      fetchData();
       onUpdate?.();
     }
   };
 
   const handleToggleActive = async (id: string, current: boolean) => {
     await supabase.from("categories").update({ is_active: !current } as any).eq("id", id);
-    fetchCategories();
+    fetchData();
     onUpdate?.();
+  };
+
+  const getDeptLabel = (catId: string) => {
+    const depts = categoryDepts[catId];
+    if (!depts || depts.length === 0) return "Alla avdelningar";
+    if (depts.length === departments.length) return "Alla avdelningar";
+    return `${depts.length} avd.`;
   };
 
   return (
@@ -146,7 +193,7 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-foreground">{c.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        Sortering: {c.sort_order}
+                        {getDeptLabel(c.id)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -212,6 +259,14 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
                   );
                 })}
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Synlig för avdelningar</Label>
+              <DepartmentPicker
+                departments={departments}
+                selected={formDepts}
+                onChange={setFormDepts}
+              />
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
