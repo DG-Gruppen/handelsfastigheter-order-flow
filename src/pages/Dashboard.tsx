@@ -44,23 +44,54 @@ function getOrderTag(order: Order): { label: string; icon: any; className: strin
 }
 
 export default function Dashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = roles.includes("admin");
+  const isManager = roles.includes("manager");
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile) return;
     const fetchOrders = async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("requester_id", user.id)
-        .order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
+      setLoading(true);
+
+      if (isAdmin) {
+        // Admins see all orders
+        const { data } = await supabase
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false });
+        setOrders((data as Order[]) ?? []);
+      } else if (isManager) {
+        // Managers see own + their employees' orders
+        const { data: managedProfiles } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("manager_id", profile.id);
+        const employeeIds = (managedProfiles ?? []).map(p => p.user_id);
+        const allIds = [user.id, ...employeeIds];
+
+        const { data } = await supabase
+          .from("orders")
+          .select("*")
+          .in("requester_id", allIds)
+          .order("created_at", { ascending: false });
+        setOrders((data as Order[]) ?? []);
+      } else {
+        // Employees see only own orders
+        const { data } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("requester_id", user.id)
+          .order("created_at", { ascending: false });
+        setOrders((data as Order[]) ?? []);
+      }
+
       setLoading(false);
     };
     fetchOrders();
-  }, [user]);
+  }, [user, profile, isAdmin, isManager]);
 
   const counts = {
     pending: orders.filter((o) => o.status === "pending").length,
