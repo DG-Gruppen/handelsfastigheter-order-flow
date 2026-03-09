@@ -494,6 +494,36 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
   const fillColor = isDropTarget ? palette.cardBgHover : palette.cardBg;
   const strokeColor = isDropTarget ? "hsl(230, 75%, 60%)" : c.border;
 
+  // Consistent spacing constants
+  const ACCENT_BAR_W = 4;
+  const PAD_LEFT = 14;                // padding from accent bar to avatar center
+  const AVATAR_R = node.type === "root" ? 15 : node.type === "staff" ? 11 : 12;
+  const AVATAR_CX = x + ACCENT_BAR_W + PAD_LEFT + AVATAR_R;
+  const AVATAR_CY = y + h / 2;
+  const TEXT_X = AVATAR_CX + AVATAR_R + 10; // gap between avatar and text
+  const KEBAB_W = 24;                // total kebab hit area width
+  const KEBAB_MARGIN = 6;            // margin from card edge
+  const TEXT_MAX_X = x + w - (onKebabClick ? KEBAB_W + KEBAB_MARGIN : 10);
+
+  const hasDept = !!node.dept && node.type !== "staff";
+  const hasPosition = !!node.position;
+
+  // Vertical text layout: center name+position block
+  const lineGap = node.type === "root" ? 15 : 13;
+  const nameFontSize = node.type === "root" ? 12.5 : node.type === "staff" ? 10 : 10.5;
+  const posFontSize = node.type === "root" ? 9.5 : 7.5;
+
+  const nameY = hasPosition ? AVATAR_CY - lineGap / 2 + 1 : AVATAR_CY + 1;
+  const posY = AVATAR_CY + lineGap / 2 + 1;
+
+  // Auto-shrink name
+  const availableTextW = TEXT_MAX_X - TEXT_X - (hasDept ? 4 : 0);
+  const approxCharW = nameFontSize * 0.58;
+  const nameWidth = node.name.length * approxCharW;
+  const finalNameSize = nameWidth > availableTextW
+    ? Math.max(7, nameFontSize * (availableTextW / nameWidth))
+    : nameFontSize;
+
   return (
     <g
       data-org-card="true"
@@ -503,32 +533,47 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
       }}
       onMouseDown={node.type === "root" ? undefined : onMouseDown}
     >
+      {/* Card shadow */}
+      <rect
+        x={x + 1} y={y + 2} width={w} height={h} rx={dims.R}
+        fill="black"
+        opacity={isDark ? 0.25 : 0.06}
+      />
+
       {/* Card background */}
       <rect
         x={x} y={y} width={w} height={h} rx={dims.R}
         fill={fillColor}
         stroke={strokeColor}
-        strokeWidth={isDropTarget ? 2 : 1.5}
+        strokeWidth={isDropTarget ? 2 : 1}
       />
 
-      {/* Color accent bar on left */}
+      {/* Color accent bar on left — clipped to card shape */}
+      <clipPath id={`accent-clip-${node.id}`}>
+        <rect x={x} y={y} width={ACCENT_BAR_W + dims.R} height={h} rx={dims.R} />
+      </clipPath>
       <rect
-        x={x} y={y} width={4} height={h}
-        rx={2}
+        x={x} y={y} width={ACCENT_BAR_W + dims.R} height={h}
         fill={c.bg}
+        clipPath={`url(#accent-clip-${node.id})`}
+      />
+      {/* Cover the right rounded part of the accent bar */}
+      <rect
+        x={x + ACCENT_BAR_W} y={y} width={dims.R} height={h}
+        fill={fillColor}
       />
 
       {/* Avatar circle */}
       <circle
-        cx={x + 24} cy={y + h / 2}
-        r={node.type === "root" ? 16 : 13}
+        cx={AVATAR_CX} cy={AVATAR_CY}
+        r={AVATAR_R}
         fill={c.bg}
-        opacity={0.2}
+        opacity={0.15}
       />
       <text
-        x={x + 24} y={y + h / 2 + 1}
+        x={AVATAR_CX} y={AVATAR_CY + 0.5}
         textAnchor="middle" dominantBaseline="central"
-        fontSize={node.type === "root" ? 11 : 9}
+        fontSize={AVATAR_R * 0.75}
         fontWeight="700"
         fill={c.bg}
         fontFamily="var(--font-heading)"
@@ -536,56 +581,61 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
         {node.avatar}
       </text>
 
-      {/* Name — auto-shrink if too long */}
-      {(() => {
-        const baseFontSize = node.type === "root" ? 13 : 11;
-        const textStartX = node.type === "root" ? 48 : 44;
-        const availableWidth = w - textStartX - (node.dept && node.type !== "staff" ? 40 : 18);
-        const approxCharWidth = baseFontSize * 0.6;
-        const nameWidth = node.name.length * approxCharWidth;
-        const fontSize = nameWidth > availableWidth
-          ? Math.max(7, baseFontSize * (availableWidth / nameWidth))
-          : baseFontSize;
-        return (
-          <text
-            x={x + textStartX}
-            y={y + h / 2 - (node.dept ? 7 : 0)}
-            fontSize={fontSize}
-            fontWeight="700"
-            fill={palette.nameText}
-            fontFamily="var(--font-heading)"
-          >
-            {node.name}
-          </text>
-        );
-      })()}
-
-      {/* Position / title */}
+      {/* Name */}
       <text
-        x={x + (node.type === "root" ? 48 : 44)}
-        y={y + h / 2 + 7}
-        fontSize={node.type === "root" ? 10 : 8}
-        fill={palette.posText}
-        fontFamily="var(--font-body)"
+        x={TEXT_X}
+        y={nameY}
+        dominantBaseline="central"
+        fontSize={finalNameSize}
+        fontWeight="700"
+        fill={palette.nameText}
+        fontFamily="var(--font-heading)"
       >
-        {node.position}
+        {node.name}
       </text>
 
-      {/* Dept label */}
-      {node.dept && node.type !== "staff" && (
+      {/* Position / title */}
+      {hasPosition && (
         <text
-          x={x + w - 18}
-          y={y + h - 8}
-          textAnchor="end"
-          fontSize={7}
-          fill={palette.deptText}
+          x={TEXT_X}
+          y={posY}
+          dominantBaseline="central"
+          fontSize={posFontSize}
+          fill={palette.posText}
           fontFamily="var(--font-body)"
         >
-          {node.dept}
+          {node.position}
         </text>
       )}
 
-      {/* Kebab menu (3 dots) */}
+      {/* Dept label — bottom-right corner */}
+      {hasDept && (
+        <g>
+          <rect
+            x={x + w - node.dept.length * 4.2 - 14}
+            y={y + h - 16}
+            width={node.dept.length * 4.2 + 8}
+            height={12}
+            rx={3}
+            fill={c.bg}
+            opacity={0.1}
+          />
+          <text
+            x={x + w - 10}
+            y={y + h - 10}
+            textAnchor="end"
+            dominantBaseline="central"
+            fontSize={6.5}
+            fill={palette.deptText}
+            fontFamily="var(--font-body)"
+            fontWeight="500"
+          >
+            {node.dept}
+          </text>
+        </g>
+      )}
+
+      {/* Kebab menu (3 horizontal dots) — top right */}
       {onKebabClick && (
         <g
           style={{ cursor: "pointer" }}
@@ -593,13 +643,22 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
           onMouseDown={(e) => e.stopPropagation()}
         >
           <rect
-            x={x + w - 22} y={y + 4} width={20} height={14} rx={4}
+            x={x + w - KEBAB_W - KEBAB_MARGIN + 2}
+            y={y + 4}
+            width={KEBAB_W}
+            height={16}
+            rx={5}
             fill="transparent"
-            className="hover:fill-[hsl(230,22%,20%)]"
           />
-          <circle cx={x + w - 17} cy={y + 11} r={1.8} fill={palette.kebabDot} />
-          <circle cx={x + w - 12} cy={y + 11} r={1.8} fill={palette.kebabDot} />
-          <circle cx={x + w - 7} cy={y + 11} r={1.8} fill={palette.kebabDot} />
+          {[0, 1, 2].map(i => (
+            <circle
+              key={i}
+              cx={x + w - KEBAB_MARGIN - 4 - i * 5.5}
+              cy={y + 12}
+              r={1.5}
+              fill={palette.kebabDot}
+            />
+          ))}
         </g>
       )}
 
