@@ -59,20 +59,39 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
+  const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterPhone, setFilterPhone] = useState<string>("all");
+
+  const departments = useMemo(() => {
+    const depts = new Set(profiles.map((p) => p.department).filter(Boolean));
+    return [...depts].sort((a, b) => a.localeCompare(b, "sv"));
+  }, [profiles]);
 
   const filteredProfiles = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    const filtered = profiles.filter((p) =>
-      p.full_name.toLowerCase().includes(q) ||
-      p.email.toLowerCase().includes(q) ||
-      (p.department ?? "").toLowerCase().includes(q) ||
-      (p.title_override ?? "").toLowerCase().includes(q)
-    );
+    const filtered = profiles.filter((p) => {
+      const matchesSearch =
+        p.full_name.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        (p.department ?? "").toLowerCase().includes(q) ||
+        (p.title_override ?? "").toLowerCase().includes(q);
+      const matchesDept = filterDept === "all" || p.department === filterDept;
+      const matchesRole =
+        filterRole === "all" ||
+        (filterRole === "none"
+          ? !(userRoles[p.user_id]?.length)
+          : (userRoles[p.user_id] ?? []).includes(filterRole));
+      const matchesPhone =
+        filterPhone === "all" ||
+        (filterPhone === "yes" ? !!p.phone : !p.phone);
+      return matchesSearch && matchesDept && matchesRole && matchesPhone;
+    });
     return filtered.sort((a, b) => {
       const cmp = a.full_name.localeCompare(b.full_name, "sv");
       return sortAsc ? cmp : -cmp;
     });
-  }, [profiles, searchQuery, sortAsc]);
+  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, userRoles]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -218,6 +237,54 @@ export default function Admin() {
           >
             <ArrowUpDown className="h-4 w-4" />
           </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={filterDept} onValueChange={setFilterDept}>
+            <SelectTrigger className="h-9 w-auto min-w-[140px] text-xs">
+              <Building2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Avdelning" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla avdelningar</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterRole} onValueChange={setFilterRole}>
+            <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
+              <Shield className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Roll" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla roller</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="manager">Chef</SelectItem>
+              <SelectItem value="employee">Anställd</SelectItem>
+              <SelectItem value="none">Utan roll</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterPhone} onValueChange={setFilterPhone}>
+            <SelectTrigger className="h-9 w-auto min-w-[130px] text-xs">
+              <Phone className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Telefon" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectItem value="yes">Har telefonnummer</SelectItem>
+              <SelectItem value="no">Saknar telefonnummer</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-xs text-muted-foreground"
+              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); }}
+            >
+              Rensa filter
+            </Button>
+          )}
         </div>
         <p className="text-xs text-muted-foreground">{filteredProfiles.length} av {profiles.length} användare</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
