@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      category_departments: {
+        Row: {
+          category_id: string
+          department_id: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          department_id: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          department_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_departments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -107,6 +140,39 @@ export type Database = {
           },
           {
             foreignKeyName: "order_items_order_type_id_fkey"
+            columns: ["order_type_id"]
+            isOneToOne: false
+            referencedRelation: "order_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_type_departments: {
+        Row: {
+          department_id: string
+          id: string
+          order_type_id: string
+        }
+        Insert: {
+          department_id: string
+          id?: string
+          order_type_id: string
+        }
+        Update: {
+          department_id?: string
+          id?: string
+          order_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_type_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_type_departments_order_type_id_fkey"
             columns: ["order_type_id"]
             isOneToOne: false
             referencedRelation: "order_types"
