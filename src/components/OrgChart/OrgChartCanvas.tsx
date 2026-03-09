@@ -1088,7 +1088,7 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   return (
     <>
       {/* Toolbar */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
         <div className="flex items-center gap-1 rounded-xl bg-card/80 backdrop-blur-xl border border-border/40 p-1 shadow-lg">
           <button
             onClick={() => applyZoom(zoom * 1.25)}
