@@ -16,7 +16,7 @@ import { useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
-  { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
+  { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList },
   { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
   { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
   { to: "/history", label: "Historik", shortLabel: "Historik", icon: History },
