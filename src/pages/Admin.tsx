@@ -155,9 +155,9 @@ export default function Admin() {
                     <SelectValue placeholder="Välj roll..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>
-                    <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>
-                    <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>
+                    {!currentRoles.includes("employee") && <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>}
+                    {!currentRoles.includes("manager") && <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>}
+                    {!currentRoles.includes("admin") && <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>}
                   </SelectContent>
                 </Select>
                 <Button
