@@ -56,14 +56,22 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
 
   const addDepartment = async () => {
     if (!newDept.trim()) return;
-    const { error } = await supabase.from("departments").insert({ name: newDept.trim() } as any);
+    const { error } = await supabase.from("departments").insert({ name: newDept.trim(), parent_id: newDeptParent } as any);
     if (error) {
       toast.error(error.message.includes("duplicate") ? "Avdelningen finns redan" : "Kunde inte lägga till");
     } else {
       toast.success("Avdelning tillagd");
       setNewDept("");
+      setNewDeptParent(null);
       fetchData();
     }
+  };
+
+  const updateParent = async (deptId: string, parentId: string | null) => {
+    await supabase.from("departments").update({ parent_id: parentId } as any).eq("id", deptId);
+    toast.success("Överordnad avdelning uppdaterad");
+    fetchData();
+    onUpdated();
   };
 
   const removeDepartment = async (id: string) => {
