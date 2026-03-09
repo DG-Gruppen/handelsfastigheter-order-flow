@@ -168,6 +168,7 @@ export default function OrgTree() {
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);
   const [departments, setDepartments] = useState<string[]>([]);
+  const [deptList, setDeptList] = useState<DeptInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardMenu, setCardMenu] = useState<{ profileId: string; x: number; y: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
