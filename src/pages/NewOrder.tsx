@@ -447,11 +447,20 @@ export default function NewOrder() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">Medarbetarens namn *</Label>
+                      <Label className="text-sm font-medium">Förnamn *</Label>
                       <Input
-                        value={recipientName}
-                        onChange={(e) => setRecipientName(e.target.value)}
-                        placeholder="Förnamn Efternamn"
+                        value={recipientFirstName}
+                        onChange={(e) => setRecipientFirstName(e.target.value)}
+                        placeholder="Förnamn"
+                        className="h-12 md:h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Efternamn *</Label>
+                      <Input
+                        value={recipientLastName}
+                        onChange={(e) => setRecipientLastName(e.target.value)}
+                        placeholder="Efternamn"
                         className="h-12 md:h-10"
                       />
                     </div>
