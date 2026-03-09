@@ -12,7 +12,7 @@ import { useTheme } from "next-themes";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
-export type DropAction = "move_under" | "swap" | "place_above" | "place_beside";
+export type DropAction = "move_under" | "swap" | "place_above" | "place_beside" | "reorder_before" | "reorder_before";
 export interface OrgNode {
   id: string;
   userId?: string;
@@ -674,7 +674,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 }
 
 // ─── DROP ACTION MENU ────────────────────────────────────────────────────────
-import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight, ArrowUpFromLine } from "lucide-react";
 
 function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   menu: DropMenuState;
@@ -690,7 +690,9 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   const canSwap = targetNode.type !== "root";
   const canPlaceAbove = targetNode.type !== "root" && !isAncestor(tree, menu.dragId, menu.targetId);
   const targetParent = findParent(tree, menu.targetId);
+  const dragParent = findParent(tree, menu.dragId);
   const canPlaceBeside = targetNode.type !== "root" && !!targetParent;
+  const areSiblings = targetParent && dragParent && targetParent.id === dragParent.id;
 
   const actions: { key: DropAction; label: string; desc: string; icon: React.ReactNode; enabled: boolean }[] = [
     {
@@ -701,11 +703,18 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
       enabled: true,
     },
     {
+      key: "reorder_before",
+      label: "Flytta före",
+      desc: `${dragNode.name} placeras före ${targetNode.name}`,
+      icon: <ArrowUpFromLine className="h-4 w-4" />,
+      enabled: !!areSiblings,
+    },
+    {
       key: "place_beside",
       label: "Placera bredvid",
       desc: `${dragNode.name} hamnar på samma nivå som ${targetNode.name}`,
       icon: <ArrowRight className="h-4 w-4" />,
-      enabled: canPlaceBeside,
+      enabled: canPlaceBeside && !areSiblings,
     },
     {
       key: "swap",
@@ -1076,6 +1085,19 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
         const [without, removed] = removeNode(cl, dragId);
         if (!removed || !without) return prev;
         return insertNode(without, targetParent.id, removed);
+      }
+      if (action === "reorder_before") {
+        const cl = deepClone(prev);
+        const parent = findParent(cl, targetId);
+        if (!parent) return prev;
+        const [without, removed] = removeNode(cl, dragId);
+        if (!removed || !without) return prev;
+        const parentInResult = findNode(without, parent.id);
+        if (!parentInResult) return prev;
+        const targetIdx = parentInResult.children.findIndex(c => c.id === targetId);
+        if (targetIdx === -1) return prev;
+        parentInResult.children.splice(targetIdx, 0, removed);
+        return without;
       }
       return prev;
     });

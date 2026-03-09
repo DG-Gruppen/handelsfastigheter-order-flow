@@ -18,6 +18,7 @@ interface OrgProfile {
   manager_id: string | null;
   title_override?: string | null;
   is_staff?: boolean | null;
+  sort_order?: number | null;
 }
 
 interface RoleMap { [userId: string]: string; }
@@ -70,7 +71,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
   function toNode(profile: OrgProfile, forceType?: OrgNode["type"]): OrgNode {
     const role = roleMap[profile.user_id] || "employee";
     const children = (childrenByManager.get(profile.id) ?? [])
-      .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.full_name || "").localeCompare(b.full_name || ""));
 
     const type: OrgNode["type"] = forceType || "line";
     let color: string;
@@ -169,7 +170,7 @@ export default function OrgTree() {
 
   const fetchData = async () => {
     const [profilesRes, rolesRes, settingsRes, deptsRes] = await Promise.all([
-      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff"),
+      supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff, sort_order"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
       supabase.from("departments").select("name").order("name"),
@@ -234,6 +235,26 @@ export default function OrgTree() {
           manager_id: targetProfile.manager_id,
           is_staff: targetIsStaff ? true : false,
         } as any).eq("id", movedNodeId);
+      } else if (action === "reorder_before") {
+        // Reorder: place moved node just before target within the same parent
+        const targetProfile = profiles.find(p => p.id === targetId);
+        if (!targetProfile) throw new Error("Profile not found");
+        // Get siblings sorted by current sort_order
+        const siblings = profiles
+          .filter(p => p.manager_id === targetProfile.manager_id)
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.full_name || "").localeCompare(b.full_name || ""));
+        // Build new order: insert moved before target
+        const reordered = siblings.filter(s => s.id !== movedNodeId);
+        const targetIdx = reordered.findIndex(s => s.id === targetId);
+        const movedProfile = profiles.find(p => p.id === movedNodeId);
+        if (movedProfile) {
+          reordered.splice(targetIdx, 0, movedProfile);
+        }
+        // Update sort_order for all siblings
+        const updates = reordered.map((s, i) =>
+          supabase.from("profiles").update({ sort_order: i } as any).eq("id", s.id)
+        );
+        await Promise.all(updates);
       }
       toast.success("Organisationen uppdaterad");
       fetchData();
