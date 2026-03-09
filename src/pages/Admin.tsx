@@ -172,7 +172,8 @@ export default function Admin() {
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
