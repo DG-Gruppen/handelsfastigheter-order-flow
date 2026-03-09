@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2 } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ const navItems = [
   { to: "/dashboard", label: "Beställningar", shortLabel: "Hem", icon: ClipboardList },
   { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
   { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
+  { to: "/history", label: "Historik", shortLabel: "Historik", icon: History },
   { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[] },
   
   { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[] },

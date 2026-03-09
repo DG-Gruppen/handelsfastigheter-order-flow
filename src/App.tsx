@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
 
 import OrderDetail from "./pages/OrderDetail";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/orders/new" element={<ProtectedRoute><NewOrder /></ProtectedRoute>} />
               <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/org" element={<ProtectedRoute><OrgTree /></ProtectedRoute>} />
               
