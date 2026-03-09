@@ -19,6 +19,9 @@ interface ProfileWithRoles {
   full_name: string;
   email: string;
   department: string;
+  phone: string | null;
+  title_override: string | null;
+  manager_id: string | null;
 }
 
 type AdminSection = "menu" | "categories" | "equipment" | "users";
