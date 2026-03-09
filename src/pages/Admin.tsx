@@ -57,6 +57,22 @@ export default function Admin() {
   const [userRoles, setUserRoles] = useState<Record<string, string[]>>({});
   const [selectedRole, setSelectedRole] = useState<Record<string, string>>({});
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortAsc, setSortAsc] = useState(true);
+
+  const filteredProfiles = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    const filtered = profiles.filter((p) =>
+      p.full_name.toLowerCase().includes(q) ||
+      p.email.toLowerCase().includes(q) ||
+      (p.department ?? "").toLowerCase().includes(q) ||
+      (p.title_override ?? "").toLowerCase().includes(q)
+    );
+    return filtered.sort((a, b) => {
+      const cmp = a.full_name.localeCompare(b.full_name, "sv");
+      return sortAsc ? cmp : -cmp;
+    });
+  }, [profiles, searchQuery, sortAsc]);
 
   useEffect(() => {
     const fetchData = async () => {
