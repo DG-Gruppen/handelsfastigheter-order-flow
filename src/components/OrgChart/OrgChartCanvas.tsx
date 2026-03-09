@@ -19,6 +19,7 @@ export interface OrgNode {
   name: string;
   position: string;
   dept: string;
+  deptColor?: string | null;  // hex/hsl color from department
   avatar: string;
   color: string;   // design token key
   type: NodeType;

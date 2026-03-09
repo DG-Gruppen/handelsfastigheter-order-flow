@@ -20,7 +20,7 @@ interface OrgSettingsModalProps {
 }
 
 export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModalProps) {
-  const [departments, setDepartments] = useState<{ id: string; name: string; parent_id: string | null }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string; parent_id: string | null; color: string | null }[]>([]);
   const [newDept, setNewDept] = useState("");
   const [newDeptParent, setNewDeptParent] = useState<string | null>(null);
   const [colorSettings, setColorSettings] = useState<Record<string, string>>({});
