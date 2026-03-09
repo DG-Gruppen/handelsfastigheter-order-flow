@@ -80,6 +80,25 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
     fetchData();
   };
 
+  const DEPT_COLORS = [
+    { value: null, label: "Ingen", preview: "transparent" },
+    { value: "#3b82f6", label: "Blå", preview: "#3b82f6" },
+    { value: "#10b981", label: "Grön", preview: "#10b981" },
+    { value: "#f59e0b", label: "Amber", preview: "#f59e0b" },
+    { value: "#ef4444", label: "Röd", preview: "#ef4444" },
+    { value: "#8b5cf6", label: "Lila", preview: "#8b5cf6" },
+    { value: "#ec4899", label: "Rosa", preview: "#ec4899" },
+    { value: "#06b6d4", label: "Cyan", preview: "#06b6d4" },
+    { value: "#f97316", label: "Orange", preview: "#f97316" },
+  ];
+
+  const updateDeptColor = async (deptId: string, color: string | null) => {
+    await supabase.from("departments").update({ color } as any).eq("id", deptId);
+    setDepartments(prev => prev.map(d => d.id === deptId ? { ...d, color } : d));
+    onUpdated();
+    toast.success("Färg uppdaterad");
+  };
+
   const updateColor = async (key: string, value: string) => {
     await supabase
       .from("org_chart_settings")
