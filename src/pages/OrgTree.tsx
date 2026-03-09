@@ -45,6 +45,7 @@ interface DeptInfo {
   id: string;
   name: string;
   parent_id: string | null;
+  color: string | null;
 }
 
 interface BuildResult {
