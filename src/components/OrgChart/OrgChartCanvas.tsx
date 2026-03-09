@@ -674,7 +674,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 }
 
 // ─── DROP ACTION MENU ────────────────────────────────────────────────────────
-import { ArrowDown, ArrowUpDown, , ArrowUpFromLineArrowUp, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight, ArrowUpFromLine } from "lucide-react";
 
 function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   menu: DropMenuState;
