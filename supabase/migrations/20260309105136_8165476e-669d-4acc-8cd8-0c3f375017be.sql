@@ -1,0 +1,1 @@
+ALTER TABLE public.departments ADD COLUMN color text DEFAULT null;
