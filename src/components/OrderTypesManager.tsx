@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,26 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Package, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Copy, GripVertical } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
 import DepartmentPicker from "@/components/DepartmentPicker";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Category {
   id: string;
@@ -37,6 +54,7 @@ interface OrderType {
   description: string;
   icon: string;
   is_active: boolean;
+  sort_order: number;
 }
 
 const emptyForm = {
@@ -46,6 +64,79 @@ const emptyForm = {
   icon: "package",
   is_active: true,
 };
+
+function SortableItem({
+  ot,
+  getDeptLabel,
+  onToggleActive,
+  onDuplicate,
+  onEdit,
+  onDelete,
+}: {
+  ot: OrderType;
+  getDeptLabel: (id: string) => string;
+  onToggleActive: (id: string, current: boolean) => void;
+  onDuplicate: (ot: OrderType) => void;
+  onEdit: (ot: OrderType) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ot.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+  const IconComp = getIcon(ot.icon);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 bg-card transition-opacity ${
+        !ot.is_active ? "opacity-50" : ""
+      }`}
+    >
+      <button
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+        <IconComp className="h-5 w-5 text-secondary-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm text-foreground truncate">{ot.name}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {ot.description ? `${ot.description} · ` : ""}{getDeptLabel(ot.id)}
+        </p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Switch
+          checked={ot.is_active}
+          onCheckedChange={() => onToggleActive(ot.id, ot.is_active)}
+          className="mr-1"
+        />
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onDuplicate(ot)}>
+          <Copy className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(ot)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 text-destructive"
+          onClick={() => onDelete(ot.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function OrderTypesManager() {
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
@@ -59,10 +150,15 @@ export default function OrderTypesManager() {
   const [formDepts, setFormDepts] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   const fetchData = async () => {
     const [typesRes, catsRes, deptRes, otdRes] = await Promise.all([
-      supabase.from("order_types").select("*").order("name"),
-      supabase.from("categories").select("id, name, icon").eq("is_active", true).order("sort_order"),
+      supabase.from("order_types").select("*").order("sort_order").order("name"),
+      supabase.from("categories").select("id, name, icon").eq("is_active", true).order("name"),
       supabase.from("departments").select("id, name").order("name"),
       supabase.from("order_type_departments").select("order_type_id, department_id"),
     ]);
@@ -177,11 +273,38 @@ export default function OrderTypesManager() {
     fetchData();
   };
 
-  const getDeptLabel = (otId: string) => {
+  const getDeptLabel = useCallback((otId: string) => {
     const depts = otDepts[otId];
     if (!depts || depts.length === 0) return "Alla avdelningar";
     if (depts.length === departments.length) return "Alla avdelningar";
     return `${depts.length} avd.`;
+  }, [otDepts, departments]);
+
+  const handleDragEnd = async (catId: string, event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const catTypes = grouped[catId];
+    if (!catTypes) return;
+
+    const oldIndex = catTypes.findIndex((t) => t.id === active.id);
+    const newIndex = catTypes.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(catTypes, oldIndex, newIndex);
+
+    // Optimistic update
+    setOrderTypes((prev) => {
+      const otherTypes = prev.filter((t) => (t.category_id || "uncategorized") !== catId);
+      const updated = reordered.map((t, i) => ({ ...t, sort_order: i }));
+      return [...otherTypes, ...updated];
+    });
+
+    // Persist
+    const updates = reordered.map((t, i) => ({ id: t.id, sort_order: i }));
+    for (const u of updates) {
+      await supabase.from("order_types").update({ sort_order: u.sort_order } as any).eq("id", u.id);
+    }
   };
 
   const catMap = Object.fromEntries(categories.map((c) => [c.id, c]));
@@ -192,6 +315,15 @@ export default function OrderTypesManager() {
     acc[catId].push(ot);
     return acc;
   }, {});
+
+  // Sort categories alphabetically, "uncategorized" last
+  const sortedCatIds = Object.keys(grouped).sort((a, b) => {
+    if (a === "uncategorized") return 1;
+    if (b === "uncategorized") return -1;
+    const nameA = catMap[a]?.name ?? "";
+    const nameB = catMap[b]?.name ?? "";
+    return nameA.localeCompare(nameB, "sv");
+  });
 
   return (
     <>
@@ -215,7 +347,8 @@ export default function OrderTypesManager() {
             <p className="text-muted-foreground py-8 text-center">Laddar...</p>
           ) : (
             <div className="space-y-5">
-              {Object.entries(grouped).map(([catId, types]) => {
+              {sortedCatIds.map((catId) => {
+                const types = grouped[catId];
                 const cat = catMap[catId];
                 const CatIcon = cat ? getIcon(cat.icon) : Package;
                 return (
@@ -226,50 +359,27 @@ export default function OrderTypesManager() {
                         {cat?.name ?? "Utan kategori"}
                       </p>
                     </div>
-                    <div className="space-y-2">
-                      {types.map((ot) => {
-                        const IconComp = getIcon(ot.icon);
-                        return (
-                          <div
-                            key={ot.id}
-                            className={`rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 transition-opacity ${
-                              !ot.is_active ? "opacity-50" : ""
-                            }`}
-                          >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                              <IconComp className="h-5 w-5 text-secondary-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-foreground truncate">{ot.name}</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {ot.description ? `${ot.description} · ` : ""}{getDeptLabel(ot.id)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <Switch
-                                checked={ot.is_active}
-                                onCheckedChange={() => handleToggleActive(ot.id, ot.is_active)}
-                                className="mr-1"
-                              />
-                              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openDuplicate(ot)}>
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(ot)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 text-destructive"
-                                onClick={() => handleDelete(ot.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={(e) => handleDragEnd(catId, e)}
+                    >
+                      <SortableContext items={types.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-2">
+                          {types.map((ot) => (
+                            <SortableItem
+                              key={ot.id}
+                              ot={ot}
+                              getDeptLabel={getDeptLabel}
+                              onToggleActive={handleToggleActive}
+                              onDuplicate={openDuplicate}
+                              onEdit={openEdit}
+                              onDelete={handleDelete}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 );
               })}
