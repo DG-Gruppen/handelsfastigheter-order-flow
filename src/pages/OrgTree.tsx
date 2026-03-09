@@ -17,6 +17,7 @@ interface OrgProfile {
   department: string | null;
   manager_id: string | null;
   title_override?: string | null;
+  is_staff?: boolean | null;
 }
 
 interface RoleMap { [userId: string]: string; }
