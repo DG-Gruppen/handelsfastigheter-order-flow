@@ -94,7 +94,7 @@ export default function Admin() {
       .from("user_roles")
       .delete()
       .eq("user_id", userId)
-      .eq("role", role);
+      .eq("role", role as any);
     if (error) {
       toast.error("Kunde inte ta bort rollen");
     } else {
