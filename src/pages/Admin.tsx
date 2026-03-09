@@ -238,6 +238,54 @@ export default function Admin() {
             <ArrowUpDown className="h-4 w-4" />
           </Button>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={filterDept} onValueChange={setFilterDept}>
+            <SelectTrigger className="h-9 w-auto min-w-[140px] text-xs">
+              <Building2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Avdelning" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla avdelningar</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterRole} onValueChange={setFilterRole}>
+            <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
+              <Shield className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Roll" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla roller</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="manager">Chef</SelectItem>
+              <SelectItem value="employee">Anställd</SelectItem>
+              <SelectItem value="none">Utan roll</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterPhone} onValueChange={setFilterPhone}>
+            <SelectTrigger className="h-9 w-auto min-w-[130px] text-xs">
+              <Phone className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Telefon" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla</SelectItem>
+              <SelectItem value="yes">Har telefonnummer</SelectItem>
+              <SelectItem value="no">Saknar telefonnummer</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-xs text-muted-foreground"
+              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); }}
+            >
+              Rensa filter
+            </Button>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">{filteredProfiles.length} av {profiles.length} användare</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {filteredProfiles.map((p) => {
