@@ -55,6 +55,7 @@ export default function NewOrder() {
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
 
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
