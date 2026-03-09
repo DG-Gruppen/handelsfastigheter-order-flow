@@ -330,6 +330,7 @@ export type Database = {
           is_staff: boolean | null
           manager_id: string | null
           phone: string | null
+          sort_order: number | null
           theme_preference: string | null
           title_override: string | null
           updated_at: string
@@ -344,6 +345,7 @@ export type Database = {
           is_staff?: boolean | null
           manager_id?: string | null
           phone?: string | null
+          sort_order?: number | null
           theme_preference?: string | null
           title_override?: string | null
           updated_at?: string
@@ -358,6 +360,7 @@ export type Database = {
           is_staff?: boolean | null
           manager_id?: string | null
           phone?: string | null
+          sort_order?: number | null
           theme_preference?: string | null
           title_override?: string | null
           updated_at?: string

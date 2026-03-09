@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN sort_order integer DEFAULT 0;
