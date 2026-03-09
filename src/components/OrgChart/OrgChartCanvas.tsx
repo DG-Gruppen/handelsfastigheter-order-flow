@@ -690,7 +690,9 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   const canSwap = targetNode.type !== "root";
   const canPlaceAbove = targetNode.type !== "root" && !isAncestor(tree, menu.dragId, menu.targetId);
   const targetParent = findParent(tree, menu.targetId);
+  const dragParent = findParent(tree, menu.dragId);
   const canPlaceBeside = targetNode.type !== "root" && !!targetParent;
+  const areSiblings = targetParent && dragParent && targetParent.id === dragParent.id;
 
   const actions: { key: DropAction; label: string; desc: string; icon: React.ReactNode; enabled: boolean }[] = [
     {
@@ -701,11 +703,18 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
       enabled: true,
     },
     {
+      key: "reorder_before",
+      label: "Flytta före",
+      desc: `${dragNode.name} placeras före ${targetNode.name}`,
+      icon: <ArrowUpFromLine className="h-4 w-4" />,
+      enabled: !!areSiblings,
+    },
+    {
       key: "place_beside",
       label: "Placera bredvid",
       desc: `${dragNode.name} hamnar på samma nivå som ${targetNode.name}`,
       icon: <ArrowRight className="h-4 w-4" />,
-      enabled: canPlaceBeside,
+      enabled: canPlaceBeside && !areSiblings,
     },
     {
       key: "swap",
