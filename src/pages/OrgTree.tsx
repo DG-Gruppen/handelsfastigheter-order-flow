@@ -215,6 +215,11 @@ export default function OrgTree() {
           supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId),
           supabase.from("profiles").update({ manager_id: movedNodeId } as any).eq("id", targetId),
         ]);
+      } else if (action === "place_beside") {
+        // Place beside: give the moved node the same parent as the target
+        const targetProfile = profiles.find(p => p.id === targetId);
+        if (!targetProfile) throw new Error("Profile not found");
+        await supabase.from("profiles").update({ manager_id: targetProfile.manager_id } as any).eq("id", movedNodeId);
       }
       toast.success("Organisationen uppdaterad");
       fetchData();
