@@ -251,6 +251,9 @@ export default function OrderTypesManager() {
                                 onCheckedChange={() => handleToggleActive(ot.id, ot.is_active)}
                                 className="mr-1"
                               />
+                              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openDuplicate(ot)}>
+                                <Copy className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(ot)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
