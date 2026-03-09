@@ -182,7 +182,7 @@ export default function Admin() {
         </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6">
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {profiles.map((p) => {
             const currentRoles = userRoles[p.user_id] ?? [];
             return (
