@@ -540,6 +540,11 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
         opacity={isDark ? 0.25 : 0.06}
       />
 
+      {/* Clip for entire card */}
+      <clipPath id={`card-clip-${node.id}`}>
+        <rect x={x} y={y} width={w} height={h} rx={dims.R} />
+      </clipPath>
+
       {/* Card background */}
       <rect
         x={x} y={y} width={w} height={h} rx={dims.R}
@@ -549,18 +554,10 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
       />
 
       {/* Color accent bar on left — clipped to card shape */}
-      <clipPath id={`accent-clip-${node.id}`}>
-        <rect x={x} y={y} width={ACCENT_BAR_W + dims.R} height={h} rx={dims.R} />
-      </clipPath>
       <rect
-        x={x} y={y} width={ACCENT_BAR_W + dims.R} height={h}
+        x={x} y={y} width={ACCENT_BAR_W} height={h}
         fill={c.bg}
-        clipPath={`url(#accent-clip-${node.id})`}
-      />
-      {/* Cover the right rounded part of the accent bar */}
-      <rect
-        x={x + ACCENT_BAR_W} y={y} width={dims.R} height={h}
-        fill={fillColor}
+        clipPath={`url(#card-clip-${node.id})`}
       />
 
       {/* Avatar circle */}
