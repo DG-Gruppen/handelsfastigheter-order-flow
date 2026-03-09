@@ -59,20 +59,39 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
+  const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterPhone, setFilterPhone] = useState<string>("all");
+
+  const departments = useMemo(() => {
+    const depts = new Set(profiles.map((p) => p.department).filter(Boolean));
+    return [...depts].sort((a, b) => a.localeCompare(b, "sv"));
+  }, [profiles]);
 
   const filteredProfiles = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    const filtered = profiles.filter((p) =>
-      p.full_name.toLowerCase().includes(q) ||
-      p.email.toLowerCase().includes(q) ||
-      (p.department ?? "").toLowerCase().includes(q) ||
-      (p.title_override ?? "").toLowerCase().includes(q)
-    );
+    const filtered = profiles.filter((p) => {
+      const matchesSearch =
+        p.full_name.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        (p.department ?? "").toLowerCase().includes(q) ||
+        (p.title_override ?? "").toLowerCase().includes(q);
+      const matchesDept = filterDept === "all" || p.department === filterDept;
+      const matchesRole =
+        filterRole === "all" ||
+        (filterRole === "none"
+          ? !(userRoles[p.user_id]?.length)
+          : (userRoles[p.user_id] ?? []).includes(filterRole));
+      const matchesPhone =
+        filterPhone === "all" ||
+        (filterPhone === "yes" ? !!p.phone : !p.phone);
+      return matchesSearch && matchesDept && matchesRole && matchesPhone;
+    });
     return filtered.sort((a, b) => {
       const cmp = a.full_name.localeCompare(b.full_name, "sv");
       return sortAsc ? cmp : -cmp;
     });
-  }, [profiles, searchQuery, sortAsc]);
+  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, userRoles]);
 
   useEffect(() => {
     const fetchData = async () => {
