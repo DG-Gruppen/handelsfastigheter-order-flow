@@ -160,6 +160,23 @@ export default function Admin() {
       <CardHeader className="px-4 md:px-6">
         <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
         <CardDescription className="text-sm">Tilldela roller till användare</CardDescription>
+        <div className="pt-2">
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleGoogleWorkspaceImport}
+              disabled={importing}
+            />
+            <Button variant="outline" size="sm" className="gap-2" asChild disabled={importing}>
+              <span>
+                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Importera från Google Workspace
+              </span>
+            </Button>
+          </label>
+        </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6">
         <div className="space-y-3">
