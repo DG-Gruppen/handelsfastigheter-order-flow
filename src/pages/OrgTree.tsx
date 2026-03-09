@@ -56,7 +56,7 @@ interface BuildResult {
 function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings, deptList: DeptInfo[]): BuildResult {
   if (!profiles.length) return { tree: null, unassigned: [] };
 
-  // Build dept name → parent name map for display labels
+  // Build dept name → info map
   const deptByName = new Map(deptList.map(d => [d.name, d]));
   const deptDisplayName = (deptName: string): string => {
     const dept = deptByName.get(deptName);
@@ -65,6 +65,10 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       if (parent) return `${parent.name} › ${deptName}`;
     }
     return deptName;
+  };
+  const deptColor = (deptName: string): string | null => {
+    const dept = deptByName.get(deptName);
+    return dept?.color ?? null;
   };
 
   const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
