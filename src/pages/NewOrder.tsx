@@ -60,7 +60,9 @@ export default function NewOrder() {
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
-  const [recipientName, setRecipientName] = useState("");
+  const [recipientFirstName, setRecipientFirstName] = useState("");
+  const [recipientLastName, setRecipientLastName] = useState("");
+  const recipientName = `${recipientFirstName} ${recipientLastName}`.trim();
   const [recipientStartDate, setRecipientStartDate] = useState("");
   const [recipientEndDate, setRecipientEndDate] = useState("");
   const [recipientDepartment, setRecipientDepartment] = useState("");
