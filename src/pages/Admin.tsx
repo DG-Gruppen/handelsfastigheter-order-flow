@@ -187,12 +187,36 @@ export default function Admin() {
             const currentRoles = userRoles[p.user_id] ?? [];
             return (
             <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
-              <div className="space-y-1">
-                <p className="font-medium text-sm md:text-base text-foreground">
-                  {p.full_name || p.email}
-                </p>
-                <p className="text-xs text-muted-foreground">{p.email}</p>
-                <div className="flex gap-1.5 flex-wrap pt-1">
+              <div className="space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-sm md:text-base text-foreground">
+                      {p.full_name || p.email}
+                    </p>
+                    {p.title_override && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Briefcase className="h-3 w-3 shrink-0" />
+                        {p.title_override}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  <span>{p.email}</span>
+                  {p.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3 shrink-0" />
+                      {p.phone}
+                    </span>
+                  )}
+                  {p.department && (
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3 shrink-0" />
+                      {p.department}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1.5 flex-wrap pt-0.5">
                   {(userRoles[p.user_id] ?? []).map((role) => (
                     <Badge key={role} variant="secondary" className="capitalize text-xs gap-1 pr-1">
                       {role}
