@@ -1198,8 +1198,10 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
         <DropActionMenu
           menu={dropMenu}
           tree={tree}
+          unassignedNodes={unassignedNodes}
           onAction={handleDropAction}
           onClose={() => setDropMenu(null)}
+        />
         />
       )}
     </>
