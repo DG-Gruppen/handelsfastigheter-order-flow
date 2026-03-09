@@ -41,13 +41,30 @@ function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+interface DeptInfo {
+  id: string;
+  name: string;
+  parent_id: string | null;
+}
+
 interface BuildResult {
   tree: OrgNode | null;
   unassigned: OrgNode[];
 }
 
-function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings): BuildResult {
+function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings, deptList: DeptInfo[]): BuildResult {
   if (!profiles.length) return { tree: null, unassigned: [] };
+
+  // Build dept name → parent name map for display labels
+  const deptByName = new Map(deptList.map(d => [d.name, d]));
+  const deptDisplayName = (deptName: string): string => {
+    const dept = deptByName.get(deptName);
+    if (dept?.parent_id) {
+      const parent = deptList.find(d => d.id === dept.parent_id);
+      if (parent) return `${parent.name} › ${deptName}`;
+    }
+    return deptName;
+  };
 
   const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
   const profileMap = new Map(profiles.map(p => [p.id, p]));
@@ -94,7 +111,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       userId: profile.user_id,
       name: profile.full_name || profile.email,
       position: posLabel,
-      dept: profile.department || "",
+      dept: profile.department ? deptDisplayName(profile.department) : "",
       avatar: getInitials(profile.full_name || "?"),
       color,
       type,
@@ -151,6 +168,7 @@ export default function OrgTree() {
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);
   const [departments, setDepartments] = useState<string[]>([]);
+  const [deptList, setDeptList] = useState<DeptInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardMenu, setCardMenu] = useState<{ profileId: string; x: number; y: number } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -180,7 +198,7 @@ export default function OrgTree() {
       supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff, sort_order"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
-      supabase.from("departments").select("name").order("name"),
+      supabase.from("departments").select("id, name, parent_id").order("name"),
     ]);
     setProfiles((profilesRes.data as OrgProfile[]) ?? []);
     const rm: RoleMap = {};
@@ -194,7 +212,9 @@ export default function OrgTree() {
       if (s.setting_key in cs) (cs as any)[s.setting_key] = s.setting_value;
     }
     setColorSettings(cs);
-    setDepartments((deptsRes.data as any[])?.map(d => d.name) ?? []);
+    const deptsData = (deptsRes.data as any[]) ?? [];
+    setDepartments(deptsData.map(d => d.name));
+    setDeptList(deptsData as DeptInfo[]);
 
     setLoading(false);
   };
@@ -274,7 +294,7 @@ export default function OrgTree() {
     setCardMenu({ profileId: nodeId, x: screenX, y: screenY });
   }, []);
 
-  const { tree, unassigned } = buildOrgTree(profiles, roleMap, colorSettings);
+  const { tree, unassigned } = buildOrgTree(profiles, roleMap, colorSettings, deptList);
   const menuProfile = cardMenu ? profiles.find(p => p.id === cardMenu.profileId) : null;
 
   if (loading) {

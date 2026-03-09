@@ -20,8 +20,9 @@ interface OrgSettingsModalProps {
 }
 
 export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModalProps) {
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string; parent_id: string | null }[]>([]);
   const [newDept, setNewDept] = useState("");
+  const [newDeptParent, setNewDeptParent] = useState<string | null>(null);
   const [colorSettings, setColorSettings] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"departments" | "colors">("departments");
 
@@ -31,7 +32,7 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
 
   const fetchData = async () => {
     const [deptRes, settingsRes] = await Promise.all([
-      supabase.from("departments").select("id, name").order("name"),
+      supabase.from("departments").select("id, name, parent_id").order("name"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
     setDepartments((deptRes.data as any[]) ?? []);
@@ -42,16 +43,35 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
     setColorSettings(cs);
   };
 
+  // Build hierarchical list: top-level first, then children indented
+  const topLevel = departments.filter(d => !d.parent_id);
+  const getChildren = (parentId: string) => departments.filter(d => d.parent_id === parentId);
+  const orderedDepts: { dept: { id: string; name: string; parent_id: string | null }; indent: number }[] = [];
+  for (const d of topLevel) {
+    orderedDepts.push({ dept: d, indent: 0 });
+    for (const child of getChildren(d.id)) {
+      orderedDepts.push({ dept: child, indent: 1 });
+    }
+  }
+
   const addDepartment = async () => {
     if (!newDept.trim()) return;
-    const { error } = await supabase.from("departments").insert({ name: newDept.trim() } as any);
+    const { error } = await supabase.from("departments").insert({ name: newDept.trim(), parent_id: newDeptParent } as any);
     if (error) {
       toast.error(error.message.includes("duplicate") ? "Avdelningen finns redan" : "Kunde inte lägga till");
     } else {
       toast.success("Avdelning tillagd");
       setNewDept("");
+      setNewDeptParent(null);
       fetchData();
     }
+  };
+
+  const updateParent = async (deptId: string, parentId: string | null) => {
+    await supabase.from("departments").update({ parent_id: parentId } as any).eq("id", deptId);
+    toast.success("Överordnad avdelning uppdaterad");
+    fetchData();
+    onUpdated();
   };
 
   const removeDepartment = async (id: string) => {
@@ -112,30 +132,57 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
         <div className="p-5 max-h-[60vh] overflow-y-auto">
           {activeTab === "departments" && (
             <div className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  value={newDept}
-                  onChange={e => setNewDept(e.target.value)}
-                  placeholder="Ny avdelning..."
-                  className="flex-1 rounded-lg bg-secondary/60 border border-border/40 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  onKeyDown={e => e.key === "Enter" && addDepartment()}
-                />
-                <button
-                  onClick={addDepartment}
-                  className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              {departments.map(d => (
-                <div key={d.id} className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2">
-                  <span className="text-sm text-foreground">{d.name}</span>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    value={newDept}
+                    onChange={e => setNewDept(e.target.value)}
+                    placeholder="Ny avdelning..."
+                    className="flex-1 rounded-lg bg-secondary/60 border border-border/40 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    onKeyDown={e => e.key === "Enter" && addDepartment()}
+                  />
                   <button
-                    onClick={() => removeDepartment(d.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    onClick={addDepartment}
+                    className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
+                </div>
+                <select
+                  value={newDeptParent || ""}
+                  onChange={e => setNewDeptParent(e.target.value || null)}
+                  className="w-full rounded-lg bg-secondary/60 border border-border/40 px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">Ingen överordnad (toppnivå)</option>
+                  {topLevel.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+              {orderedDepts.map(({ dept: d, indent }) => (
+                <div key={d.id} className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2" style={{ marginLeft: indent * 20 }}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {indent > 0 && <span className="text-[10px] text-muted-foreground">└</span>}
+                    <span className="text-sm text-foreground truncate">{d.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <select
+                      value={d.parent_id || ""}
+                      onChange={e => updateParent(d.id, e.target.value || null)}
+                      className="rounded bg-secondary/60 border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground focus:outline-none max-w-[100px]"
+                    >
+                      <option value="">Toppnivå</option>
+                      {departments.filter(p => p.id !== d.id && !p.parent_id).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => removeDepartment(d.id)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
               {departments.length === 0 && (

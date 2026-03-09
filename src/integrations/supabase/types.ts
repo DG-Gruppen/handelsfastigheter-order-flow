@@ -79,18 +79,29 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          parent_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          parent_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          parent_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "departments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
