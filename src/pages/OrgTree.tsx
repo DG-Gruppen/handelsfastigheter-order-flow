@@ -197,7 +197,6 @@ export default function OrgTree() {
     setDepartments((deptsRes.data as any[])?.map(d => d.name) ?? []);
 
     setLoading(false);
-    setTreeVersion(v => v + 1);
   };
 
   const handleMove = useCallback(async (movedNodeId: string, targetId: string, action: DropAction) => {
