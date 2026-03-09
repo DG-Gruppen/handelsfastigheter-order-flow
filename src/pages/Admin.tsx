@@ -85,6 +85,24 @@ export default function Admin() {
         ...prev,
         [userId]: [...(prev[userId] ?? []), role],
       }));
+      setSelectedRole((prev) => ({ ...prev, [userId]: "" }));
+    }
+  };
+
+  const handleRemoveRole = async (userId: string, role: string) => {
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role", role);
+    if (error) {
+      toast.error("Kunde inte ta bort rollen");
+    } else {
+      toast.success("Roll borttagen");
+      setUserRoles((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] ?? []).filter((r) => r !== role),
+      }));
     }
   };
 
