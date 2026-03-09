@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Copy } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
 import DepartmentPicker from "@/components/DepartmentPicker";
 
