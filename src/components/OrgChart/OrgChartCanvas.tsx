@@ -19,6 +19,7 @@ export interface OrgNode {
   name: string;
   position: string;
   dept: string;
+  deptColor?: string | null;  // hex/hsl color from department
   avatar: string;
   color: string;   // design token key
   type: NodeType;
@@ -614,16 +615,28 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
             width={node.dept.length * 3.6 + 8}
             height={12}
             rx={3}
-            fill={c.bg}
-            opacity={0.1}
+            fill={node.deptColor || c.bg}
+            opacity={node.deptColor ? 0.15 : 0.1}
           />
+          {node.deptColor && (
+            <rect
+              x={x + w - node.dept.length * 3.6 - 14}
+              y={y + h - 16}
+              width={2.5}
+              height={12}
+              rx={1}
+              fill={node.deptColor}
+              opacity={0.6}
+            />
+          )}
           <text
             x={x + w - 10}
             y={y + h - 10}
             textAnchor="end"
             dominantBaseline="central"
             fontSize={6.5}
-            fill={palette.deptText}
+            fill={node.deptColor || palette.deptText}
+            opacity={node.deptColor ? 0.8 : 1}
             fontFamily="var(--font-body)"
             fontWeight="500"
           >

@@ -76,18 +76,21 @@ export type Database = {
       }
       departments: {
         Row: {
+          color: string | null
           created_at: string
           id: string
           name: string
           parent_id: string | null
         }
         Insert: {
+          color?: string | null
           created_at?: string
           id?: string
           name: string
           parent_id?: string | null
         }
         Update: {
+          color?: string | null
           created_at?: string
           id?: string
           name?: string

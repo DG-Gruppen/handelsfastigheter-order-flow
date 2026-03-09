@@ -20,7 +20,7 @@ interface OrgSettingsModalProps {
 }
 
 export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModalProps) {
-  const [departments, setDepartments] = useState<{ id: string; name: string; parent_id: string | null }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string; parent_id: string | null; color: string | null }[]>([]);
   const [newDept, setNewDept] = useState("");
   const [newDeptParent, setNewDeptParent] = useState<string | null>(null);
   const [colorSettings, setColorSettings] = useState<Record<string, string>>({});
@@ -32,7 +32,7 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
 
   const fetchData = async () => {
     const [deptRes, settingsRes] = await Promise.all([
-      supabase.from("departments").select("id, name, parent_id").order("name"),
+      supabase.from("departments").select("id, name, parent_id, color").order("name"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
     setDepartments((deptRes.data as any[]) ?? []);
@@ -46,7 +46,7 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
   // Build hierarchical list: top-level first, then children indented
   const topLevel = departments.filter(d => !d.parent_id);
   const getChildren = (parentId: string) => departments.filter(d => d.parent_id === parentId);
-  const orderedDepts: { dept: { id: string; name: string; parent_id: string | null }; indent: number }[] = [];
+  const orderedDepts: { dept: { id: string; name: string; parent_id: string | null; color: string | null }; indent: number }[] = [];
   for (const d of topLevel) {
     orderedDepts.push({ dept: d, indent: 0 });
     for (const child of getChildren(d.id)) {
@@ -78,6 +78,25 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
     await supabase.from("departments").delete().eq("id", id);
     toast.success("Avdelning borttagen");
     fetchData();
+  };
+
+  const DEPT_COLORS = [
+    { value: null, label: "Ingen", preview: "transparent" },
+    { value: "#3b82f6", label: "Blå", preview: "#3b82f6" },
+    { value: "#10b981", label: "Grön", preview: "#10b981" },
+    { value: "#f59e0b", label: "Amber", preview: "#f59e0b" },
+    { value: "#ef4444", label: "Röd", preview: "#ef4444" },
+    { value: "#8b5cf6", label: "Lila", preview: "#8b5cf6" },
+    { value: "#ec4899", label: "Rosa", preview: "#ec4899" },
+    { value: "#06b6d4", label: "Cyan", preview: "#06b6d4" },
+    { value: "#f97316", label: "Orange", preview: "#f97316" },
+  ];
+
+  const updateDeptColor = async (deptId: string, color: string | null) => {
+    await supabase.from("departments").update({ color } as any).eq("id", deptId);
+    setDepartments(prev => prev.map(d => d.id === deptId ? { ...d, color } : d));
+    onUpdated();
+    toast.success("Färg uppdaterad");
   };
 
   const updateColor = async (key: string, value: string) => {
@@ -160,28 +179,52 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
                 </select>
               </div>
               {orderedDepts.map(({ dept: d, indent }) => (
-                <div key={d.id} className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2" style={{ marginLeft: indent * 20 }}>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {indent > 0 && <span className="text-[10px] text-muted-foreground">└</span>}
-                    <span className="text-sm text-foreground truncate">{d.name}</span>
+                <div key={d.id} className="rounded-lg bg-secondary/40 px-3 py-2 space-y-2" style={{ marginLeft: indent * 20 }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {indent > 0 && <span className="text-[10px] text-muted-foreground">└</span>}
+                      {d.color && (
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                      )}
+                      <span className="text-sm text-foreground truncate">{d.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={d.parent_id || ""}
+                        onChange={e => updateParent(d.id, e.target.value || null)}
+                        className="rounded bg-secondary/60 border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground focus:outline-none max-w-[100px]"
+                      >
+                        <option value="">Toppnivå</option>
+                        {departments.filter(p => p.id !== d.id && !p.parent_id).map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => removeDepartment(d.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <select
-                      value={d.parent_id || ""}
-                      onChange={e => updateParent(d.id, e.target.value || null)}
-                      className="rounded bg-secondary/60 border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground focus:outline-none max-w-[100px]"
-                    >
-                      <option value="">Toppnivå</option>
-                      {departments.filter(p => p.id !== d.id && !p.parent_id).map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => removeDepartment(d.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DEPT_COLORS.map(c => (
+                      <button
+                        key={c.label}
+                        onClick={() => updateDeptColor(d.id, c.value)}
+                        className={`h-5 w-5 rounded-full border-2 transition-all ${
+                          d.color === c.value || (!d.color && !c.value)
+                            ? "border-primary scale-110"
+                            : "border-border/40 hover:border-border"
+                        }`}
+                        style={{ backgroundColor: c.preview }}
+                        title={c.label}
+                      >
+                        {!c.value && (
+                          <span className="flex items-center justify-center text-[8px] text-muted-foreground">✕</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}

@@ -45,6 +45,7 @@ interface DeptInfo {
   id: string;
   name: string;
   parent_id: string | null;
+  color: string | null;
 }
 
 interface BuildResult {
@@ -55,7 +56,7 @@ interface BuildResult {
 function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings, deptList: DeptInfo[]): BuildResult {
   if (!profiles.length) return { tree: null, unassigned: [] };
 
-  // Build dept name → parent name map for display labels
+  // Build dept name → info map
   const deptByName = new Map(deptList.map(d => [d.name, d]));
   const deptDisplayName = (deptName: string): string => {
     const dept = deptByName.get(deptName);
@@ -64,6 +65,10 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       if (parent) return `${parent.name} › ${deptName}`;
     }
     return deptName;
+  };
+  const deptColor = (deptName: string): string | null => {
+    const dept = deptByName.get(deptName);
+    return dept?.color ?? null;
   };
 
   const managerColors = colorSettings.color_manager.split(",").filter(Boolean);
@@ -112,6 +117,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       name: profile.full_name || profile.email,
       position: posLabel,
       dept: profile.department ? deptDisplayName(profile.department) : "",
+      deptColor: profile.department ? deptColor(profile.department) : null,
       avatar: getInitials(profile.full_name || "?"),
       color,
       type,
@@ -198,7 +204,7 @@ export default function OrgTree() {
       supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff, sort_order"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
-      supabase.from("departments").select("id, name, parent_id").order("name"),
+      supabase.from("departments").select("id, name, parent_id, color").order("name"),
     ]);
     setProfiles((profilesRes.data as OrgProfile[]) ?? []);
     const rm: RoleMap = {};
