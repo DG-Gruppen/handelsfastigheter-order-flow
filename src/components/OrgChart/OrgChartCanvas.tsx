@@ -881,15 +881,20 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   }, []); // eslint-disable-line
 
   // ── Collapse / expand ──
+  const persistCollapsed = useCallback((s: Set<string>) => {
+    try { localStorage.setItem("org-collapsed", JSON.stringify([...s])); } catch {}
+  }, []);
+
   const toggleCollapse = useCallback((id: string) => {
     setCollapsed(prev => {
       const s = new Set(prev);
       s.has(id) ? s.delete(id) : s.add(id);
+      persistCollapsed(s);
       return s;
     });
-  }, []);
+  }, [persistCollapsed]);
 
-  const expandAll = useCallback(() => setCollapsed(new Set()), []);
+  const expandAll = useCallback(() => { const s = new Set<string>(); setCollapsed(s); persistCollapsed(s); }, [persistCollapsed]);
 
   const collapseAll = useCallback(() => {
     const s = new Set<string>();
