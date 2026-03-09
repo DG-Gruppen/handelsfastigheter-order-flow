@@ -106,7 +106,8 @@ export default function NewOrder() {
       const userDept = (myProfileRes.data as any)?.department ?? "";
 
       // Find matching department id from departments table
-      const { data: deptRows } = await supabase.from("departments").select("id, name");
+      const { data: deptRows } = await supabase.from("departments").select("id, name").order("name");
+      setDepartmentsList((deptRows as any[]) ?? []);
       const userDeptId = (deptRows ?? []).find((d: any) => d.name === userDept)?.id;
 
       // Filter: no rows in junction = visible to all; otherwise must include user's dept
