@@ -235,6 +235,26 @@ export default function OrgTree() {
           manager_id: targetProfile.manager_id,
           is_staff: targetIsStaff ? true : false,
         } as any).eq("id", movedNodeId);
+      } else if (action === "reorder_before") {
+        // Reorder: place moved node just before target within the same parent
+        const targetProfile = profiles.find(p => p.id === targetId);
+        if (!targetProfile) throw new Error("Profile not found");
+        // Get siblings sorted by current sort_order
+        const siblings = profiles
+          .filter(p => p.manager_id === targetProfile.manager_id)
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.full_name || "").localeCompare(b.full_name || ""));
+        // Build new order: insert moved before target
+        const reordered = siblings.filter(s => s.id !== movedNodeId);
+        const targetIdx = reordered.findIndex(s => s.id === targetId);
+        const movedProfile = profiles.find(p => p.id === movedNodeId);
+        if (movedProfile) {
+          reordered.splice(targetIdx, 0, movedProfile);
+        }
+        // Update sort_order for all siblings
+        const updates = reordered.map((s, i) =>
+          supabase.from("profiles").update({ sort_order: i } as any).eq("id", s.id)
+        );
+        await Promise.all(updates);
       }
       toast.success("Organisationen uppdaterad");
       fetchData();
