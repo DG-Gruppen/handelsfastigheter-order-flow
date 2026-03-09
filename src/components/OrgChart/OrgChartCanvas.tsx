@@ -496,7 +496,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 
   // Consistent spacing constants
   const ACCENT_BAR_W = 4;
-  const PAD_LEFT = 14;                // padding from accent bar to avatar center
+  const PAD_LEFT = 8;                 // padding from accent bar to avatar center
   const AVATAR_R = node.type === "root" ? 15 : node.type === "staff" ? 11 : 12;
   const AVATAR_CX = x + ACCENT_BAR_W + PAD_LEFT + AVATAR_R;
   const AVATAR_CY = y + h / 2;
