@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
 
 import OrderDetail from "./pages/OrderDetail";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
