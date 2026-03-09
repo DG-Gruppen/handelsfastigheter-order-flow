@@ -805,7 +805,12 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   const isDark = resolvedTheme === "dark";
 
   const [tree, setTree]             = useState(initialTree);
-  const [collapsed, setCollapsed]   = useState(new Set<string>());
+  const [collapsed, setCollapsed]   = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("org-collapsed");
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
   const [drag, setDrag]             = useState<{ id: string; curX: number; curY: number } | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [dropMenu, setDropMenu]     = useState<DropMenuState | null>(null);
