@@ -55,6 +55,7 @@ export default function NewOrder() {
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
 
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
@@ -105,7 +106,8 @@ export default function NewOrder() {
       const userDept = (myProfileRes.data as any)?.department ?? "";
 
       // Find matching department id from departments table
-      const { data: deptRows } = await supabase.from("departments").select("id, name");
+      const { data: deptRows } = await supabase.from("departments").select("id, name").order("name");
+      setDepartmentsList((deptRows as any[]) ?? []);
       const userDeptId = (deptRows ?? []).find((d: any) => d.name === userDept)?.id;
 
       // Filter: no rows in junction = visible to all; otherwise must include user's dept
@@ -385,12 +387,16 @@ export default function NewOrder() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Avdelning</Label>
-                      <Input
-                        value={recipientDepartment}
-                        onChange={(e) => setRecipientDepartment(e.target.value)}
-                        placeholder="T.ex. Ekonomi"
-                        className="h-12 md:h-10"
-                      />
+                      <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
+                        <SelectTrigger className="h-12 md:h-10">
+                          <SelectValue placeholder="Välj avdelning..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departmentsList.map((d) => (
+                            <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -448,12 +454,16 @@ export default function NewOrder() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Avdelning</Label>
-                    <Input
-                      value={recipientDepartment}
-                      onChange={(e) => setRecipientDepartment(e.target.value)}
-                      placeholder="T.ex. Ekonomi"
-                      className="h-12 md:h-10"
-                    />
+                    <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
+                      <SelectTrigger className="h-12 md:h-10">
+                        <SelectValue placeholder="Välj avdelning..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departmentsList.map((d) => (
+                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               )}
