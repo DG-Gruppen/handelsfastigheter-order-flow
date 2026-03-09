@@ -134,8 +134,14 @@ export default function Admin() {
                 <p className="text-xs text-muted-foreground">{p.email}</p>
                 <div className="flex gap-1.5 flex-wrap pt-1">
                   {(userRoles[p.user_id] ?? []).map((role) => (
-                    <Badge key={role} variant="secondary" className="capitalize text-xs">
+                    <Badge key={role} variant="secondary" className="capitalize text-xs gap-1 pr-1">
                       {role}
+                      <button
+                        onClick={() => handleRemoveRole(p.user_id, role)}
+                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </Badge>
                   ))}
                 </div>
