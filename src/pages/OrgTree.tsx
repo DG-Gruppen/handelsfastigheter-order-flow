@@ -41,6 +41,12 @@ function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+interface DeptInfo {
+  id: string;
+  name: string;
+  parent_id: string | null;
+}
+
 interface BuildResult {
   tree: OrgNode | null;
   unassigned: OrgNode[];
