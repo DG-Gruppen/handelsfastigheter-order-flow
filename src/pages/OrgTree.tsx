@@ -198,7 +198,7 @@ export default function OrgTree() {
       supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff, sort_order"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
-      supabase.from("departments").select("name").order("name"),
+      supabase.from("departments").select("id, name, parent_id").order("name"),
     ]);
     setProfiles((profilesRes.data as OrgProfile[]) ?? []);
     const rm: RoleMap = {};
@@ -212,7 +212,9 @@ export default function OrgTree() {
       if (s.setting_key in cs) (cs as any)[s.setting_key] = s.setting_value;
     }
     setColorSettings(cs);
-    setDepartments((deptsRes.data as any[])?.map(d => d.name) ?? []);
+    const deptsData = (deptsRes.data as any[]) ?? [];
+    setDepartments(deptsData.map(d => d.name));
+    setDeptList(deptsData as DeptInfo[]);
 
     setLoading(false);
   };
