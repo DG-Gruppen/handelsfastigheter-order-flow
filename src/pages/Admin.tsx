@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileWithRoles {
@@ -106,6 +106,44 @@ export default function Admin() {
     }
   };
 
+  const [importing, setImporting] = useState(false);
+
+  const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+
+      const { data, error } = await supabase.functions.invoke("import-google-workspace", {
+        body: json,
+      });
+
+      if (error) throw error;
+
+      const results = data?.results ?? [];
+      const updated = results.filter((r: any) => r.status === "updated");
+      const noMatch = results.filter((r: any) => r.status === "no_match");
+      const noChanges = results.filter((r: any) => r.status === "no_changes");
+      const errors = results.filter((r: any) => r.status === "error");
+
+      toast.success(
+        `Import klar: ${updated.length} uppdaterade, ${noChanges.length} redan aktuella, ${noMatch.length} utan matchning${errors.length ? `, ${errors.length} fel` : ""}`
+      );
+
+      // Refresh profiles
+      const { data: profilesData } = await supabase.from("profiles").select("*");
+      setProfiles((profilesData as ProfileWithRoles[]) ?? []);
+    } catch (err: any) {
+      toast.error("Import misslyckades: " + (err.message || "Okänt fel"));
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
+  };
+
   if (!roles.includes("admin")) {
     return (
       <AppLayout>
@@ -122,6 +160,23 @@ export default function Admin() {
       <CardHeader className="px-4 md:px-6">
         <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
         <CardDescription className="text-sm">Tilldela roller till användare</CardDescription>
+        <div className="pt-2">
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleGoogleWorkspaceImport}
+              disabled={importing}
+            />
+            <Button variant="outline" size="sm" className="gap-2" asChild disabled={importing}>
+              <span>
+                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Importera från Google Workspace
+              </span>
+            </Button>
+          </label>
+        </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6">
         <div className="space-y-3">
