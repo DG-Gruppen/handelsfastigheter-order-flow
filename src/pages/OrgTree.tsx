@@ -97,7 +97,9 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
       color,
       type,
       children: children.map(c => {
+        const childRole = roleMap[c.user_id] || "employee";
         if (type === "root"
+          && childRole === "employee"
           && (childrenByManager.get(c.id) ?? []).length === 0) {
           return toNode(c, "staff");
         }
