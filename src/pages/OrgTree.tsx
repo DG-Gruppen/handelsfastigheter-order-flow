@@ -18,6 +18,7 @@ interface OrgProfile {
   manager_id: string | null;
   title_override?: string | null;
   is_staff?: boolean | null;
+  sort_order?: number | null;
 }
 
 interface RoleMap { [userId: string]: string; }
