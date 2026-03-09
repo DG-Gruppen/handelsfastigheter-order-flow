@@ -71,7 +71,7 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
   function toNode(profile: OrgProfile, forceType?: OrgNode["type"]): OrgNode {
     const role = roleMap[profile.user_id] || "employee";
     const children = (childrenByManager.get(profile.id) ?? [])
-      .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.full_name || "").localeCompare(b.full_name || ""));
 
     const type: OrgNode["type"] = forceType || "line";
     let color: string;
