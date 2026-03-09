@@ -20,8 +20,9 @@ interface OrgSettingsModalProps {
 }
 
 export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModalProps) {
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string; parent_id: string | null }[]>([]);
   const [newDept, setNewDept] = useState("");
+  const [newDeptParent, setNewDeptParent] = useState<string | null>(null);
   const [colorSettings, setColorSettings] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"departments" | "colors">("departments");
 
@@ -31,7 +32,7 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
 
   const fetchData = async () => {
     const [deptRes, settingsRes] = await Promise.all([
-      supabase.from("departments").select("id, name").order("name"),
+      supabase.from("departments").select("id, name, parent_id").order("name"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
     setDepartments((deptRes.data as any[]) ?? []);
@@ -41,6 +42,17 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
     }
     setColorSettings(cs);
   };
+
+  // Build hierarchical list: top-level first, then children indented
+  const topLevel = departments.filter(d => !d.parent_id);
+  const getChildren = (parentId: string) => departments.filter(d => d.parent_id === parentId);
+  const orderedDepts: { dept: { id: string; name: string; parent_id: string | null }; indent: number }[] = [];
+  for (const d of topLevel) {
+    orderedDepts.push({ dept: d, indent: 0 });
+    for (const child of getChildren(d.id)) {
+      orderedDepts.push({ dept: child, indent: 1 });
+    }
+  }
 
   const addDepartment = async () => {
     if (!newDept.trim()) return;
