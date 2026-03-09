@@ -12,7 +12,7 @@ import { useTheme } from "next-themes";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
-export type DropAction = "move_under" | "swap" | "place_above" | "place_beside" | "reorder_before";
+export type DropAction = "move_under" | "swap" | "place_above" | "place_beside" | "reorder_before" | "reorder_before";
 export interface OrgNode {
   id: string;
   userId?: string;
@@ -674,7 +674,7 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 }
 
 // ─── DROP ACTION MENU ────────────────────────────────────────────────────────
-import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowUpDown, , ArrowUpFromLineArrowUp, ArrowRight } from "lucide-react";
 
 function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   menu: DropMenuState;
