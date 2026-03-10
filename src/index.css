@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Roboto+Slab:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,76 +15,87 @@
     --popover: 0 0% 100%;
     --popover-foreground: 225 35% 10%;
 
-    --primary: 230 75% 55%;
+    /* Himmel och Vatten – Primär */
+    --primary: 208 40% 27%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 250 80% 65%;
+    --primary-glow: 206 28% 37%;
 
-    --secondary: 225 25% 92%;
-    --secondary-foreground: 225 30% 22%;
+    /* Sten och Betong – Sekundär */
+    --secondary: 60 4% 92%;
+    --secondary-foreground: 60 8% 29%;
 
-    --muted: 225 20% 94%;
-    --muted-foreground: 225 12% 48%;
+    --muted: 60 4% 94%;
+    --muted-foreground: 60 4% 45%;
 
-    --accent: 165 55% 42%;
+    /* Land och Miljö – Accent / Hållbarhet */
+    --accent: 162 31% 31%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 55%;
+    /* Eld och Värme – Destructive */
+    --destructive: 19 97% 36%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 225 18% 88%;
-    --input: 225 18% 88%;
-    --ring: 230 75% 55%;
+    --border: 206 20% 86%;
+    --input: 206 20% 86%;
+    --ring: 208 40% 27%;
 
-    --radius: 0.875rem;
+    --radius: 0.75rem;
 
-    --warning: 38 92% 50%;
+    /* Eld och Värme – Warning */
+    --warning: 19 97% 36%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 165 55% 42%;
+    /* Land och Miljö – Success */
+    --success: 162 32% 40%;
     --success-foreground: 0 0% 100%;
 
-    --sidebar-background: 230 30% 12%;
-    --sidebar-foreground: 225 10% 85%;
-    --sidebar-primary: 230 75% 60%;
+    /* Sidebar – Himmel mörkare */
+    --sidebar-background: 208 40% 14%;
+    --sidebar-foreground: 206 20% 85%;
+    --sidebar-primary: 206 28% 37%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 25% 20%;
-    --sidebar-accent-foreground: 225 10% 90%;
-    --sidebar-border: 230 25% 20%;
-    --sidebar-ring: 230 75% 60%;
+    --sidebar-accent: 208 30% 22%;
+    --sidebar-accent-foreground: 206 20% 90%;
+    --sidebar-border: 208 30% 22%;
+    --sidebar-ring: 206 28% 37%;
 
-    --font-heading: 'Space Grotesk', system-ui, sans-serif;
-    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-heading: 'Roboto Slab', 'Georgia', serif;
+    --font-body: 'Roboto', system-ui, sans-serif;
   }
 
   .dark {
-    --background: 228 24% 8%;
-    --foreground: 220 15% 92%;
-    --card: 228 22% 12%;
-    --card-foreground: 220 15% 92%;
-    --popover: 228 22% 13%;
-    --popover-foreground: 220 15% 92%;
-    --primary: 230 72% 62%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 250 78% 72%;
-    --secondary: 228 18% 18%;
-    --secondary-foreground: 220 15% 88%;
-    --muted: 228 18% 16%;
-    --muted-foreground: 220 10% 58%;
-    --accent: 165 55% 45%;
+    --background: 208 30% 8%;
+    --foreground: 206 15% 92%;
+    --card: 208 28% 12%;
+    --card-foreground: 206 15% 92%;
+    --popover: 208 28% 13%;
+    --popover-foreground: 206 15% 92%;
+    --primary: 206 53% 68%;
+    --primary-foreground: 208 40% 10%;
+    --primary-glow: 206 28% 52%;
+    --secondary: 60 6% 18%;
+    --secondary-foreground: 60 4% 88%;
+    --muted: 60 6% 16%;
+    --muted-foreground: 60 4% 58%;
+    --accent: 162 32% 40%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 65% 42%;
+    --destructive: 19 80% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 228 16% 24%;
-    --input: 228 16% 22%;
-    --ring: 230 72% 62%;
-    --sidebar-background: 228 26% 6%;
-    --sidebar-foreground: 220 12% 85%;
-    --sidebar-primary: 230 72% 62%;
+    --border: 208 16% 24%;
+    --input: 208 16% 22%;
+    --ring: 206 53% 68%;
+    --warning: 19 80% 45%;
+    --warning-foreground: 0 0% 100%;
+    --success: 162 32% 45%;
+    --success-foreground: 0 0% 100%;
+    --sidebar-background: 208 35% 6%;
+    --sidebar-foreground: 206 12% 85%;
+    --sidebar-primary: 206 53% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 18% 14%;
-    --sidebar-accent-foreground: 220 12% 90%;
-    --sidebar-border: 228 16% 18%;
-    --sidebar-ring: 230 72% 62%;
+    --sidebar-accent: 208 22% 14%;
+    --sidebar-accent-foreground: 206 12% 90%;
+    --sidebar-border: 208 16% 18%;
+    --sidebar-ring: 206 53% 68%;
   }
 }
 
