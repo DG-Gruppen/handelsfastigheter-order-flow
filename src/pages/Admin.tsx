@@ -49,6 +49,13 @@ const sections = [
     icon: Users,
     color: "from-warning to-warning",
   },
+  {
+    id: "settings" as const,
+    label: "Inställningar",
+    description: "Attestering och andra inställningar",
+    icon: Settings,
+    color: "from-muted-foreground to-muted-foreground",
+  },
 ];
 
 export default function Admin() {
