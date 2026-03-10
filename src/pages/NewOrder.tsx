@@ -79,20 +79,31 @@ export default function NewOrder() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
         supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
         supabase.from("user_roles").select("user_id, role"),
-        supabase.from("profiles").select("id, department").eq("user_id", user?.id ?? "").single(),
+        supabase.from("profiles").select("id, department, is_staff, manager_id").eq("user_id", user?.id ?? "").single(),
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
+        supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
       ]);
 
       const allCats = (catsRes.data as Category[]) ?? [];
       const allTypes = (typesRes.data as OrderType[]) ?? [];
       setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
+
+      // Store my profile info for staff/manager checks
+      if (myProfileRes.data) {
+        setMyProfile({ is_staff: (myProfileRes.data as any).is_staff, manager_id: (myProfileRes.data as any).manager_id });
+      }
+
+      // Store approval settings
+      const aMap: Record<string, string> = {};
+      for (const s of (approvalRes.data as any[]) ?? []) aMap[s.setting_key] = s.setting_value;
+      setApprovalSettings(aMap);
 
       // Build department restriction maps
       const catDeptMap: Record<string, string[]> = {};
@@ -130,8 +141,9 @@ export default function NewOrder() {
       setCategories(filteredCats);
       setOrderTypes(filteredTypes);
 
+      const rolesData = rolesRes.data ?? [];
       const managerUserIds = new Set(
-        (rolesRes.data ?? [])
+        rolesData
           .filter((r: any) => r.role === "manager" || r.role === "admin")
           .map((r: any) => r.user_id)
       );
@@ -139,6 +151,16 @@ export default function NewOrder() {
         (p) => managerUserIds.has(p.user_id)
       );
       setManagers(filteredManagers);
+
+      // Find VD (CEO): profile with no manager_id that has admin role
+      const allProfilesList = (allProfilesRes.data as any[]) ?? [];
+      const adminUserIds = new Set(
+        rolesData.filter((r: any) => r.role === "admin").map((r: any) => r.user_id)
+      );
+      // Get full profiles with manager_id to find root
+      const { data: fullProfiles } = await supabase.from("profiles").select("id, user_id, full_name, manager_id");
+      const ceo = (fullProfiles ?? []).find((p: any) => !p.manager_id && adminUserIds.has(p.user_id));
+      if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
     };
     if (user) fetchData();
   }, [user, roles]);
