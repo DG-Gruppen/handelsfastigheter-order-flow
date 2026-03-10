@@ -175,6 +175,13 @@ export default function NewOrder() {
       const { data: fullProfiles } = await supabase.from("profiles").select("id, user_id, full_name, manager_id");
       const ceo = (fullProfiles ?? []).find((p: any) => !p.manager_id && adminUserIds.has(p.user_id));
       if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
+
+      // Resolve the current user's direct manager profile
+      const myMgrId = (myProfileRes.data as any)?.manager_id;
+      if (myMgrId) {
+        const mgrProfile = (fullProfiles ?? []).find((p: any) => p.id === myMgrId);
+        if (mgrProfile) setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+      }
     };
     if (user) fetchData();
   }, [user, roles]);
