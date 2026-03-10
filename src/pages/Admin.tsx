@@ -448,6 +448,37 @@ export default function Admin() {
     );
   }
 
+  const SettingsContent = (
+    <Card className="glass-card animate-fade-up">
+      <CardHeader className="px-4 md:px-6">
+        <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+        <CardDescription className="text-sm">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 md:px-6 space-y-4">
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar utan skickas till VD</p>
+          </div>
+          <Switch
+            checked={approvalSettings["approval_managers_to_ceo"] === "true"}
+            onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Stabsmedarbetare kan inte godkänna sina egna beställningar utan skickas till VD</p>
+          </div>
+          <Switch
+            checked={approvalSettings["approval_staff_to_ceo"] === "true"}
+            onCheckedChange={() => toggleApprovalSetting("approval_staff_to_ceo")}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // Desktop: tabs
   return (
     <AppLayout>
@@ -458,7 +489,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="glass-card w-full grid grid-cols-3 p-1 h-auto">
+          <TabsList className="glass-card w-full grid grid-cols-4 p-1 h-auto">
             {sections.map((s) => (
               <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
                 <s.icon className="h-4 w-4" />
@@ -477,6 +508,10 @@ export default function Admin() {
 
           <TabsContent value="users" className="mt-4">
             {UsersContent}
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            {SettingsContent}
           </TabsContent>
         </Tabs>
       </div>
