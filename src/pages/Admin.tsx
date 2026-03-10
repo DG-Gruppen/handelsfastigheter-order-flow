@@ -398,6 +398,37 @@ export default function Admin() {
     </Card>
   );
 
+  const SettingsContent = (
+    <Card className="glass-card animate-fade-up">
+      <CardHeader className="px-4 md:px-6">
+        <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+        <CardDescription className="text-sm">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 md:px-6 space-y-4">
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar utan skickas till VD</p>
+          </div>
+          <Switch
+            checked={approvalSettings["approval_managers_to_ceo"] === "true"}
+            onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Stabsmedarbetare kan inte godkänna sina egna beställningar utan skickas till VD</p>
+          </div>
+          <Switch
+            checked={approvalSettings["approval_staff_to_ceo"] === "true"}
+            onCheckedChange={() => toggleApprovalSetting("approval_staff_to_ceo")}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // Mobile: card-based navigation
   if (isMobile) {
     return (
@@ -447,37 +478,6 @@ export default function Admin() {
       </AppLayout>
     );
   }
-
-  const SettingsContent = (
-    <Card className="glass-card animate-fade-up">
-      <CardHeader className="px-4 md:px-6">
-        <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
-        <CardDescription className="text-sm">Styr vilka beställningar som ska attesteras av VD</CardDescription>
-      </CardHeader>
-      <CardContent className="px-4 md:px-6 space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-          <div>
-            <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar utan skickas till VD</p>
-          </div>
-          <Switch
-            checked={approvalSettings["approval_managers_to_ceo"] === "true"}
-            onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
-          />
-        </div>
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-          <div>
-            <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Stabsmedarbetare kan inte godkänna sina egna beställningar utan skickas till VD</p>
-          </div>
-          <Switch
-            checked={approvalSettings["approval_staff_to_ceo"] === "true"}
-            onCheckedChange={() => toggleApprovalSetting("approval_staff_to_ceo")}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   // Desktop: tabs
   return (
