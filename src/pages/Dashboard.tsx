@@ -172,9 +172,9 @@ export default function Dashboard() {
                     <Link
                       key={order.id}
                       to={`/orders/${order.id}`}
-                      className="flex items-center justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group hover:bg-secondary/20"
+                      className="flex items-start justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group hover:bg-secondary/20 gap-2"
                     >
-                      <div className="space-y-1 min-w-0 flex-1 mr-3">
+                      <div className="space-y-1 min-w-0 flex-1">
                         <p className="font-medium text-sm md:text-base text-foreground truncate">
                           {order.title}
                         </p>
@@ -190,16 +190,19 @@ export default function Dashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
                         {autoApproved && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-md">
                             <Zap className="h-2.5 w-2.5" />
                             Auto
                           </span>
                         )}
-                        <Badge variant={sc.variant} className="gap-1 text-xs">
+                        <Badge variant={sc.variant} className="gap-1 text-xs whitespace-nowrap">
                           <Icon className="h-3 w-3" />
-                          {sc.label}
+                          <span className="hidden sm:inline">{sc.label}</span>
+                          <span className="sm:hidden">
+                            {order.status === "pending" ? "Väntar" : order.status === "approved" ? "Godkänd" : order.status === "rejected" ? "Avslagen" : sc.label}
+                          </span>
                         </Badge>
                       </div>
                     </Link>
