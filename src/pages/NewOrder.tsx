@@ -207,7 +207,20 @@ export default function NewOrder() {
         ? `${baseTitle} – ${existingRecipientName}`
         : baseTitle;
 
-    const autoApprove = isManagerOrAdmin;
+    // Determine if this manager/staff needs CEO approval instead of auto-approve
+    const isManager = roles.includes("manager");
+    const isStaff = myProfile?.is_staff === true;
+    const needsCeoApproval = isManagerOrAdmin && (
+      (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
+      (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+    );
+
+    const autoApprove = isManagerOrAdmin && !needsCeoApproval;
+    const resolvedApproverId = needsCeoApproval && ceoProfile
+      ? ceoProfile.user_id
+      : autoApprove
+        ? user.id
+        : (manager?.user_id ?? null);
 
     const { data: order, error } = await supabase
       .from("orders")
