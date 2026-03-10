@@ -296,7 +296,9 @@ export default function NewOrder() {
       ? (isOffboarding ? "Offboarding-ärendet har godkänts och är redo att skickas till extern IT!" : "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!")
       : needsCeoApproval
         ? (isOffboarding ? "Offboarding-ärendet har skickats till VD för attestering!" : "Beställningen har skickats till VD för attestering!")
-        : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+        : needsManagerApproval
+          ? (isOffboarding ? "Offboarding-ärendet har skickats till din chef för attestering!" : "Beställningen har skickats till din chef för attestering!")
+          : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
     toast.success(successMsg);
     navigate("/dashboard");
     setSubmitting(false);
