@@ -440,6 +440,7 @@ export default function Admin() {
               {activeSection === "categories" && <CategoriesManager />}
               {activeSection === "equipment" && <OrderTypesManager />}
               {activeSection === "users" && UsersContent}
+              {activeSection === "settings" && SettingsContent}
             </>
           )}
         </div>
