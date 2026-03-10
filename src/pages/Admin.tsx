@@ -25,7 +25,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "users";
+type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings";
 
 const sections = [
   {
