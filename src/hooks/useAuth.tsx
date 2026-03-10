@@ -72,7 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) setLoading(false);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        // Profile/roles will be fetched by onAuthStateChange
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
