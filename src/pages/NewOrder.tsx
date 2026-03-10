@@ -580,7 +580,15 @@ export default function NewOrder() {
                 />
               </div>
 
-              {/* 6. Approver - only for non-managers */}
+              {/* 6. Approver */}
+              {needsCeoApprovalCheck && ceoProfile && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Attesteras av VD:</span>{" "}
+                    {ceoProfile.full_name}
+                  </p>
+                </div>
+              )}
               {!isManagerOrAdmin && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
