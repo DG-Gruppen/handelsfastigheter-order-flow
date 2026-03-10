@@ -195,31 +195,34 @@ export default function OrderDetail() {
               <ArrowLeft className="h-4 w-4" /> Tillbaka
             </Button>
           </Link>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">{order.title}</h1>
-              {order.description && (
-                <p className="text-sm text-muted-foreground mt-1">{order.description}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0 mt-1">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="font-heading text-lg md:text-2xl font-bold text-foreground min-w-0 break-words">{order.title}</h1>
+            <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
               {autoApproved && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-md">
                   <Zap className="h-2.5 w-2.5" /> Auto
                 </span>
               )}
-              <Badge variant={sc.variant} className="gap-1 text-xs">
+              <Badge variant={sc.variant} className="gap-1 text-xs whitespace-nowrap">
                 <StatusIcon className="h-3 w-3" />
-                {sc.label}
+                <span className="hidden sm:inline">{sc.label}</span>
+                <span className="sm:hidden">
+                  {order.status === "pending" ? "Väntar" : sc.label}
+                </span>
               </Badge>
+            </div>
           </div>
+          {order.description && (
+            <p className="text-sm text-muted-foreground">{order.description}</p>
+          )}
 
           {/* Admin: mark as delivered */}
           {isAdmin && order.status === "approved" && (
             <Button
               onClick={handleMarkDelivered}
               disabled={marking}
-              className="gap-2 w-full sm:w-auto gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+              className="gap-2 w-full gradient-primary hover:opacity-90 shadow-md shadow-primary/20 h-12 md:h-10"
             >
               <Truck className="h-4 w-4" />
               {marking ? "Uppdaterar..." : "Markera som levererad"}
