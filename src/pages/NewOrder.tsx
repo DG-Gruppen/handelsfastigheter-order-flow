@@ -226,7 +226,7 @@ export default function NewOrder() {
       .from("orders")
       .insert({
         requester_id: user.id,
-        approver_id: autoApprove ? user.id : (manager?.user_id ?? null),
+        approver_id: resolvedApproverId,
         order_type_id: validItems[0].typeId,
         category_id: firstType?.category_id ?? null,
         title,
