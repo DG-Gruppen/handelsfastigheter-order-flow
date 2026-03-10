@@ -56,7 +56,9 @@ export default function NewOrder() {
   const [managers, setManagers] = useState<ProfileOption[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
   const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
-
+  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
+  const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
+  const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
@@ -75,22 +77,42 @@ export default function NewOrder() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Check if current user needs CEO approval
+  const isManager = roles.includes("manager");
+  const isStaff = myProfile?.is_staff === true;
+  const needsCeoApprovalCheck = isManagerOrAdmin && (
+    (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
+    (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+  );
+  const showApproverPicker = !isManagerOrAdmin || needsCeoApprovalCheck;
+
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
         supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
         supabase.from("user_roles").select("user_id, role"),
-        supabase.from("profiles").select("id, department").eq("user_id", user?.id ?? "").single(),
+        supabase.from("profiles").select("id, department, is_staff, manager_id").eq("user_id", user?.id ?? "").single(),
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
+        supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
       ]);
 
       const allCats = (catsRes.data as Category[]) ?? [];
       const allTypes = (typesRes.data as OrderType[]) ?? [];
       setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
+
+      // Store my profile info for staff/manager checks
+      if (myProfileRes.data) {
+        setMyProfile({ is_staff: (myProfileRes.data as any).is_staff, manager_id: (myProfileRes.data as any).manager_id });
+      }
+
+      // Store approval settings
+      const aMap: Record<string, string> = {};
+      for (const s of (approvalRes.data as any[]) ?? []) aMap[s.setting_key] = s.setting_value;
+      setApprovalSettings(aMap);
 
       // Build department restriction maps
       const catDeptMap: Record<string, string[]> = {};
@@ -128,8 +150,9 @@ export default function NewOrder() {
       setCategories(filteredCats);
       setOrderTypes(filteredTypes);
 
+      const rolesData = rolesRes.data ?? [];
       const managerUserIds = new Set(
-        (rolesRes.data ?? [])
+        rolesData
           .filter((r: any) => r.role === "manager" || r.role === "admin")
           .map((r: any) => r.user_id)
       );
@@ -137,6 +160,16 @@ export default function NewOrder() {
         (p) => managerUserIds.has(p.user_id)
       );
       setManagers(filteredManagers);
+
+      // Find VD (CEO): profile with no manager_id that has admin role
+      const allProfilesList = (allProfilesRes.data as any[]) ?? [];
+      const adminUserIds = new Set(
+        rolesData.filter((r: any) => r.role === "admin").map((r: any) => r.user_id)
+      );
+      // Get full profiles with manager_id to find root
+      const { data: fullProfiles } = await supabase.from("profiles").select("id, user_id, full_name, manager_id");
+      const ceo = (fullProfiles ?? []).find((p: any) => !p.manager_id && adminUserIds.has(p.user_id));
+      if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
     };
     if (user) fetchData();
   }, [user, roles]);
@@ -183,13 +216,26 @@ export default function NewOrder() {
         ? `${baseTitle} – ${existingRecipientName}`
         : baseTitle;
 
-    const autoApprove = isManagerOrAdmin;
+    // Determine if this manager/staff needs CEO approval instead of auto-approve
+    const isManager = roles.includes("manager");
+    const isStaff = myProfile?.is_staff === true;
+    const needsCeoApproval = isManagerOrAdmin && (
+      (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
+      (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+    );
+
+    const autoApprove = isManagerOrAdmin && !needsCeoApproval;
+    const resolvedApproverId = needsCeoApproval && ceoProfile
+      ? ceoProfile.user_id
+      : autoApprove
+        ? user.id
+        : (manager?.user_id ?? null);
 
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
         requester_id: user.id,
-        approver_id: autoApprove ? user.id : (manager?.user_id ?? null),
+        approver_id: resolvedApproverId,
         order_type_id: validItems[0].typeId,
         category_id: firstType?.category_id ?? null,
         title,
@@ -232,9 +278,11 @@ export default function NewOrder() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
-    const successMsg = isManagerOrAdmin
+    const successMsg = autoApprove
       ? (isOffboarding ? "Offboarding-ärendet har godkänts och är redo att skickas till extern IT!" : "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!")
-      : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+      : needsCeoApproval
+        ? (isOffboarding ? "Offboarding-ärendet har skickats till VD för attestering!" : "Beställningen har skickats till VD för attestering!")
+        : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
     toast.success(successMsg);
     navigate("/dashboard");
     setSubmitting(false);
@@ -532,7 +580,15 @@ export default function NewOrder() {
                 />
               </div>
 
-              {/* 6. Approver - only for non-managers */}
+              {/* 6. Approver */}
+              {needsCeoApprovalCheck && ceoProfile && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Attesteras av VD:</span>{" "}
+                    {ceoProfile.full_name}
+                  </p>
+                </div>
+              )}
               {!isManagerOrAdmin && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>

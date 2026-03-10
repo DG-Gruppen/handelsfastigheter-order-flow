@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileWithRoles {
@@ -24,7 +25,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "users";
+type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings";
 
 const sections = [
   {
@@ -47,6 +48,13 @@ const sections = [
     description: "Tilldela roller till användare",
     icon: Users,
     color: "from-warning to-warning",
+  },
+  {
+    id: "settings" as const,
+    label: "Inställningar",
+    description: "Attestering och andra inställningar",
+    icon: Settings,
+    color: "from-muted-foreground to-muted-foreground",
   },
 ];
 
@@ -145,6 +153,30 @@ export default function Admin() {
   };
 
   const [importing, setImporting] = useState(false);
+  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchApprovalSettings = async () => {
+      const { data } = await supabase
+        .from("org_chart_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]);
+      const map: Record<string, string> = {};
+      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+      setApprovalSettings(map);
+    };
+    fetchApprovalSettings();
+  }, []);
+
+  const toggleApprovalSetting = async (key: string) => {
+    const current = approvalSettings[key] === "true";
+    const newValue = current ? "false" : "true";
+    await supabase
+      .from("org_chart_settings")
+      .upsert({ setting_key: key, setting_value: newValue, updated_at: new Date().toISOString() } as any, { onConflict: "setting_key" });
+    setApprovalSettings(prev => ({ ...prev, [key]: newValue }));
+    toast.success("Inställning uppdaterad");
+  };
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -366,6 +398,37 @@ export default function Admin() {
     </Card>
   );
 
+  const SettingsContent = (
+    <Card className="glass-card animate-fade-up">
+      <CardHeader className="px-4 md:px-6">
+        <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+        <CardDescription className="text-sm">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 md:px-6 space-y-4">
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar utan skickas till VD</p>
+          </div>
+          <Switch
+            checked={approvalSettings["approval_managers_to_ceo"] === "true"}
+            onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Stabsmedarbetare kan inte godkänna sina egna beställningar utan skickas till VD</p>
+          </div>
+          <Switch
+            checked={approvalSettings["approval_staff_to_ceo"] === "true"}
+            onCheckedChange={() => toggleApprovalSetting("approval_staff_to_ceo")}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // Mobile: card-based navigation
   if (isMobile) {
     return (
@@ -408,6 +471,7 @@ export default function Admin() {
               {activeSection === "categories" && <CategoriesManager />}
               {activeSection === "equipment" && <OrderTypesManager />}
               {activeSection === "users" && UsersContent}
+              {activeSection === "settings" && SettingsContent}
             </>
           )}
         </div>
@@ -425,7 +489,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="glass-card w-full grid grid-cols-3 p-1 h-auto">
+          <TabsList className="glass-card w-full grid grid-cols-4 p-1 h-auto">
             {sections.map((s) => (
               <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
                 <s.icon className="h-4 w-4" />
@@ -444,6 +508,10 @@ export default function Admin() {
 
           <TabsContent value="users" className="mt-4">
             {UsersContent}
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            {SettingsContent}
           </TabsContent>
         </Tabs>
       </div>
