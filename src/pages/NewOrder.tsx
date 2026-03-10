@@ -244,8 +244,6 @@ export default function NewOrder() {
         : autoApprove
           ? user.id
           : (manager?.user_id ?? null);
-        ? user.id
-        : (manager?.user_id ?? null);
 
     const { data: order, error } = await supabase
       .from("orders")
