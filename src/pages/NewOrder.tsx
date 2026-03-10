@@ -77,6 +77,15 @@ export default function NewOrder() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Check if current user needs CEO approval
+  const isManager = roles.includes("manager");
+  const isStaff = myProfile?.is_staff === true;
+  const needsCeoApprovalCheck = isManagerOrAdmin && (
+    (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
+    (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+  );
+  const showApproverPicker = !isManagerOrAdmin || needsCeoApprovalCheck;
+
   useEffect(() => {
     const fetchData = async () => {
       const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes] = await Promise.all([
