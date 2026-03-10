@@ -56,7 +56,9 @@ export default function NewOrder() {
   const [managers, setManagers] = useState<ProfileOption[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
   const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
-
+  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
+  const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
+  const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
