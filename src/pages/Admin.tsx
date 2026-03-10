@@ -153,6 +153,30 @@ export default function Admin() {
   };
 
   const [importing, setImporting] = useState(false);
+  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchApprovalSettings = async () => {
+      const { data } = await supabase
+        .from("org_chart_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]);
+      const map: Record<string, string> = {};
+      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+      setApprovalSettings(map);
+    };
+    fetchApprovalSettings();
+  }, []);
+
+  const toggleApprovalSetting = async (key: string) => {
+    const current = approvalSettings[key] === "true";
+    const newValue = current ? "false" : "true";
+    await supabase
+      .from("org_chart_settings")
+      .upsert({ setting_key: key, setting_value: newValue, updated_at: new Date().toISOString() } as any, { onConflict: "setting_key" });
+    setApprovalSettings(prev => ({ ...prev, [key]: newValue }));
+    toast.success("Inställning uppdaterad");
+  };
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
