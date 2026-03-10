@@ -59,6 +59,7 @@ export default function NewOrder() {
   const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
   const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
   const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
+  const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
   // Form state
   const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
@@ -77,14 +78,18 @@ export default function NewOrder() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Check if current user needs CEO approval
+  // Check if current user needs approval from above
   const isManager = roles.includes("manager");
   const isStaff = myProfile?.is_staff === true;
-  const needsCeoApprovalCheck = isManagerOrAdmin && (
+  const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
+  const needsCeoApprovalCheck = isManagerOrAdmin && reportsDirectlyToCeo && (
     (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
     (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
   );
-  const showApproverPicker = !isManagerOrAdmin || needsCeoApprovalCheck;
+  // Managers with a manager above them get routed to their direct manager
+  const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+  const needsApproval = needsCeoApprovalCheck || needsManagerApproval;
+  const showApproverPicker = !isManagerOrAdmin || needsApproval;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -170,6 +175,13 @@ export default function NewOrder() {
       const { data: fullProfiles } = await supabase.from("profiles").select("id, user_id, full_name, manager_id");
       const ceo = (fullProfiles ?? []).find((p: any) => !p.manager_id && adminUserIds.has(p.user_id));
       if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
+
+      // Resolve the current user's direct manager profile
+      const myMgrId = (myProfileRes.data as any)?.manager_id;
+      if (myMgrId) {
+        const mgrProfile = (fullProfiles ?? []).find((p: any) => p.id === myMgrId);
+        if (mgrProfile) setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+      }
     };
     if (user) fetchData();
   }, [user, roles]);
@@ -216,20 +228,22 @@ export default function NewOrder() {
         ? `${baseTitle} – ${existingRecipientName}`
         : baseTitle;
 
-    // Determine if this manager/staff needs CEO approval instead of auto-approve
-    const isManager = roles.includes("manager");
-    const isStaff = myProfile?.is_staff === true;
-    const needsCeoApproval = isManagerOrAdmin && (
-      (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
-      (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+    // Determine approval routing
+    const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
+    const needsCeoApproval = isManagerOrAdmin && reportsDirectlyToCeo && (
+      (roles.includes("manager") && approvalSettings["approval_managers_to_ceo"] === "true") ||
+      (myProfile?.is_staff === true && approvalSettings["approval_staff_to_ceo"] === "true")
     );
+    const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
 
-    const autoApprove = isManagerOrAdmin && !needsCeoApproval;
+    const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval;
     const resolvedApproverId = needsCeoApproval && ceoProfile
       ? ceoProfile.user_id
-      : autoApprove
-        ? user.id
-        : (manager?.user_id ?? null);
+      : needsManagerApproval && myManagerProfile
+        ? myManagerProfile.user_id
+        : autoApprove
+          ? user.id
+          : (manager?.user_id ?? null);
 
     const { data: order, error } = await supabase
       .from("orders")
@@ -282,7 +296,9 @@ export default function NewOrder() {
       ? (isOffboarding ? "Offboarding-ärendet har godkänts och är redo att skickas till extern IT!" : "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!")
       : needsCeoApproval
         ? (isOffboarding ? "Offboarding-ärendet har skickats till VD för attestering!" : "Beställningen har skickats till VD för attestering!")
-        : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
+        : needsManagerApproval
+          ? (isOffboarding ? "Offboarding-ärendet har skickats till din chef för attestering!" : "Beställningen har skickats till din chef för attestering!")
+          : (isOffboarding ? "Offboarding-ärendet har skickats för godkännande!" : "Beställningen har skickats till din chef för godkännande!");
     toast.success(successMsg);
     navigate("/dashboard");
     setSubmitting(false);
@@ -586,6 +602,14 @@ export default function NewOrder() {
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Attesteras av VD:</span>{" "}
                     {ceoProfile.full_name}
+                  </p>
+                </div>
+              )}
+              {needsManagerApproval && myManagerProfile && !needsCeoApprovalCheck && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Attesteras av:</span>{" "}
+                    {myManagerProfile.full_name}
                   </p>
                 </div>
               )}
