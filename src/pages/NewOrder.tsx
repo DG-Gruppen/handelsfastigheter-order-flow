@@ -78,14 +78,18 @@ export default function NewOrder() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Check if current user needs CEO approval
+  // Check if current user needs approval from above
   const isManager = roles.includes("manager");
   const isStaff = myProfile?.is_staff === true;
-  const needsCeoApprovalCheck = isManagerOrAdmin && (
+  const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
+  const needsCeoApprovalCheck = isManagerOrAdmin && reportsDirectlyToCeo && (
     (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
     (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
   );
-  const showApproverPicker = !isManagerOrAdmin || needsCeoApprovalCheck;
+  // Managers with a manager above them get routed to their direct manager
+  const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+  const needsApproval = needsCeoApprovalCheck || needsManagerApproval;
+  const showApproverPicker = !isManagerOrAdmin || needsApproval;
 
   useEffect(() => {
     const fetchData = async () => {
