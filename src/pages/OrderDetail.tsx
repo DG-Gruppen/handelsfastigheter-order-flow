@@ -285,10 +285,10 @@ export default function OrderDetail() {
         )}
 
         {/* Equipment / order items */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-accent/30">
           <CardHeader className="px-4 md:px-6 pb-2">
             <CardTitle className="font-heading text-sm md:text-base flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              <ShoppingCart className="h-4 w-4 text-accent" />
               Utrustning ({items.length})
             </CardTitle>
           </CardHeader>
