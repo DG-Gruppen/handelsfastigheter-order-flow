@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History } from "lucide-react";
+import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +118,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <Moon className="h-4 w-4 hidden dark:block" />
                 {theme === "dark" ? "Ljust tema" : "Mörkt tema"}
               </DropdownMenuItem>
+              <DropdownMenuItem asChild className="gap-2 min-h-[44px]">
+                <a href="https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Fjärrhjälp (Splashtop)
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive gap-2 min-h-[44px]">
                 <LogOut className="h-4 w-4" />
                 Logga ut
