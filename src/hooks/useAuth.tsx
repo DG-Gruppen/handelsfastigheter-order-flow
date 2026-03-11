@@ -41,30 +41,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserData = async (userId: string, userEmail: string) => {
+      console.log("[Auth] Fetching profile for user_id:", userId, "email:", userEmail);
+      const [profileResult, rolesResult] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).single(),
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+      ]);
+      console.log("[Auth] Profile result:", profileResult.data ? "found" : "NOT FOUND", profileResult.error?.message ?? "no error");
+      console.log("[Auth] Roles result:", rolesResult.data, rolesResult.error?.message ?? "no error");
+
+      if (isMounted) {
+        setProfile(profileResult.data as Profile | null);
+        setRoles(rolesResult.data?.map((r: any) => r.role) ?? []);
+        setLoading(false);
+      }
+    };
+
+    // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
+        console.log("[Auth] onAuthStateChange event:", _event, "user:", session?.user?.email ?? "none");
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fetch profile and roles with setTimeout to avoid deadlock
-          setTimeout(async () => {
-            console.log("[Auth] Fetching profile for user_id:", session.user.id, "email:", session.user.email);
-            const { data: profileData, error: profileError } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("user_id", session.user.id)
-              .single();
-            console.log("[Auth] Profile result:", profileData ? "found" : "NOT FOUND", profileError?.message ?? "no error");
-            setProfile(profileData as Profile | null);
-
-            const { data: rolesData, error: rolesError } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id);
-            console.log("[Auth] Roles result:", rolesData, rolesError?.message ?? "no error");
-            setRoles(rolesData?.map((r: any) => r.role) ?? []);
-            setLoading(false);
+          // Use setTimeout to avoid Supabase auth deadlock
+          setTimeout(() => {
+            fetchUserData(session.user.id, session.user.email ?? "");
           }, 0);
         } else {
           setProfile(null);
@@ -74,17 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Then check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        // Profile/roles will be fetched by onAuthStateChange
-      } else {
-        setLoading(false);
+      console.log("[Auth] getSession result:", session?.user?.email ?? "no session");
+      if (!session) {
+        if (isMounted) setLoading(false);
       }
+      // If session exists, onAuthStateChange will handle it
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
