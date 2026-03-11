@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Monitor, ShieldCheck, Mail } from "lucide-react";
+import { Monitor, ShieldCheck, Mail, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 const Login = () => {
