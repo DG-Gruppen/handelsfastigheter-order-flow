@@ -470,7 +470,7 @@ export default function Admin() {
                 <p className="text-sm text-muted-foreground mt-0.5">Hantera systemet</p>
               </div>
               <div className="grid gap-3">
-                {sections.map((s, i) => (
+                {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s, i) => (
                   <button
                     key={s.id}
                     onClick={() => setActiveSection(s.id)}
