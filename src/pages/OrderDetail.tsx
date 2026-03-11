@@ -353,7 +353,7 @@ export default function OrderDetail() {
         )}
 
         {/* Timeline */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-muted-foreground/20">
           <CardHeader className="px-4 md:px-6 pb-2">
             <CardTitle className="font-heading text-sm md:text-base flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
