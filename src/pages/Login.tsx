@@ -25,6 +25,19 @@ const Login = () => {
     if (!loading && user) navigate("/dashboard");
   }, [user, loading, navigate]);
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase
+        .from("org_chart_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["it_remote_help_visible", "it_remote_help_label", "it_remote_help_url"]);
+      const map: Record<string, string> = {};
+      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+      setRemoteHelpSettings(map);
+    };
+    fetchSettings();
+  }, []);
+
   const handleGoogleSignIn = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/login",
