@@ -12,6 +12,7 @@ import { Monitor, ShieldCheck, Mail, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 const Login = () => {
+  const [remoteHelpSettings, setRemoteHelpSettings] = useState<Record<string, string>>({});
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [showEmail, setShowEmail] = useState(false);
