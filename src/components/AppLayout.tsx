@@ -30,9 +30,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
 
-  // Load saved theme on login
+  // Load saved theme only on initial profile load
+  const themeLoaded = useRef(false);
   useEffect(() => {
-    if (profile?.theme_preference) {
+    if (profile?.theme_preference && !themeLoaded.current) {
+      themeLoaded.current = true;
       setTheme(profile.theme_preference);
     }
   }, [profile?.theme_preference, setTheme]);
