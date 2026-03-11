@@ -181,15 +181,17 @@ const Login = () => {
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span>Säker inloggning</span>
               </div>
-              <a
-                href="https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 hover:text-foreground transition-colors"
-              >
-                Fjärrhjälp
-                <ExternalLink className="h-3 w-3" />
-              </a>
+              {remoteHelpSettings["it_remote_help_visible"] !== "false" && (
+                <a
+                  href={remoteHelpSettings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  {remoteHelpSettings["it_remote_help_label"] || "Fjärrhjälp"}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
             </div>
 
           </CardContent>
