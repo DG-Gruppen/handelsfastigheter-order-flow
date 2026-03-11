@@ -293,6 +293,8 @@ export default function Admin() {
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="manager">Chef</SelectItem>
               <SelectItem value="employee">Anställd</SelectItem>
+              <SelectItem value="staff">Stab</SelectItem>
+              <SelectItem value="it">IT</SelectItem>
               <SelectItem value="none">Utan roll</SelectItem>
             </SelectContent>
           </Select>
