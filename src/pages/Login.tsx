@@ -174,7 +174,7 @@ const Login = () => {
                 className="flex items-center gap-1 hover:text-foreground transition-colors"
               >
                 Fjärrhjälp
-                <Mail className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3" />
               </a>
             </div>
           </CardContent>
