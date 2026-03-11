@@ -70,15 +70,15 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {NAV_LINKS.map((link) => (
               <div
                 key={link.key}
-                className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4"
+                className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3"
               >
-                <div>
+                <div className="min-w-0 mr-2">
                   <p className="text-sm font-medium text-foreground">{link.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{link.description}</p>
                 </div>
                 <Switch
                   checked={isOn(link.key)}
