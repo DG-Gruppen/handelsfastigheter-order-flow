@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
@@ -30,9 +30,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
 
-  // Load saved theme on login
+  // Load saved theme only on initial profile load
+  const themeLoaded = useRef(false);
   useEffect(() => {
-    if (profile?.theme_preference) {
+    if (profile?.theme_preference && !themeLoaded.current) {
+      themeLoaded.current = true;
       setTheme(profile.theme_preference);
     }
   }, [profile?.theme_preference, setTheme]);
