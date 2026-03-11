@@ -373,7 +373,7 @@ export default function Admin() {
                 </div>
                 <div className="flex gap-1.5 flex-wrap pt-0.5">
                   {(userRoles[p.user_id] ?? []).map((role) => (
-                    <Badge key={role} variant="secondary" className="capitalize text-xs gap-1 pr-1">
+                    <Badge key={role} variant="outline" className={`capitalize text-xs gap-1 pr-1 ${roleColors[role] ?? ""}`}>
                       {roleLabels[role] ?? role}
                       <button
                         onClick={() => handleRemoveRole(p.user_id, role)}
