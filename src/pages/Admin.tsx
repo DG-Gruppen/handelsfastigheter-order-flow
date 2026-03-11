@@ -35,6 +35,14 @@ const roleLabels: Record<string, string> = {
   it: "IT",
 };
 
+const roleColors: Record<string, string> = {
+  admin: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
+  manager: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
+  employee: "bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
+  staff: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
+  it: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
+};
+
 const sections = [
   {
     id: "categories" as const,
@@ -365,7 +373,7 @@ export default function Admin() {
                 </div>
                 <div className="flex gap-1.5 flex-wrap pt-0.5">
                   {(userRoles[p.user_id] ?? []).map((role) => (
-                    <Badge key={role} variant="secondary" className="capitalize text-xs gap-1 pr-1">
+                    <Badge key={role} variant="outline" className={`capitalize text-xs gap-1 pr-1 ${roleColors[role] ?? ""}`}>
                       {roleLabels[role] ?? role}
                       <button
                         onClick={() => handleRemoveRole(p.user_id, role)}
