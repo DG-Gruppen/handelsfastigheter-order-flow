@@ -70,7 +70,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     : "?";
 
   const visibleNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.some((r) => roles.includes(r))
+    (item) =>
+      (!item.roles || item.roles.some((r) => roles.includes(r))) &&
+      navSettings[item.settingKey] !== "false"
   );
 
   return (
