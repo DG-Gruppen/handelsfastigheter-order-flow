@@ -162,9 +162,20 @@ const Login = () => {
               </form>
             )}
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center pt-2">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Säker inloggning</span>
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Säker inloggning</span>
+              </div>
+              <a
+                href="https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-foreground transition-colors"
+              >
+                Fjärrhjälp
+                <Mail className="h-3 w-3" />
+              </a>
             </div>
           </CardContent>
         </Card>

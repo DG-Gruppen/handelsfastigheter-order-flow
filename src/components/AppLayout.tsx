@@ -118,6 +118,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <Moon className="h-4 w-4 hidden dark:block" />
                 {theme === "dark" ? "Ljust tema" : "Mörkt tema"}
               </DropdownMenuItem>
+              <DropdownMenuItem asChild className="gap-2 min-h-[44px]">
+                <a href="https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Fjärrhjälp (Splashtop)
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive gap-2 min-h-[44px]">
                 <LogOut className="h-4 w-4" />
                 Logga ut
