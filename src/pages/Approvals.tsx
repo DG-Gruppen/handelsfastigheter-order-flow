@@ -96,12 +96,16 @@ export default function Approvals() {
         </div>
 
         {/* Pending */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-warning/40">
           <CardHeader className="px-4 md:px-6">
-            <CardTitle className="font-heading text-base md:text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" />
-              Väntar ({pendingOrders.length})
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+                <Clock className="h-5 w-5 text-warning" />
+              </div>
+              <CardTitle className="font-heading text-base md:text-lg text-warning">
+                Väntar ({pendingOrders.length})
+              </CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="px-4 md:px-6">
             {loading ? (
