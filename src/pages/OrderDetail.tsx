@@ -314,7 +314,7 @@ export default function OrderDetail() {
         </Card>
 
         {/* People */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-warning/30">
           <CardHeader className="px-4 md:px-6 pb-2">
             <CardTitle className="font-heading text-sm md:text-base">Beställare & Attestant</CardTitle>
           </CardHeader>
