@@ -20,7 +20,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && user) {
