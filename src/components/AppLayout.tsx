@@ -80,7 +80,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <img
               src={shfLogo}
               alt="Svenska Handelsfastigheter"
-              className="h-8 md:h-9 w-auto dark:invert"
+              className="h-10 md:h-14 w-auto dark:invert"
             />
           </Link>
 
