@@ -37,11 +37,11 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  admin: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
-  manager: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
-  employee: "bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
-  staff: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-  it: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
+  admin: "bg-destructive/10 text-destructive border-destructive/20",
+  manager: "bg-warning/10 text-warning border-warning/20",
+  employee: "bg-accent/10 text-accent border-accent/20",
+  staff: "bg-primary/10 text-primary border-primary/20",
+  it: "bg-primary/10 text-primary border-primary/20",
 };
 
 const sections = [
@@ -51,6 +51,9 @@ const sections = [
     description: "Skapa och hantera kategorier",
     icon: FolderOpen,
     color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
   },
   {
     id: "equipment" as const,
@@ -58,6 +61,9 @@ const sections = [
     description: "Hantera beställningsbar utrustning",
     icon: Package,
     color: "from-accent to-accent",
+    borderColor: "border-t-accent/40",
+    bgColor: "bg-accent/10",
+    textColor: "text-accent",
   },
   {
     id: "users" as const,
@@ -65,6 +71,9 @@ const sections = [
     description: "Tilldela roller till användare",
     icon: Users,
     color: "from-warning to-warning",
+    borderColor: "border-t-warning/40",
+    bgColor: "bg-warning/10",
+    textColor: "text-warning",
   },
   {
     id: "settings" as const,
@@ -72,13 +81,19 @@ const sections = [
     description: "Attestering och andra inställningar",
     icon: Settings,
     color: "from-muted-foreground to-muted-foreground",
+    borderColor: "border-t-muted-foreground/30",
+    bgColor: "bg-muted-foreground/10",
+    textColor: "text-muted-foreground",
   },
   {
     id: "it" as const,
     label: "IT",
     description: "IT-specifika inställningar",
     icon: Wrench,
-    color: "from-blue-500 to-blue-600",
+    color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
     roles: ["it", "admin"] as string[],
   },
 ];
@@ -251,10 +266,17 @@ export default function Admin() {
   }
 
   const UsersContent = (
-    <Card className="glass-card animate-fade-up">
+    <Card className="glass-card animate-fade-up border-t-2 border-t-warning/40">
       <CardHeader className="px-4 md:px-6">
-        <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
-        <CardDescription className="text-sm">Tilldela roller till användare</CardDescription>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+            <Users className="h-5 w-5 text-warning" />
+          </div>
+          <div>
+            <CardTitle className="font-heading text-base md:text-lg text-warning">Användare & Roller</CardTitle>
+            <CardDescription className="text-xs">Tilldela roller till användare</CardDescription>
+          </div>
+        </div>
         <div className="pt-2">
           <label className="cursor-pointer">
             <input
@@ -428,10 +450,17 @@ export default function Admin() {
   );
 
   const SettingsContent = (
-    <Card className="glass-card animate-fade-up">
+    <Card className="glass-card animate-fade-up border-t-2 border-t-muted-foreground/30">
       <CardHeader className="px-4 md:px-6">
-        <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
-        <CardDescription className="text-sm">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+            <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
         <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">

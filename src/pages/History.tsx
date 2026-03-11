@@ -174,9 +174,10 @@ export default function History() {
         </div>
 
         {/* Order list */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-primary/30">
           <CardHeader className="px-4 md:px-6">
-            <CardTitle className="font-heading text-base md:text-lg">
+            <CardTitle className="font-heading text-base md:text-lg flex items-center gap-2">
+              <HistoryIcon className="h-5 w-5 text-primary" />
               {filtered.length} beställning{filtered.length !== 1 ? "ar" : ""}
             </CardTitle>
           </CardHeader>

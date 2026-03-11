@@ -6,7 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus } from "lucide-react";
+import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, ClipboardList } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   pending: { label: "Väntar på attestering", variant: "secondary", icon: Clock },
@@ -125,12 +125,12 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 md:gap-4">
           {[
-            { value: counts.total, label: "Totalt", colorClass: "text-foreground" },
-            { value: counts.pending, label: "Väntar", colorClass: "text-warning" },
-            { value: counts.approved, label: "Godkända", colorClass: "text-success" },
+            { value: counts.total, label: "Totalt", colorClass: "text-primary", borderClass: "border-t-primary/30", bgClass: "bg-primary/[0.03]" },
+            { value: counts.pending, label: "Väntar", colorClass: "text-warning", borderClass: "border-t-warning/30", bgClass: "bg-warning/[0.03]" },
+            { value: counts.approved, label: "Godkända", colorClass: "text-accent", borderClass: "border-t-accent/30", bgClass: "bg-accent/[0.03]" },
           ].map((stat, i) => (
-            <Card key={stat.label} className="glass-card animate-fade-up" style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}>
-              <CardContent className="p-3 md:pt-6 md:p-6">
+            <Card key={stat.label} className={`glass-card animate-fade-up border-t-2 ${stat.borderClass}`} style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}>
+              <CardContent className={`p-3 md:pt-6 md:p-6 ${stat.bgClass}`}>
                 <div className={`text-2xl md:text-3xl font-heading font-bold ${stat.colorClass}`}>
                   {stat.value}
                 </div>
@@ -141,9 +141,12 @@ export default function Dashboard() {
         </div>
 
         {/* Order list */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-primary/30">
           <CardHeader className="px-4 md:px-6">
-            <CardTitle className="font-heading text-base md:text-lg">Beställningar</CardTitle>
+            <CardTitle className="font-heading text-base md:text-lg flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Beställningar
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6">
             {loading ? (

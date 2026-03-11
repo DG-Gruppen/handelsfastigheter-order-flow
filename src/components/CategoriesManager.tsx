@@ -156,14 +156,17 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
 
   return (
     <>
-      <Card className="glass-card">
+      <Card className="glass-card border-t-2 border-t-primary/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="font-heading text-base md:text-lg">Kategorier</CardTitle>
-              <CardDescription className="text-sm">
-                Skapa och hantera kategorier för utrustning
-              </CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+                <Plus className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="font-heading text-base md:text-lg text-primary">Kategorier</CardTitle>
+                <CardDescription className="text-xs">Skapa och hantera kategorier för utrustning</CardDescription>
+              </div>
             </div>
             <Button className="gap-1.5 h-11 md:h-10" onClick={openNew}>
               <Plus className="h-4 w-4" />
