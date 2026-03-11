@@ -93,7 +93,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
                     size="sm"
-                    className={`gap-2 transition-all ${isActive ? "bg-secondary/80 shadow-sm" : "hover:bg-secondary/50"}`}
+                    className={`gap-2 transition-all ${isActive ? "bg-secondary/80 shadow-sm" : "hover:bg-secondary/60 hover:text-foreground"}`}
                   >
                     <item.icon className="h-4 w-4" />
                     {item.label}
