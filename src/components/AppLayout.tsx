@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon,
 import { useTheme } from "next-themes";
 import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavSettings } from "@/hooks/useNavSettings";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList, settingKey: "nav_dashboard" },
@@ -38,20 +39,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [profile?.theme_preference, setTheme]);
 
-  // Load nav visibility settings
-  const [navSettings, setNavSettings] = useState<Record<string, string>>({});
-  useEffect(() => {
-    const fetchNavSettings = async () => {
-      const { data } = await supabase
-        .from("org_chart_settings")
-        .select("setting_key, setting_value")
-        .like("setting_key", "nav_%");
-      const map: Record<string, string> = {};
-      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
-      setNavSettings(map);
-    };
-    fetchNavSettings();
-  }, []);
+  const { navSettings } = useNavSettings();
 
   // Save theme when toggled
   const handleToggleTheme = useCallback(async () => {
