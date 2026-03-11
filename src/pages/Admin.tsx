@@ -27,6 +27,14 @@ interface ProfileWithRoles {
 
 type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings";
 
+const roleLabels: Record<string, string> = {
+  admin: "Admin",
+  manager: "Chef",
+  employee: "Anställd",
+  staff: "Stab",
+  it: "IT",
+};
+
 const sections = [
   {
     id: "categories" as const,
@@ -358,7 +366,7 @@ export default function Admin() {
                 <div className="flex gap-1.5 flex-wrap pt-0.5">
                   {(userRoles[p.user_id] ?? []).map((role) => (
                     <Badge key={role} variant="secondary" className="capitalize text-xs gap-1 pr-1">
-                      {role}
+                      {roleLabels[role] ?? role}
                       <button
                         onClick={() => handleRemoveRole(p.user_id, role)}
                         className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
