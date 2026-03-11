@@ -38,6 +38,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [profile?.theme_preference, setTheme]);
 
+  // Load nav visibility settings
+  const [navSettings, setNavSettings] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const fetchNavSettings = async () => {
+      const { data } = await supabase
+        .from("org_chart_settings")
+        .select("setting_key, setting_value")
+        .like("setting_key", "nav_%");
+      const map: Record<string, string> = {};
+      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+      setNavSettings(map);
+    };
+    fetchNavSettings();
+  }, []);
+
   // Save theme when toggled
   const handleToggleTheme = useCallback(async () => {
     const newTheme = theme === "dark" ? "light" : "dark";
