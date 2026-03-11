@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavSettingsContextType {
-  navSettings: Record<string, string>;
+  settings: Record<string, string>;
   loading: boolean;
 }
 
-const NavSettingsContext = createContext<NavSettingsContextType>({ navSettings: {}, loading: true });
+const NavSettingsContext = createContext<NavSettingsContextType>({ settings: {}, loading: true });
 
 // Map routes to their setting keys
 const routeSettingMap: Record<string, string> = {
@@ -21,7 +21,7 @@ const routeSettingMap: Record<string, string> = {
 
 export function NavSettingsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [navSettings, setNavSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,31 +32,32 @@ export function NavSettingsProvider({ children }: { children: ReactNode }) {
     const fetch = async () => {
       const { data } = await supabase
         .from("org_chart_settings")
-        .select("setting_key, setting_value")
-        .like("setting_key", "nav_%");
+        .select("setting_key, setting_value");
       const map: Record<string, string> = {};
       for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
-      setNavSettings(map);
+      setSettings(map);
       setLoading(false);
     };
     fetch();
   }, [user]);
 
   return (
-    <NavSettingsContext.Provider value={{ navSettings, loading }}>
+    <NavSettingsContext.Provider value={{ settings, loading }}>
       {children}
     </NavSettingsContext.Provider>
   );
 }
 
 export function useNavSettings() {
-  return useContext(NavSettingsContext);
+  const { settings, loading } = useContext(NavSettingsContext);
+  // Keep backward compat: navSettings is the same as settings
+  return { navSettings: settings, settings, loading };
 }
 
-export function isRouteDisabled(navSettings: Record<string, string>, pathname: string): boolean {
+export function isRouteDisabled(settings: Record<string, string>, pathname: string): boolean {
   const settingKey = routeSettingMap[pathname];
   if (!settingKey) return false;
-  return navSettings[settingKey] === "false";
+  return settings[settingKey] === "false";
 }
 
 export { routeSettingMap };
