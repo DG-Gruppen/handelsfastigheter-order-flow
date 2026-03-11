@@ -181,9 +181,14 @@ export default function Approvals() {
 
         {/* Handled */}
         {handledOrders.length > 0 && (
-          <Card className="glass-card">
+          <Card className="glass-card border-t-2 border-t-accent/40">
             <CardHeader className="px-4 md:px-6">
-              <CardTitle className="font-heading text-base md:text-lg">Hanterade</CardTitle>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
+                  <CheckCircle2 className="h-5 w-5 text-accent" />
+                </div>
+                <CardTitle className="font-heading text-base md:text-lg text-accent">Hanterade</CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="px-4 md:px-6">
               <div className="divide-y divide-border/50 -mx-4 md:mx-0">
