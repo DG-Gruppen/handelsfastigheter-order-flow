@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,12 @@ import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList },
-  { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
-  { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
-  { to: "/history", label: "Historik", shortLabel: "Historik", icon: History },
-  { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[] },
-  
-  { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[] },
+  { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList, settingKey: "nav_dashboard" },
+  { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus, settingKey: "nav_new_order" },
+  { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[], settingKey: "nav_approvals" },
+  { to: "/history", label: "Historik", shortLabel: "Historik", icon: History, settingKey: "nav_history" },
+  { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[], settingKey: "nav_org" },
+  { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[], settingKey: "nav_admin" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -38,6 +37,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       setTheme(profile.theme_preference);
     }
   }, [profile?.theme_preference, setTheme]);
+
+  // Load nav visibility settings
+  const [navSettings, setNavSettings] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const fetchNavSettings = async () => {
+      const { data } = await supabase
+        .from("org_chart_settings")
+        .select("setting_key, setting_value")
+        .like("setting_key", "nav_%");
+      const map: Record<string, string> = {};
+      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+      setNavSettings(map);
+    };
+    fetchNavSettings();
+  }, []);
 
   // Save theme when toggled
   const handleToggleTheme = useCallback(async () => {
@@ -56,7 +70,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     : "?";
 
   const visibleNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.some((r) => roles.includes(r))
+    (item) =>
+      (!item.roles || item.roles.some((r) => roles.includes(r))) &&
+      navSettings[item.settingKey] !== "false"
   );
 
   return (

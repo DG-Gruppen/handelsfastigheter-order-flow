@@ -4,13 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
+import ITSettingsManager from "@/components/ITSettingsManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Wrench } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -25,7 +26,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings";
+type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings" | "it";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -71,6 +72,14 @@ const sections = [
     description: "Attestering och andra inställningar",
     icon: Settings,
     color: "from-muted-foreground to-muted-foreground",
+  },
+  {
+    id: "it" as const,
+    label: "IT",
+    description: "IT-specifika inställningar",
+    icon: Wrench,
+    color: "from-blue-500 to-blue-600",
+    roles: ["it", "admin"] as string[],
   },
 ];
 
@@ -461,7 +470,7 @@ export default function Admin() {
                 <p className="text-sm text-muted-foreground mt-0.5">Hantera systemet</p>
               </div>
               <div className="grid gap-3">
-                {sections.map((s, i) => (
+                {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s, i) => (
                   <button
                     key={s.id}
                     onClick={() => setActiveSection(s.id)}
@@ -492,6 +501,7 @@ export default function Admin() {
               {activeSection === "equipment" && <OrderTypesManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
+              {activeSection === "it" && <ITSettingsManager />}
             </>
           )}
         </div>
@@ -509,8 +519,8 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="glass-card w-full grid grid-cols-4 p-1 h-auto">
-            {sections.map((s) => (
+          <TabsList className={`glass-card w-full grid p-1 h-auto`} style={{ gridTemplateColumns: `repeat(${sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).length}, minmax(0, 1fr))` }}>
+            {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s) => (
               <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
                 <s.icon className="h-4 w-4" />
                 {s.label}
@@ -533,6 +543,12 @@ export default function Admin() {
           <TabsContent value="settings" className="mt-4">
             {SettingsContent}
           </TabsContent>
+
+          {(roles.includes("it") || roles.includes("admin")) && (
+            <TabsContent value="it" className="mt-4">
+              <ITSettingsManager />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>
