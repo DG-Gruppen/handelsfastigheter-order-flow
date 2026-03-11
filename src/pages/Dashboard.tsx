@@ -141,9 +141,12 @@ export default function Dashboard() {
         </div>
 
         {/* Order list */}
-        <Card className="glass-card">
+        <Card className="glass-card border-t-2 border-t-primary/30">
           <CardHeader className="px-4 md:px-6">
-            <CardTitle className="font-heading text-base md:text-lg">Beställningar</CardTitle>
+            <CardTitle className="font-heading text-base md:text-lg flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Beställningar
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-6">
             {loading ? (
