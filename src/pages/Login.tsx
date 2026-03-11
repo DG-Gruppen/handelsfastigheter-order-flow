@@ -178,12 +178,6 @@ const Login = () => {
               </a>
             </div>
 
-            {/* Temporary debug info */}
-            {debugInfo.length > 0 && (
-              <div className="mt-3 p-2 rounded bg-muted text-[10px] text-muted-foreground font-mono max-h-24 overflow-auto">
-                {debugInfo.map((d, i) => <div key={i}>{d}</div>)}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
