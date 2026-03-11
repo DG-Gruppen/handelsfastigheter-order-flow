@@ -16,13 +16,12 @@ import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList },
-  { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus },
-  { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[] },
-  { to: "/history", label: "Historik", shortLabel: "Historik", icon: History },
-  { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[] },
-  
-  { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[] },
+  { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList, settingKey: "nav_dashboard" },
+  { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus, settingKey: "nav_new_order" },
+  { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[], settingKey: "nav_approvals" },
+  { to: "/history", label: "Historik", shortLabel: "Historik", icon: History, settingKey: "nav_history" },
+  { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[], settingKey: "nav_org" },
+  { to: "/admin", label: "Admin", shortLabel: "Admin", icon: Settings, roles: ["admin"] as string[], settingKey: "nav_admin" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
