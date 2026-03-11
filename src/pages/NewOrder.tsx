@@ -452,6 +452,14 @@ export default function NewOrder() {
                       />
                     </div>
                   </div>
+                  {recipientFirstName && recipientLastName && (
+                    <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">Förslag på e-post:</span>
+                      <span className="text-sm font-medium text-primary">
+                        {recipientFirstName.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e')}.{recipientLastName.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e')}@handelsfastigheter.se
+                      </span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Startdatum</Label>
