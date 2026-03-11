@@ -37,11 +37,11 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  admin: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
-  manager: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
-  employee: "bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
-  staff: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-  it: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
+  admin: "bg-destructive/10 text-destructive border-destructive/20",
+  manager: "bg-warning/10 text-warning border-warning/20",
+  employee: "bg-accent/10 text-accent border-accent/20",
+  staff: "bg-primary/10 text-primary border-primary/20",
+  it: "bg-primary/10 text-primary border-primary/20",
 };
 
 const sections = [
@@ -51,6 +51,9 @@ const sections = [
     description: "Skapa och hantera kategorier",
     icon: FolderOpen,
     color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
   },
   {
     id: "equipment" as const,
@@ -58,6 +61,9 @@ const sections = [
     description: "Hantera beställningsbar utrustning",
     icon: Package,
     color: "from-accent to-accent",
+    borderColor: "border-t-accent/40",
+    bgColor: "bg-accent/10",
+    textColor: "text-accent",
   },
   {
     id: "users" as const,
@@ -65,6 +71,9 @@ const sections = [
     description: "Tilldela roller till användare",
     icon: Users,
     color: "from-warning to-warning",
+    borderColor: "border-t-warning/40",
+    bgColor: "bg-warning/10",
+    textColor: "text-warning",
   },
   {
     id: "settings" as const,
@@ -72,13 +81,19 @@ const sections = [
     description: "Attestering och andra inställningar",
     icon: Settings,
     color: "from-muted-foreground to-muted-foreground",
+    borderColor: "border-t-muted-foreground/30",
+    bgColor: "bg-muted-foreground/10",
+    textColor: "text-muted-foreground",
   },
   {
     id: "it" as const,
     label: "IT",
     description: "IT-specifika inställningar",
     icon: Wrench,
-    color: "from-blue-500 to-blue-600",
+    color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
     roles: ["it", "admin"] as string[],
   },
 ];
