@@ -14,6 +14,7 @@ import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon,
 import { useTheme } from "next-themes";
 import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavSettings } from "@/hooks/useNavSettings";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList, settingKey: "nav_dashboard" },
