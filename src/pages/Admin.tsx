@@ -27,6 +27,14 @@ interface ProfileWithRoles {
 
 type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings";
 
+const roleLabels: Record<string, string> = {
+  admin: "Admin",
+  manager: "Chef",
+  employee: "Anställd",
+  staff: "Stab",
+  it: "IT",
+};
+
 const sections = [
   {
     id: "categories" as const,
