@@ -246,10 +246,10 @@ export default function OrderDetail() {
 
         {/* Recipient info */}
         {(order.recipient_name || order.recipient_department || order.recipient_start_date) && (
-          <Card className="glass-card">
+          <Card className="glass-card border-t-2 border-t-primary/30">
             <CardHeader className="px-4 md:px-6 pb-2">
               <CardTitle className="font-heading text-sm md:text-base flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
+                <User className="h-4 w-4 text-primary" />
                 Mottagare
               </CardTitle>
             </CardHeader>
