@@ -49,17 +49,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           // Fetch profile and roles with setTimeout to avoid deadlock
           setTimeout(async () => {
-            const { data: profileData } = await supabase
+            console.log("[Auth] Fetching profile for user_id:", session.user.id, "email:", session.user.email);
+            const { data: profileData, error: profileError } = await supabase
               .from("profiles")
               .select("*")
               .eq("user_id", session.user.id)
               .single();
+            console.log("[Auth] Profile result:", profileData ? "found" : "NOT FOUND", profileError?.message ?? "no error");
             setProfile(profileData as Profile | null);
 
-            const { data: rolesData } = await supabase
+            const { data: rolesData, error: rolesError } = await supabase
               .from("user_roles")
               .select("role")
               .eq("user_id", session.user.id);
+            console.log("[Auth] Roles result:", rolesData, rolesError?.message ?? "no error");
             setRoles(rolesData?.map((r: any) => r.role) ?? []);
             setLoading(false);
           }, 0);
