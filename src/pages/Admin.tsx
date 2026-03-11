@@ -501,6 +501,7 @@ export default function Admin() {
               {activeSection === "equipment" && <OrderTypesManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
+              {activeSection === "it" && <ITSettingsManager />}
             </>
           )}
         </div>
