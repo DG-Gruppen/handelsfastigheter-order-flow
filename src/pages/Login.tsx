@@ -20,8 +20,16 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
   useEffect(() => {
-    if (!loading && user) navigate("/dashboard");
+    if (!loading && user) {
+      setDebugInfo(prev => [...prev, `✅ Inloggad som ${user.email}, redirectar...`]);
+      navigate("/dashboard");
+    }
+    if (!loading && !user) {
+      setDebugInfo(prev => [...prev, `⏳ Ej inloggad (loading=${loading})`]);
+    }
   }, [user, loading, navigate]);
 
   const handleGoogleSignIn = async () => {
