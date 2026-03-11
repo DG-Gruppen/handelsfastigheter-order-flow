@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Monitor, Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink } from "lucide-react";
+import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink } from "lucide-react";
+import shfLogo from "@/assets/shf-logo.png";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,12 +77,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-50 border-b glass-nav">
         <div className="mx-auto flex h-14 md:h-16 max-w-6xl items-center justify-between px-4">
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl gradient-primary shadow-md shadow-primary/20">
-              <Monitor className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
-            </div>
-            <span className="font-heading text-base md:text-lg font-bold text-foreground">
-              IT
-            </span>
+            <img
+              src={shfLogo}
+              alt="Svenska Handelsfastigheter"
+              className="h-8 md:h-9 w-auto dark:invert"
+            />
           </Link>
 
           {/* Desktop nav */}
