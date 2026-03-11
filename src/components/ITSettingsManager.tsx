@@ -56,15 +56,15 @@ export default function ITSettingsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Navigation links */}
-      <Card className="glass-card animate-fade-up">
+      {/* Navigation links – Himmel och Vatten (primary) */}
+      <Card className="glass-card animate-fade-up border-t-2 border-t-primary/40">
         <CardHeader className="px-4 md:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-              <Link2 className="h-4.5 w-4.5 text-primary" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+              <Link2 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="font-heading text-base md:text-lg">Navigationslänkar</CardTitle>
+              <CardTitle className="font-heading text-base md:text-lg text-primary">Navigationslänkar</CardTitle>
               <CardDescription className="text-xs">Styr vilka sidor som visas och är tillgängliga</CardDescription>
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function ITSettingsManager() {
             {NAV_LINKS.map((link) => (
               <div
                 key={link.key}
-                className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3"
+                className="flex items-center justify-between rounded-xl border border-primary/10 bg-primary/[0.03] p-3 hover:bg-primary/[0.06] transition-colors"
               >
                 <div className="min-w-0 mr-2">
                   <p className="text-sm font-medium text-foreground">{link.label}</p>
@@ -91,21 +91,21 @@ export default function ITSettingsManager() {
         </CardContent>
       </Card>
 
-      {/* Default theme */}
-      <Card className="glass-card animate-fade-up" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
+      {/* Default theme – Land och Miljö (accent/success) */}
+      <Card className="glass-card animate-fade-up border-t-2 border-t-accent/40" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
         <CardHeader className="px-4 md:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/20">
-              <Palette className="h-4.5 w-4.5 text-accent-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
+              <Palette className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <CardTitle className="font-heading text-base md:text-lg">Utseende</CardTitle>
+              <CardTitle className="font-heading text-base md:text-lg text-accent">Utseende</CardTitle>
               <CardDescription className="text-xs">Standardtema för nya användare</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
-          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-4 hover:bg-accent/[0.06] transition-colors">
             <div>
               <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -129,21 +129,21 @@ export default function ITSettingsManager() {
         </CardContent>
       </Card>
 
-      {/* Remote help link */}
-      <Card className="glass-card animate-fade-up" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
+      {/* Remote help link – Eld och Värme (warning/destructive) */}
+      <Card className="glass-card animate-fade-up border-t-2 border-t-warning/40" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
         <CardHeader className="px-4 md:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning/15">
-              <ExternalLink className="h-4.5 w-4.5 text-warning" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+              <ExternalLink className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <CardTitle className="font-heading text-base md:text-lg">Fjärrhjälp</CardTitle>
+              <CardTitle className="font-heading text-base md:text-lg text-warning">Fjärrhjälp</CardTitle>
               <CardDescription className="text-xs">Supportlänk i användarmenyn och på inloggningssidan</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-3">
-          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl border border-warning/10 bg-warning/[0.03] p-4 hover:bg-warning/[0.06] transition-colors">
             <div>
               <p className="text-sm font-medium text-foreground">Visa fjärrhjälpslänk</p>
               <p className="text-xs text-muted-foreground mt-0.5">Visar länken i menyn och på login</p>
@@ -154,7 +154,7 @@ export default function ITSettingsManager() {
               disabled={loading}
             />
           </div>
-          <div className="rounded-xl border border-border/50 bg-secondary/20 p-4 space-y-3">
+          <div className="rounded-xl border border-warning/10 bg-warning/[0.03] p-4 space-y-3">
             <div>
               <label className="text-sm font-medium text-foreground block mb-1.5">Länktext</label>
               <input
@@ -163,7 +163,7 @@ export default function ITSettingsManager() {
                 value={settings["it_remote_help_label"] ?? "Fjärrhjälp (Splashtop)"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_label: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_remote_help_label", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
                 disabled={loading}
               />
             </div>
@@ -175,7 +175,7 @@ export default function ITSettingsManager() {
                 value={settings["it_remote_help_url"] ?? "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_url: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_remote_help_url", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
                 disabled={loading}
               />
             </div>
