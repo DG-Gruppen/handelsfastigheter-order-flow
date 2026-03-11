@@ -73,6 +73,14 @@ const sections = [
     icon: Settings,
     color: "from-muted-foreground to-muted-foreground",
   },
+  {
+    id: "it" as const,
+    label: "IT",
+    description: "IT-specifika inställningar",
+    icon: Wrench,
+    color: "from-blue-500 to-blue-600",
+    roles: ["it", "admin"] as string[],
+  },
 ];
 
 export default function Admin() {
