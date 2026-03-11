@@ -12,6 +12,7 @@ import { Monitor, ShieldCheck, Mail, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 const Login = () => {
+  const [remoteHelpSettings, setRemoteHelpSettings] = useState<Record<string, string>>({});
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [showEmail, setShowEmail] = useState(false);
@@ -23,6 +24,19 @@ const Login = () => {
   useEffect(() => {
     if (!loading && user) navigate("/dashboard");
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase
+        .from("org_chart_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["it_remote_help_visible", "it_remote_help_label", "it_remote_help_url"]);
+      const map: Record<string, string> = {};
+      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+      setRemoteHelpSettings(map);
+    };
+    fetchSettings();
+  }, []);
 
   const handleGoogleSignIn = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
@@ -167,15 +181,17 @@ const Login = () => {
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span>Säker inloggning</span>
               </div>
-              <a
-                href="https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 hover:text-foreground transition-colors"
-              >
-                Fjärrhjälp
-                <ExternalLink className="h-3 w-3" />
-              </a>
+              {remoteHelpSettings["it_remote_help_visible"] !== "false" && (
+                <a
+                  href={remoteHelpSettings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  {remoteHelpSettings["it_remote_help_label"] || "Fjärrhjälp"}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
             </div>
 
           </CardContent>
