@@ -266,10 +266,17 @@ export default function Admin() {
   }
 
   const UsersContent = (
-    <Card className="glass-card animate-fade-up">
+    <Card className="glass-card animate-fade-up border-t-2 border-t-warning/40">
       <CardHeader className="px-4 md:px-6">
-        <CardTitle className="font-heading text-base md:text-lg">Användare & Roller</CardTitle>
-        <CardDescription className="text-sm">Tilldela roller till användare</CardDescription>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+            <Users className="h-5 w-5 text-warning" />
+          </div>
+          <div>
+            <CardTitle className="font-heading text-base md:text-lg text-warning">Användare & Roller</CardTitle>
+            <CardDescription className="text-xs">Tilldela roller till användare</CardDescription>
+          </div>
+        </div>
         <div className="pt-2">
           <label className="cursor-pointer">
             <input
