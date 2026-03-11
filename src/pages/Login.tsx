@@ -33,13 +33,20 @@ const Login = () => {
   }, [user, loading, navigate]);
 
   const handleGoogleSignIn = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    setDebugInfo(prev => [...prev, "🔄 Startar Google-inloggning..."]);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin + "/login",
       extraParams: {
         hd: "handelsfastigheter.se",
       },
     });
-    if (error) console.error("Login error:", error);
+    if (result.error) {
+      setDebugInfo(prev => [...prev, `❌ Login error: ${result.error}`]);
+      console.error("Login error:", result.error);
+    }
+    if (result.redirected) {
+      setDebugInfo(prev => [...prev, "↗️ Redirectad till Google..."]);
+    }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
