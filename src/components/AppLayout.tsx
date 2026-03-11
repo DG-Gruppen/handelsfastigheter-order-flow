@@ -30,16 +30,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
 
-  // Load saved theme only on initial profile load
+  // Load saved theme only on initial profile load, fallback to IT default theme
   const themeLoaded = useRef(false);
-  useEffect(() => {
-    if (profile?.theme_preference && !themeLoaded.current) {
-      themeLoaded.current = true;
-      setTheme(profile.theme_preference);
-    }
-  }, [profile?.theme_preference, setTheme]);
+  const { navSettings, settings } = useNavSettings();
 
-  const { navSettings } = useNavSettings();
+  useEffect(() => {
+    if (!themeLoaded.current) {
+      const savedTheme = profile?.theme_preference;
+      const defaultTheme = settings["it_default_theme"] || "light";
+      if (savedTheme) {
+        themeLoaded.current = true;
+        setTheme(savedTheme);
+      } else if (Object.keys(settings).length > 0) {
+        themeLoaded.current = true;
+        setTheme(defaultTheme);
+      }
+    }
+  }, [profile?.theme_preference, settings, setTheme]);
 
   // Save theme when toggled
   const handleToggleTheme = useCallback(async () => {
@@ -124,12 +131,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <Moon className="h-4 w-4 hidden dark:block" />
                 {theme === "dark" ? "Ljust tema" : "Mörkt tema"}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="gap-2 min-h-[44px]">
-                <a href="https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                  Fjärrhjälp (Splashtop)
-                </a>
-              </DropdownMenuItem>
+              {settings["it_remote_help_visible"] !== "false" && (
+                <DropdownMenuItem asChild className="gap-2 min-h-[44px]">
+                  <a
+                    href={settings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {settings["it_remote_help_label"] || "Fjärrhjälp (Splashtop)"}
+                  </a>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive gap-2 min-h-[44px]">
                 <LogOut className="h-4 w-4" />
