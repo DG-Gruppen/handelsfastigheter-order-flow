@@ -55,21 +55,21 @@ export default function ITSettingsManager() {
     defaultOn ? settings[key] !== "false" : settings[key] === "true";
 
   return (
-    <Card className="glass-card animate-fade-up">
-      <CardHeader className="px-4 md:px-6">
-        <CardTitle className="font-heading text-base md:text-lg">IT-inställningar</CardTitle>
-        <CardDescription className="text-sm">Inställningar som hanteras av IT-avdelningen</CardDescription>
-      </CardHeader>
-      <CardContent className="px-4 md:px-6 space-y-8">
-        {/* Navigation links */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Link2 className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Synliga navigationslänkar</h3>
+    <div className="space-y-6">
+      {/* Navigation links */}
+      <Card className="glass-card animate-fade-up">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <Link2 className="h-4.5 w-4.5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg">Navigationslänkar</CardTitle>
+              <CardDescription className="text-xs">Styr vilka sidor som visas och är tillgängliga</CardDescription>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">
-            Styr vilka länkar som visas i headern. Avstängda sidor blockeras även via direktlänk.
-          </p>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
           <div className="space-y-2">
             {NAV_LINKS.map((link) => (
               <div
@@ -88,17 +88,23 @@ export default function ITSettingsManager() {
               </div>
             ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Default theme */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Palette className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Standardtema</h3>
+      {/* Default theme */}
+      <Card className="glass-card animate-fade-up" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/20">
+              <Palette className="h-4.5 w-4.5 text-accent-foreground" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg">Utseende</CardTitle>
+              <CardDescription className="text-xs">Standardtema för nya användare</CardDescription>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">
-            Vilket tema nya användare får som standard vid första inloggningen.
-          </p>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
           <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
             <div>
               <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
@@ -120,58 +126,62 @@ export default function ITSettingsManager() {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Remote help link */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Fjärrhjälpslänk</h3>
+      {/* Remote help link */}
+      <Card className="glass-card animate-fade-up" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning/15">
+              <ExternalLink className="h-4.5 w-4.5 text-warning" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg">Fjärrhjälp</CardTitle>
+              <CardDescription className="text-xs">Supportlänk i användarmenyn och på inloggningssidan</CardDescription>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">
-            Länk som visas i användarmenyn för fjärrsupport. Lämna URL tom för att dölja.
-          </p>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Visa fjärrhjälpslänk</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Visar länken i användarmenyn</p>
-              </div>
-              <Switch
-                checked={isOn("it_remote_help_visible")}
-                onCheckedChange={() => toggleSetting("it_remote_help_visible")}
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-3">
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Visa fjärrhjälpslänk</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Visar länken i menyn och på login</p>
+            </div>
+            <Switch
+              checked={isOn("it_remote_help_visible")}
+              onCheckedChange={() => toggleSetting("it_remote_help_visible")}
+              disabled={loading}
+            />
+          </div>
+          <div className="rounded-xl border border-border/50 bg-secondary/20 p-4 space-y-3">
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Länktext</label>
+              <input
+                type="text"
+                placeholder="Fjärrhjälp (Splashtop)"
+                value={settings["it_remote_help_label"] ?? "Fjärrhjälp (Splashtop)"}
+                onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_label: e.target.value }))}
+                onBlur={(e) => upsertSetting("it_remote_help_label", e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
-            <div className="rounded-xl border border-border/50 bg-secondary/20 p-4 space-y-3">
-              <div>
-                <label className="text-sm font-medium text-foreground block mb-1.5">Länktext</label>
-                <input
-                  type="text"
-                  placeholder="Fjärrhjälp (Splashtop)"
-                  value={settings["it_remote_help_label"] ?? "Fjärrhjälp (Splashtop)"}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_label: e.target.value }))}
-                  onBlur={(e) => upsertSetting("it_remote_help_label", e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground block mb-1.5">URL</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={settings["it_remote_help_url"] ?? "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_url: e.target.value }))}
-                  onBlur={(e) => upsertSetting("it_remote_help_url", e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  disabled={loading}
-                />
-              </div>
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">URL</label>
+              <input
+                type="url"
+                placeholder="https://..."
+                value={settings["it_remote_help_url"] ?? "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
+                onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_url: e.target.value }))}
+                onBlur={(e) => upsertSetting("it_remote_help_url", e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                disabled={loading}
+              />
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
