@@ -450,10 +450,17 @@ export default function Admin() {
   );
 
   const SettingsContent = (
-    <Card className="glass-card animate-fade-up">
+    <Card className="glass-card animate-fade-up border-t-2 border-t-muted-foreground/30">
       <CardHeader className="px-4 md:px-6">
-        <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
-        <CardDescription className="text-sm">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+            <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
         <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
