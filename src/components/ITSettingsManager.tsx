@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Link2, Palette, ExternalLink } from "lucide-react";
+import { Link2, Palette, ExternalLink, Headphones } from "lucide-react";
+import FaqManager from "@/components/FaqManager";
 
 const NAV_LINKS = [
   { key: "nav_dashboard", label: "Dashboard", description: "Startsida med översikt" },
