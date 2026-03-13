@@ -495,6 +495,31 @@ export default function OrderDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Reject dialog */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent className="mx-4 max-w-lg glass-surface">
+            <DialogHeader>
+              <DialogTitle>Avslå beställning</DialogTitle>
+              <DialogDescription>Ange en anledning till avslaget (valfritt)</DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Anledning..."
+              maxLength={500}
+              className="resize-none"
+            />
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setRejectDialogOpen(false)} className="w-full sm:w-auto h-11">
+                Avbryt
+              </Button>
+              <Button variant="destructive" onClick={handleReject} className="w-full sm:w-auto h-11">
+                Avslå
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
   );
 }
