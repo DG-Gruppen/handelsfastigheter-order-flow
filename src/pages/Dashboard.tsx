@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, ClipboardList } from "lucide-react";
+import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, ClipboardList, ShieldCheck } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   pending: { label: "Väntar på attestering", variant: "secondary", icon: Clock },
