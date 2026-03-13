@@ -442,7 +442,7 @@ export default function Onboarding() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFlowType("offboarding")}
+                  onClick={() => { setFlowType("offboarding"); setRecipientFirstName(""); setRecipientLastName(""); setRecipientDepartment(""); setItems([{ typeId: "" }]); setSelectedSystems([]); }}
                   className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
                     flowType === "offboarding"
                       ? "border-destructive bg-destructive/5 shadow-sm"
