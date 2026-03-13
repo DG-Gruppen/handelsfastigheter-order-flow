@@ -11,8 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, Plus, Trash2, UserPlus, LogOut, Monitor } from "lucide-react";
+import { Send, Plus, Trash2, UserPlus, LogOut, Monitor, Search } from "lucide-react";
 import { getIcon } from "@/lib/icons";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Category {
   id: string;
@@ -77,6 +79,10 @@ export default function Onboarding() {
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [profileSearchOpen, setProfileSearchOpen] = useState(false);
+  const [profileSearchQuery, setProfileSearchQuery] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Approval logic
   const isManager = roles.includes("manager");
@@ -180,6 +186,64 @@ export default function Onboarding() {
   const updateItem = (index: number, value: string) => {
     setItems((prev) => prev.map((item, i) => (i === index ? { typeId: value } : item)));
   };
+
+  // Lookup profile + previous onboarding data for offboarding
+  const handleSelectProfile = async (profile: ProfileOption) => {
+    setSelectedProfileId(profile.id);
+    setProfileSearchOpen(false);
+    setLoadingProfile(true);
+
+    // Fill from profile
+    const nameParts = profile.full_name.split(" ");
+    setRecipientFirstName(nameParts[0] || "");
+    setRecipientLastName(nameParts.slice(1).join(" ") || "");
+
+    // Get full profile for department
+    const { data: fullProfile } = await supabase
+      .from("profiles")
+      .select("department")
+      .eq("id", profile.id)
+      .single();
+    if (fullProfile?.department) setRecipientDepartment(fullProfile.department);
+
+    // Look for previous onboarding order for this person
+    const { data: prevOrders } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("recipient_name", profile.full_name)
+      .eq("recipient_type", "new")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (prevOrders && prevOrders.length > 0) {
+      const prevOrderId = prevOrders[0].id;
+
+      // Fetch equipment items and systems from that order
+      const [itemsRes, systemsRes] = await Promise.all([
+        supabase.from("order_items").select("order_type_id").eq("order_id", prevOrderId),
+        supabase.from("order_systems").select("system_id").eq("order_id", prevOrderId),
+      ]);
+
+      const prevItems = (itemsRes.data ?? [])
+        .filter((i: any) => i.order_type_id)
+        .map((i: any) => ({ typeId: i.order_type_id }));
+      if (prevItems.length > 0) setItems(prevItems);
+
+      const prevSystemIds = (systemsRes.data ?? []).map((s: any) => s.system_id);
+      if (prevSystemIds.length > 0) setSelectedSystems(prevSystemIds);
+
+      toast.info("Uppgifter hämtade från tidigare onboarding");
+    } else {
+      toast.info("Profiluppgifter ifyllda – ingen tidigare onboarding hittades");
+    }
+
+    setLoadingProfile(false);
+  };
+
+  const filteredSearchProfiles = allProfiles.filter((p) => {
+    if (!profileSearchQuery) return true;
+    return p.full_name.toLowerCase().includes(profileSearchQuery.toLowerCase());
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -363,7 +427,7 @@ export default function Onboarding() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setFlowType("onboarding")}
+                  onClick={() => { setFlowType("onboarding"); setSelectedProfileId(null); setProfileSearchQuery(""); }}
                   className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
                     flowType === "onboarding"
                       ? "border-primary bg-primary/5 shadow-sm"
@@ -378,7 +442,7 @@ export default function Onboarding() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFlowType("offboarding")}
+                  onClick={() => { setFlowType("offboarding"); setRecipientFirstName(""); setRecipientLastName(""); setRecipientDepartment(""); setItems([{ typeId: "" }]); setSelectedSystems([]); }}
                   className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
                     flowType === "offboarding"
                       ? "border-destructive bg-destructive/5 shadow-sm"
@@ -458,8 +522,53 @@ export default function Onboarding() {
               <div className="space-y-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
                 <div className="flex items-center gap-2">
                   <LogOut className="h-4 w-4 text-destructive" />
-                  <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – utrustning att återlämna</p>
+                  <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – medarbetare</p>
                 </div>
+
+                {/* Profile search */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Sök medarbetare</Label>
+                  <Popover open={profileSearchOpen} onOpenChange={setProfileSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-start h-12 md:h-10 font-normal"
+                      >
+                        <Search className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                        {selectedProfileId
+                          ? allProfiles.find((p) => p.id === selectedProfileId)?.full_name || "Vald medarbetare"
+                          : "Sök på namn..."}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Sök medarbetare..."
+                          value={profileSearchQuery}
+                          onValueChange={setProfileSearchQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Ingen medarbetare hittades</CommandEmpty>
+                          {filteredSearchProfiles.slice(0, 20).map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={p.full_name}
+                              onSelect={() => handleSelectProfile(p)}
+                              className="py-3 md:py-2"
+                            >
+                              {p.full_name}
+                            </CommandItem>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {loadingProfile && (
+                    <p className="text-xs text-muted-foreground animate-pulse">Hämtar uppgifter...</p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Förnamn *</Label>
