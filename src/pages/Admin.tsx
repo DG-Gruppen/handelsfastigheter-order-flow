@@ -462,8 +462,8 @@ export default function Admin() {
     <Card className="glass-card border-t-2 border-t-muted-foreground/30">
       <CardHeader className="px-4 md:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
-            <Settings className="h-5 w-5 text-muted-foreground" />
+          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+            <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
           </div>
           <div>
             <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
