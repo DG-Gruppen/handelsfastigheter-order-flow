@@ -95,13 +95,15 @@ export default function OrderDetail() {
   useEffect(() => {
     if (!id || !user) return;
     const load = async () => {
-      const [orderRes, itemsRes] = await Promise.all([
+      const [orderRes, itemsRes, systemsRes] = await Promise.all([
         supabase.from("orders").select("*").eq("id", id).single(),
         supabase.from("order_items").select("*").eq("order_id", id),
+        supabase.from("order_systems").select("id, system:systems(id, name, description, icon)").eq("order_id", id),
       ]);
       const o = orderRes.data as Order | null;
       setOrder(o);
       setItems((itemsRes.data as OrderItem[]) ?? []);
+      setOrderSystems((systemsRes.data as any[]) ?? []);
 
       if (o) {
         const ids = [o.requester_id, o.approver_id].filter(Boolean) as string[];
