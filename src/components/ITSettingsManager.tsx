@@ -146,10 +146,10 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-3">
-          <div className="flex items-center justify-between rounded-xl border border-warning/10 bg-warning/[0.03] p-4 hover:bg-warning/[0.06] transition-colors">
-            <div>
+          <div className="flex items-center justify-between rounded-xl border border-warning/10 bg-warning/[0.03] p-3 md:p-4 hover:bg-warning/[0.06] transition-colors">
+            <div className="min-w-0 mr-2">
               <p className="text-sm font-medium text-foreground">Visa fjärrhjälpslänk</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Visar länken i menyn och på login</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Visar länken i menyn och på login</p>
             </div>
             <Switch
               checked={isOn("it_remote_help_visible")}
