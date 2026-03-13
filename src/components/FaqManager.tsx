@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, HelpCircle, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, HelpCircle, GripVertical, ArrowLeft } from "lucide-react";
 
 interface FaqItem {
   id: string;
@@ -26,7 +26,7 @@ interface FaqItem {
 
 const emptyForm = { question: "", answer: "" };
 
-export default function FaqManager() {
+export default function FaqManager({ onClose }: { onClose?: () => void }) {
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -140,6 +140,11 @@ export default function FaqManager() {
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Ny fråga</span>
             </Button>
+            {onClose && (
+              <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground" onClick={onClose}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">

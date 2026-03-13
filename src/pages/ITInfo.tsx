@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones } from "lucide-react";
+import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones, Settings } from "lucide-react";
+import FaqManager from "@/components/FaqManager";
 
 interface FaqItem {
   id: string;
@@ -15,8 +17,11 @@ interface FaqItem {
 
 export default function ITInfo() {
   const { settings } = useNavSettings();
+  const { roles } = useAuth();
   const [faq, setFaq] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [managingFaq, setManagingFaq] = useState(false);
+  const isItOrAdmin = roles.includes("admin") || roles.includes("it");
 
   useEffect(() => {
     const load = async () => {
@@ -124,17 +129,24 @@ export default function ITInfo() {
       )}
 
       {/* FAQ */}
-      {!loading && faq.length > 0 && (
+      {managingFaq && isItOrAdmin ? (
+        <FaqManager onClose={() => { setManagingFaq(false); /* reload FAQ */ setLoading(true); supabase.from("it_faq").select("id, question, answer, sort_order").eq("is_active", true).order("sort_order").then(({ data }) => { setFaq((data as FaqItem[]) ?? []); setLoading(false); }); }} />
+      ) : !loading && faq.length > 0 ? (
         <Card className="glass-card border-t-2 border-t-accent/40">
           <CardHeader className="px-4 md:px-6 pb-2">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
                 <HelpCircle className="h-5 w-5 text-accent" />
               </div>
-              <div>
+              <div className="flex-1">
                 <CardTitle className="font-heading text-base md:text-lg text-accent">Vanliga frågor</CardTitle>
                 <CardDescription className="text-xs">Svar på de vanligaste IT-frågorna</CardDescription>
               </div>
+              {isItOrAdmin && (
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground" onClick={() => setManagingFaq(true)}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="px-4 md:px-6">
@@ -152,7 +164,7 @@ export default function ITInfo() {
             </Accordion>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }
