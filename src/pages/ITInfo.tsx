@@ -17,8 +17,11 @@ interface FaqItem {
 
 export default function ITInfo() {
   const { settings } = useNavSettings();
+  const { roles } = useAuth();
   const [faq, setFaq] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [managingFaq, setManagingFaq] = useState(false);
+  const isItOrAdmin = roles.includes("admin") || roles.includes("it");
 
   useEffect(() => {
     const load = async () => {
