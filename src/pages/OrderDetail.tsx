@@ -182,6 +182,18 @@ export default function OrderDetail() {
       toast.success("Beställningen har avslagits");
       setRejectDialogOpen(false);
       setRejectionReason("");
+
+      // Notify requester about rejection
+      if (user && order.requester_id !== user.id) {
+        const approverName = approverProfile?.full_name || "Attestanten";
+        await supabase.from("notifications").insert({
+          user_id: order.requester_id,
+          title: "Beställning avslagen",
+          message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
+          type: "order_rejected",
+          reference_id: order.id,
+        } as any);
+      }
     }
   };
 
