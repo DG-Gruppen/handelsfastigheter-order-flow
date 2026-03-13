@@ -16,7 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, MoreHorizontal } from "lucide-react";
+import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, Menu } from "lucide-react";
 import shfLogo from "@/assets/shf-logo.png";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback, useRef } from "react";
