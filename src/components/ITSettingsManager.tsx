@@ -200,40 +200,40 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-3">
-          <div className="rounded-xl border border-primary/10 bg-primary/[0.03] p-4 space-y-3">
+          <div className="rounded-xl border border-primary/10 bg-primary/[0.03] p-3 md:p-4 space-y-2.5">
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">E-post</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">E-post</label>
               <input
                 type="email"
                 placeholder="helpdesk@dggruppen.se"
                 value={settings["it_contact_email"] ?? "helpdesk@dggruppen.se"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_email: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_email", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Telefon & växel</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">Telefon & växel</label>
               <input
                 type="tel"
                 placeholder="08-7217222, tryck 1"
                 value={settings["it_contact_phone"] ?? ""}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_phone: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_phone", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Öppettider</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">Öppettider</label>
               <input
                 type="text"
                 placeholder="Mån–Fre 08:00–17:00"
                 value={settings["it_contact_hours"] ?? "Mån–Fre 08:00–17:00"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_hours: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_hours", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
