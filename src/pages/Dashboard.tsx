@@ -192,6 +192,12 @@ export default function Dashboard() {
                               {tag.label}
                             </span>
                           )}
+                          {needsMyApproval && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-warning/10 text-warning border-warning/20">
+                              <ShieldCheck className="h-2.5 w-2.5" />
+                              Attestera
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
