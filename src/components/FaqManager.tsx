@@ -26,7 +26,7 @@ interface FaqItem {
 
 const emptyForm = { question: "", answer: "" };
 
-export default function FaqManager() {
+export default function FaqManager({ onClose }: { onClose?: () => void }) {
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
