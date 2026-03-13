@@ -79,6 +79,10 @@ export default function Onboarding() {
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [profileSearchOpen, setProfileSearchOpen] = useState(false);
+  const [profileSearchQuery, setProfileSearchQuery] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Approval logic
   const isManager = roles.includes("manager");
