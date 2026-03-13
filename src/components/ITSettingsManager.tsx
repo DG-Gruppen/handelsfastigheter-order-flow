@@ -205,8 +205,8 @@ export default function ITSettingsManager() {
               <label className="text-sm font-medium text-foreground block mb-1.5">E-post</label>
               <input
                 type="email"
-                placeholder="it@handelsfastigheter.se"
-                value={settings["it_contact_email"] ?? "it@handelsfastigheter.se"}
+                placeholder="helpdesk@dggruppen.se"
+                value={settings["it_contact_email"] ?? "helpdesk@dggruppen.se"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_email: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_email", e.target.value)}
                 className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
