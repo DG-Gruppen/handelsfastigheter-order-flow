@@ -70,6 +70,16 @@ interface Profile {
   email: string;
 }
 
+interface OrderSystem {
+  id: string;
+  system: {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+  };
+}
+
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, roles } = useAuth();
