@@ -532,6 +532,53 @@ export default function Onboarding() {
               </Button>
             </div>
 
+            {/* Systems & licenses */}
+            {systems.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-medium">
+                    {isOffboarding ? "System & licenser att avsluta" : "System & licenser att aktivera"}
+                  </Label>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {systems.map((sys) => {
+                    const SysIcon = getIcon(sys.icon);
+                    const checked = selectedSystems.includes(sys.id);
+                    return (
+                      <label
+                        key={sys.id}
+                        className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-all ${
+                          checked
+                            ? "border-primary/40 bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/20 hover:bg-secondary/30"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setSelectedSystems((prev) =>
+                              v ? [...prev, sys.id] : prev.filter((id) => id !== sys.id)
+                            );
+                          }}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <SysIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">{sys.name}</span>
+                          </div>
+                          {sys.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{sys.description}</p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Comment */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Kommentar</Label>
