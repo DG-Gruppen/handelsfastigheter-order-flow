@@ -166,7 +166,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="divide-y divide-border/50 -mx-4 md:mx-0">
-                {orders.map((order) => {
+                {[...orders].sort((a, b) => {
+                  const aNeeds = a.status === "pending" && a.approver_id === user?.id ? 1 : 0;
+                  const bNeeds = b.status === "pending" && b.approver_id === user?.id ? 1 : 0;
+                  return bNeeds - aNeeds;
+                }).map((order) => {
                   const sc = statusConfig[order.status] ?? statusConfig.pending;
                   const Icon = sc.icon;
                   const autoApproved = isAutoApproved(order);

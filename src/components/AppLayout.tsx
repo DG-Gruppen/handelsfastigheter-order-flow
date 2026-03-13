@@ -18,7 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, Menu } from "lucide-react";
+import { Plus, ClipboardList, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import shfLogo from "@/assets/shf-logo.png";
 import { useTheme } from "next-themes";
@@ -34,7 +34,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList, settingKey: "nav_dashboard" },
   { to: "/orders/new", label: "Ny beställning", shortLabel: "Beställ", icon: Plus, settingKey: "nav_new_order" },
   { to: "/onboarding", label: "On-/Offboarding", shortLabel: "On/Off", icon: UserPlus, roles: ["manager", "admin"] as string[], settingKey: "nav_onboarding" },
-  { to: "/approvals", label: "Att attestera", shortLabel: "Attestera", icon: CheckSquare, roles: ["manager", "admin"] as string[], settingKey: "nav_approvals" },
+  
   { to: "/history", label: "Historik", shortLabel: "Historik", icon: History, settingKey: "nav_history" },
   { to: "/it-info", label: "IT-support", shortLabel: "IT", icon: Headphones, settingKey: "nav_it_info" },
   { to: "/org", label: "Organisation", shortLabel: "Org", icon: Building2, roles: ["admin"] as string[], settingKey: "nav_org" },

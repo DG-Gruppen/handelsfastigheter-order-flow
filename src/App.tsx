@@ -10,7 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NewOrder from "./pages/NewOrder";
-import Approvals from "./pages/Approvals";
+
 import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
 import Onboarding from "./pages/Onboarding";
@@ -39,7 +39,7 @@ const App = () => (
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/orders/new" element={<NewOrder />} />
                   <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/approvals" element={<Approvals />} />
+                  <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/orders/:id" element={<OrderDetail />} />
                   <Route path="/history" element={<History />} />
                   <Route path="/admin" element={<Admin />} />
