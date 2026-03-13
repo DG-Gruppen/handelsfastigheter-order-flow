@@ -186,14 +186,6 @@ export default function NewOrder() {
       toast.error("Lägg till minst en utrustning" + (!isManagerOrAdmin ? " och välj godkännare" : ""));
       return;
     }
-    if (recipientType === "new" && !recipientName.trim()) {
-      toast.error("Ange namn på den nya medarbetaren");
-      return;
-    }
-    if (isOffboarding && !recipientName.trim()) {
-      toast.error("Ange namn på medarbetaren som ska offboardas");
-      return;
-    }
 
     setSubmitting(true);
 
