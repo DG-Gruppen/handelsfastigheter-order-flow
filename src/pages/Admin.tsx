@@ -575,6 +575,5 @@ export default function Admin() {
           )}
         </Tabs>
       </div>
-    </div>
   );
 }

@@ -381,6 +381,5 @@ export default function OrderDetail() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }

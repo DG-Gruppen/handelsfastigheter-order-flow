@@ -352,6 +352,6 @@ export default function OrgTree() {
           onUpdated={fetchData}
         />
       )}
-    </AppLayout>
+    </>
   );
 }
