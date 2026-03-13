@@ -677,6 +677,12 @@ export default function Admin() {
           <TabsContent value="settings" className="mt-4">
             {SettingsContent}
           </TabsContent>
+
+          {(roles.includes("it") || roles.includes("admin")) && (
+            <TabsContent value="it" className="mt-4">
+              {ITContent}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
   );
