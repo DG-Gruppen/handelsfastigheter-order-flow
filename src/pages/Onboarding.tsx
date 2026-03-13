@@ -92,7 +92,7 @@ export default function Onboarding() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes, systemsRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
@@ -102,7 +102,10 @@ export default function Onboarding() {
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
         supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
+        supabase.from("systems").select("id, name, description, icon").eq("is_active", true).order("sort_order"),
       ]);
+
+      setSystems((systemsRes.data as SystemOption[]) ?? []);
 
       const allCats = (catsRes.data as Category[]) ?? [];
       const allTypes = (typesRes.data as OrderType[]) ?? [];
