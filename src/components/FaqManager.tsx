@@ -140,6 +140,11 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Ny fråga</span>
             </Button>
+            {onClose && (
+              <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground" onClick={onClose}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
