@@ -162,20 +162,20 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
                     !item.is_active ? "opacity-50" : ""
                   }`}
                 >
-                  <div className="flex flex-col gap-0.5 shrink-0 mt-1">
+                  <div className="flex flex-col shrink-0">
                     <button
                       onClick={() => handleMoveUp(index)}
                       disabled={index === 0}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1"
                     >
-                      <GripVertical className="h-3.5 w-3.5 rotate-90 scale-x-[-1]" />
+                      <ChevronUp className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleMoveDown(index)}
                       disabled={index === items.length - 1}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1"
                     >
-                      <GripVertical className="h-3.5 w-3.5 rotate-90" />
+                      <ChevronDown className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
