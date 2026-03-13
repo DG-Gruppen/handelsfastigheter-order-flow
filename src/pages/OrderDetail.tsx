@@ -23,7 +23,9 @@ import {
   FileText,
   ShoppingCart,
   Truck,
+  Monitor,
 } from "lucide-react";
+import { getIcon } from "@/lib/icons";
 
 const statusConfig: Record<
   string,
