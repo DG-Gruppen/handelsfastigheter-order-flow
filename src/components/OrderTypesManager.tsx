@@ -104,8 +104,8 @@ function SortableItem({
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-        <IconComp className="h-5 w-5 text-secondary-foreground" />
+      <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+        <IconComp className="h-4 w-4 md:h-5 md:w-5 text-secondary-foreground" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm text-foreground truncate">{ot.name}</p>
@@ -113,25 +113,25 @@ function SortableItem({
           {ot.description ? `${ot.description} · ` : ""}{getDeptLabel(ot.id)}
         </p>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
         <Switch
           checked={ot.is_active}
           onCheckedChange={() => onToggleActive(ot.id, ot.is_active)}
-          className="mr-1"
+          className="mr-0.5 md:mr-1"
         />
-        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onDuplicate(ot)}>
-          <Copy className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9" onClick={() => onDuplicate(ot)}>
+          <Copy className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(ot)}>
-          <Pencil className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9" onClick={() => onEdit(ot)}>
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-destructive"
+          className="h-8 w-8 md:h-9 md:w-9 text-destructive"
           onClick={() => onDelete(ot.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
