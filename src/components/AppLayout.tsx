@@ -186,6 +186,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </header>
 
