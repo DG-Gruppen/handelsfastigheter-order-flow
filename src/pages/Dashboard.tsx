@@ -97,6 +97,7 @@ export default function Dashboard() {
     pending: orders.filter((o) => o.status === "pending").length,
     approved: orders.filter((o) => o.status === "approved").length,
     total: orders.length,
+    needsMyApproval: orders.filter((o) => o.status === "pending" && o.approver_id === user?.id).length,
   };
 
   const firstName = profile?.full_name?.split(" ")[0] || "du";
@@ -123,10 +124,11 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
           {[
             { value: counts.total, label: "Totalt", colorClass: "text-primary", borderClass: "border-t-primary/30", bgClass: "bg-primary/[0.03]" },
-            { value: counts.pending, label: "Väntar", colorClass: "text-warning", borderClass: "border-t-warning/30", bgClass: "bg-warning/[0.03]" },
+            { value: counts.needsMyApproval, label: "Att attestera", colorClass: "text-warning", borderClass: "border-t-warning/30", bgClass: "bg-warning/[0.03]" },
+            { value: counts.pending, label: "Väntar", colorClass: "text-muted-foreground", borderClass: "border-t-muted/30", bgClass: "bg-muted/[0.03]" },
             { value: counts.approved, label: "Godkända", colorClass: "text-accent", borderClass: "border-t-accent/30", bgClass: "bg-accent/[0.03]" },
           ].map((stat, i) => (
             <Card key={stat.label} className={`glass-card animate-fade-up border-t-2 ${stat.borderClass}`} style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}>
