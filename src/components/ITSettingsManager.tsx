@@ -63,8 +63,8 @@ export default function ITSettingsManager() {
       <Card className="glass-card border-t-2 border-t-primary/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
-              <Link2 className="h-5 w-5 text-primary" />
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+              <Link2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             </div>
             <div>
               <CardTitle className="font-heading text-base md:text-lg text-primary">Navigationslänkar</CardTitle>
@@ -98,8 +98,8 @@ export default function ITSettingsManager() {
       <Card className="glass-card border-t-2 border-t-accent/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
-              <Palette className="h-5 w-5 text-accent" />
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
+              <Palette className="h-4 w-4 md:h-5 md:w-5 text-accent" />
             </div>
             <div>
               <CardTitle className="font-heading text-base md:text-lg text-accent">Utseende</CardTitle>
@@ -108,10 +108,10 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
-          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-4 hover:bg-accent/[0.06] transition-colors">
-            <div>
+          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-3 md:p-4 hover:bg-accent/[0.06] transition-colors">
+            <div className="min-w-0 mr-2">
               <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">
                 Nuvarande: {(settings["it_default_theme"] || "light") === "light" ? "Ljust" : "Mörkt"}
               </p>
             </div>
@@ -136,8 +136,8 @@ export default function ITSettingsManager() {
       <Card className="glass-card border-t-2 border-t-warning/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
-              <ExternalLink className="h-5 w-5 text-warning" />
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+              <ExternalLink className="h-4 w-4 md:h-5 md:w-5 text-warning" />
             </div>
             <div>
               <CardTitle className="font-heading text-base md:text-lg text-warning">Fjärrhjälp</CardTitle>
@@ -146,10 +146,10 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-3">
-          <div className="flex items-center justify-between rounded-xl border border-warning/10 bg-warning/[0.03] p-4 hover:bg-warning/[0.06] transition-colors">
-            <div>
+          <div className="flex items-center justify-between rounded-xl border border-warning/10 bg-warning/[0.03] p-3 md:p-4 hover:bg-warning/[0.06] transition-colors">
+            <div className="min-w-0 mr-2">
               <p className="text-sm font-medium text-foreground">Visa fjärrhjälpslänk</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Visar länken i menyn och på login</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Visar länken i menyn och på login</p>
             </div>
             <Switch
               checked={isOn("it_remote_help_visible")}
@@ -157,28 +157,28 @@ export default function ITSettingsManager() {
               disabled={loading}
             />
           </div>
-          <div className="rounded-xl border border-warning/10 bg-warning/[0.03] p-4 space-y-3">
+          <div className="rounded-xl border border-warning/10 bg-warning/[0.03] p-3 md:p-4 space-y-2.5">
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Länktext</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">Länktext</label>
               <input
                 type="text"
                 placeholder="Fjärrhjälp (Splashtop)"
                 value={settings["it_remote_help_label"] ?? "Fjärrhjälp (Splashtop)"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_label: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_remote_help_label", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">URL</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">URL</label>
               <input
                 type="url"
                 placeholder="https://..."
                 value={settings["it_remote_help_url"] ?? "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_url: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_remote_help_url", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
                 disabled={loading}
               />
             </div>
@@ -190,8 +190,8 @@ export default function ITSettingsManager() {
       <Card className="glass-card border-t-2 border-t-primary/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
-              <Headphones className="h-5 w-5 text-primary" />
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+              <Headphones className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             </div>
             <div>
               <CardTitle className="font-heading text-base md:text-lg text-primary">Kontaktuppgifter</CardTitle>
@@ -200,40 +200,40 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-3">
-          <div className="rounded-xl border border-primary/10 bg-primary/[0.03] p-4 space-y-3">
+          <div className="rounded-xl border border-primary/10 bg-primary/[0.03] p-3 md:p-4 space-y-2.5">
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">E-post</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">E-post</label>
               <input
                 type="email"
                 placeholder="helpdesk@dggruppen.se"
                 value={settings["it_contact_email"] ?? "helpdesk@dggruppen.se"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_email: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_email", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Telefon & växel</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">Telefon & växel</label>
               <input
                 type="tel"
                 placeholder="08-7217222, tryck 1"
                 value={settings["it_contact_phone"] ?? ""}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_phone: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_phone", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Öppettider</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">Öppettider</label>
               <input
                 type="text"
                 placeholder="Mån–Fre 08:00–17:00"
                 value={settings["it_contact_hours"] ?? "Mån–Fre 08:00–17:00"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_hours: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_hours", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 disabled={loading}
               />
             </div>
