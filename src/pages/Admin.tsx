@@ -463,41 +463,115 @@ export default function Admin() {
   );
 
   const SettingsContent = (
-    <Card className="glass-card border-t-2 border-t-muted-foreground/30">
-      <CardHeader className="px-4 md:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
-            <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+    <div className="space-y-6">
+      {/* Attestering */}
+      <Card className="glass-card border-t-2 border-t-muted-foreground/30">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+              <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+              <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
-            <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-4">
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+            <div className="min-w-0 mr-2">
+              <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
+            </div>
+            <Switch
+              checked={allSettings["approval_managers_to_ceo"] === "true"}
+              onCheckedChange={() => toggleSetting("approval_managers_to_ceo", false)}
+            />
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="px-4 md:px-6 space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
-          <div className="min-w-0 mr-2">
-            <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
-            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+            <div className="min-w-0 mr-2">
+              <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
+            </div>
+            <Switch
+              checked={allSettings["approval_staff_to_ceo"] === "true"}
+              onCheckedChange={() => toggleSetting("approval_staff_to_ceo", false)}
+            />
           </div>
-          <Switch
-            checked={approvalSettings["approval_managers_to_ceo"] === "true"}
-            onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
-          />
-        </div>
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
-          <div className="min-w-0 mr-2">
-            <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
-            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
+        </CardContent>
+      </Card>
+
+      {/* Navigation links */}
+      <Card className="glass-card border-t-2 border-t-primary/40">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+              <Link2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg text-primary">Navigationslänkar</CardTitle>
+              <CardDescription className="text-xs">Styr vilka sidor som visas och är tillgängliga</CardDescription>
+            </div>
           </div>
-          <Switch
-            checked={approvalSettings["approval_staff_to_ceo"] === "true"}
-            onCheckedChange={() => toggleApprovalSetting("approval_staff_to_ceo")}
-          />
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {NAV_LINKS.map((link) => (
+              <div
+                key={link.key}
+                className="flex items-center justify-between rounded-xl border border-primary/10 bg-primary/[0.03] p-3 hover:bg-primary/[0.06] transition-colors"
+              >
+                <div className="min-w-0 mr-2">
+                  <p className="text-sm font-medium text-foreground">{link.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{link.description}</p>
+                </div>
+                <Switch
+                  checked={isOn(link.key)}
+                  onCheckedChange={() => toggleSetting(link.key)}
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Default theme */}
+      <Card className="glass-card border-t-2 border-t-accent/40">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
+              <Palette className="h-4 w-4 md:h-5 md:w-5 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg text-accent">Utseende</CardTitle>
+              <CardDescription className="text-xs">Standardtema för nya användare</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
+          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-3 md:p-4 hover:bg-accent/[0.06] transition-colors">
+            <div className="min-w-0 mr-2">
+              <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">
+                Nuvarande: {(allSettings["it_default_theme"] || "light") === "light" ? "Ljust" : "Mörkt"}
+              </p>
+            </div>
+            <Select
+              value={allSettings["it_default_theme"] || "light"}
+              onValueChange={(v) => upsertSetting("it_default_theme", v)}
+            >
+              <SelectTrigger className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Ljust</SelectItem>
+                <SelectItem value="dark">Mörkt</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   // Mobile: card-based navigation
