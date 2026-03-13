@@ -130,7 +130,7 @@ export default function ITInfo() {
 
       {/* FAQ */}
       {managingFaq && isItOrAdmin ? (
-        <FaqManager />
+        <FaqManager onClose={() => { setManagingFaq(false); /* reload FAQ */ setLoading(true); supabase.from("it_faq").select("id, question, answer, sort_order").eq("is_active", true).order("sort_order").then(({ data }) => { setFaq((data as FaqItem[]) ?? []); setLoading(false); }); }} />
       ) : !loading && faq.length > 0 ? (
         <Card className="glass-card border-t-2 border-t-accent/40">
           <CardHeader className="px-4 md:px-6 pb-2">
