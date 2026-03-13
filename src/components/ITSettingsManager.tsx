@@ -136,8 +136,8 @@ export default function ITSettingsManager() {
       <Card className="glass-card border-t-2 border-t-warning/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
-              <ExternalLink className="h-5 w-5 text-warning" />
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+              <ExternalLink className="h-4 w-4 md:h-5 md:w-5 text-warning" />
             </div>
             <div>
               <CardTitle className="font-heading text-base md:text-lg text-warning">Fjärrhjälp</CardTitle>
