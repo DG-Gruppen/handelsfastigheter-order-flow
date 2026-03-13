@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Send, Plus, Trash2, UserPlus, User, LogOut } from "lucide-react";
+import { Send, Plus, Trash2, User } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 
 interface Category {
