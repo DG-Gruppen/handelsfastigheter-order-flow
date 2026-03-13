@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, HelpCircle, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, HelpCircle, GripVertical, ArrowLeft } from "lucide-react";
 
 interface FaqItem {
   id: string;
