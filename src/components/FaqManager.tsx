@@ -141,7 +141,7 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
                 <Plus className="h-4 w-4" />
               </Button>
               {onClose && (
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-accent hover:text-accent" onClick={onClose}>
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-accent hover:bg-accent/10 hover:text-accent" onClick={onClose}>
                   <Check className="h-5 w-5" />
                 </Button>
               )}
