@@ -537,8 +537,7 @@ export default function Admin() {
 
   // Desktop: tabs
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Administration</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Hantera kategorier, utrustning, användare och roller</p>
