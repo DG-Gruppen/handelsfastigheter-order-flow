@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
+import SystemsManager from "@/components/SystemsManager";
 import ITSettingsManager from "@/components/ITSettingsManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
