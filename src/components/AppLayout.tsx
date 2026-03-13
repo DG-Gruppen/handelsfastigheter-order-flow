@@ -26,6 +26,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { cn } from "@/lib/utils";
+import NotificationBell from "@/components/NotificationBell";
 
 // Keys that go into the "More" sheet on mobile
 const mobileOverflowKeys = ["nav_org", "nav_admin"];
@@ -139,7 +140,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* User menu (desktop) */}
+          {/* Notification bell + User menu (desktop) */}
+          <div className="flex items-center gap-1">
+          <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 rounded-full p-1 hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] justify-center">
@@ -183,6 +186,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </header>
 

@@ -241,6 +241,18 @@ export default function NewOrder() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
+    // Create notification for approver (if not auto-approved)
+    if (!autoApprove && resolvedApproverId && resolvedApproverId !== user.id) {
+      const requesterName = allProfiles.find(p => p.user_id === user.id)?.full_name || "Någon";
+      await supabase.from("notifications").insert({
+        user_id: resolvedApproverId,
+        title: "Ny beställning att attestera",
+        message: `${requesterName} har skickat en beställning: ${title}`,
+        type: "approval_request",
+        reference_id: order.id,
+      } as any);
+    }
+
     const successMsg = autoApprove
       ? "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!"
       : needsCeoApproval
