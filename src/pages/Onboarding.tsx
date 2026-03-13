@@ -427,7 +427,7 @@ export default function Onboarding() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setFlowType("onboarding")}
+                  onClick={() => { setFlowType("onboarding"); setSelectedProfileId(null); setProfileSearchQuery(""); }}
                   className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
                     flowType === "onboarding"
                       ? "border-primary bg-primary/5 shadow-sm"
