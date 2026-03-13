@@ -38,6 +38,13 @@ interface OrderItem {
   typeId: string;
 }
 
+interface SystemOption {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 export default function Onboarding() {
   const { user, roles } = useAuth();
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
