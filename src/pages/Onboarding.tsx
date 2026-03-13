@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, Plus, Trash2, UserPlus, LogOut } from "lucide-react";
+import { Send, Plus, Trash2, UserPlus, LogOut, Monitor } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 
 interface Category {
@@ -37,6 +38,13 @@ interface OrderItem {
   typeId: string;
 }
 
+interface SystemOption {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 export default function Onboarding() {
   const { user, roles } = useAuth();
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
@@ -45,6 +53,7 @@ export default function Onboarding() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
+  const [systems, setSystems] = useState<SystemOption[]>([]);
   const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
   const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
   const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
@@ -64,6 +73,7 @@ export default function Onboarding() {
   const [recipientEndDate, setRecipientEndDate] = useState("");
   const [recipientDepartment, setRecipientDepartment] = useState("");
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
+  const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -82,7 +92,7 @@ export default function Onboarding() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes] = await Promise.all([
+      const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes, systemsRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
@@ -92,7 +102,10 @@ export default function Onboarding() {
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
         supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
+        supabase.from("systems").select("id, name, description, icon").eq("is_active", true).order("sort_order"),
       ]);
+
+      setSystems((systemsRes.data as SystemOption[]) ?? []);
 
       const allCats = (catsRes.data as Category[]) ?? [];
       const allTypes = (typesRes.data as OrderType[]) ?? [];
@@ -246,6 +259,15 @@ export default function Onboarding() {
     });
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
+
+    // Save selected systems/licenses
+    if (selectedSystems.length > 0) {
+      const systemRows = selectedSystems.map((systemId) => ({
+        order_id: order.id,
+        system_id: systemId,
+      }));
+      await supabase.from("order_systems").insert(systemRows as any);
+    }
 
     const successMsg = autoApprove
       ? `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har godkänts automatiskt!`
@@ -509,6 +531,53 @@ export default function Onboarding() {
                 Lägg till utrustning
               </Button>
             </div>
+
+            {/* Systems & licenses */}
+            {systems.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-medium">
+                    {isOffboarding ? "System & licenser att avsluta" : "System & licenser att aktivera"}
+                  </Label>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {systems.map((sys) => {
+                    const SysIcon = getIcon(sys.icon);
+                    const checked = selectedSystems.includes(sys.id);
+                    return (
+                      <label
+                        key={sys.id}
+                        className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-all ${
+                          checked
+                            ? "border-primary/40 bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/20 hover:bg-secondary/30"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setSelectedSystems((prev) =>
+                              v ? [...prev, sys.id] : prev.filter((id) => id !== sys.id)
+                            );
+                          }}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <SysIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground">{sys.name}</span>
+                          </div>
+                          {sys.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{sys.description}</p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Comment */}
             <div className="space-y-2">

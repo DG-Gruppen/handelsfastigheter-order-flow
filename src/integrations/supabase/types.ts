@@ -161,6 +161,42 @@ export type Database = {
           },
         ]
       }
+      order_systems: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          system_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          system_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          system_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_systems_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_systems_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_type_departments: {
         Row: {
           department_id: string
@@ -392,6 +428,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      systems: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
