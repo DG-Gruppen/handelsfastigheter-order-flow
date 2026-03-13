@@ -124,11 +124,10 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           {[
             { value: counts.total, label: "Totalt", colorClass: "text-primary", borderClass: "border-t-primary/30", bgClass: "bg-primary/[0.03]" },
-            { value: counts.needsMyApproval, label: "Att attestera", colorClass: "text-warning", borderClass: "border-t-warning/30", bgClass: "bg-warning/[0.03]" },
-            { value: counts.pending, label: "Väntar", colorClass: "text-muted-foreground", borderClass: "border-t-muted/30", bgClass: "bg-muted/[0.03]" },
+            { value: counts.pending, label: "Väntar", colorClass: "text-warning", borderClass: "border-t-warning/30", bgClass: "bg-warning/[0.03]", extra: counts.needsMyApproval > 0 ? `${counts.needsMyApproval} att attestera` : null },
             { value: counts.approved, label: "Godkända", colorClass: "text-accent", borderClass: "border-t-accent/30", bgClass: "bg-accent/[0.03]" },
           ].map((stat, i) => (
             <Card key={stat.label} className={`glass-card animate-fade-up border-t-2 ${stat.borderClass}`} style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}>
@@ -137,6 +136,12 @@ export default function Dashboard() {
                   {stat.value}
                 </div>
                 <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{stat.label}</p>
+                {"extra" in stat && stat.extra && (
+                  <p className="text-[10px] md:text-xs font-medium text-warning mt-1">
+                    <ShieldCheck className="inline h-3 w-3 mr-0.5 -mt-0.5" />
+                    {stat.extra}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
