@@ -36,7 +36,7 @@ export default function ITInfo() {
   const showRemoteHelp = settings["it_remote_help_visible"] !== "false";
 
   const contactEmail = settings["it_contact_email"] || "helpdesk@dggruppen.se";
-  const contactPhone = settings["it_contact_phone"] || "";
+  const contactPhone = settings["it_contact_phone"] || "08-7217222, tryck 1";
   const contactHours = settings["it_contact_hours"] || "Mån–Fre 08:00–17:00";
 
   return (

@@ -214,10 +214,10 @@ export default function ITSettingsManager() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Telefon</label>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Telefon & växel</label>
               <input
                 type="tel"
-                placeholder="08-123 456 78"
+                placeholder="08-7217222, tryck 1"
                 value={settings["it_contact_phone"] ?? ""}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_phone: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_contact_phone", e.target.value)}
