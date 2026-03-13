@@ -522,8 +522,53 @@ export default function Onboarding() {
               <div className="space-y-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
                 <div className="flex items-center gap-2">
                   <LogOut className="h-4 w-4 text-destructive" />
-                  <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – utrustning att återlämna</p>
+                  <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – medarbetare</p>
                 </div>
+
+                {/* Profile search */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Sök medarbetare</Label>
+                  <Popover open={profileSearchOpen} onOpenChange={setProfileSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-start h-12 md:h-10 font-normal"
+                      >
+                        <Search className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                        {selectedProfileId
+                          ? allProfiles.find((p) => p.id === selectedProfileId)?.full_name || "Vald medarbetare"
+                          : "Sök på namn..."}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Sök medarbetare..."
+                          value={profileSearchQuery}
+                          onValueChange={setProfileSearchQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Ingen medarbetare hittades</CommandEmpty>
+                          {filteredSearchProfiles.slice(0, 20).map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={p.full_name}
+                              onSelect={() => handleSelectProfile(p)}
+                              className="py-3 md:py-2"
+                            >
+                              {p.full_name}
+                            </CommandItem>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {loadingProfile && (
+                    <p className="text-xs text-muted-foreground animate-pulse">Hämtar uppgifter...</p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Förnamn *</Label>
