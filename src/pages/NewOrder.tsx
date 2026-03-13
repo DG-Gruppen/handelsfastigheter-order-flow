@@ -56,18 +56,9 @@ export default function NewOrder() {
   const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
   // Form state
-  const [recipientType, setRecipientType] = useState<"existing" | "new">("existing");
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
-  const [recipientFirstName, setRecipientFirstName] = useState("");
-  const [recipientLastName, setRecipientLastName] = useState("");
-  const recipientName = `${recipientFirstName} ${recipientLastName}`.trim();
-  const [recipientStartDate, setRecipientStartDate] = useState("");
-  const [recipientEndDate, setRecipientEndDate] = useState("");
-  const [recipientDepartment, setRecipientDepartment] = useState("");
   const [orderReason, setOrderReason] = useState("broken_equipment");
 
-  const isOffboarding = recipientType === "existing" && orderReason === "end_of_employment";
-  const activeReasons = recipientType === "new" ? ORDER_REASONS_NEW : ORDER_REASONS_EXISTING;
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
