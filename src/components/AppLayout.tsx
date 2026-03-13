@@ -18,7 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, Menu } from "lucide-react";
+import { Plus, ClipboardList, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import shfLogo from "@/assets/shf-logo.png";
 import { useTheme } from "next-themes";
