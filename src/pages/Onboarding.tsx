@@ -53,6 +53,7 @@ export default function Onboarding() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
+  const [systems, setSystems] = useState<SystemOption[]>([]);
   const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
   const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
   const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
