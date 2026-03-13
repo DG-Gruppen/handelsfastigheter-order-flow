@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppLayout from "@/components/AppLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,16 +126,13 @@ export default function OrderDetail() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <p className="text-muted-foreground py-16 text-center">Laddar...</p>
-      </AppLayout>
+      <p className="text-muted-foreground py-16 text-center">Laddar...</p>
     );
   }
 
   if (!order) {
     return (
-      <AppLayout>
-        <div className="text-center py-16 space-y-4">
+      <div className="text-center py-16 space-y-4">
           <p className="text-muted-foreground">Beställningen hittades inte</p>
           <Link to="/dashboard">
             <Button variant="outline" className="gap-2">
@@ -143,7 +140,6 @@ export default function OrderDetail() {
             </Button>
           </Link>
         </div>
-      </AppLayout>
     );
   }
 
@@ -186,8 +182,7 @@ export default function OrderDetail() {
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-5 md:space-y-6 max-w-2xl">
+    <div className="space-y-5 md:space-y-6 max-w-2xl">
         {/* Back + header */}
         <div className="space-y-3">
           <Link to="/dashboard">
@@ -386,6 +381,5 @@ export default function OrderDetail() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }

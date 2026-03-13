@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppLayout from "@/components/AppLayout";
+
 import OrgChartCanvas from "@/components/OrgChart/OrgChartCanvas";
 import OrgCardMenu from "@/components/OrgChart/OrgCardMenu";
 import OrgSettingsModal from "@/components/OrgChart/OrgSettingsModal";
@@ -305,26 +305,22 @@ export default function OrgTree() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center py-20">
+      <div className="flex items-center justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      </AppLayout>
     );
   }
 
   if (!tree) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
           Inga profiler hittades
         </div>
-      </AppLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <>
       <div className="animate-fade-in relative" style={{ height: "calc(100vh - 80px)" }}>
         <OrgChartCanvas
           key={profiles.length + '-' + profiles.map(p => p.sort_order).join(',')}
@@ -356,6 +352,6 @@ export default function OrgTree() {
           onUpdated={fetchData}
         />
       )}
-    </AppLayout>
+    </>
   );
 }

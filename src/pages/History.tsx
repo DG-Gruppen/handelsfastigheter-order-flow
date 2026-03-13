@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppLayout from "@/components/AppLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -137,8 +137,7 @@ export default function History() {
   const showRequester = isAdmin || isManager;
 
   return (
-    <AppLayout>
-      <div className="space-y-5 md:space-y-8">
+    <div className="space-y-5 md:space-y-8">
         <div>
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">
             Historik
@@ -245,6 +244,5 @@ export default function History() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }

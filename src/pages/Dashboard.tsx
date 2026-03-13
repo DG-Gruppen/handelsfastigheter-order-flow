@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppLayout from "@/components/AppLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -102,7 +102,7 @@ export default function Dashboard() {
   const firstName = profile?.full_name?.split(" ")[0] || "du";
 
   return (
-    <AppLayout>
+    <div className="space-y-5 md:space-y-8">
       <div className="space-y-5 md:space-y-8">
         {/* Header */}
         <div className="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
@@ -216,6 +216,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppLayout from "@/components/AppLayout";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -352,8 +352,7 @@ export default function NewOrder() {
   );
 
   return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto animate-fade-up">
+    <div className="max-w-2xl mx-auto animate-fade-up">
         <Card className="glass-card shadow-xl shadow-primary/[0.03]">
           <CardHeader className="px-4 md:px-6">
             <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
@@ -651,6 +650,5 @@ export default function NewOrder() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }

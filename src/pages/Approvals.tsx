@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import AppLayout from "@/components/AppLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +86,7 @@ export default function Approvals() {
   const handledOrders = orders.filter((o) => o.status !== "pending");
 
   return (
-    <AppLayout>
+    <>
       <div className="space-y-5 md:space-y-8">
         <div>
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Attestering</h1>
@@ -238,6 +238,6 @@ export default function Approvals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }
