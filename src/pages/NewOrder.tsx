@@ -230,16 +230,14 @@ export default function NewOrder() {
         category_id: firstType?.category_id ?? null,
         title,
         description: description.trim(),
-        recipient_type: recipientType,
-        recipient_name: recipientType === "new" || isOffboarding
-          ? recipientName.trim()
-          : isManagerOrAdmin && recipientType === "existing"
-            ? (selectedExistingRecipient === "self"
-              ? ""
-              : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
-            : "",
-        recipient_start_date: recipientType === "new" && recipientStartDate ? recipientStartDate : null,
-        recipient_department: (recipientType === "new" || isOffboarding) ? recipientDepartment.trim() : "",
+        recipient_type: "existing",
+        recipient_name: isManagerOrAdmin
+          ? (selectedExistingRecipient === "self"
+            ? ""
+            : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
+          : "",
+        recipient_start_date: null,
+        recipient_department: "",
         order_reason: orderReason,
         status: autoApprove ? "approved" : "pending",
         approved_at: autoApprove ? new Date().toISOString() : null,
