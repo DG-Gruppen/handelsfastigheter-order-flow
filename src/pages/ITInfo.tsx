@@ -37,7 +37,7 @@ export default function ITInfo() {
 
   const contactEmail = settings["it_contact_email"] || "helpdesk@dggruppen.se";
   const contactPhone = settings["it_contact_phone"] || "08 - 72 17 222 -> tryck 1";
-  const contactHours = settings["it_contact_hours"] || "Mån–Fre 08:00–17:00";
+  const contactHours = settings["it_contact_hours"] || "Mån – Fre | 08:00 – 17:00";
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 md:space-y-6 animate-fade-up">
