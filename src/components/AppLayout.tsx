@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen gradient-bg pb-20 md:pb-0">
       {/* Top header */}
       <header className="sticky top-0 z-50 border-b glass-nav">
-        <div className="mx-auto flex h-14 md:h-16 max-w-6xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <img
               src={shfLogo}
