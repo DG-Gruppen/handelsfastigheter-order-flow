@@ -73,6 +73,7 @@ export default function Onboarding() {
   const [recipientEndDate, setRecipientEndDate] = useState("");
   const [recipientDepartment, setRecipientDepartment] = useState("");
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
+  const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
