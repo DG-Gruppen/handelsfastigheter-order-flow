@@ -650,6 +650,5 @@ export default function NewOrder() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }

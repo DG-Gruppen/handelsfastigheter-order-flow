@@ -244,6 +244,5 @@ export default function History() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }
