@@ -278,8 +278,8 @@ export default function Admin() {
     <Card className="glass-card border-t-2 border-t-warning/40">
       <CardHeader className="px-4 md:px-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
-            <Users className="h-5 w-5 text-warning" />
+          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+            <Users className="h-4 w-4 md:h-5 md:w-5 text-warning" />
           </div>
           <div>
             <CardTitle className="font-heading text-base md:text-lg text-warning">Användare & Roller</CardTitle>
@@ -313,7 +313,7 @@ export default function Admin() {
               placeholder="Sök namn, e-post, avdelning..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-9 pr-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full min-h-0 h-10 pl-9 pr-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           <Button
@@ -462,8 +462,8 @@ export default function Admin() {
     <Card className="glass-card border-t-2 border-t-muted-foreground/30">
       <CardHeader className="px-4 md:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
-            <Settings className="h-5 w-5 text-muted-foreground" />
+          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+            <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
           </div>
           <div>
             <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
@@ -472,20 +472,20 @@ export default function Admin() {
         </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-          <div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+          <div className="min-w-0 mr-2">
             <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar utan skickas till VD</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
           </div>
           <Switch
             checked={approvalSettings["approval_managers_to_ceo"] === "true"}
             onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
           />
         </div>
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-          <div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+          <div className="min-w-0 mr-2">
             <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Stabsmedarbetare kan inte godkänna sina egna beställningar utan skickas till VD</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
           </div>
           <Switch
             checked={approvalSettings["approval_staff_to_ceo"] === "true"}
