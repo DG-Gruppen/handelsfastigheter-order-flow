@@ -192,30 +192,46 @@ export default function Admin() {
   };
 
   const [importing, setImporting] = useState(false);
-  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
+  const [allSettings, setAllSettings] = useState<Record<string, string>>({});
+
+  const NAV_LINKS = [
+    { key: "nav_dashboard", label: "Dashboard", description: "Startsida med översikt" },
+    { key: "nav_new_order", label: "Ny beställning", description: "Formulär för ny beställning" },
+    { key: "nav_onboarding", label: "On-/Offboarding", description: "Formulär för nyanställning och avslut" },
+    { key: "nav_approvals", label: "Att attestera", description: "Attesteringssida (chefer/admin)" },
+    { key: "nav_history", label: "Historik", description: "Orderhistorik" },
+    { key: "nav_it_info", label: "IT-support", description: "IT-informationssida" },
+    { key: "nav_org", label: "Organisation", description: "Organisationsträd (admin)" },
+    { key: "nav_admin", label: "Admin", description: "Administrationspanel (admin)" },
+  ];
 
   useEffect(() => {
-    const fetchApprovalSettings = async () => {
+    const fetchSettings = async () => {
       const { data } = await supabase
         .from("org_chart_settings")
-        .select("setting_key, setting_value")
-        .in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]);
+        .select("setting_key, setting_value");
       const map: Record<string, string> = {};
       for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
-      setApprovalSettings(map);
+      setAllSettings(map);
     };
-    fetchApprovalSettings();
+    fetchSettings();
   }, []);
 
-  const toggleApprovalSetting = async (key: string) => {
-    const current = approvalSettings[key] === "true";
-    const newValue = current ? "false" : "true";
+  const upsertSetting = async (key: string, value: string) => {
     await supabase
       .from("org_chart_settings")
-      .upsert({ setting_key: key, setting_value: newValue, updated_at: new Date().toISOString() } as any, { onConflict: "setting_key" });
-    setApprovalSettings(prev => ({ ...prev, [key]: newValue }));
+      .upsert({ setting_key: key, setting_value: value, updated_at: new Date().toISOString() } as any, { onConflict: "setting_key" });
+    setAllSettings(prev => ({ ...prev, [key]: value }));
     toast.success("Inställning uppdaterad");
   };
+
+  const toggleSetting = async (key: string, defaultOn = true) => {
+    const current = defaultOn ? allSettings[key] !== "false" : allSettings[key] === "true";
+    await upsertSetting(key, current ? "false" : "true");
+  };
+
+  const isOn = (key: string, defaultOn = true) =>
+    defaultOn ? allSettings[key] !== "false" : allSettings[key] === "true";
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
