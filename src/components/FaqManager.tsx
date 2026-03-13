@@ -14,7 +14,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, HelpCircle, ChevronUp, ChevronDown, Check, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, HelpCircle, GripVertical, Check } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface FaqItem {
   id: string;
@@ -26,6 +42,67 @@ interface FaqItem {
 
 const emptyForm = { question: "", answer: "" };
 
+function SortableFaqItem({
+  item,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: {
+  item: FaqItem;
+  onEdit: (item: FaqItem) => void;
+  onDelete: (id: string) => void;
+  onToggleActive: (id: string, current: boolean) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : !item.is_active ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 bg-card"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm text-foreground">{item.question}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.answer}</p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Switch
+          checked={item.is_active}
+          onCheckedChange={() => onToggleActive(item.id, item.is_active)}
+          className="mr-1"
+        />
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(item)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 text-destructive"
+          onClick={() => onDelete(item.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function FaqManager({ onClose }: { onClose?: () => void }) {
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +110,11 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
   const fetchData = async () => {
     const { data } = await supabase
@@ -100,25 +182,23 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
     fetchData();
   };
 
-  const handleMoveUp = async (index: number) => {
-    if (index === 0) return;
-    const current = items[index];
-    const above = items[index - 1];
-    await Promise.all([
-      supabase.from("it_faq").update({ sort_order: above.sort_order } as any).eq("id", current.id),
-      supabase.from("it_faq").update({ sort_order: current.sort_order } as any).eq("id", above.id),
-    ]);
-    fetchData();
-  };
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const handleMoveDown = async (index: number) => {
-    if (index >= items.length - 1) return;
-    const current = items[index];
-    const below = items[index + 1];
-    await Promise.all([
-      supabase.from("it_faq").update({ sort_order: below.sort_order } as any).eq("id", current.id),
-      supabase.from("it_faq").update({ sort_order: current.sort_order } as any).eq("id", below.id),
-    ]);
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+    const reordered = arrayMove(items, oldIndex, newIndex);
+
+    // Optimistic update
+    setItems(reordered);
+
+    // Persist new sort orders
+    await Promise.all(
+      reordered.map((item, index) =>
+        supabase.from("it_faq").update({ sort_order: index } as any).eq("id", item.id)
+      )
+    );
     fetchData();
   };
 
@@ -154,55 +234,21 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
           ) : items.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center text-sm">Inga FAQ tillagda ännu</p>
           ) : (
-            <div className="space-y-2">
-              {items.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={`rounded-xl border border-border p-3 md:p-3.5 flex items-start gap-3 transition-opacity ${
-                    !item.is_active ? "opacity-50" : ""
-                  }`}
-                >
-                  <div className="flex flex-col shrink-0">
-                    <button
-                      onClick={() => handleMoveUp(index)}
-                      disabled={index === 0}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleMoveDown(index)}
-                      disabled={index === items.length - 1}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-foreground">{item.question}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.answer}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Switch
-                      checked={item.is_active}
-                      onCheckedChange={() => handleToggleActive(item.id, item.is_active)}
-                      className="mr-1"
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <SortableFaqItem
+                      key={item.id}
+                      item={item}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                      onToggleActive={handleToggleActive}
                     />
-                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(item)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 text-destructive"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CardContent>
       </Card>
