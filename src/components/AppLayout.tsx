@@ -26,6 +26,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { cn } from "@/lib/utils";
+import NotificationBell from "@/components/NotificationBell";
 
 // Keys that go into the "More" sheet on mobile
 const mobileOverflowKeys = ["nav_org", "nav_admin"];
