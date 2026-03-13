@@ -10,7 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NewOrder from "./pages/NewOrder";
-import Approvals from "./pages/Approvals";
+
 import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
 import Onboarding from "./pages/Onboarding";
