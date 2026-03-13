@@ -132,8 +132,7 @@ export default function OrderDetail() {
 
   if (!order) {
     return (
-      <AppLayout>
-        <div className="text-center py-16 space-y-4">
+      <div className="text-center py-16 space-y-4">
           <p className="text-muted-foreground">Beställningen hittades inte</p>
           <Link to="/dashboard">
             <Button variant="outline" className="gap-2">
@@ -141,7 +140,6 @@ export default function OrderDetail() {
             </Button>
           </Link>
         </div>
-      </AppLayout>
     );
   }
 
