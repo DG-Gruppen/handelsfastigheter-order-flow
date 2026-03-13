@@ -126,9 +126,7 @@ export default function OrderDetail() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <p className="text-muted-foreground py-16 text-center">Laddar...</p>
-      </AppLayout>
+      <p className="text-muted-foreground py-16 text-center">Laddar...</p>
     );
   }
 
