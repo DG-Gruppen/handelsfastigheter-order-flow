@@ -80,8 +80,8 @@ function SortableSystemItem({
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-        <IconComp className="h-5 w-5 text-secondary-foreground" />
+      <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+        <IconComp className="h-4 w-4 md:h-5 md:w-5 text-secondary-foreground" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm text-foreground">{system.name}</p>
