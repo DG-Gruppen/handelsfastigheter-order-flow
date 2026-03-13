@@ -11,8 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, Plus, Trash2, UserPlus, LogOut, Monitor } from "lucide-react";
+import { Send, Plus, Trash2, UserPlus, LogOut, Monitor, Search } from "lucide-react";
 import { getIcon } from "@/lib/icons";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Category {
   id: string;
