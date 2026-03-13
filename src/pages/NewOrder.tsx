@@ -192,7 +192,7 @@ export default function NewOrder() {
     const manager = managers.find((m) => m.id === approverId);
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
-    const existingRecipientName = isManagerOrAdmin && recipientType === "existing" && selectedExistingRecipient !== "self"
+    const existingRecipientName = isManagerOrAdmin && selectedExistingRecipient !== "self"
       ? allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name
       : null;
 
@@ -200,11 +200,9 @@ export default function NewOrder() {
       ? firstType?.name ?? "Beställning"
       : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
 
-    const title = isOffboarding
-      ? `Offboarding – ${recipientName.trim()}`
-      : existingRecipientName
-        ? `${baseTitle} – ${existingRecipientName}`
-        : baseTitle;
+    const title = existingRecipientName
+      ? `${baseTitle} – ${existingRecipientName}`
+      : baseTitle;
 
     // Determine approval routing
     const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
