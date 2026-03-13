@@ -129,17 +129,24 @@ export default function ITInfo() {
       )}
 
       {/* FAQ */}
-      {!loading && faq.length > 0 && (
+      {managingFaq && isItOrAdmin ? (
+        <FaqManager />
+      ) : !loading && faq.length > 0 ? (
         <Card className="glass-card border-t-2 border-t-accent/40">
           <CardHeader className="px-4 md:px-6 pb-2">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
                 <HelpCircle className="h-5 w-5 text-accent" />
               </div>
-              <div>
+              <div className="flex-1">
                 <CardTitle className="font-heading text-base md:text-lg text-accent">Vanliga frågor</CardTitle>
                 <CardDescription className="text-xs">Svar på de vanligaste IT-frågorna</CardDescription>
               </div>
+              {isItOrAdmin && (
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground" onClick={() => setManagingFaq(true)}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="px-4 md:px-6">
@@ -157,7 +164,7 @@ export default function ITInfo() {
             </Accordion>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }
