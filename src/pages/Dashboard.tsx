@@ -171,6 +171,7 @@ export default function Dashboard() {
                   const Icon = sc.icon;
                   const autoApproved = isAutoApproved(order);
                   const tag = getOrderTag(order);
+                  const needsMyApproval = order.status === "pending" && order.approver_id === user?.id;
                   return (
                     <Link
                       key={order.id}
