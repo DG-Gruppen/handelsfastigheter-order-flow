@@ -649,8 +649,8 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className={`glass-card w-full grid p-1 h-auto`} style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
-            {sections.map((s) => (
+          <TabsList className={`glass-card w-full grid p-1 h-auto`} style={{ gridTemplateColumns: `repeat(${sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).length}, minmax(0, 1fr))` }}>
+            {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s) => (
               <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
                 <s.icon className="h-4 w-4" />
                 {s.label}
