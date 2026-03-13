@@ -44,9 +44,7 @@ export default function NewOrder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
-  const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
   const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
-  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
   const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
   const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
