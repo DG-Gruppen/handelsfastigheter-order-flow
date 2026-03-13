@@ -228,7 +228,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl px-2 pb-8">
           <SheetHeader className="pb-2">
-            <SheetTitle className="text-base">Mer</SheetTitle>
+            <SheetTitle className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Meny</SheetTitle>
           </SheetHeader>
 
           {/* Profile card */}
