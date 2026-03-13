@@ -244,6 +244,6 @@ export default function History() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 }

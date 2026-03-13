@@ -13,6 +13,7 @@ import NewOrder from "./pages/NewOrder";
 import Approvals from "./pages/Approvals";
 import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
+import LayoutRoute from "./components/LayoutRoute";
 
 import OrderDetail from "./pages/OrderDetail";
 import History from "./pages/History";
@@ -32,14 +33,15 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/orders/new" element={<ProtectedRoute><NewOrder /></ProtectedRoute>} />
-                <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
-                <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-                <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                <Route path="/org" element={<ProtectedRoute><OrgTree /></ProtectedRoute>} />
-                
+                <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/orders/new" element={<NewOrder />} />
+                  <Route path="/approvals" element={<Approvals />} />
+                  <Route path="/orders/:id" element={<OrderDetail />} />
+                  <Route path="/history" element={<History />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/org" element={<OrgTree />} />
+                </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </NavSettingsProvider>

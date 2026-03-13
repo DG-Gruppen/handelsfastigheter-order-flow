@@ -238,6 +238,6 @@ export default function Approvals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </>
   );
 }

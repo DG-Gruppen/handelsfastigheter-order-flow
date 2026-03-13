@@ -650,6 +650,6 @@ export default function NewOrder() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 }
