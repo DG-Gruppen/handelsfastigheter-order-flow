@@ -136,9 +136,8 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
                 <CardDescription className="text-xs">Hantera frågor som visas på IT-supportsidan</CardDescription>
               </div>
             </div>
-            <Button className="gap-1.5 h-11 md:h-10" onClick={openNew}>
+            <Button size="icon" className="h-10 w-10" onClick={openNew}>
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Ny fråga</span>
             </Button>
             {onClose && (
               <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground" onClick={onClose}>
