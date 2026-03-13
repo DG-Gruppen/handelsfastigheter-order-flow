@@ -5,9 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 interface NavSettingsContextType {
   settings: Record<string, string>;
   loading: boolean;
+  refresh: () => void;
 }
 
-const NavSettingsContext = createContext<NavSettingsContextType>({ settings: {}, loading: true });
+const NavSettingsContext = createContext<NavSettingsContextType>({ settings: {}, loading: true, refresh: () => {} });
 
 // Map routes to their setting keys
 const routeSettingMap: Record<string, string> = {
@@ -24,34 +25,36 @@ export function NavSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchSettings = async () => {
     if (!user) {
       setLoading(false);
       return;
     }
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("org_chart_settings")
-        .select("setting_key, setting_value");
-      const map: Record<string, string> = {};
-      for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
-      setSettings(map);
-      setLoading(false);
-    };
-    fetch();
+    const { data } = await supabase
+      .from("org_chart_settings")
+      .select("setting_key, setting_value");
+    const map: Record<string, string> = {};
+    for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+    setSettings(map);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSettings();
   }, [user]);
 
+  const refresh = () => { fetchSettings(); };
+
   return (
-    <NavSettingsContext.Provider value={{ settings, loading }}>
+    <NavSettingsContext.Provider value={{ settings, loading, refresh }}>
       {children}
     </NavSettingsContext.Provider>
   );
 }
 
 export function useNavSettings() {
-  const { settings, loading } = useContext(NavSettingsContext);
-  // Keep backward compat: navSettings is the same as settings
-  return { navSettings: settings, settings, loading };
+  const { settings, loading, refresh } = useContext(NavSettingsContext);
+  return { navSettings: settings, settings, loading, refresh };
 }
 
 export function isRouteDisabled(settings: Record<string, string>, pathname: string): boolean {

@@ -5,14 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
 import SystemsManager from "@/components/SystemsManager";
-import ITSettingsManager from "@/components/ITSettingsManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Wrench, Monitor } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2, Palette } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -27,7 +26,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -95,17 +94,6 @@ const sections = [
     borderColor: "border-t-muted-foreground/30",
     bgColor: "bg-muted-foreground/10",
     textColor: "text-muted-foreground",
-  },
-  {
-    id: "it" as const,
-    label: "IT",
-    description: "IT-specifika inställningar",
-    icon: Wrench,
-    color: "from-primary to-primary-glow",
-    borderColor: "border-t-primary/40",
-    bgColor: "bg-primary/10",
-    textColor: "text-primary",
-    roles: ["it", "admin"] as string[],
   },
 ];
 
@@ -204,30 +192,46 @@ export default function Admin() {
   };
 
   const [importing, setImporting] = useState(false);
-  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
+  const [allSettings, setAllSettings] = useState<Record<string, string>>({});
+
+  const NAV_LINKS = [
+    { key: "nav_dashboard", label: "Dashboard", description: "Startsida med översikt" },
+    { key: "nav_new_order", label: "Ny beställning", description: "Formulär för ny beställning" },
+    { key: "nav_onboarding", label: "On-/Offboarding", description: "Formulär för nyanställning och avslut" },
+    { key: "nav_approvals", label: "Att attestera", description: "Attesteringssida (chefer/admin)" },
+    { key: "nav_history", label: "Historik", description: "Orderhistorik" },
+    { key: "nav_it_info", label: "IT-support", description: "IT-informationssida" },
+    { key: "nav_org", label: "Organisation", description: "Organisationsträd (admin)" },
+    { key: "nav_admin", label: "Admin", description: "Administrationspanel (admin)" },
+  ];
 
   useEffect(() => {
-    const fetchApprovalSettings = async () => {
+    const fetchSettings = async () => {
       const { data } = await supabase
         .from("org_chart_settings")
-        .select("setting_key, setting_value")
-        .in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]);
+        .select("setting_key, setting_value");
       const map: Record<string, string> = {};
       for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
-      setApprovalSettings(map);
+      setAllSettings(map);
     };
-    fetchApprovalSettings();
+    fetchSettings();
   }, []);
 
-  const toggleApprovalSetting = async (key: string) => {
-    const current = approvalSettings[key] === "true";
-    const newValue = current ? "false" : "true";
+  const upsertSetting = async (key: string, value: string) => {
     await supabase
       .from("org_chart_settings")
-      .upsert({ setting_key: key, setting_value: newValue, updated_at: new Date().toISOString() } as any, { onConflict: "setting_key" });
-    setApprovalSettings(prev => ({ ...prev, [key]: newValue }));
+      .upsert({ setting_key: key, setting_value: value, updated_at: new Date().toISOString() } as any, { onConflict: "setting_key" });
+    setAllSettings(prev => ({ ...prev, [key]: value }));
     toast.success("Inställning uppdaterad");
   };
+
+  const toggleSetting = async (key: string, defaultOn = true) => {
+    const current = defaultOn ? allSettings[key] !== "false" : allSettings[key] === "true";
+    await upsertSetting(key, current ? "false" : "true");
+  };
+
+  const isOn = (key: string, defaultOn = true) =>
+    defaultOn ? allSettings[key] !== "false" : allSettings[key] === "true";
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -459,41 +463,115 @@ export default function Admin() {
   );
 
   const SettingsContent = (
-    <Card className="glass-card border-t-2 border-t-muted-foreground/30">
-      <CardHeader className="px-4 md:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
-            <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+    <div className="space-y-6">
+      {/* Attestering */}
+      <Card className="glass-card border-t-2 border-t-muted-foreground/30">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+              <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+              <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
-            <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-4">
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+            <div className="min-w-0 mr-2">
+              <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
+            </div>
+            <Switch
+              checked={allSettings["approval_managers_to_ceo"] === "true"}
+              onCheckedChange={() => toggleSetting("approval_managers_to_ceo", false)}
+            />
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="px-4 md:px-6 space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
-          <div className="min-w-0 mr-2">
-            <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
-            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+            <div className="min-w-0 mr-2">
+              <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
+            </div>
+            <Switch
+              checked={allSettings["approval_staff_to_ceo"] === "true"}
+              onCheckedChange={() => toggleSetting("approval_staff_to_ceo", false)}
+            />
           </div>
-          <Switch
-            checked={approvalSettings["approval_managers_to_ceo"] === "true"}
-            onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
-          />
-        </div>
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
-          <div className="min-w-0 mr-2">
-            <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
-            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
+        </CardContent>
+      </Card>
+
+      {/* Navigation links */}
+      <Card className="glass-card border-t-2 border-t-primary/40">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+              <Link2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg text-primary">Navigationslänkar</CardTitle>
+              <CardDescription className="text-xs">Styr vilka sidor som visas och är tillgängliga</CardDescription>
+            </div>
           </div>
-          <Switch
-            checked={approvalSettings["approval_staff_to_ceo"] === "true"}
-            onCheckedChange={() => toggleApprovalSetting("approval_staff_to_ceo")}
-          />
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {NAV_LINKS.map((link) => (
+              <div
+                key={link.key}
+                className="flex items-center justify-between rounded-xl border border-primary/10 bg-primary/[0.03] p-3 hover:bg-primary/[0.06] transition-colors"
+              >
+                <div className="min-w-0 mr-2">
+                  <p className="text-sm font-medium text-foreground">{link.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{link.description}</p>
+                </div>
+                <Switch
+                  checked={isOn(link.key)}
+                  onCheckedChange={() => toggleSetting(link.key)}
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Default theme */}
+      <Card className="glass-card border-t-2 border-t-accent/40">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
+              <Palette className="h-4 w-4 md:h-5 md:w-5 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg text-accent">Utseende</CardTitle>
+              <CardDescription className="text-xs">Standardtema för nya användare</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
+          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-3 md:p-4 hover:bg-accent/[0.06] transition-colors">
+            <div className="min-w-0 mr-2">
+              <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">
+                Nuvarande: {(allSettings["it_default_theme"] || "light") === "light" ? "Ljust" : "Mörkt"}
+              </p>
+            </div>
+            <Select
+              value={allSettings["it_default_theme"] || "light"}
+              onValueChange={(v) => upsertSetting("it_default_theme", v)}
+            >
+              <SelectTrigger className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Ljust</SelectItem>
+                <SelectItem value="dark">Mörkt</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   // Mobile: card-based navigation
@@ -507,7 +585,7 @@ export default function Admin() {
                 <p className="text-sm text-muted-foreground mt-0.5">Hantera systemet</p>
               </div>
               <div className="grid gap-3">
-                {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s, i) => (
+                {sections.map((s, i) => (
                   <button
                     key={s.id}
                     onClick={() => setActiveSection(s.id)}
@@ -539,7 +617,6 @@ export default function Admin() {
               {activeSection === "systems" && <SystemsManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
-              {activeSection === "it" && <ITSettingsManager />}
             </>
           )}
         </div>
@@ -555,8 +632,8 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="categories" className="w-full">
-          <TabsList className={`glass-card w-full grid p-1 h-auto`} style={{ gridTemplateColumns: `repeat(${sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).length}, minmax(0, 1fr))` }}>
-            {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s) => (
+          <TabsList className={`glass-card w-full grid p-1 h-auto`} style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
+            {sections.map((s) => (
               <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
                 <s.icon className="h-4 w-4" />
                 {s.label}
@@ -583,12 +660,6 @@ export default function Admin() {
           <TabsContent value="settings" className="mt-4">
             {SettingsContent}
           </TabsContent>
-
-          {(roles.includes("it") || roles.includes("admin")) && (
-            <TabsContent value="it" className="mt-4">
-              <ITSettingsManager />
-            </TabsContent>
-          )}
         </Tabs>
       </div>
   );
