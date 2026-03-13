@@ -256,12 +256,10 @@ export default function Admin() {
 
   if (!roles.includes("admin")) {
     return (
-      <AppLayout>
-        <div className="text-center py-20">
+      <div className="text-center py-20">
           <Shield className="h-10 w-10 mx-auto text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground mt-4">Du har inte behörighet att se denna sida</p>
         </div>
-      </AppLayout>
     );
   }
 
