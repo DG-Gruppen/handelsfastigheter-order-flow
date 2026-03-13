@@ -53,9 +53,8 @@ export function NavSettingsProvider({ children }: { children: ReactNode }) {
 }
 
 export function useNavSettings() {
-  const { settings, loading } = useContext(NavSettingsContext);
-  // Keep backward compat: navSettings is the same as settings
-  return { navSettings: settings, settings, loading };
+  const { settings, loading, refresh } = useContext(NavSettingsContext);
+  return { navSettings: settings, settings, loading, refresh };
 }
 
 export function isRouteDisabled(settings: Record<string, string>, pathname: string): boolean {
