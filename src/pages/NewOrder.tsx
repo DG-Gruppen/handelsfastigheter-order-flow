@@ -36,9 +36,6 @@ interface OrderItem {
   typeId: string;
 }
 
-const ORDER_REASONS = [
-  { value: "broken_equipment", label: "Trasig utrustning" },
-] as const;
 
 export default function NewOrder() {
   const { user, roles } = useAuth();
