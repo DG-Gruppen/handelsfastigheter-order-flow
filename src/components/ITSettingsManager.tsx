@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { key: "nav_onboarding", label: "On-/Offboarding", description: "Formulär för nyanställning och avslut" },
   { key: "nav_approvals", label: "Att attestera", description: "Attesteringssida (chefer/admin)" },
   { key: "nav_history", label: "Historik", description: "Orderhistorik" },
+  { key: "nav_it_info", label: "IT-support", description: "IT-informationssida" },
   { key: "nav_org", label: "Organisation", description: "Organisationsträd (admin)" },
   { key: "nav_admin", label: "Admin", description: "Administrationspanel (admin)" },
 ];
