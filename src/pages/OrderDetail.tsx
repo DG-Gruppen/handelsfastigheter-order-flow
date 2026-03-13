@@ -273,6 +273,28 @@ export default function OrderDetail() {
             <p className="text-sm text-muted-foreground">{order.description}</p>
           )}
 
+          {/* Approval actions for approver */}
+          {canApprove && (
+            <div className="flex gap-2">
+              <Button
+                className="gap-1.5 flex-1 h-12 md:h-10 gradient-primary hover:opacity-90 shadow-sm shadow-primary/20"
+                onClick={handleApprove}
+                disabled={approving}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {approving ? "Godkänner..." : "Godkänn"}
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 flex-1 text-destructive h-12 md:h-10"
+                onClick={() => setRejectDialogOpen(true)}
+              >
+                <XCircle className="h-4 w-4" />
+                Avslå
+              </Button>
+            </div>
+          )}
+
           {/* Admin: mark as delivered */}
           {isAdmin && order.status === "approved" && (
             <Button
