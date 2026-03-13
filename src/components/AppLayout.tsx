@@ -216,9 +216,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               }`}
             >
               <div className={`flex items-center justify-center rounded-xl px-3 py-1 transition-all ${isOverflowActive ? "bg-primary/10" : ""}`}>
-                <MoreHorizontal className={`h-5 w-5 ${isOverflowActive ? "text-primary" : ""}`} />
+                <Menu className={`h-5 w-5 ${isOverflowActive ? "text-primary" : ""}`} />
               </div>
-              <span className="text-[10px] font-medium leading-tight">Mer</span>
+              <span className="text-[10px] font-medium leading-tight">Meny</span>
             </button>
           )}
         </div>
