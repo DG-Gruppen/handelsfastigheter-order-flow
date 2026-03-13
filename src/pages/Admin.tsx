@@ -512,6 +512,11 @@ export default function Admin() {
         </CardContent>
       </Card>
 
+    </div>
+  );
+
+  const ITContent = (
+    <div className="space-y-6">
       {/* Navigation links */}
       <Card className="glass-card border-t-2 border-t-primary/40">
         <CardHeader className="px-4 md:px-6">
