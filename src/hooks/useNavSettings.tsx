@@ -8,7 +8,7 @@ interface NavSettingsContextType {
   refresh: () => void;
 }
 
-const NavSettingsContext = createContext<NavSettingsContextType>({ settings: {}, loading: true });
+const NavSettingsContext = createContext<NavSettingsContextType>({ settings: {}, loading: true, refresh: () => {} });
 
 // Map routes to their setting keys
 const routeSettingMap: Record<string, string> = {
