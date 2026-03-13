@@ -9,6 +9,7 @@ import { Link2, Palette, ExternalLink } from "lucide-react";
 const NAV_LINKS = [
   { key: "nav_dashboard", label: "Dashboard", description: "Startsida med översikt" },
   { key: "nav_new_order", label: "Ny beställning", description: "Formulär för ny beställning" },
+  { key: "nav_onboarding", label: "On-/Offboarding", description: "Formulär för nyanställning och avslut" },
   { key: "nav_approvals", label: "Att attestera", description: "Attesteringssida (chefer/admin)" },
   { key: "nav_history", label: "Historik", description: "Orderhistorik" },
   { key: "nav_org", label: "Organisation", description: "Organisationsträd (admin)" },
