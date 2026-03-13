@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, HelpCircle, GripVertical, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, HelpCircle, ChevronUp, ChevronDown, Check, Settings } from "lucide-react";
 
 interface FaqItem {
   id: string;
@@ -136,14 +136,16 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
                 <CardDescription className="text-xs">Hantera frågor som visas på IT-supportsidan</CardDescription>
               </div>
             </div>
-            <Button size="icon" className="h-10 w-10" onClick={openNew}>
-              <Plus className="h-4 w-4" />
-            </Button>
-            {onClose && (
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-foreground" onClick={onClose}>
-                <ArrowLeft className="h-4 w-4" />
+            <div className="flex items-center gap-1">
+              <Button size="icon" className="h-10 w-10" onClick={openNew}>
+                <Plus className="h-4 w-4" />
               </Button>
-            )}
+              {onClose && (
+                <Button variant="ghost" size="icon" className="h-10 w-10 text-accent hover:text-accent" onClick={onClose}>
+                  <Check className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
@@ -160,20 +162,20 @@ export default function FaqManager({ onClose }: { onClose?: () => void }) {
                     !item.is_active ? "opacity-50" : ""
                   }`}
                 >
-                  <div className="flex flex-col gap-0.5 shrink-0 mt-1">
+                  <div className="flex flex-col shrink-0">
                     <button
                       onClick={() => handleMoveUp(index)}
                       disabled={index === 0}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1"
                     >
-                      <GripVertical className="h-3.5 w-3.5 rotate-90 scale-x-[-1]" />
+                      <ChevronUp className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleMoveDown(index)}
                       disabled={index === items.length - 1}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1"
                     >
-                      <GripVertical className="h-3.5 w-3.5 rotate-90" />
+                      <ChevronDown className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
