@@ -57,7 +57,7 @@ export default function ITSettingsManager() {
   return (
     <div className="space-y-6">
       {/* Navigation links – Himmel och Vatten (primary) */}
-      <Card className="glass-card animate-fade-up border-t-2 border-t-primary/40">
+      <Card className="glass-card border-t-2 border-t-primary/40">
         <CardHeader className="px-4 md:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
