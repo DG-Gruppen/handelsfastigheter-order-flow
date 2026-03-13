@@ -152,6 +152,38 @@ export default function OrderDetail() {
     setMarking(false);
   };
 
+  const handleApprove = async () => {
+    if (!order) return;
+    setApproving(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "approved", approved_at: new Date().toISOString() })
+      .eq("id", order.id);
+    if (error) {
+      toast.error("Kunde inte godkänna beställningen");
+    } else {
+      setOrder({ ...order, status: "approved", approved_at: new Date().toISOString() });
+      toast.success("Beställningen har godkänts!");
+    }
+    setApproving(false);
+  };
+
+  const handleReject = async () => {
+    if (!order) return;
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "rejected", rejection_reason: rejectionReason.trim() || null })
+      .eq("id", order.id);
+    if (error) {
+      toast.error("Kunde inte avslå beställningen");
+    } else {
+      setOrder({ ...order, status: "rejected", rejection_reason: rejectionReason.trim() || null });
+      toast.success("Beställningen har avslagits");
+      setRejectDialogOpen(false);
+      setRejectionReason("");
+    }
+  };
+
   if (loading) {
     return (
       <p className="text-muted-foreground py-16 text-center">Laddar...</p>
