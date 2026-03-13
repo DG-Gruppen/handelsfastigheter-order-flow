@@ -488,8 +488,7 @@ export default function Admin() {
   // Mobile: card-based navigation
   if (isMobile) {
     return (
-      <AppLayout>
-        <div className="space-y-5">
+      <div className="space-y-5">
           {activeSection === "menu" ? (
             <>
               <div>
