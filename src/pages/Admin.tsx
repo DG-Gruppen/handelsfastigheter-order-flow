@@ -536,6 +536,7 @@ export default function Admin() {
               </button>
               {activeSection === "categories" && <CategoriesManager />}
               {activeSection === "equipment" && <OrderTypesManager />}
+              {activeSection === "systems" && <SystemsManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
               {activeSection === "it" && <ITSettingsManager />}
