@@ -182,8 +182,7 @@ export default function OrderDetail() {
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-5 md:space-y-6 max-w-2xl">
+    <div className="space-y-5 md:space-y-6 max-w-2xl">
         {/* Back + header */}
         <div className="space-y-3">
           <Link to="/dashboard">
