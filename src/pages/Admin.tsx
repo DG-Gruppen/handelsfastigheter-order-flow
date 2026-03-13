@@ -95,6 +95,17 @@ const sections = [
     bgColor: "bg-muted-foreground/10",
     textColor: "text-muted-foreground",
   },
+  {
+    id: "it" as const,
+    label: "IT",
+    description: "Navigationslänkar och utseende",
+    icon: Wrench,
+    color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
+    roles: ["it", "admin"] as string[],
+  },
 ];
 
 export default function Admin() {
