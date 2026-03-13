@@ -313,11 +313,9 @@ export default function OrgTree() {
 
   if (!tree) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
           Inga profiler hittades
         </div>
-      </AppLayout>
     );
   }
 
