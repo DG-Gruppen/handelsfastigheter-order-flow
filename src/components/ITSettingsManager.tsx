@@ -108,10 +108,10 @@ export default function ITSettingsManager() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
-          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-4 hover:bg-accent/[0.06] transition-colors">
-            <div>
+          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-3 md:p-4 hover:bg-accent/[0.06] transition-colors">
+            <div className="min-w-0 mr-2">
               <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">
                 Nuvarande: {(settings["it_default_theme"] || "light") === "light" ? "Ljust" : "Mörkt"}
               </p>
             </div>
