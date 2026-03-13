@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Link2, Palette, ExternalLink } from "lucide-react";
+import { Link2, Palette, ExternalLink, Headphones } from "lucide-react";
+import FaqManager from "@/components/FaqManager";
 
 const NAV_LINKS = [
   { key: "nav_dashboard", label: "Dashboard", description: "Startsida med översikt" },
@@ -12,6 +13,7 @@ const NAV_LINKS = [
   { key: "nav_onboarding", label: "On-/Offboarding", description: "Formulär för nyanställning och avslut" },
   { key: "nav_approvals", label: "Att attestera", description: "Attesteringssida (chefer/admin)" },
   { key: "nav_history", label: "Historik", description: "Orderhistorik" },
+  { key: "nav_it_info", label: "IT-support", description: "IT-informationssida" },
   { key: "nav_org", label: "Organisation", description: "Organisationsträd (admin)" },
   { key: "nav_admin", label: "Admin", description: "Administrationspanel (admin)" },
 ];
@@ -183,6 +185,64 @@ export default function ITSettingsManager() {
           </div>
         </CardContent>
       </Card>
+
+      {/* IT Contact info */}
+      <Card className="glass-card border-t-2 border-t-primary/40">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+              <Headphones className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg text-primary">Kontaktuppgifter</CardTitle>
+              <CardDescription className="text-xs">Visas på IT-supportsidan</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-3">
+          <div className="rounded-xl border border-primary/10 bg-primary/[0.03] p-4 space-y-3">
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">E-post</label>
+              <input
+                type="email"
+                placeholder="it@handelsfastigheter.se"
+                value={settings["it_contact_email"] ?? "it@handelsfastigheter.se"}
+                onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_email: e.target.value }))}
+                onBlur={(e) => upsertSetting("it_contact_email", e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Telefon</label>
+              <input
+                type="tel"
+                placeholder="08-123 456 78"
+                value={settings["it_contact_phone"] ?? ""}
+                onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_phone: e.target.value }))}
+                onBlur={(e) => upsertSetting("it_contact_phone", e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Öppettider</label>
+              <input
+                type="text"
+                placeholder="Mån–Fre 08:00–17:00"
+                value={settings["it_contact_hours"] ?? "Mån–Fre 08:00–17:00"}
+                onChange={(e) => setSettings((prev) => ({ ...prev, it_contact_hours: e.target.value }))}
+                onBlur={(e) => upsertSetting("it_contact_hours", e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                disabled={loading}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* FAQ Manager */}
+      <FaqManager />
     </div>
   );
 }

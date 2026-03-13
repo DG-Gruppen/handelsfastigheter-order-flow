@@ -14,6 +14,7 @@ import Approvals from "./pages/Approvals";
 import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
 import Onboarding from "./pages/Onboarding";
+import ITInfo from "./pages/ITInfo";
 import LayoutRoute from "./components/LayoutRoute";
 
 import OrderDetail from "./pages/OrderDetail";
@@ -43,6 +44,7 @@ const App = () => (
                   <Route path="/history" element={<History />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/org" element={<OrgTree />} />
+                  <Route path="/it-info" element={<ITInfo />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
