@@ -381,6 +381,6 @@ export default function OrderDetail() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 }

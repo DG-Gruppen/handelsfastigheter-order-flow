@@ -576,6 +576,6 @@ export default function Admin() {
           )}
         </Tabs>
       </div>
-    </AppLayout>
+    </div>
   );
 }
