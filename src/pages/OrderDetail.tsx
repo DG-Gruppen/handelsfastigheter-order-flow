@@ -86,6 +86,7 @@ export default function OrderDetail() {
   const isAdmin = roles.includes("admin");
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
+  const [orderSystems, setOrderSystems] = useState<OrderSystem[]>([]);
   const [requesterProfile, setRequesterProfile] = useState<Profile | null>(null);
   const [approverProfile, setApproverProfile] = useState<Profile | null>(null);
   const [marking, setMarking] = useState(false);
