@@ -13,6 +13,7 @@ import NewOrder from "./pages/NewOrder";
 import Approvals from "./pages/Approvals";
 import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
+import Onboarding from "./pages/Onboarding";
 import LayoutRoute from "./components/LayoutRoute";
 
 import OrderDetail from "./pages/OrderDetail";
