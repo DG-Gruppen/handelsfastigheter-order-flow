@@ -13,9 +13,25 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
 import DepartmentPicker from "@/components/DepartmentPicker";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Category {
   id: string;
@@ -32,6 +48,73 @@ interface Department {
 
 const emptyForm = { name: "", icon: "package" };
 
+function SortableCategoryItem({
+  category,
+  deptLabel,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: {
+  category: Category;
+  deptLabel: string;
+  onEdit: (c: Category) => void;
+  onDelete: (id: string) => void;
+  onToggleActive: (id: string, current: boolean) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: category.id,
+  });
+  const IconComp = getIcon(category.icon);
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : !category.is_active ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 bg-card"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+        <IconComp className="h-5 w-5 text-secondary-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm text-foreground">{category.name}</p>
+        <p className="text-xs text-muted-foreground">{deptLabel}</p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Switch
+          checked={category.is_active}
+          onCheckedChange={() => onToggleActive(category.id, category.is_active)}
+          className="mr-1"
+        />
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(category)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 text-destructive"
+          onClick={() => onDelete(category.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -42,6 +125,11 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
   const [form, setForm] = useState(emptyForm);
   const [formDepts, setFormDepts] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
   const fetchData = async () => {
     const [catRes, deptRes, cdRes] = await Promise.all([
@@ -68,29 +156,25 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setFormDepts(departments.map((d) => d.id)); // all selected by default
+    setFormDepts(departments.map((d) => d.id));
     setDialogOpen(true);
   };
 
   const openEdit = (c: Category) => {
     setEditingId(c.id);
     setForm({ name: c.name, icon: c.icon });
-    // If no rows exist yet for this category, treat as "all"
     const existing = categoryDepts[c.id];
     setFormDepts(existing && existing.length > 0 ? existing : departments.map((d) => d.id));
     setDialogOpen(true);
   };
 
   const saveDepartments = async (categoryId: string, deptIds: string[]) => {
-    // Delete existing
     await supabase.from("category_departments").delete().eq("category_id", categoryId);
-    // Insert new (only if not "all")
     if (deptIds.length < departments.length && deptIds.length > 0) {
       await supabase.from("category_departments").insert(
         deptIds.map((d) => ({ category_id: categoryId, department_id: d })) as any
       );
     }
-    // If all selected, we store nothing (means "all")
   };
 
   const handleSave = async () => {
@@ -147,6 +231,25 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
     onUpdate?.();
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex);
+
+    setCategories(reordered);
+
+    await Promise.all(
+      reordered.map((c, index) =>
+        supabase.from("categories").update({ sort_order: index } as any).eq("id", c.id)
+      )
+    );
+    fetchData();
+    onUpdate?.();
+  };
+
   const getDeptLabel = (catId: string) => {
     const depts = categoryDepts[catId];
     if (!depts || depts.length === 0) return "Alla avdelningar";
@@ -168,9 +271,8 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
                 <CardDescription className="text-xs">Skapa och hantera kategorier för utrustning</CardDescription>
               </div>
             </div>
-            <Button className="gap-1.5 h-11 md:h-10" onClick={openNew}>
+            <Button size="icon" className="h-10 w-10" onClick={openNew}>
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Ny kategori</span>
             </Button>
           </div>
         </CardHeader>
@@ -180,47 +282,22 @@ export default function CategoriesManager({ onUpdate }: { onUpdate?: () => void 
           ) : categories.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center text-sm">Inga kategorier ännu</p>
           ) : (
-            <div className="space-y-2">
-              {categories.map((c) => {
-                const IconComp = getIcon(c.icon);
-                return (
-                  <div
-                    key={c.id}
-                    className={`rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 transition-opacity ${
-                      !c.is_active ? "opacity-50" : ""
-                    }`}
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                      <IconComp className="h-5 w-5 text-secondary-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground">{c.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {getDeptLabel(c.id)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Switch
-                        checked={c.is_active}
-                        onCheckedChange={() => handleToggleActive(c.id, c.is_active)}
-                        className="mr-1"
-                      />
-                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(c)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 text-destructive"
-                        onClick={() => handleDelete(c.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {categories.map((c) => (
+                    <SortableCategoryItem
+                      key={c.id}
+                      category={c}
+                      deptLabel={getDeptLabel(c.id)}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                      onToggleActive={handleToggleActive}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CardContent>
       </Card>
