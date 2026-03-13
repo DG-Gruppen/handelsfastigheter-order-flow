@@ -333,6 +333,31 @@ export default function Onboarding() {
       await supabase.from("order_systems").insert(systemRows as any);
     }
 
+    // Create profile for new employee (onboarding only)
+    if (!isOffboarding && recipientName.trim()) {
+      const normalize = (s: string) =>
+        s.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e');
+      const suggestedEmail = `${normalize(recipientFirstName)}.${normalize(recipientLastName)}@handelsfastigheter.se`;
+
+      // Check if profile with this email already exists
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", suggestedEmail)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        // Create a placeholder profile – handle_new_user trigger will link it when they sign in
+        const placeholderUserId = crypto.randomUUID();
+        await supabase.from("profiles").insert({
+          user_id: placeholderUserId,
+          full_name: recipientName.trim(),
+          email: suggestedEmail,
+          department: recipientDepartment.trim() || null,
+        } as any);
+      }
+    }
+
     const successMsg = autoApprove
       ? `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har godkänts automatiskt!`
       : needsCeoApproval
