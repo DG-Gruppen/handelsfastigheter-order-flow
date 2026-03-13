@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones, MoreHorizontal } from "lucide-react";
 import shfLogo from "@/assets/shf-logo.png";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
+
+// Keys that go into the "More" sheet on mobile
+const mobileOverflowKeys = ["nav_org", "nav_admin"];
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", shortLabel: "Hem", icon: ClipboardList, settingKey: "nav_dashboard" },
@@ -32,6 +41,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, roles, signOut } = useAuth();
   const location = useLocation();
   const { theme, setTheme } = useTheme();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // Load saved theme only on initial profile load, fallback to IT default theme
   const themeLoaded = useRef(false);
@@ -71,6 +81,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     (item) =>
       (!item.roles || item.roles.some((r) => roles.includes(r))) &&
       navSettings[item.settingKey] !== "false"
+  );
+
+  // Split mobile nav: primary items in bottom bar, overflow in sheet
+  const mobileBarItems = visibleNavItems.filter(
+    (item) => !mobileOverflowKeys.includes(item.settingKey)
+  );
+  const mobileOverflowItems = visibleNavItems.filter(
+    (item) => mobileOverflowKeys.includes(item.settingKey)
+  );
+  const hasOverflow = mobileOverflowItems.length > 0;
+
+  // Check if any overflow item is active
+  const isOverflowActive = mobileOverflowItems.some(
+    (item) => location.pathname === item.to
   );
 
   return (
@@ -161,7 +185,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Mobile bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t glass-nav safe-bottom">
         <div className="flex items-stretch justify-around">
-          {visibleNavItems.map((item) => {
+          {mobileBarItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
               <Link
@@ -180,8 +204,107 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
+          {/* More button – only shown if there are overflow items */}
+          {hasOverflow && (
+            <button
+              onClick={() => setMoreOpen(true)}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-all ${
+                isOverflowActive || moreOpen
+                  ? "text-primary"
+                  : "text-muted-foreground active:text-foreground"
+              }`}
+            >
+              <div className={`flex items-center justify-center rounded-xl px-3 py-1 transition-all ${isOverflowActive ? "bg-primary/10" : ""}`}>
+                <MoreHorizontal className={`h-5 w-5 ${isOverflowActive ? "text-primary" : ""}`} />
+              </div>
+              <span className="text-[10px] font-medium leading-tight">Mer</span>
+            </button>
+          )}
         </div>
       </nav>
+
+      {/* Mobile "More" sheet */}
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-2 pb-8">
+          <SheetHeader className="pb-2">
+            <SheetTitle className="text-base">Mer</SheetTitle>
+          </SheetHeader>
+
+          {/* Profile card */}
+          <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-secondary/40">
+            <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+              <AvatarFallback className="gradient-primary text-primary-foreground text-sm font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || "Användare"}</p>
+              <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
+            </div>
+          </div>
+
+          {/* Overflow nav items */}
+          <div className="flex flex-col gap-1">
+            {mobileOverflowItems.map((item) => {
+              const isActive = location.pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMoreOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl min-h-[48px] transition-colors ${
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground active:bg-secondary/60"
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Utility actions */}
+          <div className="border-t border-border mt-3 pt-3 flex flex-col gap-1">
+            <button
+              onClick={() => {
+                handleToggleTheme();
+                setMoreOpen(false);
+              }}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl min-h-[48px] text-foreground active:bg-secondary/60 transition-colors w-full"
+            >
+              <Sun className="h-5 w-5 dark:hidden" />
+              <Moon className="h-5 w-5 hidden dark:block" />
+              <span className="text-sm font-medium">{theme === "dark" ? "Ljust tema" : "Mörkt tema"}</span>
+            </button>
+
+            {settings["it_remote_help_visible"] !== "false" && (
+              <a
+                href={settings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-3 rounded-xl min-h-[48px] text-foreground active:bg-secondary/60 transition-colors"
+              >
+                <ExternalLink className="h-5 w-5" />
+                <span className="text-sm font-medium">{settings["it_remote_help_label"] || "Fjärrhjälp (Splashtop)"}</span>
+              </a>
+            )}
+
+            <button
+              onClick={() => {
+                signOut();
+                setMoreOpen(false);
+              }}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl min-h-[48px] text-destructive active:bg-destructive/10 transition-colors w-full"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm font-medium">Logga ut</span>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
