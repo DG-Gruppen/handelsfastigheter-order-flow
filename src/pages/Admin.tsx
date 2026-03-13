@@ -526,7 +526,6 @@ export default function Admin() {
               {activeSection === "systems" && <SystemsManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
-              {activeSection === "it" && <ITSettingsManager />}
             </>
           )}
         </div>
