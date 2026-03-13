@@ -6,6 +6,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import { toast } from "sonner";
 import {
@@ -91,6 +100,11 @@ export default function OrderDetail() {
   const [approverProfile, setApproverProfile] = useState<Profile | null>(null);
   const [marking, setMarking] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [approving, setApproving] = useState(false);
+
+  const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
 
   useEffect(() => {
     if (!id || !user) return;
@@ -137,6 +151,38 @@ export default function OrderDetail() {
       toast.success("Beställningen markerad som levererad");
     }
     setMarking(false);
+  };
+
+  const handleApprove = async () => {
+    if (!order) return;
+    setApproving(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "approved", approved_at: new Date().toISOString() })
+      .eq("id", order.id);
+    if (error) {
+      toast.error("Kunde inte godkänna beställningen");
+    } else {
+      setOrder({ ...order, status: "approved", approved_at: new Date().toISOString() });
+      toast.success("Beställningen har godkänts!");
+    }
+    setApproving(false);
+  };
+
+  const handleReject = async () => {
+    if (!order) return;
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "rejected", rejection_reason: rejectionReason.trim() || null })
+      .eq("id", order.id);
+    if (error) {
+      toast.error("Kunde inte avslå beställningen");
+    } else {
+      setOrder({ ...order, status: "rejected", rejection_reason: rejectionReason.trim() || null });
+      toast.success("Beställningen har avslagits");
+      setRejectDialogOpen(false);
+      setRejectionReason("");
+    }
   };
 
   if (loading) {
@@ -225,6 +271,28 @@ export default function OrderDetail() {
           </div>
           {order.description && (
             <p className="text-sm text-muted-foreground">{order.description}</p>
+          )}
+
+          {/* Approval actions for approver */}
+          {canApprove && (
+            <div className="flex gap-2">
+              <Button
+                className="gap-1.5 flex-1 h-12 md:h-10 gradient-primary hover:opacity-90 shadow-sm shadow-primary/20"
+                onClick={handleApprove}
+                disabled={approving}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {approving ? "Godkänner..." : "Godkänn"}
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 flex-1 text-destructive h-12 md:h-10"
+                onClick={() => setRejectDialogOpen(true)}
+              >
+                <XCircle className="h-4 w-4" />
+                Avslå
+              </Button>
+            </div>
           )}
 
           {/* Admin: mark as delivered */}
@@ -427,6 +495,31 @@ export default function OrderDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Reject dialog */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent className="mx-4 max-w-lg glass-surface">
+            <DialogHeader>
+              <DialogTitle>Avslå beställning</DialogTitle>
+              <DialogDescription>Ange en anledning till avslaget (valfritt)</DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Anledning..."
+              maxLength={500}
+              className="resize-none"
+            />
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setRejectDialogOpen(false)} className="w-full sm:w-auto h-11">
+                Avbryt
+              </Button>
+              <Button variant="destructive" onClick={handleReject} className="w-full sm:w-auto h-11">
+                Avslå
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
   );
 }
