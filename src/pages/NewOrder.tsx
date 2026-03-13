@@ -38,13 +38,8 @@ interface OrderItem {
   typeId: string;
 }
 
-const ORDER_REASONS_NEW = [
-  { value: "new_employee", label: "Nyanställning" },
-] as const;
-
-const ORDER_REASONS_EXISTING = [
+const ORDER_REASONS = [
   { value: "broken_equipment", label: "Trasig utrustning" },
-  { value: "end_of_employment", label: "Avslut av anställning (Offboarding)" },
 ] as const;
 
 export default function NewOrder() {
