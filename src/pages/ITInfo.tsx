@@ -79,7 +79,7 @@ export default function ITInfo() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Telefon</p>
-                  <a href={`tel:${contactPhone}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  <a href={`tel:${contactPhone.replace(/\D/g, "")}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                     {contactPhone}
                   </a>
                 </div>
