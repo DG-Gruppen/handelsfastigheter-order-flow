@@ -36,7 +36,6 @@ interface OrderItem {
   typeId: string;
 }
 
-
 export default function NewOrder() {
   const { user, roles } = useAuth();
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
@@ -44,20 +43,20 @@ export default function NewOrder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
-  const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
+  const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
+  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
   const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
   const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
+
   // Form state
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
-  const [orderReason, setOrderReason] = useState("broken_equipment");
-
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Check if current user needs approval from above
+  // Approval logic
   const isManager = roles.includes("manager");
   const isStaff = myProfile?.is_staff === true;
   const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
@@ -65,10 +64,7 @@ export default function NewOrder() {
     (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
     (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
   );
-  // Managers with a manager above them get routed to their direct manager
   const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
-  const needsApproval = needsCeoApprovalCheck || needsManagerApproval;
-  const showApproverPicker = !isManagerOrAdmin || needsApproval;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,17 +84,14 @@ export default function NewOrder() {
       const allTypes = (typesRes.data as OrderType[]) ?? [];
       setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
 
-      // Store my profile info for staff/manager checks
       if (myProfileRes.data) {
         setMyProfile({ is_staff: (myProfileRes.data as any).is_staff, manager_id: (myProfileRes.data as any).manager_id });
       }
 
-      // Store approval settings
       const aMap: Record<string, string> = {};
       for (const s of (approvalRes.data as any[]) ?? []) aMap[s.setting_key] = s.setting_value;
       setApprovalSettings(aMap);
 
-      // Build department restriction maps
       const catDeptMap: Record<string, string[]> = {};
       for (const row of (catDeptsRes.data as any[]) ?? []) {
         if (!catDeptMap[row.category_id]) catDeptMap[row.category_id] = [];
@@ -110,15 +103,10 @@ export default function NewOrder() {
         otDeptMap[row.order_type_id].push(row.department_id);
       }
 
-      // Get user's department id
       const userDept = (myProfileRes.data as any)?.department ?? "";
-
-      // Find matching department id from departments table
       const { data: deptRows } = await supabase.from("departments").select("id, name").order("name");
-      setDepartmentsList((deptRows as any[]) ?? []);
       const userDeptId = (deptRows ?? []).find((d: any) => d.name === userDept)?.id;
 
-      // Filter: no rows in junction = visible to all; otherwise must include user's dept
       const isAdmin = roles.includes("admin");
       const filteredCats = isAdmin ? allCats : allCats.filter((c) => {
         const restricted = catDeptMap[c.id];
@@ -136,26 +124,20 @@ export default function NewOrder() {
 
       const rolesData = rolesRes.data ?? [];
       const managerUserIds = new Set(
-        rolesData
-          .filter((r: any) => r.role === "manager" || r.role === "admin")
-          .map((r: any) => r.user_id)
+        rolesData.filter((r: any) => r.role === "manager" || r.role === "admin").map((r: any) => r.user_id)
       );
       const filteredManagers = ((profilesRes.data as ProfileOption[]) ?? []).filter(
         (p) => managerUserIds.has(p.user_id)
       );
       setManagers(filteredManagers);
 
-      // Find VD (CEO): profile with no manager_id that has admin role
-      const allProfilesList = (allProfilesRes.data as any[]) ?? [];
       const adminUserIds = new Set(
         rolesData.filter((r: any) => r.role === "admin").map((r: any) => r.user_id)
       );
-      // Get full profiles with manager_id to find root
       const { data: fullProfiles } = await supabase.from("profiles").select("id, user_id, full_name, manager_id");
       const ceo = (fullProfiles ?? []).find((p: any) => !p.manager_id && adminUserIds.has(p.user_id));
       if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
 
-      // Resolve the current user's direct manager profile
       const myMgrId = (myProfileRes.data as any)?.manager_id;
       if (myMgrId) {
         const mgrProfile = (fullProfiles ?? []).find((p: any) => p.id === myMgrId);
@@ -198,17 +180,17 @@ export default function NewOrder() {
       : baseTitle;
 
     // Determine approval routing
-    const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
-    const needsCeoApproval = isManagerOrAdmin && reportsDirectlyToCeo && (
+    const rdtc = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
+    const needsCeoApproval = isManagerOrAdmin && rdtc && (
       (roles.includes("manager") && approvalSettings["approval_managers_to_ceo"] === "true") ||
       (myProfile?.is_staff === true && approvalSettings["approval_staff_to_ceo"] === "true")
     );
-    const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+    const needsMgrApproval = isManagerOrAdmin && !rdtc && myManagerProfile != null;
 
-    const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval;
+    const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsMgrApproval;
     const resolvedApproverId = needsCeoApproval && ceoProfile
       ? ceoProfile.user_id
-      : needsManagerApproval && myManagerProfile
+      : needsMgrApproval && myManagerProfile
         ? myManagerProfile.user_id
         : autoApprove
           ? user.id
@@ -231,7 +213,7 @@ export default function NewOrder() {
           : "",
         recipient_start_date: null,
         recipient_department: "",
-        order_reason: orderReason,
+        order_reason: "broken_equipment",
         status: autoApprove ? "approved" : "pending",
         approved_at: autoApprove ? new Date().toISOString() : null,
       } as any)
@@ -263,7 +245,7 @@ export default function NewOrder() {
       ? "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!"
       : needsCeoApproval
         ? "Beställningen har skickats till VD för attestering!"
-        : needsManagerApproval
+        : needsMgrApproval
           ? "Beställningen har skickats till din chef för attestering!"
           : "Beställningen har skickats till din chef för godkännande!";
     toast.success(successMsg);
@@ -320,302 +302,122 @@ export default function NewOrder() {
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-up">
-        <Card className="glass-card shadow-xl shadow-primary/[0.03]">
-          <CardHeader className="px-4 md:px-6">
-            <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
-            <CardDescription className="text-sm">
-              Beställ IT-utrustning för en ny eller befintlig medarbetare. Beställningen skickas till vald chef för attestering.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 md:px-6">
-            <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
+      <Card className="glass-card shadow-xl shadow-primary/[0.03]">
+        <CardHeader className="px-4 md:px-6">
+          <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
+          <CardDescription className="text-sm">
+            Beställ IT-utrustning för dig själv eller en medarbetare. Beställningen skickas till vald chef för attestering.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6">
+          <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
 
-              {/* 1. Recipient type */}
-              {isManagerOrAdmin ? (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Beställningen gäller *</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRecipientType("existing");
-                        setOrderReason("broken_equipment");
-                      }}
-                      className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                        recipientType === "existing"
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/30 hover:bg-secondary/30"
-                      }`}
-                    >
-                      <User className={`h-6 w-6 ${recipientType === "existing" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`text-sm font-medium ${recipientType === "existing" ? "text-primary" : "text-foreground"}`}>
-                        Befintlig medarbetare
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRecipientType("new");
-                        setOrderReason("new_employee");
-                      }}
-                      className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                        recipientType === "new"
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/30 hover:bg-secondary/30"
-                      }`}
-                    >
-                      <UserPlus className={`h-6 w-6 ${recipientType === "new" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className={`text-sm font-medium ${recipientType === "new" ? "text-primary" : "text-foreground"}`}>
-                        Ny medarbetare
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* 1b. Existing employee picker for managers */}
-              {isManagerOrAdmin && recipientType === "existing" && !isOffboarding && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Beställ till *</Label>
-                  <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
-                    <SelectTrigger className="h-12 md:h-10">
-                      <SelectValue placeholder="Välj medarbetare..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="self" className="py-3 md:py-2">Mig själv</SelectItem>
-                      {allProfiles
-                        .filter((p) => p.user_id !== user?.id)
-                        .map((p) => (
-                          <SelectItem key={p.user_id} value={p.user_id} className="py-3 md:py-2">
-                            {p.full_name || p.user_id}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {recipientType === "new" && (
-                <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uppgifter om ny medarbetare</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Förnamn *</Label>
-                      <Input
-                        value={recipientFirstName}
-                        onChange={(e) => setRecipientFirstName(e.target.value)}
-                        placeholder="Förnamn"
-                        className="h-12 md:h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Efternamn *</Label>
-                      <Input
-                        value={recipientLastName}
-                        onChange={(e) => setRecipientLastName(e.target.value)}
-                        placeholder="Efternamn"
-                        className="h-12 md:h-10"
-                      />
-                    </div>
-                  </div>
-                  {recipientFirstName && recipientLastName && (
-                    <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
-                      <span className="text-xs text-muted-foreground">Förslag på e-post:</span>
-                      <span className="text-sm font-medium text-primary">
-                        {recipientFirstName.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e')}.{recipientLastName.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e')}@handelsfastigheter.se
-                      </span>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Startdatum</Label>
-                      <Input
-                        type="date"
-                        value={recipientStartDate}
-                        onChange={(e) => setRecipientStartDate(e.target.value)}
-                        className="h-12 md:h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Avdelning</Label>
-                      <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
-                        <SelectTrigger className="h-12 md:h-10">
-                          <SelectValue placeholder="Välj avdelning..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departmentsList.map((d) => (
-                            <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 3. Reason - only for managers/admins */}
-              {isManagerOrAdmin && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Orsak *</Label>
-                  <RadioGroup value={orderReason} onValueChange={setOrderReason} className="flex flex-wrap gap-2">
-                    {activeReasons.map((reason) => (
-                      <Label
-                        key={reason.value}
-                        htmlFor={reason.value}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-all text-sm ${
-                          orderReason === reason.value
-                            ? "border-primary bg-primary/5 text-primary font-medium"
-                            : "border-border hover:border-primary/30"
-                        }`}
-                      >
-                        <RadioGroupItem value={reason.value} id={reason.value} className="sr-only" />
-                        {reason.label}
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )}
-
-              {/* 3b. Offboarding details */}
-              {isOffboarding && (
-                <div className="space-y-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-                  <div className="flex items-center gap-2">
-                    <LogOut className="h-4 w-4 text-destructive" />
-                    <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – utrustning att återlämna</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Förnamn *</Label>
-                      <Input
-                        value={recipientFirstName}
-                        onChange={(e) => setRecipientFirstName(e.target.value)}
-                        placeholder="Förnamn"
-                        className="h-12 md:h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Efternamn *</Label>
-                      <Input
-                        value={recipientLastName}
-                        onChange={(e) => setRecipientLastName(e.target.value)}
-                        placeholder="Efternamn"
-                        className="h-12 md:h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Sista arbetsdag</Label>
-                      <Input
-                        type="date"
-                        value={recipientEndDate}
-                        onChange={(e) => setRecipientEndDate(e.target.value)}
-                        className="h-12 md:h-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Avdelning</Label>
-                    <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
-                      <SelectTrigger className="h-12 md:h-10">
-                        <SelectValue placeholder="Välj avdelning..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departmentsList.map((d) => (
-                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              {/* 4. Equipment items */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  {isOffboarding ? "Utrustning att återlämna *" : "Utrustning *"}
-                </Label>
-                {items.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    {renderTypeSelect(item, index)}
-                    {items.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeItem(index)}
-                        className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1.5 text-sm">
-                  <Plus className="h-4 w-4" />
-                  Lägg till utrustning
-                </Button>
-              </div>
-
-              {/* 5. Comment */}
+            {/* Existing employee picker for managers */}
+            {isManagerOrAdmin && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Kommentar</Label>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={isOffboarding 
-                    ? "T.ex. vilken utrustning som ska samlas in, var den finns..." 
-                    : "Ytterligare information, t.ex. speciella behov..."}
-                  rows={3}
-                  maxLength={1000}
-                  className="resize-none"
-                />
-              </div>
-
-              {/* 6. Approver */}
-              {needsCeoApprovalCheck && ceoProfile && (
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-                  <p className="text-sm text-foreground">
-                    <span className="font-medium">Attesteras av VD:</span>{" "}
-                    {ceoProfile.full_name}
-                  </p>
-                </div>
-              )}
-              {needsManagerApproval && myManagerProfile && !needsCeoApprovalCheck && (
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-                  <p className="text-sm text-foreground">
-                    <span className="font-medium">Attesteras av:</span>{" "}
-                    {myManagerProfile.full_name}
-                  </p>
-                </div>
-              )}
-              {!isManagerOrAdmin && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
-                  <Select value={approverId} onValueChange={setApproverId}>
-                    <SelectTrigger className="h-12 md:h-10">
-                      <SelectValue placeholder="Välj chef..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {managers.map((m) => (
-                        <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
-                          {m.full_name || m.id}
+                <Label className="text-sm font-medium">Beställ till *</Label>
+                <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
+                  <SelectTrigger className="h-12 md:h-10">
+                    <SelectValue placeholder="Välj medarbetare..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self" className="py-3 md:py-2">Mig själv</SelectItem>
+                    {allProfiles
+                      .filter((p) => p.user_id !== user?.id)
+                      .map((p) => (
+                        <SelectItem key={p.user_id} value={p.user_id} className="py-3 md:py-2">
+                          {p.full_name || p.user_id}
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-              <Button
-                type="submit"
-                className="w-full gap-2 h-12 md:h-11 text-base gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
-                disabled={submitting}
-              >
-                <Send className="h-4 w-4" />
-                {submitting ? "Skickar..." : isOffboarding ? "Skicka offboarding-ärende" : "Skicka beställning"}
+            {/* Equipment items */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Utrustning *</Label>
+              {items.map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  {renderTypeSelect(item, index)}
+                  {items.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(index)}
+                      className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1.5 text-sm">
+                <Plus className="h-4 w-4" />
+                Lägg till utrustning
               </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+
+            {/* Comment */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Kommentar</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ytterligare information, t.ex. speciella behov..."
+                rows={3}
+                maxLength={1000}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Approver */}
+            {needsCeoApprovalCheck && ceoProfile && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">Attesteras av VD:</span>{" "}
+                  {ceoProfile.full_name}
+                </p>
+              </div>
+            )}
+            {needsManagerApproval && myManagerProfile && !needsCeoApprovalCheck && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">Attesteras av:</span>{" "}
+                  {myManagerProfile.full_name}
+                </p>
+              </div>
+            )}
+            {!isManagerOrAdmin && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
+                <Select value={approverId} onValueChange={setApproverId}>
+                  <SelectTrigger className="h-12 md:h-10">
+                    <SelectValue placeholder="Välj chef..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {managers.map((m) => (
+                      <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
+                        {m.full_name || m.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full gap-2 h-12 md:h-11 text-base gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+              disabled={submitting}
+            >
+              <Send className="h-4 w-4" />
+              {submitting ? "Skickar..." : "Skicka beställning"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
