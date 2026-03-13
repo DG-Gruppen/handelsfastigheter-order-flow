@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones } from "lucide-react";
+import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones, Settings } from "lucide-react";
+import FaqManager from "@/components/FaqManager";
 
 interface FaqItem {
   id: string;
