@@ -16,6 +16,22 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Monitor, GripVertical } from "lucide-react";
 import { iconMap, iconOptions, getIcon } from "@/lib/icons";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface System {
   id: string;
@@ -28,6 +44,73 @@ interface System {
 
 const emptyForm = { name: "", description: "", icon: "monitor" };
 
+function SortableSystemItem({
+  system,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: {
+  system: System;
+  onEdit: (s: System) => void;
+  onDelete: (id: string) => void;
+  onToggleActive: (id: string, current: boolean) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: system.id,
+  });
+  const IconComp = getIcon(system.icon);
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : !system.is_active ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 bg-card"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+        <IconComp className="h-5 w-5 text-secondary-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm text-foreground">{system.name}</p>
+        {system.description && (
+          <p className="text-xs text-muted-foreground truncate">{system.description}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Switch
+          checked={system.is_active}
+          onCheckedChange={() => onToggleActive(system.id, system.is_active)}
+          className="mr-1"
+        />
+        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(system)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 text-destructive"
+          onClick={() => onDelete(system.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function SystemsManager() {
   const [systems, setSystems] = useState<System[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +118,11 @@ export default function SystemsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
   const fetchData = async () => {
     const { data } = await supabase
@@ -111,25 +199,21 @@ export default function SystemsManager() {
     fetchData();
   };
 
-  const handleMoveUp = async (index: number) => {
-    if (index === 0) return;
-    const current = systems[index];
-    const above = systems[index - 1];
-    await Promise.all([
-      supabase.from("systems").update({ sort_order: above.sort_order } as any).eq("id", current.id),
-      supabase.from("systems").update({ sort_order: current.sort_order } as any).eq("id", above.id),
-    ]);
-    fetchData();
-  };
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const handleMoveDown = async (index: number) => {
-    if (index >= systems.length - 1) return;
-    const current = systems[index];
-    const below = systems[index + 1];
-    await Promise.all([
-      supabase.from("systems").update({ sort_order: below.sort_order } as any).eq("id", current.id),
-      supabase.from("systems").update({ sort_order: current.sort_order } as any).eq("id", below.id),
-    ]);
+    const oldIndex = systems.findIndex((s) => s.id === active.id);
+    const newIndex = systems.findIndex((s) => s.id === over.id);
+    const reordered = arrayMove(systems, oldIndex, newIndex);
+
+    setSystems(reordered);
+
+    await Promise.all(
+      reordered.map((s, index) =>
+        supabase.from("systems").update({ sort_order: index } as any).eq("id", s.id)
+      )
+    );
     fetchData();
   };
 
@@ -147,9 +231,8 @@ export default function SystemsManager() {
                 <CardDescription className="text-xs">Hantera system och licenser för on-/offboarding</CardDescription>
               </div>
             </div>
-            <Button className="gap-1.5 h-11 md:h-10" onClick={openNew}>
+            <Button size="icon" className="h-10 w-10" onClick={openNew}>
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nytt system</span>
             </Button>
           </div>
         </CardHeader>
@@ -159,63 +242,21 @@ export default function SystemsManager() {
           ) : systems.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center text-sm">Inga system tillagda ännu</p>
           ) : (
-            <div className="space-y-2">
-              {systems.map((s, index) => {
-                const IconComp = getIcon(s.icon);
-                return (
-                  <div
-                    key={s.id}
-                    className={`rounded-xl border border-border p-3 md:p-3.5 flex items-center gap-3 transition-opacity ${
-                      !s.is_active ? "opacity-50" : ""
-                    }`}
-                  >
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <button
-                        onClick={() => handleMoveUp(index)}
-                        disabled={index === 0}
-                        className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
-                      >
-                        <GripVertical className="h-3.5 w-3.5 rotate-90 scale-x-[-1]" />
-                      </button>
-                      <button
-                        onClick={() => handleMoveDown(index)}
-                        disabled={index === systems.length - 1}
-                        className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
-                      >
-                        <GripVertical className="h-3.5 w-3.5 rotate-90" />
-                      </button>
-                    </div>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                      <IconComp className="h-5 w-5 text-secondary-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground">{s.name}</p>
-                      {s.description && (
-                        <p className="text-xs text-muted-foreground truncate">{s.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Switch
-                        checked={s.is_active}
-                        onCheckedChange={() => handleToggleActive(s.id, s.is_active)}
-                        className="mr-1"
-                      />
-                      <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(s)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 text-destructive"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={systems.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {systems.map((s) => (
+                    <SortableSystemItem
+                      key={s.id}
+                      system={s}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                      onToggleActive={handleToggleActive}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CardContent>
       </Card>
