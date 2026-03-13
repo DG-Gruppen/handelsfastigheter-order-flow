@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
+import SystemsManager from "@/components/SystemsManager";
 import ITSettingsManager from "@/components/ITSettingsManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Wrench } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Wrench, Monitor } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -26,7 +27,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "users" | "settings" | "it";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -60,6 +61,16 @@ const sections = [
     label: "Utrustning",
     description: "Hantera beställningsbar utrustning",
     icon: Package,
+    color: "from-accent to-accent",
+    borderColor: "border-t-accent/40",
+    bgColor: "bg-accent/10",
+    textColor: "text-accent",
+  },
+  {
+    id: "systems" as const,
+    label: "System & Licenser",
+    description: "Hantera system för on-/offboarding",
+    icon: Monitor,
     color: "from-accent to-accent",
     borderColor: "border-t-accent/40",
     bgColor: "bg-accent/10",
@@ -525,6 +536,7 @@ export default function Admin() {
               </button>
               {activeSection === "categories" && <CategoriesManager />}
               {activeSection === "equipment" && <OrderTypesManager />}
+              {activeSection === "systems" && <SystemsManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
               {activeSection === "it" && <ITSettingsManager />}
@@ -558,6 +570,10 @@ export default function Admin() {
 
           <TabsContent value="equipment" className="mt-4">
             <OrderTypesManager />
+          </TabsContent>
+
+          <TabsContent value="systems" className="mt-4">
+            <SystemsManager />
           </TabsContent>
 
           <TabsContent value="users" className="mt-4">
