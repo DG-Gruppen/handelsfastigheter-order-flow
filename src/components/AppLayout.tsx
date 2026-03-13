@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus } from "lucide-react";
+import { Plus, ClipboardList, CheckSquare, LogOut, Settings, Sun, Moon, Building2, History, ExternalLink, UserPlus, Headphones } from "lucide-react";
 import shfLogo from "@/assets/shf-logo.png";
 import { useTheme } from "next-themes";
 import { useEffect, useCallback, useRef } from "react";
