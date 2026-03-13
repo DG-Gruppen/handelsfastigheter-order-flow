@@ -140,7 +140,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* User menu (desktop) */}
+          {/* Notification bell + User menu (desktop) */}
+          <div className="flex items-center gap-1">
+          <NotificationBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 rounded-full p-1 hover:bg-secondary/60 transition-colors min-h-[44px] min-w-[44px] justify-center">
