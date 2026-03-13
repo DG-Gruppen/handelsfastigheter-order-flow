@@ -67,6 +67,16 @@ const sections = [
     textColor: "text-accent",
   },
   {
+    id: "systems" as const,
+    label: "System & Licenser",
+    description: "Hantera system för on-/offboarding",
+    icon: Monitor,
+    color: "from-accent to-accent",
+    borderColor: "border-t-accent/40",
+    bgColor: "bg-accent/10",
+    textColor: "text-accent",
+  },
+  {
     id: "users" as const,
     label: "Användare & Roller",
     description: "Tilldela roller till användare",
