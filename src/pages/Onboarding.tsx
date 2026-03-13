@@ -187,6 +187,64 @@ export default function Onboarding() {
     setItems((prev) => prev.map((item, i) => (i === index ? { typeId: value } : item)));
   };
 
+  // Lookup profile + previous onboarding data for offboarding
+  const handleSelectProfile = async (profile: ProfileOption) => {
+    setSelectedProfileId(profile.id);
+    setProfileSearchOpen(false);
+    setLoadingProfile(true);
+
+    // Fill from profile
+    const nameParts = profile.full_name.split(" ");
+    setRecipientFirstName(nameParts[0] || "");
+    setRecipientLastName(nameParts.slice(1).join(" ") || "");
+
+    // Get full profile for department
+    const { data: fullProfile } = await supabase
+      .from("profiles")
+      .select("department")
+      .eq("id", profile.id)
+      .single();
+    if (fullProfile?.department) setRecipientDepartment(fullProfile.department);
+
+    // Look for previous onboarding order for this person
+    const { data: prevOrders } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("recipient_name", profile.full_name)
+      .eq("recipient_type", "new")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (prevOrders && prevOrders.length > 0) {
+      const prevOrderId = prevOrders[0].id;
+
+      // Fetch equipment items and systems from that order
+      const [itemsRes, systemsRes] = await Promise.all([
+        supabase.from("order_items").select("order_type_id").eq("order_id", prevOrderId),
+        supabase.from("order_systems").select("system_id").eq("order_id", prevOrderId),
+      ]);
+
+      const prevItems = (itemsRes.data ?? [])
+        .filter((i: any) => i.order_type_id)
+        .map((i: any) => ({ typeId: i.order_type_id }));
+      if (prevItems.length > 0) setItems(prevItems);
+
+      const prevSystemIds = (systemsRes.data ?? []).map((s: any) => s.system_id);
+      if (prevSystemIds.length > 0) setSelectedSystems(prevSystemIds);
+
+      toast.info("Uppgifter hämtade från tidigare onboarding");
+    } else {
+      toast.info("Profiluppgifter ifyllda – ingen tidigare onboarding hittades");
+    }
+
+    setLoadingProfile(false);
+  };
+
+  const filteredSearchProfiles = allProfiles.filter((p) => {
+    if (!profileSearchQuery) return true;
+    return p.full_name.toLowerCase().includes(profileSearchQuery.toLowerCase());
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
