@@ -102,7 +102,7 @@ export default function Dashboard() {
   const firstName = profile?.full_name?.split(" ")[0] || "du";
 
   return (
-    <AppLayout>
+    <div className="space-y-5 md:space-y-8">
       <div className="space-y-5 md:space-y-8">
         {/* Header */}
         <div className="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
