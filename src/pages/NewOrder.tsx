@@ -352,8 +352,7 @@ export default function NewOrder() {
   );
 
   return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto animate-fade-up">
+    <div className="max-w-2xl mx-auto animate-fade-up">
         <Card className="glass-card shadow-xl shadow-primary/[0.03]">
           <CardHeader className="px-4 md:px-6">
             <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
