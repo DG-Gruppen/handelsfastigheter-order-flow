@@ -157,28 +157,28 @@ export default function ITSettingsManager() {
               disabled={loading}
             />
           </div>
-          <div className="rounded-xl border border-warning/10 bg-warning/[0.03] p-4 space-y-3">
+          <div className="rounded-xl border border-warning/10 bg-warning/[0.03] p-3 md:p-4 space-y-2.5">
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">Länktext</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">Länktext</label>
               <input
                 type="text"
                 placeholder="Fjärrhjälp (Splashtop)"
                 value={settings["it_remote_help_label"] ?? "Fjärrhjälp (Splashtop)"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_label: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_remote_help_label", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground block mb-1.5">URL</label>
+              <label className="text-xs md:text-sm font-medium text-foreground block mb-1">URL</label>
               <input
                 type="url"
                 placeholder="https://..."
                 value={settings["it_remote_help_url"] ?? "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
                 onChange={(e) => setSettings((prev) => ({ ...prev, it_remote_help_url: e.target.value }))}
                 onBlur={(e) => upsertSetting("it_remote_help_url", e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
+                className="w-full min-h-0 h-10 px-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-warning/30"
                 disabled={loading}
               />
             </div>
