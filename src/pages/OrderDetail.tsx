@@ -323,6 +323,38 @@ export default function OrderDetail() {
           </CardContent>
         </Card>
 
+        {/* Systems & licenses */}
+        {orderSystems.length > 0 && (
+          <Card className="glass-card border-t-2 border-t-primary/30">
+            <CardHeader className="px-4 md:px-6 pb-2">
+              <CardTitle className="font-heading text-sm md:text-base flex items-center gap-2">
+                <Monitor className="h-4 w-4 text-primary" />
+                System & Licenser ({orderSystems.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 md:px-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {orderSystems.map((os) => {
+                  const SysIcon = getIcon(os.system?.icon || "monitor");
+                  return (
+                    <div key={os.id} className="flex items-center gap-2.5 rounded-xl border border-border/50 bg-secondary/20 p-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <SysIcon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{os.system?.name}</p>
+                        {os.system?.description && (
+                          <p className="text-xs text-muted-foreground truncate">{os.system.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* People */}
         <Card className="glass-card border-t-2 border-t-warning/30">
           <CardHeader className="px-4 md:px-6 pb-2">
