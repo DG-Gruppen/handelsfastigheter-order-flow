@@ -472,20 +472,20 @@ export default function Admin() {
         </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-          <div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+          <div className="min-w-0 mr-2">
             <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar utan skickas till VD</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
           </div>
           <Switch
             checked={approvalSettings["approval_managers_to_ceo"] === "true"}
             onCheckedChange={() => toggleApprovalSetting("approval_managers_to_ceo")}
           />
         </div>
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4">
-          <div>
+        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+          <div className="min-w-0 mr-2">
             <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Stabsmedarbetare kan inte godkänna sina egna beställningar utan skickas till VD</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
           </div>
           <Switch
             checked={approvalSettings["approval_staff_to_ceo"] === "true"}
