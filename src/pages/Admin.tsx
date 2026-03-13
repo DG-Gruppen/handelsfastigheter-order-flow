@@ -572,6 +572,10 @@ export default function Admin() {
             <OrderTypesManager />
           </TabsContent>
 
+          <TabsContent value="systems" className="mt-4">
+            <SystemsManager />
+          </TabsContent>
+
           <TabsContent value="users" className="mt-4">
             {UsersContent}
           </TabsContent>
