@@ -44,6 +44,7 @@ const App = () => (
                   <Route path="/history" element={<History />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/org" element={<OrgTree />} />
+                  <Route path="/it-info" element={<ITInfo />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
