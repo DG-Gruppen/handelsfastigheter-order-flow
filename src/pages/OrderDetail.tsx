@@ -99,7 +99,11 @@ export default function OrderDetail() {
   const [requesterProfile, setRequesterProfile] = useState<Profile | null>(null);
   const [approverProfile, setApproverProfile] = useState<Profile | null>(null);
   const [marking, setMarking] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [approving, setApproving] = useState(false);
+
+  const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
 
   useEffect(() => {
     if (!id || !user) return;
