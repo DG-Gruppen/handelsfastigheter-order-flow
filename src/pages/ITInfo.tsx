@@ -35,7 +35,7 @@ export default function ITInfo() {
   const remoteHelpLabel = settings["it_remote_help_label"] || "Fjärrhjälp (Splashtop)";
   const showRemoteHelp = settings["it_remote_help_visible"] !== "false";
 
-  const contactEmail = settings["it_contact_email"] || "it@handelsfastigheter.se";
+  const contactEmail = settings["it_contact_email"] || "helpdesk@dggruppen.se";
   const contactPhone = settings["it_contact_phone"] || "";
   const contactHours = settings["it_contact_hours"] || "Mån–Fre 08:00–17:00";
 
