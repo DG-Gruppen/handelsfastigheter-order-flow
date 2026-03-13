@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, ClipboardList } from "lucide-react";
+import { Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, ClipboardList, ShieldCheck } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   pending: { label: "Väntar på attestering", variant: "secondary", icon: Clock },
@@ -171,6 +171,7 @@ export default function Dashboard() {
                   const Icon = sc.icon;
                   const autoApproved = isAutoApproved(order);
                   const tag = getOrderTag(order);
+                  const needsMyApproval = order.status === "pending" && order.approver_id === user?.id;
                   return (
                     <Link
                       key={order.id}
@@ -189,6 +190,12 @@ export default function Dashboard() {
                             <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${tag.className}`}>
                               <tag.icon className="h-2.5 w-2.5" />
                               {tag.label}
+                            </span>
+                          )}
+                          {needsMyApproval && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-warning/10 text-warning border-warning/20">
+                              <ShieldCheck className="h-2.5 w-2.5" />
+                              Attestera
                             </span>
                           )}
                         </div>
