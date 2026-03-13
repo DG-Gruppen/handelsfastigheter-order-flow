@@ -89,22 +89,22 @@ function SortableSystemItem({
           <p className="text-xs text-muted-foreground truncate">{system.description}</p>
         )}
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
         <Switch
           checked={system.is_active}
           onCheckedChange={() => onToggleActive(system.id, system.is_active)}
-          className="mr-1"
+          className="mr-0.5 md:mr-1"
         />
-        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(system)}>
-          <Pencil className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9" onClick={() => onEdit(system)}>
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-destructive"
+          className="h-8 w-8 md:h-9 md:w-9 text-destructive"
           onClick={() => onDelete(system.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>

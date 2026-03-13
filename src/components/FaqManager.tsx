@@ -81,22 +81,22 @@ function SortableFaqItem({
         <p className="font-medium text-sm text-foreground">{item.question}</p>
         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.answer}</p>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
         <Switch
           checked={item.is_active}
           onCheckedChange={() => onToggleActive(item.id, item.is_active)}
-          className="mr-1"
+          className="mr-0.5 md:mr-1"
         />
-        <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onEdit(item)}>
-          <Pencil className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9" onClick={() => onEdit(item)}>
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-destructive"
+          className="h-8 w-8 md:h-9 md:w-9 text-destructive"
           onClick={() => onDelete(item.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
