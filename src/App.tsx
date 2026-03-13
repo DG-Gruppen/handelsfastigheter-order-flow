@@ -13,6 +13,7 @@ import NewOrder from "./pages/NewOrder";
 import Approvals from "./pages/Approvals";
 import Admin from "./pages/Admin";
 import OrgTree from "./pages/OrgTree";
+import Onboarding from "./pages/Onboarding";
 import LayoutRoute from "./components/LayoutRoute";
 
 import OrderDetail from "./pages/OrderDetail";
@@ -36,6 +37,7 @@ const App = () => (
                 <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/orders/new" element={<NewOrder />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
                   <Route path="/approvals" element={<Approvals />} />
                   <Route path="/orders/:id" element={<OrderDetail />} />
                   <Route path="/history" element={<History />} />

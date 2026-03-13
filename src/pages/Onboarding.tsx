@@ -5,11 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, Plus, Trash2 } from "lucide-react";
+import { Send, Plus, Trash2, UserPlus, LogOut } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 
 interface Category {
@@ -36,21 +37,32 @@ interface OrderItem {
   typeId: string;
 }
 
-export default function NewOrder() {
+export default function Onboarding() {
   const { user, roles } = useAuth();
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
   const navigate = useNavigate();
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
-  const [managers, setManagers] = useState<ProfileOption[]>([]);
   const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
   const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
   const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
   const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
+  const [managers, setManagers] = useState<ProfileOption[]>([]);
+
+  // Flow type: onboarding or offboarding
+  const [flowType, setFlowType] = useState<"onboarding" | "offboarding">("onboarding");
+  const isOffboarding = flowType === "offboarding";
 
   // Form state
-  const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
+  const [recipientFirstName, setRecipientFirstName] = useState("");
+  const [recipientLastName, setRecipientLastName] = useState("");
+  const recipientName = `${recipientFirstName} ${recipientLastName}`.trim();
+  const [recipientStartDate, setRecipientStartDate] = useState("");
+  const [recipientEndDate, setRecipientEndDate] = useState("");
+  const [recipientDepartment, setRecipientDepartment] = useState("");
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
@@ -65,6 +77,8 @@ export default function NewOrder() {
     (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
   );
   const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+  const needsApproval = needsCeoApprovalCheck || needsManagerApproval;
+  const showApproverPicker = !isManagerOrAdmin || needsApproval;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,6 +119,7 @@ export default function NewOrder() {
 
       const userDept = (myProfileRes.data as any)?.department ?? "";
       const { data: deptRows } = await supabase.from("departments").select("id, name").order("name");
+      setDepartmentsList((deptRows as any[]) ?? []);
       const userDeptId = (deptRows ?? []).find((d: any) => d.name === userDept)?.id;
 
       const isAdmin = roles.includes("admin");
@@ -157,8 +172,12 @@ export default function NewOrder() {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
 
-    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !approverId)) {
-      toast.error("Lägg till minst en utrustning" + (!isManagerOrAdmin ? " och välj godkännare" : ""));
+    if (!user || validItems.length === 0) {
+      toast.error("Lägg till minst en utrustning");
+      return;
+    }
+    if (!recipientName.trim()) {
+      toast.error(isOffboarding ? "Ange namn på medarbetaren" : "Ange namn på den nya medarbetaren");
       return;
     }
 
@@ -167,19 +186,10 @@ export default function NewOrder() {
     const manager = managers.find((m) => m.id === approverId);
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
-    const existingRecipientName = isManagerOrAdmin && selectedExistingRecipient !== "self"
-      ? allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name
-      : null;
+    const title = isOffboarding
+      ? `Offboarding – ${recipientName.trim()}`
+      : `Onboarding – ${recipientName.trim()}`;
 
-    const baseTitle = validItems.length === 1
-      ? firstType?.name ?? "Beställning"
-      : `${firstType?.name ?? "Beställning"} + ${validItems.length - 1} till`;
-
-    const title = existingRecipientName
-      ? `${baseTitle} – ${existingRecipientName}`
-      : baseTitle;
-
-    // Determine approval routing
     const rdtc = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
     const needsCeoApproval = isManagerOrAdmin && rdtc && (
       (roles.includes("manager") && approvalSettings["approval_managers_to_ceo"] === "true") ||
@@ -205,15 +215,11 @@ export default function NewOrder() {
         category_id: firstType?.category_id ?? null,
         title,
         description: description.trim(),
-        recipient_type: "existing",
-        recipient_name: isManagerOrAdmin
-          ? (selectedExistingRecipient === "self"
-            ? ""
-            : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
-          : "",
-        recipient_start_date: null,
-        recipient_department: "",
-        order_reason: "broken_equipment",
+        recipient_type: isOffboarding ? "existing" : "new",
+        recipient_name: recipientName.trim(),
+        recipient_start_date: !isOffboarding && recipientStartDate ? recipientStartDate : null,
+        recipient_department: recipientDepartment.trim(),
+        order_reason: isOffboarding ? "end_of_employment" : "new_employee",
         status: autoApprove ? "approved" : "pending",
         approved_at: autoApprove ? new Date().toISOString() : null,
       } as any)
@@ -221,7 +227,7 @@ export default function NewOrder() {
       .single();
 
     if (error || !order) {
-      toast.error("Kunde inte skapa beställningen");
+      toast.error("Kunde inte skapa ärendet");
       console.error(error);
       setSubmitting(false);
       return;
@@ -242,12 +248,12 @@ export default function NewOrder() {
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
     const successMsg = autoApprove
-      ? "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!"
+      ? `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har godkänts automatiskt!`
       : needsCeoApproval
-        ? "Beställningen har skickats till VD för attestering!"
+        ? `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har skickats till VD för attestering!`
         : needsMgrApproval
-          ? "Beställningen har skickats till din chef för attestering!"
-          : "Beställningen har skickats till din chef för godkännande!";
+          ? `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har skickats till din chef för attestering!`
+          : `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har skickats för godkännande!`;
     toast.success(successMsg);
     navigate("/dashboard");
     setSubmitting(false);
@@ -300,43 +306,188 @@ export default function NewOrder() {
     </Select>
   );
 
+  // Only managers/admins should access this page
+  if (!isManagerOrAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto animate-fade-up">
+        <Card className="glass-card shadow-xl shadow-primary/[0.03]">
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">Du behöver vara chef eller admin för att använda on-/offboarding.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto animate-fade-up">
       <Card className="glass-card shadow-xl shadow-primary/[0.03]">
         <CardHeader className="px-4 md:px-6">
-          <CardTitle className="font-heading text-lg md:text-xl">Ny beställning</CardTitle>
+          <CardTitle className="font-heading text-lg md:text-xl">
+            {isOffboarding ? "Offboarding" : "Onboarding"}
+          </CardTitle>
           <CardDescription className="text-sm">
-            Beställ IT-utrustning för dig själv eller en medarbetare. Beställningen skickas till vald chef för attestering.
+            {isOffboarding
+              ? "Hantera avslut av anställning – samla in utrustning och avsluta konton."
+              : "Förbered utrustning och konton för en ny medarbetare."}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
           <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
 
-            {/* Existing employee picker for managers */}
-            {isManagerOrAdmin && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Beställ till *</Label>
-                <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
-                  <SelectTrigger className="h-12 md:h-10">
-                    <SelectValue placeholder="Välj medarbetare..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="self" className="py-3 md:py-2">Mig själv</SelectItem>
-                    {allProfiles
-                      .filter((p) => p.user_id !== user?.id)
-                      .map((p) => (
-                        <SelectItem key={p.user_id} value={p.user_id} className="py-3 md:py-2">
-                          {p.full_name || p.user_id}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+            {/* Flow type selector */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Typ av ärende *</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFlowType("onboarding")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                    flowType === "onboarding"
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border hover:border-primary/30 hover:bg-secondary/30"
+                  }`}
+                >
+                  <UserPlus className={`h-6 w-6 ${flowType === "onboarding" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-medium ${flowType === "onboarding" ? "text-primary" : "text-foreground"}`}>
+                    Onboarding
+                  </span>
+                  <span className="text-xs text-muted-foreground">Ny medarbetare</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFlowType("offboarding")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                    flowType === "offboarding"
+                      ? "border-destructive bg-destructive/5 shadow-sm"
+                      : "border-border hover:border-destructive/30 hover:bg-secondary/30"
+                  }`}
+                >
+                  <LogOut className={`h-6 w-6 ${flowType === "offboarding" ? "text-destructive" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-medium ${flowType === "offboarding" ? "text-destructive" : "text-foreground"}`}>
+                    Offboarding
+                  </span>
+                  <span className="text-xs text-muted-foreground">Avslut av anställning</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Onboarding details */}
+            {!isOffboarding && (
+              <div className="space-y-4 rounded-xl border border-border bg-secondary/20 p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Uppgifter om ny medarbetare</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Förnamn *</Label>
+                    <Input
+                      value={recipientFirstName}
+                      onChange={(e) => setRecipientFirstName(e.target.value)}
+                      placeholder="Förnamn"
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Efternamn *</Label>
+                    <Input
+                      value={recipientLastName}
+                      onChange={(e) => setRecipientLastName(e.target.value)}
+                      placeholder="Efternamn"
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                </div>
+                {recipientFirstName && recipientLastName && (
+                  <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">Förslag på e-post:</span>
+                    <span className="text-sm font-medium text-primary">
+                      {recipientFirstName.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e')}.{recipientLastName.toLowerCase().replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[åä]/gi, 'a').replace(/[ö]/gi, 'o').replace(/[é]/gi, 'e')}@handelsfastigheter.se
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Startdatum</Label>
+                    <Input
+                      type="date"
+                      value={recipientStartDate}
+                      onChange={(e) => setRecipientStartDate(e.target.value)}
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Avdelning</Label>
+                    <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
+                      <SelectTrigger className="h-12 md:h-10">
+                        <SelectValue placeholder="Välj avdelning..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departmentsList.map((d) => (
+                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Offboarding details */}
+            {isOffboarding && (
+              <div className="space-y-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                <div className="flex items-center gap-2">
+                  <LogOut className="h-4 w-4 text-destructive" />
+                  <p className="text-xs font-medium text-destructive uppercase tracking-wide">Offboarding – utrustning att återlämna</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Förnamn *</Label>
+                    <Input
+                      value={recipientFirstName}
+                      onChange={(e) => setRecipientFirstName(e.target.value)}
+                      placeholder="Förnamn"
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Efternamn *</Label>
+                    <Input
+                      value={recipientLastName}
+                      onChange={(e) => setRecipientLastName(e.target.value)}
+                      placeholder="Efternamn"
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Sista arbetsdag</Label>
+                    <Input
+                      type="date"
+                      value={recipientEndDate}
+                      onChange={(e) => setRecipientEndDate(e.target.value)}
+                      className="h-12 md:h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Avdelning</Label>
+                    <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
+                      <SelectTrigger className="h-12 md:h-10">
+                        <SelectValue placeholder="Välj avdelning..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departmentsList.map((d) => (
+                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Equipment items */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Utrustning *</Label>
+              <Label className="text-sm font-medium">
+                {isOffboarding ? "Utrustning att återlämna *" : "Utrustning att beställa *"}
+              </Label>
               {items.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
                   {renderTypeSelect(item, index)}
@@ -365,7 +516,9 @@ export default function NewOrder() {
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ytterligare information, t.ex. speciella behov..."
+                placeholder={isOffboarding
+                  ? "T.ex. vilken utrustning som ska samlas in, var den finns..."
+                  : "T.ex. speciella behov, programvaror som behövs..."}
                 rows={3}
                 maxLength={1000}
                 className="resize-none"
@@ -409,11 +562,15 @@ export default function NewOrder() {
 
             <Button
               type="submit"
-              className="w-full gap-2 h-12 md:h-11 text-base gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+              className={`w-full gap-2 h-12 md:h-11 text-base shadow-md ${
+                isOffboarding
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-destructive/20"
+                  : "gradient-primary hover:opacity-90 shadow-primary/20"
+              }`}
               disabled={submitting}
             >
               <Send className="h-4 w-4" />
-              {submitting ? "Skickar..." : "Skicka beställning"}
+              {submitting ? "Skickar..." : isOffboarding ? "Skicka offboarding-ärende" : "Skicka onboarding-ärende"}
             </Button>
           </form>
         </CardContent>
