@@ -531,7 +531,7 @@ export default function Admin() {
             </>
           )}
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
