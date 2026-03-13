@@ -94,6 +94,7 @@ const sections = [
     borderColor: "border-t-muted-foreground/30",
     bgColor: "bg-muted-foreground/10",
     textColor: "text-muted-foreground",
+  },
 ];
 
 export default function Admin() {
