@@ -165,6 +165,18 @@ export default function OrderDetail() {
     } else {
       setOrder({ ...order, status: "approved", approved_at: new Date().toISOString() });
       toast.success("Beställningen har godkänts!");
+
+      // Notify requester about approval
+      if (user && order.requester_id !== user.id) {
+        const approverName = approverProfile?.full_name || "Attestanten";
+        await supabase.from("notifications").insert({
+          user_id: order.requester_id,
+          title: "Beställning godkänd",
+          message: `${approverName} har godkänt: ${order.title}`,
+          type: "order_approved",
+          reference_id: order.id,
+        } as any);
+      }
     }
     setApproving(false);
   };
