@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface NavSettingsContextType {
   settings: Record<string, string>;
   loading: boolean;
+  refresh: () => void;
 }
 
 const NavSettingsContext = createContext<NavSettingsContextType>({ settings: {}, loading: true });
