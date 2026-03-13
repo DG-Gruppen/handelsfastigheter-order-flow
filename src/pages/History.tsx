@@ -137,8 +137,7 @@ export default function History() {
   const showRequester = isAdmin || isManager;
 
   return (
-    <AppLayout>
-      <div className="space-y-5 md:space-y-8">
+    <div className="space-y-5 md:space-y-8">
         <div>
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">
             Historik
