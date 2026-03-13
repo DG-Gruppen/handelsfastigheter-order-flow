@@ -260,6 +260,15 @@ export default function Onboarding() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
+    // Save selected systems/licenses
+    if (selectedSystems.length > 0) {
+      const systemRows = selectedSystems.map((systemId) => ({
+        order_id: order.id,
+        system_id: systemId,
+      }));
+      await supabase.from("order_systems").insert(systemRows as any);
+    }
+
     const successMsg = autoApprove
       ? `${isOffboarding ? "Offboarding" : "Onboarding"}-ärendet har godkänts automatiskt!`
       : needsCeoApproval
