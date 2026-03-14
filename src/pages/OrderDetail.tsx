@@ -161,13 +161,13 @@ export default function OrderDetail() {
       const notifMessage = comment
         ? `Din beställning "${order.title}" har markerats som levererad.\n\nKommentar från IT: ${comment}`
         : `Din beställning "${order.title}" har markerats som levererad.`;
-      await supabase.from("notifications").insert({
-        user_id: order.requester_id,
-        title: "Beställning levererad",
-        message: notifMessage,
-        type: "order_delivered",
-        reference_id: order.id,
-      } as any);
+      await supabase.rpc("create_notification", {
+        _user_id: order.requester_id,
+        _title: "Beställning levererad",
+        _message: notifMessage,
+        _type: "order_delivered",
+        _reference_id: order.id,
+      });
 
       // Email notification to requester
       if (requesterProfile?.email) {
