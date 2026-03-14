@@ -63,6 +63,7 @@ interface Order {
   recipient_department: string | null;
   recipient_start_date: string | null;
   rejection_reason: string | null;
+  delivery_comment: string | null;
   updated_at: string;
 }
 
@@ -146,12 +147,12 @@ export default function OrderDetail() {
     const comment = deliveryComment.trim();
     const { error } = await supabase
       .from("orders")
-      .update({ status: "delivered" as any })
+      .update({ status: "delivered" as any, delivery_comment: comment || null } as any)
       .eq("id", order.id);
     if (error) {
       toast.error("Kunde inte uppdatera status");
     } else {
-      setOrder({ ...order, status: "delivered" });
+      setOrder({ ...order, status: "delivered", delivery_comment: comment || null });
       setDeliverDialogOpen(false);
       setDeliveryComment("");
       toast.success("Beställningen markerad som levererad");
@@ -557,6 +558,18 @@ export default function OrderDetail() {
             <CardContent className="px-4 md:px-6 py-4">
               <p className="text-xs text-muted-foreground mb-1">Anledning till avslag</p>
               <p className="text-sm text-destructive">{order.rejection_reason}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Delivery comment */}
+        {order.status === "delivered" && order.delivery_comment && (
+          <Card className="glass-card border-t-2 border-t-primary/30">
+            <CardContent className="px-4 md:px-6 py-4">
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <Truck className="h-3 w-3" /> Kommentar från IT vid leverans
+              </p>
+              <p className="text-sm text-foreground">{order.delivery_comment}</p>
             </CardContent>
           </Card>
         )}

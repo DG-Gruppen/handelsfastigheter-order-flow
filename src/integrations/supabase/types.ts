@@ -428,6 +428,7 @@ export type Database = {
           category: Database["public"]["Enums"]["order_category"]
           category_id: string | null
           created_at: string
+          delivery_comment: string | null
           description: string | null
           id: string
           order_reason: string | null
@@ -448,6 +449,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["order_category"]
           category_id?: string | null
           created_at?: string
+          delivery_comment?: string | null
           description?: string | null
           id?: string
           order_reason?: string | null
@@ -468,6 +470,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["order_category"]
           category_id?: string | null
           created_at?: string
+          delivery_comment?: string | null
           description?: string | null
           id?: string
           order_reason?: string | null
