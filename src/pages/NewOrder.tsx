@@ -254,6 +254,28 @@ export default function NewOrder() {
       } as any);
     }
 
+    // Send helpdesk email for auto-approved orders
+    if (autoApprove) {
+      const requesterProfile = allProfiles.find(p => p.user_id === user.id);
+      const { data: reqEmail } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", user.id)
+        .single();
+      await sendHelpdeskEmail({
+        orderId: order.id,
+        title,
+        description: description.trim(),
+        recipientName: existingRecipientName || null,
+        recipientDepartment: null,
+        recipientStartDate: null,
+        orderReason: "broken_equipment",
+        requesterName: requesterProfile?.full_name || "Okänd",
+        requesterEmail: reqEmail?.email || "",
+        items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+      });
+    }
+
     const successMsg = autoApprove
       ? "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!"
       : needsCeoApproval
