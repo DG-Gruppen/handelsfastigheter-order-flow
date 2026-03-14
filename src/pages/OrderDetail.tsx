@@ -143,6 +143,7 @@ export default function OrderDetail() {
   const handleMarkDelivered = async () => {
     if (!order) return;
     setMarking(true);
+    const comment = deliveryComment.trim();
     const { error } = await supabase
       .from("orders")
       .update({ status: "delivered" as any })
@@ -151,13 +152,18 @@ export default function OrderDetail() {
       toast.error("Kunde inte uppdatera status");
     } else {
       setOrder({ ...order, status: "delivered" });
+      setDeliverDialogOpen(false);
+      setDeliveryComment("");
       toast.success("Beställningen markerad som levererad");
 
       // In-app notification to requester
+      const notifMessage = comment
+        ? `Din beställning "${order.title}" har markerats som levererad.\n\nKommentar från IT: ${comment}`
+        : `Din beställning "${order.title}" har markerats som levererad.`;
       await supabase.from("notifications").insert({
         user_id: order.requester_id,
         title: "Beställning levererad",
-        message: `Din beställning "${order.title}" har markerats som levererad.`,
+        message: notifMessage,
         type: "order_delivered",
         reference_id: order.id,
       } as any);
@@ -165,6 +171,12 @@ export default function OrderDetail() {
       // Email notification to requester
       if (requesterProfile?.email) {
         const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const commentHtml = comment
+          ? `<div style="margin:16px 0;padding:12px 16px;background:#f9f9f9;border-left:4px solid #1a1a2e;border-radius:4px;">
+               <p style="margin:0 0 4px;font-size:12px;color:#666;font-weight:bold;">Kommentar från IT:</p>
+               <p style="margin:0;color:#333;">${comment}</p>
+             </div>`
+          : "";
         const html = `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
             <div style="background:#1a1a2e;color:white;padding:20px 24px;border-radius:8px 8px 0 0;">
@@ -174,6 +186,7 @@ export default function OrderDetail() {
               <p style="margin:0 0 16px;color:#333;">Hej <strong>${requesterProfile.full_name}</strong>,</p>
               <p style="margin:0 0 16px;color:#333;">Din beställning <strong>"${order.title}"</strong> har nu markerats som levererad.</p>
               ${order.recipient_name ? `<p style="margin:0 0 16px;color:#333;">Mottagare: <strong>${order.recipient_name}</strong></p>` : ""}
+              ${commentHtml}
               <div style="margin:24px 0 0;padding:16px;background:#f0f4ff;border-radius:8px;text-align:center;">
                 <a href="${orderUrl}" style="display:inline-block;padding:10px 24px;background:#1a1a2e;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Visa beställning</a>
                 <p style="margin:8px 0 0;font-size:12px;color:#666;">Länken kräver inloggning</p>
