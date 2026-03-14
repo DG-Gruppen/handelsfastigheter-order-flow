@@ -28,6 +28,7 @@ interface HistoryOrder {
   recipient_type: string | null;
   recipient_name: string | null;
   requester_name?: string;
+  delivery_comment: string | null;
 }
 
 export default function History() {
