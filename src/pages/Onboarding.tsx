@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -356,6 +357,35 @@ export default function Onboarding() {
           department: recipientDepartment.trim() || null,
         } as any);
       }
+    }
+
+    // Send helpdesk email for auto-approved orders
+    if (autoApprove) {
+      const requesterProfile = allProfiles.find(p => p.user_id === user.id);
+      const { data: reqEmail } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", user.id)
+        .single();
+
+      // Fetch system names for the email
+      const selectedSystemDetails = systems
+        .filter((s) => selectedSystems.includes(s.id))
+        .map((s) => ({ name: s.name, description: s.description }));
+
+      await sendHelpdeskEmail({
+        orderId: order.id,
+        title,
+        description: description.trim(),
+        recipientName: recipientName.trim(),
+        recipientDepartment: recipientDepartment.trim(),
+        recipientStartDate: isOffboarding ? recipientEndDate : recipientStartDate,
+        orderReason: isOffboarding ? "end_of_employment" : "new_employee",
+        requesterName: requesterProfile?.full_name || "Okänd",
+        requesterEmail: reqEmail?.email || "",
+        items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+        systems: selectedSystemDetails,
+      });
     }
 
     const successMsg = autoApprove

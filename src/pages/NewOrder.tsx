@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -251,6 +252,28 @@ export default function NewOrder() {
         type: "approval_request",
         reference_id: order.id,
       } as any);
+    }
+
+    // Send helpdesk email for auto-approved orders
+    if (autoApprove) {
+      const requesterProfile = allProfiles.find(p => p.user_id === user.id);
+      const { data: reqEmail } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("user_id", user.id)
+        .single();
+      await sendHelpdeskEmail({
+        orderId: order.id,
+        title,
+        description: description.trim(),
+        recipientName: existingRecipientName || null,
+        recipientDepartment: null,
+        recipientStartDate: null,
+        orderReason: "broken_equipment",
+        requesterName: requesterProfile?.full_name || "Okänd",
+        requesterEmail: reqEmail?.email || "",
+        items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+      });
     }
 
     const successMsg = autoApprove
