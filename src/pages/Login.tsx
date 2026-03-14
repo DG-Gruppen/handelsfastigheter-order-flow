@@ -62,7 +62,7 @@ const Login = () => {
       return;
     }
     if (!isAllowedDomain(email.trim())) {
-      toast.error("Endast e-postadresser från dggruppen.se och kazarian.se är tillåtna");
+      toast.error("Obehörig e-postadress");
       return;
     }
     setSubmitting(true);
