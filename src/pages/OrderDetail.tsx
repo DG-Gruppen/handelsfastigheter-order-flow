@@ -227,13 +227,13 @@ export default function OrderDetail() {
       // Notify requester about approval
       if (user && order.requester_id !== user.id) {
         const approverName = approverProfile?.full_name || "Attestanten";
-        await supabase.from("notifications").insert({
-          user_id: order.requester_id,
-          title: "Beställning godkänd",
-          message: `${approverName} har godkänt: ${order.title}`,
-          type: "order_approved",
-          reference_id: order.id,
-        } as any);
+        await supabase.rpc("create_notification", {
+          _user_id: order.requester_id,
+          _title: "Beställning godkänd",
+          _message: `${approverName} har godkänt: ${order.title}`,
+          _type: "order_approved",
+          _reference_id: order.id,
+        });
       }
 
       // Send helpdesk email
