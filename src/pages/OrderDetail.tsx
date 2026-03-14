@@ -161,13 +161,13 @@ export default function OrderDetail() {
       const notifMessage = comment
         ? `Din beställning "${order.title}" har markerats som levererad.\n\nKommentar från IT: ${comment}`
         : `Din beställning "${order.title}" har markerats som levererad.`;
-      await supabase.from("notifications").insert({
-        user_id: order.requester_id,
-        title: "Beställning levererad",
-        message: notifMessage,
-        type: "order_delivered",
-        reference_id: order.id,
-      } as any);
+      await supabase.rpc("create_notification", {
+        _user_id: order.requester_id,
+        _title: "Beställning levererad",
+        _message: notifMessage,
+        _type: "order_delivered",
+        _reference_id: order.id,
+      });
 
       // Email notification to requester
       if (requesterProfile?.email) {
@@ -227,13 +227,13 @@ export default function OrderDetail() {
       // Notify requester about approval
       if (user && order.requester_id !== user.id) {
         const approverName = approverProfile?.full_name || "Attestanten";
-        await supabase.from("notifications").insert({
-          user_id: order.requester_id,
-          title: "Beställning godkänd",
-          message: `${approverName} har godkänt: ${order.title}`,
-          type: "order_approved",
-          reference_id: order.id,
-        } as any);
+        await supabase.rpc("create_notification", {
+          _user_id: order.requester_id,
+          _title: "Beställning godkänd",
+          _message: `${approverName} har godkänt: ${order.title}`,
+          _type: "order_approved",
+          _reference_id: order.id,
+        });
       }
 
       // Send helpdesk email
@@ -275,13 +275,13 @@ export default function OrderDetail() {
       // Notify requester about rejection
       if (user && order.requester_id !== user.id) {
         const approverName = approverProfile?.full_name || "Attestanten";
-        await supabase.from("notifications").insert({
-          user_id: order.requester_id,
-          title: "Beställning avslagen",
-          message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
-          type: "order_rejected",
-          reference_id: order.id,
-        } as any);
+        await supabase.rpc("create_notification", {
+          _user_id: order.requester_id,
+          _title: "Beställning avslagen",
+          _message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
+          _type: "order_rejected",
+          _reference_id: order.id,
+        });
       }
     }
   };

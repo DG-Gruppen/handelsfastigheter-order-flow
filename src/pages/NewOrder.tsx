@@ -245,13 +245,13 @@ export default function NewOrder() {
     // Create notification for approver (if not auto-approved)
     if (!autoApprove && resolvedApproverId && resolvedApproverId !== user.id) {
       const requesterName = allProfiles.find(p => p.user_id === user.id)?.full_name || "Någon";
-      await supabase.from("notifications").insert({
-        user_id: resolvedApproverId,
-        title: "Ny beställning att attestera",
-        message: `${requesterName} har skickat en beställning: ${title}`,
-        type: "approval_request",
-        reference_id: order.id,
-      } as any);
+      await supabase.rpc("create_notification", {
+        _user_id: resolvedApproverId,
+        _title: "Ny beställning att attestera",
+        _message: `${requesterName} har skickat en beställning: ${title}`,
+        _type: "approval_request",
+        _reference_id: order.id,
+      });
     }
 
     // Send helpdesk email for auto-approved orders
