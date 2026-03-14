@@ -119,7 +119,12 @@ export default function Onboarding() {
       setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
 
       if (myProfileRes.data) {
-        setMyProfile({ is_staff: (myProfileRes.data as any).is_staff, manager_id: (myProfileRes.data as any).manager_id });
+        const mp = myProfileRes.data as any;
+        setMyProfile({ id: mp.id, is_staff: mp.is_staff, manager_id: mp.manager_id, department: mp.department });
+        // For non-admin managers: pre-fill department
+        if (!roles.includes("admin") && mp.department) {
+          setRecipientDepartment(mp.department);
+        }
       }
 
       const aMap: Record<string, string> = {};
