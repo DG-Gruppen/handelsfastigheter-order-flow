@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen gradient-bg pb-20 md:pb-0">
+    <div className="min-h-screen gradient-bg pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       {/* Top header */}
       <header className="sticky top-0 z-50 border-b glass-nav">
         <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4">
@@ -194,8 +194,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <main className={`mx-auto px-4 py-5 md:py-8 ${location.pathname === "/org" ? "" : "max-w-6xl"}`}>{children}</main>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t glass-nav">
-        <div className="mx-auto flex items-center justify-evenly h-16 px-2 pb-[env(safe-area-inset-bottom,0px)] max-w-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t glass-nav pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="mx-auto flex items-center justify-evenly h-[4.5rem] px-2 max-w-lg">
           {mobileBarItems.map((item) => {
             const active = location.pathname === item.to;
             return (
