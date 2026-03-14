@@ -573,7 +573,6 @@ export default function OrderDetail() {
             </CardContent>
           </Card>
         )}
-        )}
 
         {/* Timeline */}
         <Card className="glass-card border-t-2 border-t-muted-foreground/20">
