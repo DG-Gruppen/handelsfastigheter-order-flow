@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MessageSquare } from "lucide-react";
 import { Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, Search, History as HistoryIcon } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
@@ -28,6 +29,7 @@ interface HistoryOrder {
   recipient_type: string | null;
   recipient_name: string | null;
   requester_name?: string;
+  delivery_comment: string | null;
 }
 
 export default function History() {
@@ -220,6 +222,12 @@ export default function History() {
                             <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${tag.className}`}>
                               <tag.icon className="h-2.5 w-2.5" />
                               {tag.label}
+                            </span>
+                          )}
+                          {order.status === "delivered" && order.delivery_comment && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-info/10 text-info border-info/20" title={order.delivery_comment}>
+                              <MessageSquare className="h-2.5 w-2.5" />
+                              Kommentar
                             </span>
                           )}
                         </div>
