@@ -77,7 +77,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
     </div>
   `;
 
-  const subject = `[IT Beställning] ${typeLabel}: ${title}`;
+  const subject = `[SHF IT Beställning] ${typeLabel}: ${title}`;
 
   try {
     const { error } = await supabase.functions.invoke("send-email", {
