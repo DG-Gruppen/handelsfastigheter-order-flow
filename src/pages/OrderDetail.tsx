@@ -104,6 +104,8 @@ export default function OrderDetail() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [approving, setApproving] = useState(false);
+  const [deliverDialogOpen, setDeliverDialogOpen] = useState(false);
+  const [deliveryComment, setDeliveryComment] = useState("");
 
   const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
 
