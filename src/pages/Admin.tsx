@@ -156,7 +156,7 @@ export default function Admin() {
       const { data: profilesData } = await supabase.from("profiles").select("*");
       setProfiles((profilesData as ProfileWithRoles[]) ?? []);
 
-      const { data: rolesData } = await supabase.from("user_roles").select("*");
+      const { data: rolesData } = await supabase.rpc("get_all_user_roles");
       const roleMap: Record<string, string[]> = {};
       (rolesData ?? []).forEach((r: any) => {
         if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
