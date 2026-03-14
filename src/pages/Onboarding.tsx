@@ -35,6 +35,7 @@ interface ProfileOption {
   id: string;
   user_id: string;
   full_name: string;
+  manager_id?: string | null;
 }
 
 interface OrderItem {
@@ -59,7 +60,7 @@ export default function Onboarding() {
   const [systems, setSystems] = useState<SystemOption[]>([]);
   const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
   const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
-  const [myProfile, setMyProfile] = useState<{ is_staff: boolean | null; manager_id: string | null } | null>(null);
+  const [myProfile, setMyProfile] = useState<{ id: string; is_staff: boolean | null; manager_id: string | null; department: string | null } | null>(null);
   const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
   const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
   const [managers, setManagers] = useState<ProfileOption[]>([]);
@@ -103,9 +104,9 @@ export default function Onboarding() {
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
-        supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
+        supabase.from("profiles").select("id, user_id, full_name, manager_id").order("full_name"),
         supabase.rpc("get_all_user_roles"),
-        supabase.from("profiles").select("id, department, is_staff, manager_id").eq("user_id", user?.id ?? "").single(),
+        supabase.from("profiles").select("id, department, is_staff, manager_id, user_id").eq("user_id", user?.id ?? "").single(),
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
         supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
@@ -119,7 +120,12 @@ export default function Onboarding() {
       setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
 
       if (myProfileRes.data) {
-        setMyProfile({ is_staff: (myProfileRes.data as any).is_staff, manager_id: (myProfileRes.data as any).manager_id });
+        const mp = myProfileRes.data as any;
+        setMyProfile({ id: mp.id, is_staff: mp.is_staff, manager_id: mp.manager_id, department: mp.department });
+        // For non-admin managers: pre-fill department
+        if (!roles.includes("admin") && mp.department) {
+          setRecipientDepartment(mp.department);
+        }
       }
 
       const aMap: Record<string, string> = {};
@@ -241,7 +247,29 @@ export default function Onboarding() {
     setLoadingProfile(false);
   };
 
+  // For offboarding: non-admins only see their subordinates
+  const isAdmin = roles.includes("admin");
+
+  const getSubordinateIds = (profileId: string, profiles: ProfileOption[]): Set<string> => {
+    const result = new Set<string>();
+    const findChildren = (parentId: string) => {
+      for (const p of profiles) {
+        if ((p as any).manager_id === parentId && !result.has(p.id)) {
+          result.add(p.id);
+          findChildren(p.id);
+        }
+      }
+    };
+    findChildren(profileId);
+    return result;
+  };
+
   const filteredSearchProfiles = allProfiles.filter((p) => {
+    // For non-admins in offboarding, only show subordinates
+    if (isOffboarding && !isAdmin && myProfile?.id) {
+      const subordinateIds = getSubordinateIds(myProfile.id, allProfiles);
+      if (!subordinateIds.has(p.id)) return false;
+    }
     if (!profileSearchQuery) return true;
     return p.full_name.toLowerCase().includes(profileSearchQuery.toLowerCase());
   });
@@ -557,16 +585,24 @@ export default function Onboarding() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Avdelning</Label>
-                    <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
-                      <SelectTrigger className="h-12 md:h-10">
-                        <SelectValue placeholder="Välj avdelning..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departmentsList.map((d) => (
-                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {!isAdmin && myProfile?.department ? (
+                      <Input
+                        value={recipientDepartment}
+                        disabled
+                        className="h-12 md:h-10 bg-muted/50"
+                      />
+                    ) : (
+                      <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
+                        <SelectTrigger className="h-12 md:h-10">
+                          <SelectValue placeholder="Välj avdelning..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departmentsList.map((d) => (
+                            <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
               </div>
@@ -654,16 +690,24 @@ export default function Onboarding() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Avdelning</Label>
-                    <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
-                      <SelectTrigger className="h-12 md:h-10">
-                        <SelectValue placeholder="Välj avdelning..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departmentsList.map((d) => (
-                          <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {!isAdmin && myProfile?.department ? (
+                      <Input
+                        value={recipientDepartment}
+                        disabled
+                        className="h-12 md:h-10 bg-muted/50"
+                      />
+                    ) : (
+                      <Select value={recipientDepartment} onValueChange={setRecipientDepartment}>
+                        <SelectTrigger className="h-12 md:h-10">
+                          <SelectValue placeholder="Välj avdelning..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departmentsList.map((d) => (
+                            <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
               </div>
