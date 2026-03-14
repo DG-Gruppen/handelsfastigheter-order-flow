@@ -105,7 +105,7 @@ export default function Onboarding() {
         supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user?.id ?? ""),
         supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
         supabase.rpc("get_all_user_roles"),
-        supabase.from("profiles").select("id, department, is_staff, manager_id").eq("user_id", user?.id ?? "").single(),
+        supabase.from("profiles").select("id, department, is_staff, manager_id, user_id").eq("user_id", user?.id ?? "").single(),
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
         supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
