@@ -562,6 +562,19 @@ export default function OrderDetail() {
           </Card>
         )}
 
+        {/* Delivery comment */}
+        {order.status === "delivered" && order.delivery_comment && (
+          <Card className="glass-card border-t-2 border-t-primary/30">
+            <CardContent className="px-4 md:px-6 py-4">
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <Truck className="h-3 w-3" /> Kommentar från IT vid leverans
+              </p>
+              <p className="text-sm text-foreground">{order.delivery_comment}</p>
+            </CardContent>
+          </Card>
+        )}
+        )}
+
         {/* Timeline */}
         <Card className="glass-card border-t-2 border-t-muted-foreground/20">
           <CardHeader className="px-4 md:px-6 pb-2">
