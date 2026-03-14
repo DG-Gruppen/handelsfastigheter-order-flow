@@ -178,6 +178,25 @@ export default function OrderDetail() {
           reference_id: order.id,
         } as any);
       }
+
+      // Send helpdesk email
+      const systemsList = orderSystems.map((os) => ({
+        name: os.system?.name || "",
+        description: os.system?.description || null,
+      }));
+      await sendHelpdeskEmail({
+        orderId: order.id,
+        title: order.title,
+        description: order.description,
+        recipientName: order.recipient_name,
+        recipientDepartment: order.recipient_department,
+        recipientStartDate: order.recipient_start_date,
+        orderReason: order.order_reason,
+        requesterName: requesterProfile?.full_name || "Okänd",
+        requesterEmail: requesterProfile?.email || "",
+        items: items.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+        systems: systemsList,
+      });
     }
     setApproving(false);
   };
