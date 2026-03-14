@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen gradient-bg pb-20 md:pb-0">
+    <div className="min-h-screen gradient-bg pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       {/* Top header */}
       <header className="sticky top-0 z-50 border-b glass-nav">
         <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4">
