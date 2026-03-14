@@ -175,15 +175,8 @@ const Login = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full h-12 gradient-primary hover:opacity-90 shadow-md shadow-primary/20" disabled={submitting}>
-                  {submitting ? "Vänta..." : isSignUp ? "Skapa konto" : "Logga in"}
+                  {submitting ? "Vänta..." : "Logga in"}
                 </Button>
-                <button
-                  type="button"
-                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                >
-                  {isSignUp ? "Har du redan ett konto? Logga in" : "Inget konto? Skapa ett"}
-                </button>
               </form>
             )}
 
