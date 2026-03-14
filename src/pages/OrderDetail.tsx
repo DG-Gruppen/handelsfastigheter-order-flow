@@ -150,6 +150,47 @@ export default function OrderDetail() {
     } else {
       setOrder({ ...order, status: "delivered" });
       toast.success("Beställningen markerad som levererad");
+
+      // In-app notification to requester
+      await supabase.from("notifications").insert({
+        user_id: order.requester_id,
+        title: "Beställning levererad",
+        message: `Din beställning "${order.title}" har markerats som levererad.`,
+        type: "order_delivered",
+        reference_id: order.id,
+      } as any);
+
+      // Email notification to requester
+      if (requesterProfile?.email) {
+        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const html = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#1a1a2e;color:white;padding:20px 24px;border-radius:8px 8px 0 0;">
+              <h1 style="margin:0;font-size:18px;">📦 Beställning levererad</h1>
+            </div>
+            <div style="padding:24px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;">
+              <p style="margin:0 0 16px;color:#333;">Hej <strong>${requesterProfile.full_name}</strong>,</p>
+              <p style="margin:0 0 16px;color:#333;">Din beställning <strong>"${order.title}"</strong> har nu markerats som levererad.</p>
+              ${order.recipient_name ? `<p style="margin:0 0 16px;color:#333;">Mottagare: <strong>${order.recipient_name}</strong></p>` : ""}
+              <div style="margin:24px 0 0;padding:16px;background:#f0f4ff;border-radius:8px;text-align:center;">
+                <a href="${orderUrl}" style="display:inline-block;padding:10px 24px;background:#1a1a2e;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Visa beställning</a>
+                <p style="margin:8px 0 0;font-size:12px;color:#666;">Länken kräver inloggning</p>
+              </div>
+            </div>
+          </div>
+        `;
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              to: requesterProfile.email,
+              subject: `[SHF IT Beställning] Levererad: ${order.title}`,
+              html,
+            },
+          });
+        } catch (err) {
+          console.error("Failed to send delivery email:", err);
+        }
+      }
     }
     setMarking(false);
   };
