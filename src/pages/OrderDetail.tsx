@@ -398,12 +398,11 @@ export default function OrderDetail() {
           {/* Admin: mark as delivered */}
           {isAdmin && order.status === "approved" && (
             <Button
-              onClick={handleMarkDelivered}
-              disabled={marking}
+              onClick={() => setDeliverDialogOpen(true)}
               className="gap-2 w-full gradient-primary hover:opacity-90 shadow-md shadow-primary/20 h-12 md:h-10"
             >
               <Truck className="h-4 w-4" />
-              {marking ? "Uppdaterar..." : "Markera som levererad"}
+              Markera som levererad
             </Button>
           )}
         </div>
