@@ -224,6 +224,12 @@ export default function History() {
                               {tag.label}
                             </span>
                           )}
+                          {order.status === "delivered" && order.delivery_comment && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-info/10 text-info border-info/20" title={order.delivery_comment}>
+                              <MessageSquare className="h-2.5 w-2.5" />
+                              Kommentar
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
