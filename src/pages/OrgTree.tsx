@@ -206,7 +206,7 @@ export default function OrgTree() {
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
       supabase.from("departments").select("id, name, parent_id, color").order("name"),
     ]);
-    setProfiles((profilesRes.data as OrgProfile[]) ?? []);
+    setProfiles(((profilesRes.data as OrgProfile[]) ?? []).filter(p => p.email !== "toni@kazarian.se"));
     const rm: RoleMap = {};
     for (const r of (rolesRes.data ?? []) as { user_id: string; role: string }[]) {
       rm[r.user_id] = r.role;

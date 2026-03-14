@@ -154,7 +154,7 @@ export default function Admin() {
   useEffect(() => {
     const fetchData = async () => {
       const { data: profilesData } = await supabase.from("profiles").select("*");
-      setProfiles((profilesData as ProfileWithRoles[]) ?? []);
+      setProfiles(((profilesData as ProfileWithRoles[]) ?? []).filter(p => p.email !== "toni@kazarian.se"));
 
       const { data: rolesData } = await supabase.rpc("get_all_user_roles");
       const roleMap: Record<string, string[]> = {};
