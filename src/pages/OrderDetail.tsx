@@ -147,12 +147,12 @@ export default function OrderDetail() {
     const comment = deliveryComment.trim();
     const { error } = await supabase
       .from("orders")
-      .update({ status: "delivered" as any })
+      .update({ status: "delivered" as any, delivery_comment: comment || null } as any)
       .eq("id", order.id);
     if (error) {
       toast.error("Kunde inte uppdatera status");
     } else {
-      setOrder({ ...order, status: "delivered" });
+      setOrder({ ...order, status: "delivered", delivery_comment: comment || null });
       setDeliverDialogOpen(false);
       setDeliveryComment("");
       toast.success("Beställningen markerad som levererad");
