@@ -35,6 +35,7 @@ interface ProfileOption {
   id: string;
   user_id: string;
   full_name: string;
+  manager_id?: string | null;
 }
 
 interface OrderItem {
