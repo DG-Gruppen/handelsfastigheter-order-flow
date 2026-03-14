@@ -134,7 +134,7 @@ const Login = () => {
                 onClick={() => setShowEmail(true)}
               >
                 <Mail className="h-4 w-4" />
-                Logga in med e-post
+                IT-Support login
               </Button>
             ) : (
               <form onSubmit={handleEmailAuth} className="space-y-4 animate-fade-up">
