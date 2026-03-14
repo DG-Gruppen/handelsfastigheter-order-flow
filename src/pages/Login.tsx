@@ -48,10 +48,21 @@ const Login = () => {
     if (result.error) console.error("Login error:", result.error);
   };
 
+  const allowedDomains = ["dggruppen.se", "kazarian.se"];
+
+  const isAllowedDomain = (email: string) => {
+    const domain = email.split("@")[1]?.toLowerCase();
+    return allowedDomains.includes(domain);
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Fyll i e-post och lösenord");
+      return;
+    }
+    if (!isAllowedDomain(email.trim())) {
+      toast.error("Endast e-postadresser från dggruppen.se och kazarian.se är tillåtna");
       return;
     }
     setSubmitting(true);
