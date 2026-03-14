@@ -246,7 +246,29 @@ export default function Onboarding() {
     setLoadingProfile(false);
   };
 
+  // For offboarding: non-admins only see their subordinates
+  const isAdmin = roles.includes("admin");
+
+  const getSubordinateIds = (profileId: string, profiles: ProfileOption[]): Set<string> => {
+    const result = new Set<string>();
+    const findChildren = (parentId: string) => {
+      for (const p of profiles) {
+        if ((p as any).manager_id === parentId && !result.has(p.id)) {
+          result.add(p.id);
+          findChildren(p.id);
+        }
+      }
+    };
+    findChildren(profileId);
+    return result;
+  };
+
   const filteredSearchProfiles = allProfiles.filter((p) => {
+    // For non-admins in offboarding, only show subordinates
+    if (isOffboarding && !isAdmin && myProfile?.id) {
+      const subordinateIds = getSubordinateIds(myProfile.id, allProfiles);
+      if (!subordinateIds.has(p.id)) return false;
+    }
     if (!profileSearchQuery) return true;
     return p.full_name.toLowerCase().includes(profileSearchQuery.toLowerCase());
   });
