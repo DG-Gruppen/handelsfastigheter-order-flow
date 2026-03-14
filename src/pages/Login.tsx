@@ -48,10 +48,21 @@ const Login = () => {
     if (result.error) console.error("Login error:", result.error);
   };
 
+  const allowedDomains = ["dggruppen.se", "kazarian.se"];
+
+  const isAllowedDomain = (email: string) => {
+    const domain = email.split("@")[1]?.toLowerCase();
+    return allowedDomains.includes(domain);
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Fyll i e-post och lösenord");
+      return;
+    }
+    if (!isAllowedDomain(email.trim())) {
+      toast.error("Endast e-postadresser från dggruppen.se och kazarian.se är tillåtna");
       return;
     }
     setSubmitting(true);
@@ -134,7 +145,7 @@ const Login = () => {
                 onClick={() => setShowEmail(true)}
               >
                 <Mail className="h-4 w-4" />
-                Logga in med e-post
+                IT-Support login
               </Button>
             ) : (
               <form onSubmit={handleEmailAuth} className="space-y-4 animate-fade-up">
