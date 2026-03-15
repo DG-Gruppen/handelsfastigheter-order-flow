@@ -186,7 +186,7 @@ export default function AppSidebar() {
 
             return (
               <div key={group.key}>
-                {gi > 0 && <div className="h-px bg-sidebar-border mx-1 my-2" />}
+                
 
                 {/* Drag drop indicator */}
                 {dragOverGroup === group.key && draggedGroup !== group.key && (
