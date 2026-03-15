@@ -279,7 +279,7 @@ export default function AppSidebar() {
 
         <div className="h-px bg-sidebar-border mx-3" />
 
-        {/* User profile with popover */}
+        {/* User profile with popover menu */}
         <div className="p-3 flex items-center gap-2">
           <Popover open={profileOpen} onOpenChange={setProfileOpen}>
             <PopoverTrigger asChild>
@@ -297,8 +297,33 @@ export default function AppSidebar() {
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent side="top" align="start" className="w-72 p-4">
-              <ProfilePanel onClose={() => setProfileOpen(false)} />
+            <PopoverContent side="top" align="start" className="w-56 p-2">
+              <div className="space-y-1">
+                <button
+                  onClick={() => { setProfileOpen(false); navigate("/profile"); }}
+                  className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  Min profil
+                </button>
+                {roles.includes("admin") && (
+                  <button
+                    onClick={() => { setProfileOpen(false); navigate("/admin"); }}
+                    className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </button>
+                )}
+                <Separator className="my-1" />
+                <button
+                  onClick={() => { setProfileOpen(false); signOut(); }}
+                  className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logga ut
+                </button>
+              </div>
             </PopoverContent>
           </Popover>
           {!collapsed && (
