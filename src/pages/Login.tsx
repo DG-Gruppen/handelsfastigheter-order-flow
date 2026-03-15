@@ -103,11 +103,8 @@ const Login = () => {
             <Monitor className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
-            SHF Intranet
+            SHF Connect
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Beställ, godkänn och spåra IT-utrustning
-          </p>
         </div>
 
         <Card className="glass-card shadow-xl shadow-primary/[0.04] border-t-2 border-t-primary/40">
