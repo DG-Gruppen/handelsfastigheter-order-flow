@@ -72,7 +72,7 @@ export default function ModulesManager({ onClose }: { onClose?: () => void }) {
         .from("module_role_access")
         .update({ has_access: !existing.has_access } as any)
         .eq("module_id", moduleId)
-        .eq("role", role);
+        .eq("role", role as any);
     } else {
       await supabase.from("module_role_access").insert({
         module_id: moduleId,
