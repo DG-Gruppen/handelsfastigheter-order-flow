@@ -158,7 +158,7 @@ export default function AppSidebar() {
       <aside
         className={cn(
           "hidden md:flex flex-col h-screen bg-sidebar sticky top-0 transition-all duration-200 shrink-0",
-          collapsed ? "w-16" : "w-64"
+          collapsed ? "w-14" : "w-52"
         )}
       >
         {/* Logo */}
