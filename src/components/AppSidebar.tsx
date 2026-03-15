@@ -387,7 +387,7 @@ export default function AppSidebar() {
                   </AnimatePresence>
                 </button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-auto max-h-[60vh] rounded-t-2xl flex flex-col">
+              <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-2xl flex flex-col">
                 <SheetHeader className="pb-3 flex-shrink-0">
                   <SheetTitle className="text-center text-base">Meny</SheetTitle>
                 </SheetHeader>
