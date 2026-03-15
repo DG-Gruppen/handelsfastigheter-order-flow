@@ -3,7 +3,7 @@ import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -11,10 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { Sun, Moon, LogOut } from "lucide-react";
+import { Sun, Moon, LogOut, User, Shield } from "lucide-react";
 import shfLogo from "@/assets/shf-logo.png";
 import NotificationBell from "@/components/NotificationBell";
-import ProfilePanel from "@/components/ProfilePanel";
+import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
@@ -25,12 +25,12 @@ const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
   { label: "Fastigheter", slugs: ["properties"] },
   { label: "IT & Verktyg", slugs: ["it-support", "it-portal", "tools"] },
   { label: "Personligt", slugs: ["my-shf"] },
-  { label: "System", slugs: ["admin"] },
+  // "admin" removed – accessed via profile menu
 ];
 
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
-  const { profile, signOut } = useAuth();
+  const { profile, roles, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -278,7 +278,7 @@ export default function AppSidebar() {
 
         <div className="h-px bg-sidebar-border mx-3" />
 
-        {/* User profile with popover */}
+        {/* User profile with popover menu */}
         <div className="p-3 flex items-center gap-2">
           <Popover open={profileOpen} onOpenChange={setProfileOpen}>
             <PopoverTrigger asChild>
@@ -296,8 +296,33 @@ export default function AppSidebar() {
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent side="top" align="start" className="w-72 p-4">
-              <ProfilePanel onClose={() => setProfileOpen(false)} />
+            <PopoverContent side="top" align="start" className="w-56 p-2">
+              <div className="space-y-1">
+                <button
+                  onClick={() => { setProfileOpen(false); navigate("/profile"); }}
+                  className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  Min profil
+                </button>
+                {roles.includes("admin") && (
+                  <button
+                    onClick={() => { setProfileOpen(false); navigate("/admin"); }}
+                    className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </button>
+                )}
+                <Separator className="my-1" />
+                <button
+                  onClick={() => { setProfileOpen(false); signOut(); }}
+                  className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logga ut
+                </button>
+              </div>
             </PopoverContent>
           </Popover>
           {!collapsed && (
