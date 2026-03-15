@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NavSettingsProvider } from "@/hooks/useNavSettings";
+import { ModulesProvider } from "@/hooks/useModules";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -32,22 +33,24 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <NavSettingsProvider>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/orders/new" element={<NewOrder />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/orders/:id" element={<OrderDetail />} />
-                  <Route path="/history" element={<History />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/org" element={<OrgTree />} />
-                  <Route path="/it-info" element={<ITInfo />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <ModulesProvider>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/orders/new" element={<NewOrder />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/orders/:id" element={<OrderDetail />} />
+                    <Route path="/history" element={<History />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/org" element={<OrgTree />} />
+                    <Route path="/it-info" element={<ITInfo />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </ModulesProvider>
             </NavSettingsProvider>
           </AuthProvider>
         </BrowserRouter>
