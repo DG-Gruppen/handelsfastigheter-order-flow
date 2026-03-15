@@ -644,9 +644,10 @@ export default function Admin() {
               {activeSection === "systems" && <SystemsManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
-              {activeSection === "it" && ITContent}
-            </>
-          )}
+               {activeSection === "it" && ITContent}
+               {activeSection === "modules" && <ModulesManager onClose={() => setActiveSection("menu")} />}
+             </>
+           )}
         </div>
     );
   }
