@@ -347,7 +347,7 @@ export default function AppSidebar() {
                   <Icon className={cn("h-5 w-5", active && "text-primary")} />
                 </motion.span>
                 <span className="text-[10px] font-medium">
-                  {mod.name.length > 8 ? mod.name.substring(0, 7) + "…" : mod.name}
+                  {(() => { const n = SLUG_NAME_OVERRIDES[mod.slug] || mod.name; return n.length > 8 ? n.substring(0, 7) + "…" : n; })()}
                 </span>
                 <AnimatePresence>
                   {active && (
