@@ -634,7 +634,7 @@ export default function Admin() {
             <>
               <button
                 onClick={() => setActiveSection("menu")}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -mb-2"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors -mb-2 min-h-[44px] active:scale-[0.95]"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Tillbaka
