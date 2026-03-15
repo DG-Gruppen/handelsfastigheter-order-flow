@@ -3,7 +3,7 @@ import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
