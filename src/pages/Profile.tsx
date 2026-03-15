@@ -64,7 +64,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-up">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-up overflow-hidden">
       {/* Profile header */}
       <div className="flex flex-col items-center text-center pt-2 pb-4">
         <Avatar className="h-20 w-20 ring-4 ring-primary/10 shadow-lg shadow-primary/10">
