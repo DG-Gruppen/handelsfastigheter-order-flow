@@ -12,16 +12,7 @@ interface PersonnelProfile {
   title_override: string | null;
 }
 
-const DEPT_COLORS: Record<string, string> = {
-  "Ledning": "from-primary to-primary/70",
-  "Ekonomi & Finans": "from-accent to-accent/70",
-  "Förvaltning": "from-primary to-accent",
-  "Hållbarhet": "from-primary to-primary/60",
-  "Transaktion": "from-secondary to-muted",
-  "Affärsutveckling": "from-primary to-accent",
-  "Uthyrning": "from-accent to-accent/60",
-  "HR": "from-destructive to-destructive/70",
-};
+const FALLBACK_GRADIENT = "from-primary/60 to-accent/60";
 
 function getInitials(name: string): string {
   return name
