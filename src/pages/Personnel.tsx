@@ -149,7 +149,7 @@ export default function Personnel() {
           <button
             key={d}
             onClick={() => setFilter(d)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`px-4 py-2.5 md:px-3 md:py-1.5 rounded-full text-xs font-medium transition-colors min-h-[44px] md:min-h-0 active:scale-[0.95] ${
               filter === d
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
