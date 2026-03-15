@@ -26,7 +26,7 @@ const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
   { label: "Fastigheter", slugs: ["properties"] },
   { label: "IT & Verktyg", slugs: ["it-support", "it-portal", "tools"] },
   { label: "Personligt", slugs: ["my-shf"] },
-  { label: "System", slugs: ["admin"] },
+  // "admin" removed – accessed via profile menu
 ];
 
 export default function AppSidebar() {
