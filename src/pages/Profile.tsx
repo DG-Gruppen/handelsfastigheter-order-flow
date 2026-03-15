@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Moon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Save, Moon, Phone, Building2, Mail, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -21,11 +20,11 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-destructive/10 text-destructive",
-  manager: "bg-amber-500/10 text-amber-600",
-  employee: "bg-emerald-500/10 text-emerald-600",
-  staff: "bg-purple-500/10 text-purple-600",
-  it: "bg-blue-500/10 text-blue-600",
+  admin: "bg-destructive/10 text-destructive border-destructive/20",
+  manager: "bg-warning/10 text-warning border-warning/20",
+  employee: "bg-accent/10 text-accent border-accent/20",
+  staff: "bg-primary/10 text-primary border-primary/20",
+  it: "bg-primary/10 text-primary border-primary/20",
 };
 
 export default function Profile() {
@@ -65,48 +64,76 @@ export default function Profile() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-heading font-bold text-foreground">Min profil</h1>
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-up">
+      {/* Profile header */}
+      <div className="flex flex-col items-center text-center pt-2 pb-4">
+        <Avatar className="h-20 w-20 ring-4 ring-primary/10 shadow-lg shadow-primary/10">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground mt-4">
+          {profile?.full_name || "Användare"}
+        </h1>
+        {profile?.email && (
+          <p className="text-sm text-muted-foreground mt-0.5">{profile.email}</p>
+        )}
+        {roles.length > 0 && (
+          <div className="flex gap-2 mt-3 flex-wrap justify-center">
+            {roles.map((r) => (
+              <span
+                key={r}
+                className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium border ${ROLE_COLORS[r] || "bg-muted text-muted-foreground border-border"}`}
+              >
+                <Shield className="h-3 w-3" />
+                {ROLE_LABELS[r] || r}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Profile info card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Personuppgifter</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 ring-2 ring-primary/20">
-                <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+      {/* Info cards - stacked on mobile */}
+      <div className="space-y-4">
+        {/* Contact info */}
+        <Card className="glass-card">
+          <CardContent className="p-4 md:p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Kontaktuppgifter</h2>
+
+            {/* Email (read-only) */}
+            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-secondary/20 p-4 min-h-[56px]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Mail className="h-4 w-4 text-primary" />
+              </div>
               <div className="min-w-0 flex-1">
-                <div className="text-lg font-semibold text-foreground">{profile?.full_name || "Användare"}</div>
-                <div className="text-sm text-muted-foreground">{profile?.email}</div>
-                {roles.length > 0 && (
-                  <div className="flex gap-1.5 mt-2 flex-wrap">
-                    {roles.map((r) => (
-                      <span
-                        key={r}
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[r] || "bg-muted text-muted-foreground"}`}
-                      >
-                        {ROLE_LABELS[r] || r}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <p className="text-xs text-muted-foreground">E-post</p>
+                <p className="text-sm font-medium text-foreground truncate">{profile?.email}</p>
               </div>
             </div>
 
-            <Separator />
+            {/* Department (read-only) */}
+            {profile?.department && (
+              <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-secondary/20 p-4 min-h-[56px]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Avdelning</p>
+                  <p className="text-sm font-medium text-foreground">{profile.department}</p>
+                </div>
+              </div>
+            )}
 
-            {/* Phone */}
+            {/* Phone (editable) */}
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium">Telefonnummer</Label>
+              <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                Telefonnummer
+              </Label>
               <Input
                 id="phone"
                 type="tel"
+                inputMode="tel"
                 placeholder="070-123 45 67"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -114,38 +141,30 @@ export default function Profile() {
               />
             </div>
 
-            {/* Department (read-only) */}
-            {profile?.department && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Avdelning</Label>
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2.5">
-                  {profile.department}
-                </div>
-              </div>
-            )}
-
-            <Button onClick={handleSave} disabled={saving} className="w-full gap-2 h-12 md:h-10">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full gap-2 h-12 md:h-10 gradient-primary hover:opacity-90 shadow-md shadow-primary/20"
+            >
               <Save className="w-4 h-4" />
               {saving ? "Sparar..." : "Spara ändringar"}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Settings card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Inställningar</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {/* Theme toggle */}
-            <div className="flex items-center justify-between min-h-[44px]">
+        {/* Settings */}
+        <Card className="glass-card">
+          <CardContent className="p-4 md:p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Inställningar</h2>
+
+            <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-4 min-h-[56px]">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                  <Moon className="w-4 h-4 text-muted-foreground" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Moon className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium">Mörkt tema</div>
-                  <div className="text-xs text-muted-foreground">Växla mellan ljust och mörkt utseende</div>
+                  <p className="text-sm font-medium text-foreground">Mörkt tema</p>
+                  <p className="text-xs text-muted-foreground">Ljust / mörkt utseende</p>
                 </div>
               </div>
               <Switch checked={isDark} onCheckedChange={handleToggleTheme} />
