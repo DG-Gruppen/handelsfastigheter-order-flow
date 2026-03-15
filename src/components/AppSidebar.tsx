@@ -426,7 +426,7 @@ export default function AppSidebar() {
                                 )}
                               >
                                 <Icon className="h-5 w-5" />
-                                <span className="text-[10px] font-medium text-center leading-tight">{mod.name}</span>
+                                <span className="text-[10px] font-medium text-center leading-tight">{SLUG_NAME_OVERRIDES[mod.slug] || mod.name}</span>
                               </button>
                             );
                           })}
