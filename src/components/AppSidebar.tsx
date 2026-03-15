@@ -32,9 +32,24 @@ export default function AppSidebar() {
     }
   }, [theme, setTheme, profile?.user_id]);
 
-  // Separate main modules from utility modules
-  const mainModules = accessibleModules.filter((m) => m.sort_order < 10);
-  const extraModules = accessibleModules.filter((m) => m.sort_order >= 10);
+  // Group modules semantically by slug
+  const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
+    { label: "", slugs: ["home"] }, // No label, just dashboard
+    { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
+    { label: "Organisation", slugs: ["org", "personnel", "culture", "pulse"] },
+    { label: "Information", slugs: ["news", "strategy", "knowledge", "documents"] },
+    { label: "Fastigheter", slugs: ["properties"] },
+    { label: "IT & Verktyg", slugs: ["it-support", "it-portal", "tools"] },
+    { label: "Personligt", slugs: ["my-shf"] },
+    { label: "System", slugs: ["admin"] },
+  ];
+
+  const groups = GROUP_CONFIG.map((g) => ({
+    ...g,
+    modules: g.slugs
+      .map((slug) => accessibleModules.find((m) => m.slug === slug))
+      .filter(Boolean) as typeof accessibleModules,
+  })).filter((g) => g.modules.length > 0);
 
   return (
     <aside
