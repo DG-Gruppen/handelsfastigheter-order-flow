@@ -110,6 +110,7 @@ export default function Profile() {
                 placeholder="070-123 45 67"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className="h-12 md:h-10"
               />
             </div>
 
