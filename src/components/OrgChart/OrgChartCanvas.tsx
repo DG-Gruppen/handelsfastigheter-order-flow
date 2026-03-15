@@ -51,7 +51,7 @@ const STAFF_GAP_V      = 100;
 const LINE_AFTER_STAFF = 160;
 
 function isLeafNode(node: OrgNode): boolean {
-  return node.children.length === 0 && node.color === "muted";
+  return node.children.length === 0 && node.type === "line";
 }
 
 function allChildrenAreLeaves(node: OrgNode): boolean {
