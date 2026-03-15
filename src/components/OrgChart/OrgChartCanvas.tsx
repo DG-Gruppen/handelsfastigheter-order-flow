@@ -426,6 +426,14 @@ const COLOR_MAP: Record<string, { bg: string; border: string; borderLight: strin
     text: "hsl(0, 0%, 100%)",
     accent: "hsl(19, 55%, 55%)",
   },
+  // Aubergine – Stab
+  purple: {
+    bg: "hsl(280, 30%, 30%)",
+    border: "hsl(280, 30%, 40%)",
+    borderLight: "hsl(280, 25%, 60%)",
+    text: "hsl(0, 0%, 100%)",
+    accent: "hsl(280, 25%, 50%)",
+  },
   // Sten och Betong – Anställda
   muted: {
     bg: "hsl(60, 6%, 30%)",
