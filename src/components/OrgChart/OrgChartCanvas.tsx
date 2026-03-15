@@ -440,10 +440,10 @@ function getColors(color: string, isDark: boolean) {
   const c = COLOR_MAP[color] || COLOR_MAP.muted;
   if (!isDark && color === "muted") {
     return {
-      bg: "hsl(225, 20%, 94%)",
-      border: "hsl(225, 18%, 85%)",
-      text: "hsl(225, 30%, 22%)",
-      accent: "hsl(225, 12%, 60%)",
+      bg: "hsl(60, 4%, 90%)",
+      border: "hsl(60, 5%, 78%)",
+      text: "hsl(60, 8%, 29%)",
+      accent: "hsl(60, 5%, 55%)",
     };
   }
   return {
