@@ -18,15 +18,19 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
-  { label: "", slugs: ["home"] },
+  { label: "Information", slugs: ["home", "news", "strategy", "knowledge", "documents"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "culture", "pulse"] },
-  { label: "Information", slugs: ["news", "strategy", "knowledge", "documents"] },
   { label: "Fastigheter", slugs: ["properties"] },
   { label: "IT & Verktyg", slugs: ["it-support", "it-portal", "tools"] },
   { label: "Personligt", slugs: ["my-shf"] },
   // "admin" removed – accessed via profile menu
 ];
+
+// Override display names for specific slugs
+const SLUG_NAME_OVERRIDES: Record<string, string> = {
+  home: "Min dashboard",
+};
 
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
