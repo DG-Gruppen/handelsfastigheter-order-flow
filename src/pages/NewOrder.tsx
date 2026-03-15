@@ -255,7 +255,7 @@ export default function NewOrder() {
       });
     }
 
-    // Send helpdesk email for auto-approved orders
+    // Send helpdesk email and confirmation email for auto-approved orders
     if (autoApprove) {
       const requesterProfile = allProfiles.find(p => p.user_id === user.id);
       const { data: reqEmail } = await supabase
@@ -263,6 +263,7 @@ export default function NewOrder() {
         .select("email")
         .eq("user_id", user.id)
         .single();
+      const requesterEmail = reqEmail?.email || "";
       await sendHelpdeskEmail({
         orderId: order.id,
         title,
@@ -272,9 +273,45 @@ export default function NewOrder() {
         recipientStartDate: null,
         orderReason: "broken_equipment",
         requesterName: requesterProfile?.full_name || "Okänd",
-        requesterEmail: reqEmail?.email || "",
+        requesterEmail,
         items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
       });
+
+      // Send confirmation email to requester
+      if (requesterEmail) {
+        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const itemsHtml = orderItemsToInsert
+          .map((i) => `<li><strong>${i.name}</strong>${i.quantity > 1 ? ` ×${i.quantity}` : ""}</li>`)
+          .join("");
+        const confirmHtml = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#1a1a2e;color:white;padding:20px 24px;border-radius:8px 8px 0 0;">
+              <h1 style="margin:0;font-size:18px;">✅ Beställning godkänd</h1>
+            </div>
+            <div style="padding:24px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;">
+              <p style="margin:0 0 16px;color:#333;">Hej <strong>${requesterProfile?.full_name || "du"}</strong>,</p>
+              <p style="margin:0 0 16px;color:#333;">Din beställning <strong>"${title}"</strong> har godkänts automatiskt och skickats vidare till IT för hantering.</p>
+              <h3 style="margin:16px 0 8px;color:#1a1a2e;">Beställd utrustning</h3>
+              <ul>${itemsHtml}</ul>
+              <div style="margin:24px 0 0;padding:16px;background:#f0f4ff;border-radius:8px;text-align:center;">
+                <a href="${orderUrl}" style="display:inline-block;padding:10px 24px;background:#1a1a2e;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Visa din beställning</a>
+                <p style="margin:8px 0 0;font-size:12px;color:#666;">Länken kräver inloggning</p>
+              </div>
+            </div>
+          </div>
+        `;
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              to: requesterEmail,
+              subject: `[SHF IT] Din beställning har godkänts: ${title}`,
+              html: confirmHtml,
+            },
+          });
+        } catch (err) {
+          console.error("Failed to send approval confirmation email:", err);
+        }
+      }
     }
 
     const successMsg = autoApprove
