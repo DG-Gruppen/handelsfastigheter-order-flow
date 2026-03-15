@@ -86,13 +86,9 @@ export function useModules() {
 }
 
 export function useModuleAccess(route: string): boolean {
-  const { accessibleModules, loading } = useModules();
-  if (loading) return true; // Don't block while loading
-  // If route is not registered as a module, allow access (e.g. /orders/:id)
-  const mod = accessibleModules.find((m) => m.route === route);
-  // Check if the route matches any module
-  const { modules } = useContext(ModulesContext);
+  const { accessibleModules, modules, loading } = useModules();
+  if (loading) return true;
   const isRegisteredModule = modules.some((m) => m.route === route);
   if (!isRegisteredModule) return true;
-  return !!mod;
+  return accessibleModules.some((m) => m.route === route);
 }

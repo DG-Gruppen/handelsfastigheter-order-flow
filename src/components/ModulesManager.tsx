@@ -76,7 +76,7 @@ export default function ModulesManager({ onClose }: { onClose?: () => void }) {
     } else {
       await supabase.from("module_role_access").insert({
         module_id: moduleId,
-        role,
+        role: role as any,
         has_access: true,
       } as any);
     }
