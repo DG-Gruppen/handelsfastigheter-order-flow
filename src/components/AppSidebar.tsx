@@ -162,18 +162,13 @@ export default function AppSidebar() {
         )}
       >
         {/* Logo */}
-        <div className="p-4 pb-2">
-          <Link to="/dashboard" className="flex items-center gap-2.5">
+        <div className="p-4 pb-2 flex justify-center">
+          <Link to="/dashboard" className="inline-flex items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm p-2.5">
             <img
               src={shfLogo}
               alt="SHF"
-              className={cn("h-10 w-auto dark:invert shrink-0", collapsed && "h-8")}
+              className={cn("h-9 w-auto dark:invert shrink-0", collapsed && "h-7")}
             />
-            {!collapsed && (
-              <span className="font-heading text-sm font-semibold text-sidebar-foreground leading-tight truncate">
-                SHF Connect
-              </span>
-            )}
           </Link>
         </div>
 
