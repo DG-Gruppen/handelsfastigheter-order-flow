@@ -20,6 +20,7 @@ import LayoutRoute from "./components/LayoutRoute";
 
 import OrderDetail from "./pages/OrderDetail";
 import History from "./pages/History";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
