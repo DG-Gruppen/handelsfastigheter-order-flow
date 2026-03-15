@@ -134,9 +134,14 @@ export default function AppSidebar() {
   // Close "Mer" sheet on route change
   useEffect(() => { setMoreOpen(false); }, [location.pathname]);
 
-  // Mobile: first 4 modules + "Mer"
-  const mobileBarModules = accessibleModules.slice(0, 4);
-  const mobileOverflowModules = accessibleModules.slice(4);
+  // Mobile: "Information" group in bottom nav, rest in Meny modal
+  const infoSlugs = GROUP_CONFIG.find((g) => g.label === "Information")?.slugs || [];
+  const mobileBarModules = infoSlugs
+    .map((slug) => accessibleModules.find((m) => m.slug === slug))
+    .filter(Boolean) as typeof accessibleModules;
+  const mobileOverflowModules = accessibleModules.filter(
+    (m) => !infoSlugs.includes(m.slug)
+  );
   const isOverflowActive = mobileOverflowModules.some((m) => location.pathname === m.route);
 
   const handleMobileNav = (path: string) => {
@@ -144,13 +149,16 @@ export default function AppSidebar() {
     setMoreOpen(false);
   };
 
-  // Mobile overflow grouped
-  const mobileOverflowGroups = GROUP_CONFIG.map((g) => ({
-    label: g.label,
-    modules: g.slugs
-      .map((slug) => mobileOverflowModules.find((m) => m.slug === slug))
-      .filter(Boolean) as typeof accessibleModules,
-  })).filter((g) => g.modules.length > 0);
+  // Mobile overflow grouped — same categories & order as sidebar, excluding Information
+  const mobileOverflowGroups = GROUP_CONFIG
+    .filter((g) => g.label !== "Information")
+    .map((g) => ({
+      label: g.label,
+      modules: g.slugs
+        .map((slug) => mobileOverflowModules.find((m) => m.slug === slug))
+        .filter(Boolean) as typeof accessibleModules,
+    }))
+    .filter((g) => g.modules.length > 0);
 
   return (
     <>
