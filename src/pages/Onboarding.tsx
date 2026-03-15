@@ -734,7 +734,7 @@ export default function Onboarding() {
                   )}
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1.5 text-sm">
+              <Button type="button" variant="outline" onClick={addItem} className="gap-1.5 text-sm h-11 md:h-9 px-4">
                 <Plus className="h-4 w-4" />
                 Lägg till utrustning
               </Button>

@@ -443,7 +443,7 @@ export default function Admin() {
                       {roleLabels[role] ?? role}
                       <button
                         onClick={() => handleRemoveRole(p.user_id, role)}
-                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-1.5 -mr-1 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
                       >
                         <X className="h-3 w-3" />
                       </button>

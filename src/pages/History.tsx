@@ -161,7 +161,7 @@ export default function History() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] h-12 md:h-10">
               <SelectValue placeholder="Alla statusar" />
             </SelectTrigger>
             <SelectContent>

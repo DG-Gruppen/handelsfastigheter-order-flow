@@ -186,22 +186,22 @@ export default function Personnel() {
                 </p>
 
                 {/* Contact */}
-                <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-1 mt-3">
                   {emp.phone && emp.phone !== "–" && emp.phone.trim() !== "" && (
                     <a
                       href={`tel:${emp.phone.replace(/[- ]/g, "")}`}
-                      className="text-primary hover:text-primary/80"
+                      className="text-primary hover:text-primary/80 p-2 -m-1 rounded-lg hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title={emp.phone}
                     >
-                      <Phone className="w-3.5 h-3.5" />
+                      <Phone className="w-4 h-4" />
                     </a>
                   )}
                   <a
                     href={`mailto:${emp.email}`}
-                    className="text-primary hover:text-primary/80"
+                    className="text-primary hover:text-primary/80 p-2 -m-1 rounded-lg hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title={emp.email}
                   >
-                    <Mail className="w-3.5 h-3.5" />
+                    <Mail className="w-4 h-4" />
                   </a>
                 </div>
               </div>
