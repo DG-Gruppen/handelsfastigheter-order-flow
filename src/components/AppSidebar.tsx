@@ -163,11 +163,11 @@ export default function AppSidebar() {
       >
         {/* Logo */}
         <div className="p-4 pb-2 flex justify-center">
-          <Link to="/dashboard" className="inline-flex items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm p-2.5">
+          <Link to="/dashboard">
             <img
               src={shfLogo}
               alt="SHF"
-              className={cn("h-9 w-auto dark:invert shrink-0", collapsed && "h-7")}
+              className={cn("h-9 w-auto invert shrink-0", collapsed && "h-7")}
             />
           </Link>
         </div>
