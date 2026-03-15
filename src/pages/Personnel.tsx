@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Search, Phone, Mail, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ORG_COLOR_MAP, getRoleColorKey } from "@/lib/orgColors";
 
 interface PersonnelProfile {
   id: string;
@@ -24,7 +25,8 @@ function getInitials(name: string): string {
 
 export default function Personnel() {
   const [profiles, setProfiles] = useState<PersonnelProfile[]>([]);
-  const [deptColors, setDeptColors] = useState<Record<string, string>>({});
+  const [roleMap, setRoleMap] = useState<Record<string, string>>({});
+  const [colorSettings, setColorSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alla");
@@ -33,26 +35,31 @@ export default function Personnel() {
     const fetchData = async () => {
       setLoading(true);
 
-      // Fetch department colors, IT roles, and profiles in parallel
-      const [rolesRes, profilesRes, deptsRes] = await Promise.all([
+      const [rolesRes, profilesRes, settingsRes] = await Promise.all([
         supabase.rpc("get_all_user_roles"),
         supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override").order("full_name"),
-        supabase.from("departments").select("name, color"),
+        supabase.from("org_chart_settings").select("setting_key, setting_value"),
       ]);
 
-      // Build department color map
-      const colorMap: Record<string, string> = {};
-      (deptsRes.data ?? []).forEach((d) => {
-        if (d.name && d.color) colorMap[d.name] = d.color;
-      });
-      setDeptColors(colorMap);
+      // Build role map
+      const rm: Record<string, string> = {};
+      const itUserIds = new Set<string>();
+      for (const r of ((rolesRes.data as { user_id: string; role: string }[]) ?? [])) {
+        // Keep highest role: admin > manager > staff > employee
+        const priority: Record<string, number> = { admin: 0, manager: 1, staff: 2, employee: 3 };
+        if (!rm[r.user_id] || (priority[r.role] ?? 9) < (priority[rm[r.user_id]] ?? 9)) {
+          rm[r.user_id] = r.role;
+        }
+        if (r.role === "it") itUserIds.add(r.user_id);
+      }
+      setRoleMap(rm);
 
-      // Filter out IT users
-      const itUserIds = new Set(
-        ((rolesRes.data as { user_id: string; role: string }[]) ?? [])
-          .filter((r) => r.role === "it")
-          .map((r) => r.user_id)
-      );
+      // Build color settings
+      const cs: Record<string, string> = {};
+      for (const s of ((settingsRes.data as any[]) ?? [])) {
+        cs[s.setting_key] = s.setting_value;
+      }
+      setColorSettings(cs);
 
       const filtered = (profilesRes.data ?? []).filter(
         (p) => !itUserIds.has(p.user_id) && p.full_name.trim() !== ""
@@ -88,13 +95,16 @@ export default function Personnel() {
     return result;
   }, [search, filter, profiles]);
 
-  function getDeptStyle(department: string | null): React.CSSProperties {
-    const color = deptColors[department ?? ""];
-    if (color) {
-      return { background: `linear-gradient(135deg, ${color}, ${color}99)` };
-    }
-    // Fallback: use primary
-    return { background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))` };
+  function getRoleStyle(userId: string): React.CSSProperties {
+    const role = roleMap[userId] ?? "employee";
+    const colorKey = getRoleColorKey(role, {
+      color_root: colorSettings.color_root,
+      color_staff: colorSettings.color_staff,
+      color_manager: colorSettings.color_manager,
+      color_employee: colorSettings.color_employee,
+    });
+    const colors = ORG_COLOR_MAP[colorKey] ?? ORG_COLOR_MAP.muted;
+    return { background: `linear-gradient(135deg, ${colors.bg}, ${colors.accent})` };
   }
 
   return (
@@ -148,8 +158,8 @@ export default function Personnel() {
               key={emp.id}
               className="glass-card rounded-lg border border-border overflow-hidden hover:border-primary/30 transition-colors"
             >
-              {/* Avatar header with department color */}
-              <div className="h-16 relative" style={getDeptStyle(emp.department)}>
+              {/* Avatar header with role-based color */}
+              <div className="h-16 relative" style={getRoleStyle(emp.user_id)}>
                 <div className="absolute -bottom-6 left-4 w-12 h-12 rounded-full bg-card border-2 border-card flex items-center justify-center text-sm font-bold text-foreground shadow-sm">
                   {getInitials(emp.full_name)}
                 </div>
