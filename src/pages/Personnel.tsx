@@ -12,17 +12,6 @@ interface PersonnelProfile {
   title_override: string | null;
 }
 
-const DEPT_COLORS: Record<string, string> = {
-  "Ledning": "from-primary to-primary/70",
-  "Ekonomi & Finans": "from-accent to-accent/70",
-  "Förvaltning": "from-primary to-accent",
-  "Hållbarhet": "from-primary to-primary/60",
-  "Transaktion": "from-secondary to-muted",
-  "Affärsutveckling": "from-primary to-accent",
-  "Uthyrning": "from-accent to-accent/60",
-  "HR": "from-destructive to-destructive/70",
-};
-
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -35,28 +24,37 @@ function getInitials(name: string): string {
 
 export default function Personnel() {
   const [profiles, setProfiles] = useState<PersonnelProfile[]>([]);
+  const [deptColors, setDeptColors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alla");
 
   useEffect(() => {
-    const fetchProfiles = async () => {
+    const fetchData = async () => {
       setLoading(true);
 
-      // Get user_ids with IT role to exclude them
-      const { data: itRoles } = await supabase
-        .rpc("get_all_user_roles") as { data: { user_id: string; role: string }[] | null };
+      // Fetch department colors, IT roles, and profiles in parallel
+      const [rolesRes, profilesRes, deptsRes] = await Promise.all([
+        supabase.rpc("get_all_user_roles"),
+        supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override").order("full_name"),
+        supabase.from("departments").select("name, color"),
+      ]);
 
+      // Build department color map
+      const colorMap: Record<string, string> = {};
+      (deptsRes.data ?? []).forEach((d) => {
+        if (d.name && d.color) colorMap[d.name] = d.color;
+      });
+      setDeptColors(colorMap);
+
+      // Filter out IT users
       const itUserIds = new Set(
-        (itRoles ?? []).filter((r) => r.role === "it").map((r) => r.user_id)
+        ((rolesRes.data as { user_id: string; role: string }[]) ?? [])
+          .filter((r) => r.role === "it")
+          .map((r) => r.user_id)
       );
 
-      const { data: allProfiles } = await supabase
-        .from("profiles")
-        .select("id, user_id, full_name, email, department, phone, title_override")
-        .order("full_name");
-
-      const filtered = (allProfiles ?? []).filter(
+      const filtered = (profilesRes.data ?? []).filter(
         (p) => !itUserIds.has(p.user_id) && p.full_name.trim() !== ""
       );
 
@@ -64,7 +62,7 @@ export default function Personnel() {
       setLoading(false);
     };
 
-    fetchProfiles();
+    fetchData();
   }, []);
 
   const departments = useMemo(() => {
@@ -89,6 +87,15 @@ export default function Personnel() {
     }
     return result;
   }, [search, filter, profiles]);
+
+  function getDeptStyle(department: string | null): React.CSSProperties {
+    const color = deptColors[department ?? ""];
+    if (color) {
+      return { background: `linear-gradient(135deg, ${color}, ${color}99)` };
+    }
+    // Fallback: use primary
+    return { background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))` };
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -141,12 +148,8 @@ export default function Personnel() {
               key={emp.id}
               className="glass-card rounded-lg border border-border overflow-hidden hover:border-primary/30 transition-colors"
             >
-              {/* Avatar header */}
-              <div
-                className={`h-16 bg-gradient-to-br ${
-                  DEPT_COLORS[emp.department ?? ""] || "from-muted to-muted-foreground/20"
-                } relative`}
-              >
+              {/* Avatar header with department color */}
+              <div className="h-16 relative" style={getDeptStyle(emp.department)}>
                 <div className="absolute -bottom-6 left-4 w-12 h-12 rounded-full bg-card border-2 border-card flex items-center justify-center text-sm font-bold text-foreground shadow-sm">
                   {getInitials(emp.full_name)}
                 </div>
