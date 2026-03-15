@@ -727,14 +727,14 @@ export default function Onboarding() {
                       variant="ghost"
                       size="icon"
                       onClick={() => removeItem(index)}
-                      className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      className="h-12 w-12 md:h-10 md:w-10 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1.5 text-sm">
+              <Button type="button" variant="outline" onClick={addItem} className="gap-1.5 text-sm h-11 md:h-9 px-4">
                 <Plus className="h-4 w-4" />
                 Lägg till utrustning
               </Button>

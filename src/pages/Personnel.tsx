@@ -139,7 +139,7 @@ export default function Personnel() {
           placeholder="Sök namn, avdelning, e-post, titel..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full pl-10 pr-4 h-12 md:h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       </div>
 
@@ -149,7 +149,7 @@ export default function Personnel() {
           <button
             key={d}
             onClick={() => setFilter(d)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className={`px-4 py-2.5 md:px-3 md:py-1.5 rounded-full text-xs font-medium transition-colors min-h-[44px] md:min-h-0 active:scale-[0.95] ${
               filter === d
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
@@ -186,22 +186,22 @@ export default function Personnel() {
                 </p>
 
                 {/* Contact */}
-                <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-1 mt-3">
                   {emp.phone && emp.phone !== "–" && emp.phone.trim() !== "" && (
                     <a
                       href={`tel:${emp.phone.replace(/[- ]/g, "")}`}
-                      className="text-primary hover:text-primary/80"
+                      className="text-primary hover:text-primary/80 p-2 -m-1 rounded-lg hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title={emp.phone}
                     >
-                      <Phone className="w-3.5 h-3.5" />
+                      <Phone className="w-4 h-4" />
                     </a>
                   )}
                   <a
                     href={`mailto:${emp.email}`}
-                    className="text-primary hover:text-primary/80"
+                    className="text-primary hover:text-primary/80 p-2 -m-1 rounded-lg hover:bg-primary/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title={emp.email}
                   >
-                    <Mail className="w-3.5 h-3.5" />
+                    <Mail className="w-4 h-4" />
                   </a>
                 </div>
               </div>

@@ -138,7 +138,7 @@ const Login = () => {
             {!showEmail ? (
               <Button
                 variant="outline"
-                className="w-full gap-2 glass-surface hover:bg-secondary/50"
+                className="w-full gap-2 glass-surface hover:bg-secondary/50 h-12"
                 onClick={() => setShowEmail(true)}
               >
                 <Mail className="h-4 w-4" />

@@ -157,11 +157,11 @@ export default function History() {
               placeholder="Sök på titel, namn..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-12 md:h-10"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] h-12 md:h-10">
               <SelectValue placeholder="Alla statusar" />
             </SelectTrigger>
             <SelectContent>
