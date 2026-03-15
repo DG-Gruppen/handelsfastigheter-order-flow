@@ -2,15 +2,14 @@ import { Link, useLocation } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
 import { getModuleIcon } from "@/lib/moduleIcons";
-import { LogOut, Sun, Moon, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useCallback, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavSettings } from "@/hooks/useNavSettings";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import shfLogo from "@/assets/shf-logo.png";
 import NotificationBell from "@/components/NotificationBell";
+import ProfilePanel from "@/components/ProfilePanel";
 
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
