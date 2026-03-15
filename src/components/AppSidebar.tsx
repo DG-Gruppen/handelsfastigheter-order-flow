@@ -100,63 +100,35 @@ export default function AppSidebar() {
         ))}
       </nav>
 
-      <div className="h-px bg-sidebar-border mx-3 my-1" />
-
-      {/* Bottom actions */}
-      <div className="px-2 py-2 space-y-0.5">
-        <button
-          onClick={handleToggleTheme}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors w-full",
-            collapsed && "justify-center px-2"
-          )}
-        >
-          <Sun className="w-[18px] h-[18px] dark:hidden" />
-          <Moon className="w-[18px] h-[18px] hidden dark:block" />
-          {!collapsed && <span>{theme === "dark" ? "Ljust tema" : "Mörkt tema"}</span>}
-        </button>
-
-        {settings["it_remote_help_visible"] !== "false" && (
-          <a
-            href={settings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors w-full",
-              collapsed && "justify-center px-2"
-            )}
-          >
-            <ExternalLink className="w-[18px] h-[18px] shrink-0" />
-            {!collapsed && <span>{settings["it_remote_help_label"] || "Fjärrhjälp"}</span>}
-          </a>
-        )}
-      </div>
-
       <div className="h-px bg-sidebar-border mx-3" />
 
-      {/* User + collapse */}
+      {/* User profile with popover */}
       <div className="p-3 flex items-center gap-2">
-        <Avatar className="h-8 w-8 ring-2 ring-sidebar-primary/20 shrink-0">
-          <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <Popover open={profileOpen} onOpenChange={setProfileOpen}>
+          <PopoverTrigger asChild>
+            <button className="flex items-center gap-2 flex-1 min-w-0 rounded-md p-1 -m-1 hover:bg-sidebar-accent/50 transition-colors">
+              <Avatar className="h-8 w-8 ring-2 ring-sidebar-primary/20 shrink-0">
+                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              {!collapsed && (
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || "Användare"}</div>
+                  <div className="text-[11px] text-sidebar-foreground/50 truncate">{profile?.email}</div>
+                </div>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-72 p-4">
+            <ProfilePanel onClose={() => setProfileOpen(false)} />
+          </PopoverContent>
+        </Popover>
         {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || "Användare"}</div>
-            <div className="text-[11px] text-sidebar-foreground/50 truncate">{profile?.email}</div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <NotificationBell />
           </div>
         )}
-        <div className="flex items-center gap-0.5 shrink-0">
-          {!collapsed && <NotificationBell />}
-          <button
-            onClick={signOut}
-            title="Logga ut"
-            className="text-sidebar-foreground/40 hover:text-sidebar-foreground/80 transition-colors p-1"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* Collapse toggle */}
