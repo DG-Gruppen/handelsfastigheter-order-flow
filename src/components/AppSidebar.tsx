@@ -224,11 +224,12 @@ export default function AppSidebar() {
                     {group.modules.map((mod) => {
                       const Icon = getModuleIcon(mod.icon);
                       const isActive = location.pathname === mod.route;
+                      const displayName = SLUG_NAME_OVERRIDES[mod.slug] || mod.name;
                       return (
                         <Link
                           key={mod.id}
                           to={mod.route}
-                          title={collapsed ? mod.name : undefined}
+                          title={collapsed ? displayName : undefined}
                           className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
                             isActive
@@ -238,7 +239,7 @@ export default function AppSidebar() {
                           )}
                         >
                           <Icon className="w-[18px] h-[18px] shrink-0" />
-                          {!collapsed && <span className="truncate">{mod.name}</span>}
+                          {!collapsed && <span className="truncate">{displayName}</span>}
                         </Link>
                       );
                     })}
