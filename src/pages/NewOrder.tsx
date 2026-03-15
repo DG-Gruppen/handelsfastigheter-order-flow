@@ -419,7 +419,7 @@ export default function NewOrder() {
                       variant="ghost"
                       size="icon"
                       onClick={() => removeItem(index)}
-                      className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      className="h-12 w-12 md:h-10 md:w-10 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
