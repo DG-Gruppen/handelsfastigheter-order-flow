@@ -138,9 +138,9 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-5">
             {/* Theme toggle */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between min-h-[44px]">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center">
+                <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
                   <Moon className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div>
