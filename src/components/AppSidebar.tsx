@@ -313,9 +313,8 @@ export default function AppSidebar() {
       {/* ─── MOBILE TOP HEADER ─── */}
       <header className="sticky top-0 z-50 border-b glass-nav md:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <img src={shfLogo} alt="SHF" className="h-8 w-auto dark:invert" />
-            <span className="font-heading text-base font-semibold text-foreground">SHF Connect</span>
+          <Link to="/dashboard" className="flex items-center">
+            <img src={shfLogo} alt="SHF" className="h-10 w-auto dark:invert" />
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell />
