@@ -14,6 +14,7 @@ import { useTheme } from "next-themes";
 import { Sun, Moon, LogOut, User, Shield } from "lucide-react";
 import shfLogo from "@/assets/shf-logo.png";
 import NotificationBell from "@/components/NotificationBell";
+import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
