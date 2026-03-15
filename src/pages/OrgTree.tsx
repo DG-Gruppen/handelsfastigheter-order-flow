@@ -34,7 +34,7 @@ const DEFAULT_COLORS: ColorSettings = {
   color_root: "primary",
   color_staff: "accent",
   color_manager: "blue,green,amber",
-  color_employee: "muted",
+  color_employee: "green",
 };
 
 function getInitials(name: string) {
