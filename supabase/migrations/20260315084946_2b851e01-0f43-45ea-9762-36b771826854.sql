@@ -1,0 +1,1 @@
+UPDATE orders SET status = 'approved', approved_at = now(), approver_id = requester_id WHERE id = 'dc9024f9-c078-42f9-8b8b-97de326aefaa';
