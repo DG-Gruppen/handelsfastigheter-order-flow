@@ -13,23 +13,14 @@ import ProfilePanel from "@/components/ProfilePanel";
 
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
-  const { settings } = useNavSettings();
   const [collapsed, setCollapsed] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
-
-  const handleToggleTheme = useCallback(async () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    if (profile?.user_id) {
-      await supabase.from("profiles").update({ theme_preference: newTheme }).eq("user_id", profile.user_id);
-    }
-  }, [theme, setTheme, profile?.user_id]);
 
   // Group modules semantically by slug
   const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
