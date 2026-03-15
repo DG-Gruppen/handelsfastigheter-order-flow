@@ -394,7 +394,10 @@ export default function AppSidebar() {
                 <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
                   <div className="space-y-6 pb-8 px-2">
                     {/* Profile card */}
-                    <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/50">
+                    <button
+                      onClick={() => handleMobileNav("/profile")}
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/50 w-full text-left active:scale-[0.98] transition-transform"
+                    >
                       <Avatar className="h-10 w-10 ring-2 ring-primary/10">
                         <AvatarFallback className="gradient-primary text-primary-foreground text-sm font-semibold">{initials}</AvatarFallback>
                       </Avatar>
@@ -402,7 +405,8 @@ export default function AppSidebar() {
                         <p className="text-sm font-medium text-foreground truncate">{profile?.full_name || "Användare"}</p>
                         <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
                       </div>
-                    </div>
+                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
 
                     {/* Grouped overflow nav items */}
                     {mobileOverflowGroups.map((group) => (
