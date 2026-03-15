@@ -463,7 +463,7 @@ export default function AppSidebar() {
                       </div>
                     </div>
                   </div>
-                </ScrollArea>
+                </div>
               </SheetContent>
             </Sheet>
           )}
