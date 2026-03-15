@@ -31,7 +31,7 @@ const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
 
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
-  const { profile, signOut } = useAuth();
+  const { profile, roles, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
