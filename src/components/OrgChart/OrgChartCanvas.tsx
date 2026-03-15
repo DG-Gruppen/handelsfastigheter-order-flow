@@ -384,49 +384,55 @@ function useOrgPalette() {
   }), [dark]);
 }
 
-// ─── COLOR MAP (maps node.color to HSL values from our design tokens) ────────
+// ─── COLOR MAP (maps node.color to HSL values from SHF grafiska profil) ──────
 const COLOR_MAP: Record<string, { bg: string; border: string; borderLight: string; text: string; accent: string }> = {
+  // Himmel och Vatten – VD / Root
   primary: {
-    bg: "hsl(230, 75%, 55%)",
-    border: "hsl(230, 75%, 65%)",
-    borderLight: "hsl(230, 75%, 75%)",
+    bg: "hsl(208, 40%, 27%)",
+    border: "hsl(208, 40%, 37%)",
+    borderLight: "hsl(208, 35%, 60%)",
     text: "hsl(0, 0%, 100%)",
-    accent: "hsl(230, 75%, 75%)",
+    accent: "hsl(206, 28%, 50%)",
   },
+  // Land och Miljö – Stab
   accent: {
-    bg: "hsl(250, 80%, 65%)",
-    border: "hsl(250, 80%, 75%)",
-    borderLight: "hsl(250, 80%, 82%)",
+    bg: "hsl(162, 31%, 31%)",
+    border: "hsl(162, 31%, 41%)",
+    borderLight: "hsl(162, 28%, 60%)",
     text: "hsl(0, 0%, 100%)",
-    accent: "hsl(250, 80%, 80%)",
+    accent: "hsl(162, 28%, 50%)",
   },
+  // Himmel och Vatten (ljusare) – Chef variant 1
   blue: {
-    bg: "hsl(230, 75%, 55%)",
-    border: "hsl(230, 75%, 65%)",
-    borderLight: "hsl(230, 75%, 78%)",
+    bg: "hsl(206, 28%, 37%)",
+    border: "hsl(206, 28%, 47%)",
+    borderLight: "hsl(206, 25%, 65%)",
     text: "hsl(0, 0%, 100%)",
-    accent: "hsl(230, 75%, 75%)",
+    accent: "hsl(206, 25%, 55%)",
   },
+  // Land och Miljö (ljusare) – Chef variant 2
   green: {
-    bg: "hsl(165, 55%, 42%)",
-    border: "hsl(165, 55%, 52%)",
-    borderLight: "hsl(165, 55%, 65%)",
+    bg: "hsl(162, 32%, 40%)",
+    border: "hsl(162, 32%, 50%)",
+    borderLight: "hsl(162, 28%, 65%)",
     text: "hsl(0, 0%, 100%)",
-    accent: "hsl(165, 55%, 62%)",
+    accent: "hsl(162, 28%, 55%)",
   },
+  // Eld och Värme – Chef variant 3
   amber: {
-    bg: "hsl(38, 92%, 50%)",
-    border: "hsl(38, 92%, 60%)",
-    borderLight: "hsl(38, 92%, 72%)",
+    bg: "hsl(19, 70%, 38%)",
+    border: "hsl(19, 70%, 48%)",
+    borderLight: "hsl(19, 55%, 65%)",
     text: "hsl(0, 0%, 100%)",
-    accent: "hsl(38, 92%, 70%)",
+    accent: "hsl(19, 55%, 55%)",
   },
+  // Sten och Betong – Anställda
   muted: {
-    bg: "hsl(230, 22%, 16%)",
-    border: "hsl(230, 22%, 24%)",
-    borderLight: "hsl(225, 18%, 78%)",
-    text: "hsl(225, 12%, 85%)",
-    accent: "hsl(225, 12%, 52%)",
+    bg: "hsl(60, 6%, 30%)",
+    border: "hsl(60, 6%, 40%)",
+    borderLight: "hsl(60, 5%, 72%)",
+    text: "hsl(60, 4%, 92%)",
+    accent: "hsl(60, 5%, 55%)",
   },
 };
 
@@ -434,10 +440,10 @@ function getColors(color: string, isDark: boolean) {
   const c = COLOR_MAP[color] || COLOR_MAP.muted;
   if (!isDark && color === "muted") {
     return {
-      bg: "hsl(225, 20%, 94%)",
-      border: "hsl(225, 18%, 85%)",
-      text: "hsl(225, 30%, 22%)",
-      accent: "hsl(225, 12%, 60%)",
+      bg: "hsl(60, 4%, 90%)",
+      border: "hsl(60, 5%, 78%)",
+      text: "hsl(60, 8%, 29%)",
+      accent: "hsl(60, 5%, 55%)",
     };
   }
   return {
