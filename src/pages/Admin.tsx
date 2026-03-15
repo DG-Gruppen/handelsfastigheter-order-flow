@@ -107,6 +107,16 @@ const sections = [
     textColor: "text-primary",
     roles: ["it", "admin"] as string[],
   },
+  {
+    id: "modules" as const,
+    label: "Moduler",
+    description: "Hantera moduler och behörigheter",
+    icon: LayoutGrid,
+    color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
+  },
 ];
 
 export default function Admin() {
