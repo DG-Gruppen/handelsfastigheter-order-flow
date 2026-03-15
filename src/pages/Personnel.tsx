@@ -31,46 +31,58 @@ export default function Personnel() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alla");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-      const [rolesRes, profilesRes, settingsRes] = await Promise.all([
-        supabase.rpc("get_all_user_roles"),
-        supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override").order("full_name"),
-        supabase.from("org_chart_settings").select("setting_key, setting_value"),
-      ]);
+  const fetchData = useCallback(async () => {
+    const [rolesRes, profilesRes, settingsRes] = await Promise.all([
+      supabase.rpc("get_all_user_roles"),
+      supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override").order("full_name"),
+      supabase.from("org_chart_settings").select("setting_key, setting_value"),
+    ]);
 
-      // Build role map
-      const rm: Record<string, string> = {};
-      const itUserIds = new Set<string>();
-      for (const r of ((rolesRes.data as { user_id: string; role: string }[]) ?? [])) {
-        // Keep highest role: admin > manager > staff > employee
-        const priority: Record<string, number> = { admin: 0, manager: 1, staff: 2, employee: 3 };
-        if (!rm[r.user_id] || (priority[r.role] ?? 9) < (priority[rm[r.user_id]] ?? 9)) {
-          rm[r.user_id] = r.role;
-        }
-        if (r.role === "it") itUserIds.add(r.user_id);
+    // Build role map
+    const rm: Record<string, string> = {};
+    const itUserIds = new Set<string>();
+    for (const r of ((rolesRes.data as { user_id: string; role: string }[]) ?? [])) {
+      const priority: Record<string, number> = { admin: 0, manager: 1, staff: 2, employee: 3 };
+      if (!rm[r.user_id] || (priority[r.role] ?? 9) < (priority[rm[r.user_id]] ?? 9)) {
+        rm[r.user_id] = r.role;
       }
-      setRoleMap(rm);
+      if (r.role === "it") itUserIds.add(r.user_id);
+    }
+    setRoleMap(rm);
 
-      // Build color settings
-      const cs: Record<string, string> = {};
-      for (const s of ((settingsRes.data as any[]) ?? [])) {
-        cs[s.setting_key] = s.setting_value;
-      }
-      setColorSettings(cs);
+    // Build color settings
+    const cs: Record<string, string> = {};
+    for (const s of ((settingsRes.data as any[]) ?? [])) {
+      cs[s.setting_key] = s.setting_value;
+    }
+    setColorSettings(cs);
 
-      const filtered = (profilesRes.data ?? []).filter(
-        (p) => !itUserIds.has(p.user_id) && p.full_name.trim() !== ""
-      );
+    const filtered = (profilesRes.data ?? []).filter(
+      (p) => !itUserIds.has(p.user_id) && p.full_name.trim() !== ""
+    );
 
-      setProfiles(filtered);
-      setLoading(false);
-    };
-
-    fetchData();
+    setProfiles(filtered);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData();
+
+    const channel = supabase
+      .channel('personnel-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchData(), 500);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [fetchData]);
 
   const departments = useMemo(() => {
     const depts = new Set(profiles.map((p) => p.department).filter(Boolean) as string[]);
