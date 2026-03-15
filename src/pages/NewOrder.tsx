@@ -181,14 +181,15 @@ export default function NewOrder() {
       : baseTitle;
 
     // Determine approval routing
+    const isCeo = ceoProfile && ceoProfile.user_id === user.id;
     const rdtc = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
-    const needsCeoApproval = isManagerOrAdmin && rdtc && (
+    const needsCeoApproval = !isCeo && isManagerOrAdmin && rdtc && (
       (roles.includes("manager") && approvalSettings["approval_managers_to_ceo"] === "true") ||
       (myProfile?.is_staff === true && approvalSettings["approval_staff_to_ceo"] === "true")
     );
-    const needsMgrApproval = isManagerOrAdmin && !rdtc && myManagerProfile != null;
+    const needsMgrApproval = !isCeo && isManagerOrAdmin && !rdtc && myManagerProfile != null;
 
-    const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsMgrApproval;
+    const autoApprove = isCeo || (isManagerOrAdmin && !needsCeoApproval && !needsMgrApproval);
     const resolvedApproverId = needsCeoApproval && ceoProfile
       ? ceoProfile.user_id
       : needsMgrApproval && myManagerProfile
