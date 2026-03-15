@@ -97,19 +97,11 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 md:space-y-8">
       {/* ── Greeting ── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-            {getGreeting()}, {firstName} 👋
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Här är SHF:s nuläge — du gör skillnad varje dag.</p>
-        </div>
-        <Link to="/orders/new">
-          <Button className="gap-2 w-full md:w-auto gradient-primary hover:opacity-90 shadow-md shadow-primary/20" size="lg">
-            <Plus className="h-4 w-4" />
-            Ny beställning
-          </Button>
-        </Link>
+      <div>
+        <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
+          {getGreeting()}, {firstName} 👋
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Här är SHF:s nuläge — du gör skillnad varje dag.</p>
       </div>
 
       {/* ── KPI Cards ── */}
