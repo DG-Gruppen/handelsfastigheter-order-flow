@@ -387,11 +387,11 @@ export default function AppSidebar() {
                   </AnimatePresence>
                 </button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-auto max-h-[60vh] rounded-t-2xl flex flex-col">
+              <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-2xl flex flex-col">
                 <SheetHeader className="pb-3 flex-shrink-0">
                   <SheetTitle className="text-center text-base">Meny</SheetTitle>
                 </SheetHeader>
-                <ScrollArea className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
                   <div className="space-y-6 pb-8 px-2">
                     {/* Profile card */}
                     <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/50">
@@ -463,7 +463,7 @@ export default function AppSidebar() {
                       </div>
                     </div>
                   </div>
-                </ScrollArea>
+                </div>
               </SheetContent>
             </Sheet>
           )}
