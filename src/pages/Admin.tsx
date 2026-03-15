@@ -695,6 +695,10 @@ export default function Admin() {
               {ITContent}
             </TabsContent>
           )}
+
+          <TabsContent value="modules" className="mt-4">
+            <ModulesManager />
+          </TabsContent>
         </Tabs>
       </div>
   );
