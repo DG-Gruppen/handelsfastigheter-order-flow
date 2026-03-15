@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Search, Phone, Mail, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ORG_COLOR_MAP, getRoleColorKey } from "@/lib/orgColors";
