@@ -21,6 +21,7 @@ import LayoutRoute from "./components/LayoutRoute";
 import OrderDetail from "./pages/OrderDetail";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import Personnel from "./pages/Personnel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/org" element={<OrgTree />} />
                     <Route path="/it-info" element={<ITInfo />} />
+                    <Route path="/personal" element={<Personnel />} />
                     <Route path="/profile" element={<Profile />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
