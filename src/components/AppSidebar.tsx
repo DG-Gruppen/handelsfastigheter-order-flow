@@ -18,15 +18,19 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
-  { label: "", slugs: ["home"] },
+  { label: "Information", slugs: ["home", "news", "strategy", "knowledge", "documents"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "culture", "pulse"] },
-  { label: "Information", slugs: ["news", "strategy", "knowledge", "documents"] },
   { label: "Fastigheter", slugs: ["properties"] },
   { label: "IT & Verktyg", slugs: ["it-support", "it-portal", "tools"] },
   { label: "Personligt", slugs: ["my-shf"] },
   // "admin" removed – accessed via profile menu
 ];
+
+// Override display names for specific slugs
+const SLUG_NAME_OVERRIDES: Record<string, string> = {
+  home: "Min dashboard",
+};
 
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
@@ -178,37 +182,6 @@ export default function AppSidebar() {
         {/* Scrollable nav with hidden scrollbar */}
         <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto scrollbar-hide py-1">
           {sortedGroups.map((group, gi) => {
-            const isHome = group.key === "__home__";
-
-            // Home group – no collapsible, no drag
-            if (isHome) {
-              return (
-                <div key="__home__">
-                  {group.modules.map((mod) => {
-                    const Icon = getModuleIcon(mod.icon);
-                    const isActive = location.pathname === mod.route;
-                    return (
-                      <Link
-                        key={mod.id}
-                        to={mod.route}
-                        title={collapsed ? mod.name : undefined}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                          collapsed && "justify-center px-2"
-                        )}
-                      >
-                        <Icon className="w-[18px] h-[18px] shrink-0" />
-                        {!collapsed && <span className="truncate">{mod.name}</span>}
-                      </Link>
-                    );
-                  })}
-                </div>
-              );
-            }
-
             const isOpen = !collapsedGroups[group.key];
 
             return (
@@ -251,11 +224,12 @@ export default function AppSidebar() {
                     {group.modules.map((mod) => {
                       const Icon = getModuleIcon(mod.icon);
                       const isActive = location.pathname === mod.route;
+                      const displayName = SLUG_NAME_OVERRIDES[mod.slug] || mod.name;
                       return (
                         <Link
                           key={mod.id}
                           to={mod.route}
-                          title={collapsed ? mod.name : undefined}
+                          title={collapsed ? displayName : undefined}
                           className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
                             isActive
@@ -265,7 +239,7 @@ export default function AppSidebar() {
                           )}
                         >
                           <Icon className="w-[18px] h-[18px] shrink-0" />
-                          {!collapsed && <span className="truncate">{mod.name}</span>}
+                          {!collapsed && <span className="truncate">{displayName}</span>}
                         </Link>
                       );
                     })}
@@ -373,7 +347,7 @@ export default function AppSidebar() {
                   <Icon className={cn("h-5 w-5", active && "text-primary")} />
                 </motion.span>
                 <span className="text-[10px] font-medium">
-                  {mod.name.length > 8 ? mod.name.substring(0, 7) + "…" : mod.name}
+                  {(() => { const n = SLUG_NAME_OVERRIDES[mod.slug] || mod.name; return n.length > 8 ? n.substring(0, 7) + "…" : n; })()}
                 </span>
                 <AnimatePresence>
                   {active && (
@@ -452,7 +426,7 @@ export default function AppSidebar() {
                                 )}
                               >
                                 <Icon className="h-5 w-5" />
-                                <span className="text-[10px] font-medium text-center leading-tight">{mod.name}</span>
+                                <span className="text-[10px] font-medium text-center leading-tight">{SLUG_NAME_OVERRIDES[mod.slug] || mod.name}</span>
                               </button>
                             );
                           })}
