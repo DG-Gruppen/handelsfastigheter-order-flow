@@ -385,8 +385,7 @@ function useOrgPalette() {
   }), [dark]);
 }
 
-// ─── COLOR MAP (imported from shared lib) ──────
-import { ORG_COLOR_MAP } from "@/lib/orgColors";
+// ─── COLOR MAP (from shared lib) ──────
 const COLOR_MAP = ORG_COLOR_MAP;
 
 function getColors(color: string, isDark: boolean) {
