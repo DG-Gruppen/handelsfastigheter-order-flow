@@ -220,6 +220,71 @@ export type Database = {
         }
         Relationships: []
       }
+      module_role_access: {
+        Row: {
+          has_access: boolean
+          id: string
+          module_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          has_access?: boolean
+          id?: string
+          module_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          has_access?: boolean
+          id?: string
+          module_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_role_access_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          route: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          route: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          route?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

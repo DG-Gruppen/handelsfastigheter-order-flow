@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2, Palette, Wrench } from "lucide-react";
+import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2, Palette, Wrench, LayoutGrid } from "lucide-react";
+import ModulesManager from "@/components/ModulesManager";
 import { Switch } from "@/components/ui/switch";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -26,7 +27,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -105,6 +106,16 @@ const sections = [
     bgColor: "bg-primary/10",
     textColor: "text-primary",
     roles: ["it", "admin"] as string[],
+  },
+  {
+    id: "modules" as const,
+    label: "Moduler",
+    description: "Hantera moduler och behörigheter",
+    icon: LayoutGrid,
+    color: "from-primary to-primary-glow",
+    borderColor: "border-t-primary/40",
+    bgColor: "bg-primary/10",
+    textColor: "text-primary",
   },
 ];
 
@@ -633,9 +644,10 @@ export default function Admin() {
               {activeSection === "systems" && <SystemsManager />}
               {activeSection === "users" && UsersContent}
               {activeSection === "settings" && SettingsContent}
-              {activeSection === "it" && ITContent}
-            </>
-          )}
+               {activeSection === "it" && ITContent}
+               {activeSection === "modules" && <ModulesManager onClose={() => setActiveSection("menu")} />}
+             </>
+           )}
         </div>
     );
   }
