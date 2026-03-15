@@ -167,7 +167,7 @@ export default function AppSidebar() {
             <img
               src={shfLogo}
               alt="SHF"
-              className={cn("h-9 w-auto invert shrink-0", collapsed && "h-7")}
+              className={cn("h-18 w-auto invert shrink-0", collapsed && "h-10")}
             />
           </Link>
         </div>
