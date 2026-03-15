@@ -124,7 +124,7 @@ export default function Profile() {
               </div>
             )}
 
-            <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+            <Button onClick={handleSave} disabled={saving} className="w-full gap-2 h-12 md:h-10">
               <Save className="w-4 h-4" />
               {saving ? "Sparar..." : "Spara ändringar"}
             </Button>
