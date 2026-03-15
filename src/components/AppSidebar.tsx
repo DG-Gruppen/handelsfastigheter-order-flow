@@ -11,10 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { Sun, Moon, LogOut } from "lucide-react";
-import shfLogo from "@/assets/shf-logo.png";
-import NotificationBell from "@/components/NotificationBell";
-import { User, Shield, LogOut } from "lucide-react";
+import { Sun, Moon, LogOut, User, Shield } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
