@@ -26,6 +26,7 @@ function getInitials(name: string): string {
 
 export default function Personnel() {
   const [profiles, setProfiles] = useState<PersonnelProfile[]>([]);
+  const [deptColors, setDeptColors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alla");
