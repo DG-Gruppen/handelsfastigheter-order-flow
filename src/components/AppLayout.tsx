@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, [profile?.theme_preference, settings, setTheme]);
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex flex-col md:flex-row min-h-screen w-full">
       {/* Desktop Sidebar */}
       <AppSidebar />
 
