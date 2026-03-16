@@ -2,9 +2,10 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, ChevronRight, ChevronDown, Search, Upload,
   MoreHorizontal, Pencil, Trash2, FolderInput, Download, FolderPlus, Shield,
-  FolderUp,
+  FolderUp, Eye, X,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import {
@@ -12,12 +13,21 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/hooks/use-toast";
 
+function TextPreview({ url }: { url: string }) {
+  const [text, setText] = useState("Laddar…");
+  // Load text on mount
+  useMemo(() => {
+    fetch(url).then(r => r.text()).then(setText).catch(() => setText("Kunde inte läsa filen."));
+  }, [url]);
+  return <pre className="whitespace-pre-wrap text-sm font-mono bg-secondary/50 rounded p-4 max-h-[60vh] overflow-auto">{text}</pre>;
+}
 
 // ── Helpers ──
 function formatFileSize(bytes: number): string {
@@ -60,6 +70,10 @@ export default function Documents() {
   const [moveDialog, setMoveDialog] = useState<{ type: "folder" | "file"; id: string; name: string } | null>(null);
   const [accessDialog, setAccessDialog] = useState<DocFolder | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "folder" | "file"; id: string; name: string } | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [bulkMoveDialog, setBulkMoveDialog] = useState(false);
+  const [previewFile, setPreviewFile] = useState<DocFile | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,6 +96,55 @@ export default function Documents() {
 
   const selectedFolder = folders.find(f => f.id === selectedFolderId);
 
+  // ── Multi-select helpers ──
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId); else next.add(fileId);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selectedFiles.size === currentFiles.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(currentFiles.map(f => f.id)));
+    }
+  };
+  const clearSelection = () => setSelectedFiles(new Set());
+
+  const bulkDelete = async () => {
+    const toDelete = files.filter(f => selectedFiles.has(f.id));
+    for (const file of toDelete) await deleteFile(file);
+    clearSelection();
+    toast({ title: `${toDelete.length} filer borttagna` });
+  };
+
+  const bulkMove = async (targetFolderId: string) => {
+    for (const fileId of selectedFiles) await moveFile(fileId, targetFolderId);
+    clearSelection();
+    setBulkMoveDialog(false);
+    toast({ title: `${selectedFiles.size} filer flyttade` });
+  };
+
+  // ── Preview helper ──
+  const canPreview = (mime: string) =>
+    mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("text/");
+
+  const openPreview = async (file: DocFile) => {
+    const { data, error } = await supabase.storage.from("documents").download(file.storage_path);
+    if (error || !data) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
+    const url = URL.createObjectURL(data);
+    setPreviewUrl(url);
+    setPreviewFile(file);
+  };
+
+  const closePreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewFile(null);
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedFolders(prev => {
       const next = new Set(prev);
@@ -93,6 +156,7 @@ export default function Documents() {
   const selectFolder = (id: string) => {
     setSelectedFolderId(id);
     setSearch("");
+    setSelectedFiles(new Set());
     // Auto-expand parent chain
     let current = folders.find(f => f.id === id);
     const toExpand = new Set(expandedFolders);
@@ -287,20 +351,41 @@ export default function Documents() {
 
   // ── File row ──
   function FileRow({ file }: { file: DocFile }) {
+    const isSelected = selectedFiles.has(file.id);
+    const canWrite = isAdmin || canWriteFolder(file.folder_id);
+    const previewable = canPreview(file.mime_type);
+
     return (
-      <div className="group flex items-center gap-3 px-4 py-3 rounded-md text-sm hover:bg-secondary/50 transition-colors border border-transparent hover:border-border">
+      <div className={`group flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors border ${
+        isSelected ? "bg-primary/10 border-primary/30" : "hover:bg-secondary/50 border-transparent hover:border-border"
+      }`}>
+        {canWrite && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleFileSelection(file.id)}
+            className="shrink-0"
+          />
+        )}
         <span className="text-lg shrink-0">{getFileIcon(file.mime_type)}</span>
-        <div className="flex-1 min-w-0">
+        <div
+          className={`flex-1 min-w-0 ${previewable ? "cursor-pointer" : ""}`}
+          onClick={() => previewable && openPreview(file)}
+        >
           <p className="truncate font-medium">{file.name}</p>
           <p className="text-xs text-muted-foreground">
             {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString("sv-SE")}
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadFile(file)}>
+          {previewable && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPreview(file)} title="Förhandsvisa">
+              <Eye className="w-4 h-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadFile(file)} title="Ladda ner">
             <Download className="w-4 h-4" />
           </Button>
-          {(isAdmin || canWriteFolder(file.folder_id)) && (
+          {canWrite && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -437,11 +522,38 @@ export default function Documents() {
             {selectedFolder ? (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
+                  <div className="flex items-center gap-3">
+                    {(isAdmin || canWriteFolder(selectedFolder.id)) && currentFiles.length > 0 && (
+                      <Checkbox
+                        checked={selectedFiles.size === currentFiles.length && currentFiles.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                        title="Markera alla"
+                      />
+                    )}
+                    <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
                   </span>
                 </div>
+
+                {/* Bulk action bar */}
+                {selectedFiles.size > 0 && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20">
+                    <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
+                    <div className="flex-1" />
+                    <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
+                      <FolderInput className="w-4 h-4 mr-1" /> Flytta
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                      <Trash2 className="w-4 h-4 mr-1" /> Ta bort
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={clearSelection}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
                 {currentFiles.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <FileText className="w-12 h-12 mb-3 opacity-30" />
@@ -510,6 +622,59 @@ export default function Documents() {
           }
         }}
       />
+
+      {/* Bulk move dialog */}
+      <Dialog open={bulkMoveDialog} onOpenChange={() => setBulkMoveDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Flytta {selectedFiles.size} filer</DialogTitle>
+            <DialogDescription>Välj målmapp</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1 max-h-60 overflow-y-auto">
+            {folders.map(f => (
+              <button key={f.id} onClick={() => bulkMove(f.id)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left hover:bg-secondary">
+                <FolderOpen className="w-4 h-4" /> {f.name}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkMoveDialog(false)}>Avbryt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* File preview dialog */}
+      <Dialog open={!!previewFile} onOpenChange={closePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="truncate">{previewFile?.name}</DialogTitle>
+            <DialogDescription>
+              {previewFile && `${formatFileSize(previewFile.file_size)} · ${new Date(previewFile.created_at).toLocaleDateString("sv-SE")}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto min-h-0">
+            {previewFile && previewUrl && (
+              <>
+                {previewFile.mime_type.startsWith("image/") && (
+                  <img src={previewUrl} alt={previewFile.name} className="max-w-full h-auto mx-auto rounded" />
+                )}
+                {previewFile.mime_type === "application/pdf" && (
+                  <iframe src={previewUrl} className="w-full h-[70vh] rounded border border-border" title={previewFile.name} />
+                )}
+                {previewFile.mime_type.startsWith("text/") && (
+                  <TextPreview url={previewUrl} />
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => previewFile && downloadFile(previewFile)}>
+              <Download className="w-4 h-4 mr-2" /> Ladda ner
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
