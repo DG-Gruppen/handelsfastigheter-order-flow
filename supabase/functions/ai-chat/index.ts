@@ -55,6 +55,8 @@ serve(async (req) => {
           kb_articles: "Kunskapsbanken (artikel)",
           it_faq: "IT FAQ",
           kb_videos: "Kunskapsbanken (video)",
+          website: "Webbplatsen (handelsfastigheter.se)",
+          allabolag: "Allabolag.se (bolagsinfo)",
         };
 
         contextBlock = "\n\n--- INTERN KUNSKAPSBAS (kontext) ---\n" +
