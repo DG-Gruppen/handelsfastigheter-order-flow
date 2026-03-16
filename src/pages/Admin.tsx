@@ -662,12 +662,7 @@ export default function Admin() {
         {/* Content area */}
         <div className="flex-1 min-w-0">
           {activeSection === "menu" ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center space-y-3">
-                <Cog className="h-12 w-12 mx-auto opacity-20" />
-                <p className="text-sm">Välj en sektion i menyn till höger</p>
-              </div>
-            </div>
+            <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
           ) : (
             renderSection(activeSection)
           )}
