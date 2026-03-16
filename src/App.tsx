@@ -63,6 +63,7 @@ const App = () => (
                       <Route path="/personal" element={<Personnel />} />
                       <Route path="/dokument" element={<Documents />} />
                       <Route path="/kunskapsbanken" element={<KnowledgeBase />} />
+                      <Route path="/mitt-shf" element={<MySHF />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
