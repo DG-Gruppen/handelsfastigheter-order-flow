@@ -29,18 +29,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, [profile?.theme_preference, settings, setTheme]);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen w-full">
-      {/* Desktop Sidebar */}
-      <AppSidebar />
+    <>
+      <ImpersonationBanner />
+      <div className="flex flex-col md:flex-row min-h-screen w-full">
+        {/* Desktop Sidebar */}
+        <AppSidebar />
 
-      {/* Main content area */}
-      <div className="flex-1 min-w-0 flex flex-col gradient-bg pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-x-hidden">
-        <main className={`mx-auto px-4 py-5 md:py-8 w-full ${location.pathname === "/org" ? "" : "max-w-6xl"}`}>
-          {children}
-        </main>
+        {/* Main content area */}
+        <div className="flex-1 min-w-0 flex flex-col gradient-bg pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-x-hidden">
+          <main className={`mx-auto px-4 py-5 md:py-8 w-full ${location.pathname === "/org" ? "" : "max-w-6xl"}`}>
+            {children}
+          </main>
+        </div>
+
+        <AiChatBubble />
       </div>
-
-      <AiChatBubble />
-    </div>
+    </>
   );
 }
