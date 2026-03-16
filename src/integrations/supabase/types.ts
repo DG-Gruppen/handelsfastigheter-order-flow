@@ -106,6 +106,94 @@ export type Database = {
           },
         ]
       }
+      document_files: {
+        Row: {
+          created_at: string
+          created_by: string
+          file_size: number
+          folder_id: string
+          id: string
+          mime_type: string
+          name: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          file_size?: number
+          folder_id: string
+          id?: string
+          mime_type?: string
+          name: string
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          file_size?: number
+          folder_id?: string
+          id?: string
+          mime_type?: string
+          name?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_folders: {
+        Row: {
+          access_roles: string[] | null
+          created_at: string
+          created_by: string
+          icon: string
+          id: string
+          name: string
+          parent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          access_roles?: string[] | null
+          created_at?: string
+          created_by: string
+          icon?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          access_roles?: string[] | null
+          created_at?: string
+          created_by?: string
+          icon?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -751,6 +839,10 @@ export type Database = {
         Returns: {
           user_id: string
         }[]
+      }
+      has_folder_access: {
+        Args: { _folder_id: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
