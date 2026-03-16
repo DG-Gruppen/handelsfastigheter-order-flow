@@ -491,21 +491,19 @@ export default function NewOrder() {
                 </p>
               </div>
             )}
-            {!isManagerOrAdmin && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
-                <Select value={approverId} onValueChange={setApproverId}>
-                  <SelectTrigger className="h-12 md:h-10">
-                    <SelectValue placeholder="Välj chef..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map((m) => (
-                      <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
-                        {m.full_name || m.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {!isManagerOrAdmin && myManagerProfile && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">Attesteras av:</span>{" "}
+                  {myManagerProfile.full_name}
+                </p>
+              </div>
+            )}
+            {!isManagerOrAdmin && !myManagerProfile && (
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
+                <p className="text-sm text-destructive">
+                  Du har ingen chef kopplad till din profil. Kontakta din administratör.
+                </p>
               </div>
             )}
 
