@@ -130,7 +130,7 @@ export default function Documents() {
               ? "bg-primary text-primary-foreground"
               : "hover:bg-secondary text-foreground"
           }`}
-          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          style={{ paddingLeft: '8px' }}
           onClick={() => selectFolder(folder.id)}
         >
           <button
