@@ -229,8 +229,63 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
     onDataChange();
   };
 
+  // Scraping states
+  const [scrapingWebsite, setScrapingWebsite] = useState(false);
+  const [scrapingAllabolag, setScrapingAllabolag] = useState(false);
+
+  const scrapeWebsite = async () => {
+    setScrapingWebsite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-website", {
+        body: { url: "https://www.handelsfastigheter.se", limit: 50 },
+      });
+      if (error) throw error;
+      toast.success(`Webbplats indexerad: ${data.indexed} sidor`);
+    } catch (e: any) {
+      toast.error(e.message || "Kunde inte skrapa webbplatsen");
+    } finally {
+      setScrapingWebsite(false);
+    }
+  };
+
+  const scrapeAllabolag = async () => {
+    setScrapingAllabolag(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-allabolag");
+      if (error) throw error;
+      toast.success(`Allabolag indexerat: ${data.indexed} bolag`);
+      if (data.companies?.length) {
+        console.log("Indexed companies:", data.companies);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Kunde inte skrapa Allabolag");
+    } finally {
+      setScrapingAllabolag(false);
+    }
+  };
+
   return (
     <>
+      {/* AI Data Sources Card */}
+      <Card className="glass-card border-t-2 border-t-primary/40 mb-4">
+        <CardHeader className="px-4 md:px-6">
+          <CardTitle className="font-heading text-base md:text-lg text-primary">AI-datakällor</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-3">
+          <p className="text-xs text-muted-foreground">Uppdatera AI-assistentens kunskapsbas genom att skrapa externa datakällor.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={scrapeWebsite} disabled={scrapingWebsite}>
+              {scrapingWebsite ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Globe className="h-3.5 w-3.5 mr-1.5" />}
+              {scrapingWebsite ? "Skrapar..." : "Skrapa handelsfastigheter.se"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={scrapeAllabolag} disabled={scrapingAllabolag}>
+              {scrapingAllabolag ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Building2 className="h-3.5 w-3.5 mr-1.5" />}
+              {scrapingAllabolag ? "Skrapar..." : "Skrapa Allabolag (koncernen)"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="glass-card border-t-2 border-t-accent/40">
         <CardHeader className="px-4 md:px-6">
           <CardTitle className="font-heading text-base md:text-lg text-accent">Hantera kunskapsbasen</CardTitle>
