@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import AppSidebar from "@/components/AppSidebar";
+import AiChatBubble from "@/components/AiChatBubble";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
