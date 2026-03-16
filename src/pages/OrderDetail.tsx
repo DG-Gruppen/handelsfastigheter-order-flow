@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
+import { sendRejectionEmail } from "@/lib/orderEmails";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
