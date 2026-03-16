@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { Construction, LayoutDashboard, ShoppingCart, Headphones, ArrowLeft } from "lucide-react";
+import { Construction, LayoutDashboard, ShoppingCart, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -61,17 +61,6 @@ const NotFound = () => {
             </Button>
           ))}
         </div>
-
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => window.history.back()}
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Gå tillbaka
-        </Button>
       </motion.div>
     </div>
   );
