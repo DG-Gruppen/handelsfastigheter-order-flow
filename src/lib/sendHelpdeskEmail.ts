@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getItContactEmail } from "@/lib/orderEmails";
+import { getAppBaseUrl } from "@/lib/utils";
 
 interface HelpdeskEmailParams {
   orderId: string;
