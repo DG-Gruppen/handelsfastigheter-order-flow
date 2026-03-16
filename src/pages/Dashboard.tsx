@@ -17,32 +17,8 @@ const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
 /* ── Component ── */
 export default function Dashboard() {
-  const { user, profile, roles } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { user, profile } = useAuth();
   const [recognitions, setRecognitions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const isAdmin = roles.includes("admin");
-  const isManager = roles.includes("manager");
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const fetchOrders = useCallback(async () => {
-    if (!user || !profile) return;
-    if (isAdmin) {
-      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
-    } else if (isManager) {
-      const { data: managed } = await supabase.from("profiles").select("user_id").eq("manager_id", profile.id);
-      const ids = [user.id, ...(managed ?? []).map((p) => p.user_id)];
-      const { data } = await supabase.from("orders").select("*").in("requester_id", ids).order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
-    } else {
-      const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
-    }
-    setLoading(false);
-  }, [user, profile, isAdmin, isManager]);
 
   const fetchRecognitions = useCallback(async () => {
     const { data } = await supabase
@@ -67,30 +43,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || !profile) return;
-    setLoading(true);
-    fetchOrders();
     fetchRecognitions();
+  }, [user, profile, fetchRecognitions]);
 
-    const channel = supabase
-      .channel("dashboard-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => fetchOrders(), 500);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [user, profile, isAdmin, isManager, fetchOrders, fetchRecognitions]);
-
-  const counts = useMemo(() => ({
-    pending: orders.filter((o) => o.status === "pending").length,
-    approved: orders.filter((o) => o.status === "approved").length,
-    total: orders.length,
-    needsMyApproval: orders.filter((o) => o.status === "pending" && o.approver_id === user?.id).length,
-  }), [orders, user?.id]);
+  function getGreeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return "God morgon";
+    if (h < 18) return "God eftermiddag";
+    return "God kväll";
+  }
 
   const firstName = profile?.full_name?.split(" ")[0] || "du";
   const latestNews = newsPosts.slice(0, 3);
