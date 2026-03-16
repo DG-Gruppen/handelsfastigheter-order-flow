@@ -12,7 +12,8 @@ import {
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
-import { kpis, okrs, recognitions, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
+import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
+import RecognitionDialog from "@/components/RecognitionDialog";
 import { newsPosts } from "@/data/news";
 
 /* ── Order helpers ── */
@@ -58,6 +59,7 @@ const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 export default function Dashboard() {
   const { user, profile, roles } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [recognitions, setRecognitions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isAdmin = roles.includes("admin");
@@ -82,10 +84,32 @@ export default function Dashboard() {
     setLoading(false);
   }, [user, profile, isAdmin, isManager]);
 
+  const fetchRecognitions = useCallback(async () => {
+    const { data } = await supabase
+      .from("recognitions")
+      .select("id, icon, message, created_at, from_user_id, to_user_id")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (!data) return;
+    const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+    const nameMap: Record<string, string> = {};
+    for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
+    setRecognitions(data.map((r: any) => ({
+      ...r,
+      from_name: nameMap[r.from_user_id] || "Okänd",
+      to_name: nameMap[r.to_user_id] || "Okänd",
+    })));
+  }, []);
+
   useEffect(() => {
     if (!user || !profile) return;
     setLoading(true);
     fetchOrders();
+    fetchRecognitions();
 
     const channel = supabase
       .channel("dashboard-orders")
@@ -99,7 +123,7 @@ export default function Dashboard() {
       supabase.removeChannel(channel);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [user, profile, isAdmin, isManager, fetchOrders]);
+  }, [user, profile, isAdmin, isManager, fetchOrders, fetchRecognitions]);
 
   const counts = useMemo(() => ({
     pending: orders.filter((o) => o.status === "pending").length,
@@ -187,17 +211,23 @@ export default function Dashboard() {
             <CardTitle className="font-heading text-base flex items-center gap-2">
               <PartyPopper className="w-5 h-5 text-primary" />
               Senaste erkännanden
+              <span className="ml-auto">
+                <RecognitionDialog onCreated={fetchRecognitions} />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recognitions.map((r, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <span className="text-lg mt-0.5">{r.value === "Erfarenhet" ? "⭐" : r.value === "Driv" ? "🚀" : "🌱"}</span>
+            {recognitions.length === 0 && (
+              <p className="text-sm text-muted-foreground">Inga erkännanden ännu. Var först med att uppmärksamma en kollega!</p>
+            )}
+            {recognitions.map((r) => (
+              <div key={r.id} className="flex items-start gap-3">
+                <span className="text-lg mt-0.5">{r.icon}</span>
                 <div className="min-w-0">
                   <div className="text-sm">
-                    <span className="font-medium">{r.from}</span>
+                    <span className="font-medium">{r.from_name}</span>
                     <span className="text-muted-foreground"> → </span>
-                    <span className="font-medium">{r.to}</span>
+                    <span className="font-medium">{r.to_name}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.message}</p>
                 </div>
