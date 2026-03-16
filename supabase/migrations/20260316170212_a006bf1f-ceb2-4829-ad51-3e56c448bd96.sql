@@ -1,0 +1,11 @@
+ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.order_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.kb_articles;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.kb_videos;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.kb_categories;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.it_faq;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.document_folders;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.document_files;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.categories;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.order_types;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.systems;
