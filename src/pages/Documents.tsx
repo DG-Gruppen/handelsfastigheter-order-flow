@@ -88,6 +88,55 @@ export default function Documents() {
 
   const selectedFolder = folders.find(f => f.id === selectedFolderId);
 
+  // ── Multi-select helpers ──
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId); else next.add(fileId);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selectedFiles.size === currentFiles.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(currentFiles.map(f => f.id)));
+    }
+  };
+  const clearSelection = () => setSelectedFiles(new Set());
+
+  const bulkDelete = async () => {
+    const toDelete = files.filter(f => selectedFiles.has(f.id));
+    for (const file of toDelete) await deleteFile(file);
+    clearSelection();
+    toast({ title: `${toDelete.length} filer borttagna` });
+  };
+
+  const bulkMove = async (targetFolderId: string) => {
+    for (const fileId of selectedFiles) await moveFile(fileId, targetFolderId);
+    clearSelection();
+    setBulkMoveDialog(false);
+    toast({ title: `${selectedFiles.size} filer flyttade` });
+  };
+
+  // ── Preview helper ──
+  const canPreview = (mime: string) =>
+    mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("text/");
+
+  const openPreview = async (file: DocFile) => {
+    const { data, error } = await supabase.storage.from("documents").download(file.storage_path);
+    if (error || !data) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
+    const url = URL.createObjectURL(data);
+    setPreviewUrl(url);
+    setPreviewFile(file);
+  };
+
+  const closePreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewFile(null);
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedFolders(prev => {
       const next = new Set(prev);
