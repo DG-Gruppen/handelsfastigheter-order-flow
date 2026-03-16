@@ -471,40 +471,69 @@ function MoveDialog({ open, item, folders, onClose, onMove }: {
 
 function AccessDialog({ open, folder, onClose, onSave }: {
   open: boolean; folder: DocFolder | null; onClose: () => void;
-  onSave: (id: string, roles: string[] | null) => void;
+  onSave: (id: string, accessRoles: string[] | null, writeRoles: string[] | null) => void;
 }) {
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(folder?.access_roles ?? []);
-  const [allAccess, setAllAccess] = useState(!folder?.access_roles);
+  const [readRoles, setReadRoles] = useState<string[]>(folder?.access_roles ?? []);
+  const [writeRoles, setWriteRoles] = useState<string[]>(folder?.write_roles ?? []);
+  const [allRead, setAllRead] = useState(!folder?.access_roles);
 
   if (!folder) return null;
 
-  const toggleRole = (role: string) => {
-    setSelectedRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  const toggleRead = (role: string) => {
+    setReadRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  };
+  const toggleWrite = (role: string) => {
+    setWriteRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>Behörighet: {folder.name}</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={allAccess} onCheckedChange={(c) => setAllAccess(!!c)} id="all-access" />
-            <Label htmlFor="all-access">Tillgänglig för alla roller</Label>
+        <div className="space-y-5">
+          {/* Read access */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Läsbehörighet</p>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={allRead} onCheckedChange={(c) => setAllRead(!!c)} id="all-read" />
+              <Label htmlFor="all-read">Alla roller kan läsa</Label>
+            </div>
+            {!allRead && (
+              <div className="space-y-2 pl-6">
+                {ALL_ROLES.map(role => (
+                  <div key={role.value} className="flex items-center gap-2">
+                    <Checkbox checked={readRoles.includes(role.value)} onCheckedChange={() => toggleRead(role.value)} id={`read-${role.value}`} />
+                    <Label htmlFor={`read-${role.value}`}>{role.label}</Label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {!allAccess && (
-            <div className="space-y-2 pl-6">
-              {ALL_ROLES.map(role => (
+
+          {/* Write access */}
+          <div className="space-y-3 border-t border-border pt-4">
+            <p className="text-sm font-semibold text-foreground">Skrivbehörighet</p>
+            <p className="text-xs text-muted-foreground">Roller som kan ladda upp, redigera och ta bort filer/undermappar. Admin har alltid skrivåtkomst.</p>
+            <div className="space-y-2 pl-2">
+              {ALL_ROLES.filter(r => r.value !== "admin").map(role => (
                 <div key={role.value} className="flex items-center gap-2">
-                  <Checkbox checked={selectedRoles.includes(role.value)} onCheckedChange={() => toggleRole(role.value)} id={`role-${role.value}`} />
-                  <Label htmlFor={`role-${role.value}`}>{role.label}</Label>
+                  <Checkbox checked={writeRoles.includes(role.value)} onCheckedChange={() => toggleWrite(role.value)} id={`write-${role.value}`} />
+                  <Label htmlFor={`write-${role.value}`}>{role.label}</Label>
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Avbryt</Button>
-          <Button onClick={() => { onSave(folder.id, allAccess ? null : selectedRoles); onClose(); }}>Spara</Button>
+          <Button onClick={() => {
+            onSave(
+              folder.id,
+              allRead ? null : readRoles,
+              writeRoles.length > 0 ? writeRoles : null
+            );
+            onClose();
+          }}>Spara</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
