@@ -50,7 +50,7 @@ interface NewOrderEmailParams {
 
 export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   const { orderId, title, description, requesterName, approverName, approverEmail, items, recipientName } = params;
-  const orderUrl = `${window.location.origin}/orders/${orderId}`;
+  const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
   const recipientLine = recipientName ? `<p style="margin:0 0 8px;color:#333;">Mottagare: <strong>${recipientName}</strong></p>` : "";
 
   const html = emailShell("📋 Ny beställning att attestera", `
