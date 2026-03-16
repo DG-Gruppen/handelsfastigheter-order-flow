@@ -47,6 +47,7 @@ export default function Documents() {
     folders, files, loading, isAdmin,
     createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile, canWriteFolder,
+    refresh,
   } = useDocuments();
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
