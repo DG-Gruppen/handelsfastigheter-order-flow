@@ -108,9 +108,105 @@ export default function Documents() {
     selectFolder(rootFolders[0].id);
   }
 
+  const [uploadProgress, setUploadProgress] = useState<{ total: number; done: number } | null>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBatchUpload = useCallback(async (files: FileList, targetFolderId: string) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    setUploadProgress({ total: fileArray.length, done: 0 });
+
+    // Group files by their relative folder paths for folder uploads
+    const fileFolderMap = new Map<string, File[]>();
+    for (const file of fileArray) {
+      const relativePath = (file as any).webkitRelativePath as string;
+      if (relativePath) {
+        // e.g. "MyFolder/sub/file.txt" → parts = ["MyFolder", "sub"]
+        const parts = relativePath.split("/").slice(0, -1);
+        const key = parts.join("/");
+        if (!fileFolderMap.has(key)) fileFolderMap.set(key, []);
+        fileFolderMap.get(key)!.push(file);
+      } else {
+        if (!fileFolderMap.has("")) fileFolderMap.set("", []);
+        fileFolderMap.get("")!.push(file);
+      }
+    }
+
+    // If it's a simple multi-file upload (no folder structure)
+    if (fileFolderMap.size === 1 && fileFolderMap.has("")) {
+      let done = 0;
+      for (const file of fileArray) {
+        await uploadFile(targetFolderId, file);
+        done++;
+        setUploadProgress({ total: fileArray.length, done });
+      }
+    } else {
+      // Folder upload: create subfolders as needed
+      const createdFolders = new Map<string, string>(); // path → folderId
+      let done = 0;
+
+      for (const [folderPath, filesInFolder] of fileFolderMap) {
+        let currentParentId = targetFolderId;
+
+        if (folderPath) {
+          const parts = folderPath.split("/");
+          let builtPath = "";
+          for (const part of parts) {
+            builtPath = builtPath ? `${builtPath}/${part}` : part;
+            if (createdFolders.has(builtPath)) {
+              currentParentId = createdFolders.get(builtPath)!;
+            } else {
+              // Check if folder already exists
+              const existing = folders.find(
+                f => f.name === part && f.parent_id === currentParentId
+              );
+              if (existing) {
+                createdFolders.set(builtPath, existing.id);
+                currentParentId = existing.id;
+              } else {
+                await createFolder(part, currentParentId);
+                // Refresh to get the new folder ID
+                await refresh();
+                // We need to find the newly created folder - it won't be in current state yet
+                // So we'll fetch fresh data and find it
+                const { data: newFolders } = await (await import("@/integrations/supabase/client")).supabase
+                  .from("document_folders")
+                  .select("id")
+                  .eq("name", part)
+                  .eq("parent_id", currentParentId)
+                  .limit(1)
+                  .single();
+                if (newFolders) {
+                  createdFolders.set(builtPath, newFolders.id);
+                  currentParentId = newFolders.id;
+                }
+              }
+            }
+          }
+        }
+
+        for (const file of filesInFolder) {
+          await uploadFile(currentParentId, file);
+          done++;
+          setUploadProgress({ total: fileArray.length, done });
+        }
+      }
+    }
+
+    setUploadProgress(null);
+    refresh();
+  }, [folders, uploadFile, createFolder, refresh]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!selectedFolderId || !e.target.files) return;
-    Array.from(e.target.files).forEach(file => uploadFile(selectedFolderId, file));
+    handleBatchUpload(e.target.files, selectedFolderId);
+    e.target.value = "";
+  };
+
+  const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedFolderId || !e.target.files) return;
+    handleBatchUpload(e.target.files, selectedFolderId);
     e.target.value = "";
   };
 
