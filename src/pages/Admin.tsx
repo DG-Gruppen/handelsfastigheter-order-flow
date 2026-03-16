@@ -5,15 +5,19 @@ import { useAuth } from "@/hooks/useAuth";
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
 import SystemsManager from "@/components/SystemsManager";
+import ModulesManager from "@/components/ModulesManager";
+import KbAdminPanel from "@/components/kb/KbAdminPanel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2, Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2, Palette, Wrench, LayoutGrid } from "lucide-react";
-import ModulesManager from "@/components/ModulesManager";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import {
+  UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2,
+  Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2,
+  Palette, Wrench, LayoutGrid, BookOpen, ShoppingCart, Cog
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileWithRoles {
@@ -27,7 +31,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules" | "knowledge";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -45,77 +49,94 @@ const roleColors: Record<string, string> = {
   it: "bg-primary/10 text-primary border-primary/20",
 };
 
-const sections = [
+interface AdminGroup {
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  items: AdminItem[];
+}
+
+interface AdminItem {
+  id: AdminSection;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  color: string;
+  borderColor: string;
+  bgColor: string;
+  textColor: string;
+  roles?: string[];
+}
+
+const adminGroups: AdminGroup[] = [
   {
-    id: "categories" as const,
-    label: "Kategorier",
-    description: "Skapa och hantera kategorier",
-    icon: FolderOpen,
-    color: "from-primary to-primary-glow",
-    borderColor: "border-t-primary/40",
-    bgColor: "bg-primary/10",
-    textColor: "text-primary",
+    label: "Beställningar",
+    icon: ShoppingCart,
+    color: "text-accent",
+    items: [
+      {
+        id: "categories", label: "Kategorier", description: "Skapa och hantera beställningskategorier",
+        icon: FolderOpen, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
+        bgColor: "bg-primary/10", textColor: "text-primary",
+      },
+      {
+        id: "equipment", label: "Utrustning", description: "Hantera beställningsbar utrustning",
+        icon: Package, color: "from-accent to-accent", borderColor: "border-t-accent/40",
+        bgColor: "bg-accent/10", textColor: "text-accent",
+      },
+      {
+        id: "systems", label: "System & Licenser", description: "Hantera system för on-/offboarding",
+        icon: Monitor, color: "from-accent to-accent", borderColor: "border-t-accent/40",
+        bgColor: "bg-accent/10", textColor: "text-accent",
+      },
+    ],
   },
   {
-    id: "equipment" as const,
-    label: "Utrustning",
-    description: "Hantera beställningsbar utrustning",
-    icon: Package,
-    color: "from-accent to-accent",
-    borderColor: "border-t-accent/40",
-    bgColor: "bg-accent/10",
-    textColor: "text-accent",
+    label: "Innehåll",
+    icon: BookOpen,
+    color: "text-primary",
+    items: [
+      {
+        id: "knowledge", label: "Kunskapsbanken", description: "Artiklar, videor och kategorier",
+        icon: BookOpen, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
+        bgColor: "bg-primary/10", textColor: "text-primary",
+      },
+    ],
   },
   {
-    id: "systems" as const,
-    label: "System & Licenser",
-    description: "Hantera system för on-/offboarding",
-    icon: Monitor,
-    color: "from-accent to-accent",
-    borderColor: "border-t-accent/40",
-    bgColor: "bg-accent/10",
-    textColor: "text-accent",
-  },
-  {
-    id: "users" as const,
-    label: "Användare & Roller",
-    description: "Tilldela roller till användare",
+    label: "Organisation",
     icon: Users,
-    color: "from-warning to-warning",
-    borderColor: "border-t-warning/40",
-    bgColor: "bg-warning/10",
-    textColor: "text-warning",
+    color: "text-warning",
+    items: [
+      {
+        id: "users", label: "Användare & Roller", description: "Tilldela roller till användare",
+        icon: Users, color: "from-warning to-warning", borderColor: "border-t-warning/40",
+        bgColor: "bg-warning/10", textColor: "text-warning",
+      },
+    ],
   },
   {
-    id: "settings" as const,
-    label: "Inställningar",
-    description: "Attestering och andra inställningar",
-    icon: Settings,
-    color: "from-muted-foreground to-muted-foreground",
-    borderColor: "border-t-muted-foreground/30",
-    bgColor: "bg-muted-foreground/10",
-    textColor: "text-muted-foreground",
-  },
-  {
-    id: "it" as const,
-    label: "IT",
-    description: "Navigationslänkar och utseende",
-    icon: Wrench,
-    color: "from-primary to-primary-glow",
-    borderColor: "border-t-primary/40",
-    bgColor: "bg-primary/10",
-    textColor: "text-primary",
-    roles: ["it", "admin"] as string[],
-  },
-  {
-    id: "modules" as const,
-    label: "Moduler",
-    description: "Hantera moduler och behörigheter",
-    icon: LayoutGrid,
-    color: "from-primary to-primary-glow",
-    borderColor: "border-t-primary/40",
-    bgColor: "bg-primary/10",
-    textColor: "text-primary",
+    label: "Systeminställningar",
+    icon: Cog,
+    color: "text-muted-foreground",
+    items: [
+      {
+        id: "modules", label: "Moduler", description: "Hantera moduler och behörigheter",
+        icon: LayoutGrid, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
+        bgColor: "bg-primary/10", textColor: "text-primary",
+      },
+      {
+        id: "settings", label: "Inställningar", description: "Attestering och andra inställningar",
+        icon: Settings, color: "from-muted-foreground to-muted-foreground", borderColor: "border-t-muted-foreground/30",
+        bgColor: "bg-muted-foreground/10", textColor: "text-muted-foreground",
+      },
+      {
+        id: "it", label: "IT", description: "Navigationslänkar och utseende",
+        icon: Wrench, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
+        bgColor: "bg-primary/10", textColor: "text-primary",
+        roles: ["it", "admin"],
+      },
+    ],
   },
 ];
 
@@ -280,7 +301,6 @@ export default function Admin() {
         `Import klar: ${updated.length} uppdaterade, ${noChanges.length} redan aktuella, ${noMatch.length} utan matchning${errors.length ? `, ${errors.length} fel` : ""}`
       );
 
-      // Refresh profiles
       const { data: profilesData } = await supabase.from("profiles").select("*");
       setProfiles((profilesData as ProfileWithRoles[]) ?? []);
     } catch (err: any) {
@@ -294,412 +314,383 @@ export default function Admin() {
   if (!roles.includes("admin")) {
     return (
       <div className="text-center py-20">
-          <Shield className="h-10 w-10 mx-auto text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground mt-4">Du har inte behörighet att se denna sida</p>
-        </div>
+        <Shield className="h-10 w-10 mx-auto text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground mt-4">Du har inte behörighet att se denna sida</p>
+      </div>
     );
   }
 
-  const UsersContent = (
-    <Card className="glass-card border-t-2 border-t-warning/40">
-      <CardHeader className="px-4 md:px-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
-            <Users className="h-4 w-4 md:h-5 md:w-5 text-warning" />
+  // Filter groups/items by role
+  const visibleGroups = adminGroups
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item => !item.roles || item.roles.some(r => roles.includes(r))),
+    }))
+    .filter(g => g.items.length > 0);
+
+  const allItems = visibleGroups.flatMap(g => g.items);
+  const activeItem = allItems.find(i => i.id === activeSection);
+
+  const renderSection = (sectionId: AdminSection) => {
+    switch (sectionId) {
+      case "categories": return <CategoriesManager />;
+      case "equipment": return <OrderTypesManager />;
+      case "systems": return <SystemsManager />;
+      case "users": return <UsersContent />;
+      case "settings": return <SettingsContent />;
+      case "it": return <ITContent />;
+      case "modules": return <ModulesManager onClose={() => setActiveSection("menu")} />;
+      case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
+      default: return null;
+    }
+  };
+
+  function UsersContent() {
+    return (
+      <Card className="glass-card border-t-2 border-t-warning/40">
+        <CardHeader className="px-4 md:px-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-warning/10 shadow-sm shadow-warning/10">
+              <Users className="h-4 w-4 md:h-5 md:w-5 text-warning" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-base md:text-lg text-warning">Användare & Roller</CardTitle>
+              <CardDescription className="text-xs">Tilldela roller till användare</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="font-heading text-base md:text-lg text-warning">Användare & Roller</CardTitle>
-            <CardDescription className="text-xs">Tilldela roller till användare</CardDescription>
+          <div className="pt-2">
+            <label className="cursor-pointer">
+              <input type="file" accept=".json" className="hidden" onChange={handleGoogleWorkspaceImport} disabled={importing} />
+              <Button variant="outline" size="sm" className="gap-2" asChild disabled={importing}>
+                <span>
+                  {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Importera från Google Workspace
+                </span>
+              </Button>
+            </label>
           </div>
-        </div>
-        <div className="pt-2">
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={handleGoogleWorkspaceImport}
-              disabled={importing}
-            />
-            <Button variant="outline" size="sm" className="gap-2" asChild disabled={importing}>
-              <span>
-                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Importera från Google Workspace
-              </span>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text" placeholder="Sök namn, e-post, avdelning..."
+                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full min-h-0 h-10 pl-9 pr-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setSortAsc((v) => !v)} title={sortAsc ? "Sortering: A–Ö" : "Sortering: Ö–A"}>
+              <ArrowUpDown className="h-4 w-4" />
             </Button>
-          </label>
-        </div>
-      </CardHeader>
-      <CardContent className="px-4 md:px-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Sök namn, e-post, avdelning..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full min-h-0 h-10 pl-9 pr-3 rounded-xl border border-border/50 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 shrink-0"
-            onClick={() => setSortAsc((v) => !v)}
-            title={sortAsc ? "Sortering: A–Ö" : "Sortering: Ö–A"}
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={filterDept} onValueChange={setFilterDept}>
-            <SelectTrigger className="h-9 w-auto min-w-[140px] text-xs">
-              <Building2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              <SelectValue placeholder="Avdelning" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla avdelningar</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterRole} onValueChange={setFilterRole}>
-            <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
-              <Shield className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              <SelectValue placeholder="Roll" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla roller</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="manager">Chef</SelectItem>
-              <SelectItem value="employee">Anställd</SelectItem>
-              <SelectItem value="staff">Stab</SelectItem>
-              <SelectItem value="it">IT</SelectItem>
-              <SelectItem value="none">Utan roll</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterPhone} onValueChange={setFilterPhone}>
-            <SelectTrigger className="h-9 w-auto min-w-[130px] text-xs">
-              <Phone className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-              <SelectValue placeholder="Telefon" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla</SelectItem>
-              <SelectItem value="yes">Har telefonnummer</SelectItem>
-              <SelectItem value="no">Saknar telefonnummer</SelectItem>
-            </SelectContent>
-          </Select>
-          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 text-xs text-muted-foreground"
-              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); }}
-            >
-              Rensa filter
-            </Button>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">{filteredProfiles.length} av {profiles.length} användare</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filteredProfiles.map((p) => {
-            const currentRoles = userRoles[p.user_id] ?? [];
-            return (
-            <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
-              <div className="space-y-1.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-sm md:text-base text-foreground">
-                      {p.full_name || p.email}
-                    </p>
-                    {p.title_override && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <Briefcase className="h-3 w-3 shrink-0" />
-                        {p.title_override}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                  <span>{p.email}</span>
-                  {p.phone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3 shrink-0" />
-                      {p.phone}
-                    </span>
-                  )}
-                  {p.department && (
-                    <span className="flex items-center gap-1">
-                      <Building2 className="h-3 w-3 shrink-0" />
-                      {p.department}
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-1.5 flex-wrap pt-0.5">
-                  {(userRoles[p.user_id] ?? []).map((role) => (
-                    <Badge key={role} variant="outline" className={`capitalize text-xs gap-1 pr-1 ${roleColors[role] ?? ""}`}>
-                      {roleLabels[role] ?? role}
-                      <button
-                        onClick={() => handleRemoveRole(p.user_id, role)}
-                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-1.5 -mr-1 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={selectedRole[p.user_id] ?? ""}
-                  onValueChange={(v) => setSelectedRole((prev) => ({ ...prev, [p.user_id]: v }))}
-                >
-                  <SelectTrigger className="flex-1 h-11 md:h-10 md:w-[160px] md:flex-none">
-                    <SelectValue placeholder="Välj roll..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {!currentRoles.includes("employee") && <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>}
-                    {!currentRoles.includes("manager") && <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>}
-                    {!currentRoles.includes("staff") && <SelectItem value="staff" className="py-3 md:py-2">Stab</SelectItem>}
-                    {!currentRoles.includes("it") && <SelectItem value="it" className="py-3 md:py-2">IT</SelectItem>}
-                    {!currentRoles.includes("admin") && <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  className="gap-1.5 h-11 md:h-10 shrink-0"
-                  onClick={() => handleAddRole(p.user_id)}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Lägg till</span>
-                </Button>
-              </div>
-            </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const SettingsContent = (
-    <div className="space-y-6">
-      {/* Attestering */}
-      <Card className="glass-card border-t-2 border-t-muted-foreground/30">
-        <CardHeader className="px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
-              <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
-              <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 space-y-4">
-          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
-            <div className="min-w-0 mr-2">
-              <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
-              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
-            </div>
-            <Switch
-              checked={allSettings["approval_managers_to_ceo"] === "true"}
-              onCheckedChange={() => toggleSetting("approval_managers_to_ceo", false)}
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
-            <div className="min-w-0 mr-2">
-              <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
-              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
-            </div>
-            <Switch
-              checked={allSettings["approval_staff_to_ceo"] === "true"}
-              onCheckedChange={() => toggleSetting("approval_staff_to_ceo", false)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-    </div>
-  );
-
-  const ITContent = (
-    <div className="space-y-6">
-      {/* Navigation links */}
-      <Card className="glass-card border-t-2 border-t-primary/40">
-        <CardHeader className="px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
-              <Link2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="font-heading text-base md:text-lg text-primary">Navigationslänkar</CardTitle>
-              <CardDescription className="text-xs">Styr vilka sidor som visas och är tillgängliga</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {NAV_LINKS.map((link) => (
-              <div
-                key={link.key}
-                className="flex items-center justify-between rounded-xl border border-primary/10 bg-primary/[0.03] p-3 hover:bg-primary/[0.06] transition-colors"
-              >
-                <div className="min-w-0 mr-2">
-                  <p className="text-sm font-medium text-foreground">{link.label}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{link.description}</p>
-                </div>
-                <Switch
-                  checked={isOn(link.key)}
-                  onCheckedChange={() => toggleSetting(link.key)}
-                />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Default theme */}
-      <Card className="glass-card border-t-2 border-t-accent/40">
-        <CardHeader className="px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
-              <Palette className="h-4 w-4 md:h-5 md:w-5 text-accent" />
-            </div>
-            <div>
-              <CardTitle className="font-heading text-base md:text-lg text-accent">Utseende</CardTitle>
-              <CardDescription className="text-xs">Standardtema för nya användare</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6">
-          <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-3 md:p-4 hover:bg-accent/[0.06] transition-colors">
-            <div className="min-w-0 mr-2">
-              <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
-              <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">
-                Nuvarande: {(allSettings["it_default_theme"] || "light") === "light" ? "Ljust" : "Mörkt"}
-              </p>
-            </div>
-            <Select
-              value={allSettings["it_default_theme"] || "light"}
-              onValueChange={(v) => upsertSetting("it_default_theme", v)}
-            >
-              <SelectTrigger className="w-[130px]">
-                <SelectValue />
+          <div className="flex flex-wrap gap-2">
+            <Select value={filterDept} onValueChange={setFilterDept}>
+              <SelectTrigger className="h-9 w-auto min-w-[140px] text-xs">
+                <Building2 className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Avdelning" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="light">Ljust</SelectItem>
-                <SelectItem value="dark">Mörkt</SelectItem>
+                <SelectItem value="all">Alla avdelningar</SelectItem>
+                {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
+                <Shield className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Roll" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla roller</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="manager">Chef</SelectItem>
+                <SelectItem value="employee">Anställd</SelectItem>
+                <SelectItem value="staff">Stab</SelectItem>
+                <SelectItem value="it">IT</SelectItem>
+                <SelectItem value="none">Utan roll</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterPhone} onValueChange={setFilterPhone}>
+              <SelectTrigger className="h-9 w-auto min-w-[130px] text-xs">
+                <Phone className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Telefon" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla</SelectItem>
+                <SelectItem value="yes">Har telefonnummer</SelectItem>
+                <SelectItem value="no">Saknar telefonnummer</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all") && (
+              <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground"
+                onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); }}>
+                Rensa filter
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{filteredProfiles.length} av {profiles.length} användare</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filteredProfiles.map((p) => {
+              const currentRoles = userRoles[p.user_id] ?? [];
+              return (
+                <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-sm md:text-base text-foreground">{p.full_name || p.email}</p>
+                        {p.title_override && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Briefcase className="h-3 w-3 shrink-0" />{p.title_override}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                      <span>{p.email}</span>
+                      {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{p.phone}</span>}
+                      {p.department && <span className="flex items-center gap-1"><Building2 className="h-3 w-3 shrink-0" />{p.department}</span>}
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap pt-0.5">
+                      {currentRoles.map((role) => (
+                        <Badge key={role} variant="outline" className={`capitalize text-xs gap-1 pr-1 ${roleColors[role] ?? ""}`}>
+                          {roleLabels[role] ?? role}
+                          <button onClick={() => handleRemoveRole(p.user_id, role)}
+                            className="ml-0.5 rounded-full hover:bg-destructive/20 p-1.5 -mr-1 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedRole[p.user_id] ?? ""} onValueChange={(v) => setSelectedRole((prev) => ({ ...prev, [p.user_id]: v }))}>
+                      <SelectTrigger className="flex-1 h-11 md:h-10 md:w-[160px] md:flex-none">
+                        <SelectValue placeholder="Välj roll..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {!currentRoles.includes("employee") && <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>}
+                        {!currentRoles.includes("manager") && <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>}
+                        {!currentRoles.includes("staff") && <SelectItem value="staff" className="py-3 md:py-2">Stab</SelectItem>}
+                        {!currentRoles.includes("it") && <SelectItem value="it" className="py-3 md:py-2">IT</SelectItem>}
+                        {!currentRoles.includes("admin") && <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" className="gap-1.5 h-11 md:h-10 shrink-0" onClick={() => handleAddRole(p.user_id)}>
+                      <UserPlus className="h-4 w-4" /><span className="hidden sm:inline">Lägg till</span>
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    );
+  }
 
-  // Mobile: card-based navigation
+  function SettingsContent() {
+    return (
+      <div className="space-y-6">
+        <Card className="glass-card border-t-2 border-t-muted-foreground/30">
+          <CardHeader className="px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-muted-foreground/10 shadow-sm">
+                <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle className="font-heading text-base md:text-lg">Attesteringsinställningar</CardTitle>
+                <CardDescription className="text-xs">Styr vilka beställningar som ska attesteras av VD</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6 space-y-4">
+            <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+              <div className="min-w-0 mr-2">
+                <p className="text-sm font-medium text-foreground">Chefers beställningar attesteras av VD</p>
+                <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Chefer kan inte godkänna sina egna beställningar</p>
+              </div>
+              <Switch checked={allSettings["approval_managers_to_ceo"] === "true"} onCheckedChange={() => toggleSetting("approval_managers_to_ceo", false)} />
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 md:p-4">
+              <div className="min-w-0 mr-2">
+                <p className="text-sm font-medium text-foreground">Stabs beställningar attesteras av VD</p>
+                <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">Stabsmedarbetare skickas till VD istället</p>
+              </div>
+              <Switch checked={allSettings["approval_staff_to_ceo"] === "true"} onCheckedChange={() => toggleSetting("approval_staff_to_ceo", false)} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  function ITContent() {
+    return (
+      <div className="space-y-6">
+        <Card className="glass-card border-t-2 border-t-primary/40">
+          <CardHeader className="px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm shadow-primary/10">
+                <Link2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="font-heading text-base md:text-lg text-primary">Navigationslänkar</CardTitle>
+                <CardDescription className="text-xs">Styr vilka sidor som visas och är tillgängliga</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {NAV_LINKS.map((link) => (
+                <div key={link.key} className="flex items-center justify-between rounded-xl border border-primary/10 bg-primary/[0.03] p-3 hover:bg-primary/[0.06] transition-colors">
+                  <div className="min-w-0 mr-2">
+                    <p className="text-sm font-medium text-foreground">{link.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{link.description}</p>
+                  </div>
+                  <Switch checked={isOn(link.key)} onCheckedChange={() => toggleSetting(link.key)} />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card border-t-2 border-t-accent/40">
+          <CardHeader className="px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-accent/10 shadow-sm shadow-accent/10">
+                <Palette className="h-4 w-4 md:h-5 md:w-5 text-accent" />
+              </div>
+              <div>
+                <CardTitle className="font-heading text-base md:text-lg text-accent">Utseende</CardTitle>
+                <CardDescription className="text-xs">Standardtema för nya användare</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6">
+            <div className="flex items-center justify-between rounded-xl border border-accent/10 bg-accent/[0.03] p-3 md:p-4 hover:bg-accent/[0.06] transition-colors">
+              <div className="min-w-0 mr-2">
+                <p className="text-sm font-medium text-foreground">Tema för nya användare</p>
+                <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5">
+                  Nuvarande: {(allSettings["it_default_theme"] || "light") === "light" ? "Ljust" : "Mörkt"}
+                </p>
+              </div>
+              <Select value={allSettings["it_default_theme"] || "light"} onValueChange={(v) => upsertSetting("it_default_theme", v)}>
+                <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Ljust</SelectItem>
+                  <SelectItem value="dark">Mörkt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Mobile: card-based navigation with groups
   if (isMobile) {
     return (
       <div className="space-y-5">
-          {activeSection === "menu" ? (
-            <>
-              <div>
-                <h1 className="font-heading text-xl font-bold text-foreground">Administration</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Hantera systemet</p>
-              </div>
-              <div className="grid gap-3">
-                {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s, i) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setActiveSection(s.id)}
-                    className="glass-card rounded-2xl p-4 flex items-center gap-4 text-left active:scale-[0.98] transition-all animate-fade-up"
-                    style={{ animationDelay: `${i * 80}ms`, animationFillMode: "backwards" }}
-                  >
-                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${s.color} shadow-lg`}>
-                      <s.icon className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-heading font-semibold text-foreground">{s.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => setActiveSection("menu")}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors -mb-2 min-h-[44px] active:scale-[0.95]"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Tillbaka
-              </button>
-              {activeSection === "categories" && <CategoriesManager />}
-              {activeSection === "equipment" && <OrderTypesManager />}
-              {activeSection === "systems" && <SystemsManager />}
-              {activeSection === "users" && UsersContent}
-              {activeSection === "settings" && SettingsContent}
-               {activeSection === "it" && ITContent}
-               {activeSection === "modules" && <ModulesManager onClose={() => setActiveSection("menu")} />}
-             </>
-           )}
-        </div>
+        {activeSection === "menu" ? (
+          <>
+            <div>
+              <h1 className="font-heading text-xl font-bold text-foreground">Administration</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt</p>
+            </div>
+            <div className="space-y-6">
+              {visibleGroups.map((group) => (
+                <div key={group.label} className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <group.icon className={`h-4 w-4 ${group.color}`} />
+                    <h2 className={`text-xs font-semibold uppercase tracking-wider ${group.color}`}>{group.label}</h2>
+                  </div>
+                  <div className="grid gap-2">
+                    {group.items.map((s, i) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setActiveSection(s.id)}
+                        className="glass-card rounded-2xl p-4 flex items-center gap-4 text-left active:scale-[0.98] transition-all animate-fade-up"
+                        style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
+                      >
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-lg`}>
+                          <s.icon className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-heading font-semibold text-sm text-foreground">{s.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setActiveSection("menu")}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors -mb-2 min-h-[44px] active:scale-[0.95]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Tillbaka
+            </button>
+            {renderSection(activeSection)}
+          </>
+        )}
+      </div>
     );
   }
 
-  // Desktop: tabs
+  // Desktop: sidebar + content
   return (
     <div className="space-y-6">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground">Administration</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Hantera kategorier, utrustning, användare och roller</p>
-        </div>
-
-        <Tabs defaultValue="categories" className="w-full">
-          <TabsList className={`glass-card w-full grid p-1 h-auto`} style={{ gridTemplateColumns: `repeat(${sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).length}, minmax(0, 1fr))` }}>
-            {sections.filter(s => !(s as any).roles || (s as any).roles.some((r: string) => roles.includes(r))).map((s) => (
-              <TabsTrigger key={s.id} value={s.id} className="gap-2 py-2.5 px-4 data-[state=active]:shadow-md">
-                <s.icon className="h-4 w-4" />
-                {s.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="categories" className="mt-4">
-            <CategoriesManager />
-          </TabsContent>
-
-          <TabsContent value="equipment" className="mt-4">
-            <OrderTypesManager />
-          </TabsContent>
-
-          <TabsContent value="systems" className="mt-4">
-            <SystemsManager />
-          </TabsContent>
-
-          <TabsContent value="users" className="mt-4">
-            {UsersContent}
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-4">
-            {SettingsContent}
-          </TabsContent>
-
-          {(roles.includes("it") || roles.includes("admin")) && (
-            <TabsContent value="it" className="mt-4">
-              {ITContent}
-            </TabsContent>
-          )}
-
-          <TabsContent value="modules" className="mt-4">
-            <ModulesManager />
-          </TabsContent>
-        </Tabs>
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-foreground">Administration</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt för hela systemet</p>
       </div>
+
+      <div className="flex gap-6 min-h-[600px]">
+        {/* Sidebar navigation */}
+        <nav className="w-56 shrink-0 space-y-5">
+          {visibleGroups.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <div className="flex items-center gap-2 px-3 mb-1.5">
+                <group.icon className={`h-3.5 w-3.5 ${group.color}`} />
+                <span className={`text-[10px] font-semibold uppercase tracking-wider ${group.color}`}>{group.label}</span>
+              </div>
+              {group.items.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all text-left ${
+                      isActive
+                        ? `${item.bgColor} ${item.textColor} shadow-sm`
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {activeSection === "menu" ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center space-y-3">
+                <Cog className="h-12 w-12 mx-auto opacity-20" />
+                <p className="text-sm">Välj en sektion i menyn till vänster</p>
+              </div>
+            </div>
+          ) : (
+            renderSection(activeSection)
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
