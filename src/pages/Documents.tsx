@@ -156,6 +156,7 @@ export default function Documents() {
   const selectFolder = (id: string) => {
     setSelectedFolderId(id);
     setSearch("");
+    setSelectedFiles(new Set());
     // Auto-expand parent chain
     let current = folders.find(f => f.id === id);
     const toExpand = new Set(expandedFolders);
