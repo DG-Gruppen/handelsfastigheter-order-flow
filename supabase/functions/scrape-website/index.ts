@@ -21,7 +21,8 @@ serve(async (req) => {
       );
     }
 
-    const { url = "https://www.handelsfastigheter.se" } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const { url = "https://www.handelsfastigheter.se", limit = 50 } = body;
 
     console.log("Step 1: Mapping site URLs...");
 
