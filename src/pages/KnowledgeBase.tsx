@@ -161,18 +161,18 @@ export default function KnowledgeBase() {
         </div>
 
         {/* Stats row */}
-        <div className="relative flex flex-wrap gap-x-5 gap-y-2 mt-6">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-primary-foreground/60" />
-            <span className="text-primary-foreground/90 text-sm font-medium">{articles.length} artiklar</span>
+        <div className="relative flex gap-3 md:gap-6 mt-6">
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <BookOpen className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground/60 shrink-0" />
+            <span className="text-primary-foreground/90 text-xs md:text-sm font-medium whitespace-nowrap">{articles.length} artiklar</span>
           </div>
-          <div className="flex items-center gap-2">
-            <PlayCircle className="h-4 w-4 text-primary-foreground/60" />
-            <span className="text-primary-foreground/90 text-sm font-medium">{videos.length} utbildningar</span>
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <PlayCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground/60 shrink-0" />
+            <span className="text-primary-foreground/90 text-xs md:text-sm font-medium whitespace-nowrap">{videos.length} utbildningar</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary-foreground/60" />
-            <span className="text-primary-foreground/90 text-sm font-medium">{categories.length} kategorier</span>
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary-foreground/60 shrink-0" />
+            <span className="text-primary-foreground/90 text-xs md:text-sm font-medium whitespace-nowrap">{categories.length} kategorier</span>
           </div>
         </div>
       </div>
