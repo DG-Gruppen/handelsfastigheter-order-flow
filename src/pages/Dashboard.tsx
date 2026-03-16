@@ -1,14 +1,11 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus,
-  ClipboardList, ShieldCheck, TrendingUp, Banknote, Building2, Percent,
+  TrendingUp, Banknote, Building2, Percent,
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
@@ -16,73 +13,12 @@ import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
 import RecognitionDialog from "@/components/RecognitionDialog";
 import { newsPosts } from "@/data/news";
 
-/* ── Order helpers ── */
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
-  pending: { label: "Väntar", variant: "secondary", icon: Clock },
-  approved: { label: "Godkänd", variant: "default", icon: CheckCircle2 },
-  rejected: { label: "Avslagen", variant: "destructive", icon: XCircle },
-  delivered: { label: "Levererad", variant: "outline", icon: Package },
-};
-
-interface Order {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  category: string;
-  created_at: string;
-  approved_at: string | null;
-  requester_id: string;
-  approver_id: string | null;
-  order_reason: string | null;
-  recipient_type: string | null;
-}
-
-function isAutoApproved(o: Order) { return o.status === "approved" && o.requester_id === o.approver_id; }
-
-function getOrderTag(o: Order) {
-  if (o.order_reason === "end_of_employment") return { label: "Offboarding", icon: LogOut, className: "bg-destructive/10 text-destructive border-destructive/20" };
-  if (o.recipient_type === "new") return { label: "Nyanställning", icon: UserPlus, className: "bg-primary/10 text-primary border-primary/20" };
-  return null;
-}
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "God morgon";
-  if (h < 18) return "God eftermiddag";
-  return "God kväll";
-}
-
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
 /* ── Component ── */
 export default function Dashboard() {
-  const { user, profile, roles } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { user, profile } = useAuth();
   const [recognitions, setRecognitions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const isAdmin = roles.includes("admin");
-  const isManager = roles.includes("manager");
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const fetchOrders = useCallback(async () => {
-    if (!user || !profile) return;
-    if (isAdmin) {
-      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
-    } else if (isManager) {
-      const { data: managed } = await supabase.from("profiles").select("user_id").eq("manager_id", profile.id);
-      const ids = [user.id, ...(managed ?? []).map((p) => p.user_id)];
-      const { data } = await supabase.from("orders").select("*").in("requester_id", ids).order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
-    } else {
-      const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
-      setOrders((data as Order[]) ?? []);
-    }
-    setLoading(false);
-  }, [user, profile, isAdmin, isManager]);
 
   const fetchRecognitions = useCallback(async () => {
     const { data } = await supabase
@@ -107,30 +43,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || !profile) return;
-    setLoading(true);
-    fetchOrders();
     fetchRecognitions();
+  }, [user, profile, fetchRecognitions]);
 
-    const channel = supabase
-      .channel("dashboard-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => fetchOrders(), 500);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [user, profile, isAdmin, isManager, fetchOrders, fetchRecognitions]);
-
-  const counts = useMemo(() => ({
-    pending: orders.filter((o) => o.status === "pending").length,
-    approved: orders.filter((o) => o.status === "approved").length,
-    total: orders.length,
-    needsMyApproval: orders.filter((o) => o.status === "pending" && o.approver_id === user?.id).length,
-  }), [orders, user?.id]);
+  function getGreeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return "God morgon";
+    if (h < 18) return "God eftermiddag";
+    return "God kväll";
+  }
 
   const firstName = profile?.full_name?.split(" ")[0] || "du";
   const latestNews = newsPosts.slice(0, 3);
@@ -237,98 +158,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* ── Order stats + list ── */}
-      <div className="grid grid-cols-3 gap-2 md:gap-4">
-        {[
-          { value: counts.total, label: "Totalt", colorClass: "text-primary", borderClass: "border-t-primary/30", bgClass: "bg-primary/[0.03]" },
-          { value: counts.pending, label: "Väntar", colorClass: "text-warning", borderClass: "border-t-warning/30", bgClass: "bg-warning/[0.03]", extra: counts.needsMyApproval > 0 ? `${counts.needsMyApproval} att attestera` : null },
-          { value: counts.approved, label: "Godkända", colorClass: "text-accent", borderClass: "border-t-accent/30", bgClass: "bg-accent/[0.03]" },
-        ].map((stat, i) => (
-          <Card key={stat.label} className={`glass-card border-t-2 ${stat.borderClass}`}>
-            <CardContent className={`p-3 md:pt-6 md:p-6 ${stat.bgClass}`}>
-              <div className={`text-2xl md:text-3xl font-heading font-bold ${stat.colorClass}`}>{stat.value}</div>
-              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{stat.label}</p>
-              {"extra" in stat && stat.extra && (
-                <p className="text-[10px] md:text-xs font-medium text-warning mt-1">
-                  <ShieldCheck className="inline h-3 w-3 mr-0.5 -mt-0.5" />{stat.extra}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card className="glass-card border-t-2 border-t-primary/30">
-        <CardHeader className="px-4 md:px-6">
-          <CardTitle className="font-heading text-base flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            Senaste beställningar
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6">
-          {loading ? (
-            <p className="text-muted-foreground py-8 text-center">Laddar...</p>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-10 space-y-4">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60">
-                <Package className="h-8 w-8 text-muted-foreground/40" />
-              </div>
-              <p className="text-sm text-muted-foreground">Inga beställningar ännu</p>
-              <Link to="/orders/new">
-                <Button variant="outline" className="gap-2" size="lg"><Plus className="h-4 w-4" />Skapa din första beställning</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/50 -mx-4 md:mx-0">
-              {[...orders].sort((a, b) => {
-                const aP = a.status === "pending" && a.approver_id === user?.id ? 1 : 0;
-                const bP = b.status === "pending" && b.approver_id === user?.id ? 1 : 0;
-                return bP - aP;
-              }).slice(0, 5).map((order) => {
-                const sc = statusConfig[order.status] ?? statusConfig.pending;
-                const Icon = sc.icon;
-                const tag = getOrderTag(order);
-                const needsApproval = order.status === "pending" && order.approver_id === user?.id;
-                return (
-                  <Link key={order.id} to={`/orders/${order.id}`} className="flex items-start justify-between px-4 md:px-0 py-3.5 transition-colors group hover:bg-secondary/20 gap-2">
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <p className="font-medium text-sm text-foreground truncate">{order.title}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("sv-SE")}</p>
-                        {tag && (
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${tag.className}`}>
-                            <tag.icon className="h-2.5 w-2.5" />{tag.label}
-                          </span>
-                        )}
-                        {needsApproval && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-warning/10 text-warning border-warning/20">
-                            <ShieldCheck className="h-2.5 w-2.5" />Attestera
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                      {isAutoApproved(order) && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-md">
-                          <Zap className="h-2.5 w-2.5" />Auto
-                        </span>
-                      )}
-                      <Badge variant={sc.variant} className="gap-1 text-xs whitespace-nowrap">
-                        <Icon className="h-3 w-3" />{sc.label}
-                      </Badge>
-                    </div>
-                  </Link>
-                );
-              })}
-              {orders.length > 5 && (
-                <div className="pt-3 text-center">
-                  <Link to="/history" className="text-xs text-primary hover:underline font-medium">Visa alla {orders.length} beställningar →</Link>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* ── Nyheter ── */}
       <Card className="glass-card">
