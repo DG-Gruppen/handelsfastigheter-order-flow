@@ -608,6 +608,7 @@ export default function Admin() {
             <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
             <div className="space-y-6 mt-6">
               {visibleGroups.map((group) => (
+                <div key={group.label} className="space-y-2">
                   <div className="flex items-center gap-2 px-1">
                     <group.icon className={`h-4 w-4 ${group.color}`} />
                     <h2 className={`text-xs font-semibold uppercase tracking-wider ${group.color}`}>{group.label}</h2>
@@ -623,9 +624,9 @@ export default function Admin() {
                         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-lg`}>
                           <s.icon className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-heading font-semibold text-sm text-foreground">{s.label}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{s.description}</p>
                         </div>
                       </button>
                     ))}
