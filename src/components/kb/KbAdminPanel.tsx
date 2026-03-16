@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FileText, Video, FolderOpen, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, Video, FolderOpen, Eye, EyeOff, Building2, Globe, Loader2 } from "lucide-react";
 
 interface KbCategory {
   id: string;
