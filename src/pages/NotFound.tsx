@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { Construction, LayoutDashboard, ShoppingCart, Headphones, ArrowLeft } from "lucide-react";
+import { Construction, LayoutDashboard, ShoppingCart, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
