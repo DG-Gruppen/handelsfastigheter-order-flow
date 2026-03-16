@@ -176,11 +176,14 @@ export default function Documents() {
             </DropdownMenu>
           )}
         </div>
-        {isExpanded && children.map(child => (
-          <FolderTreeItem key={child.id} folder={child} depth={depth + 1} />
-        ))}
+        {isExpanded && children.length > 0 && (
+          <div className="ml-3 border-l border-border pl-1 space-y-0.5">
+            {children.map(child => (
+              <FolderTreeItem key={child.id} folder={child} depth={depth + 1} />
+            ))}
+          </div>
+        )}
       </div>
-    );
   }
 
   // ── File row ──
