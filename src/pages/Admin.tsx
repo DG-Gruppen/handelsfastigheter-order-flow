@@ -605,8 +605,8 @@ export default function Admin() {
               <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Administration</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt</p>
             </div>
-            {/* Tablet: show dashboard + nav cards */}
-            <div className="hidden md:block">
+            {/* Only show dashboard on tablet landscape and up (min-width: 1024px) */}
+            <div className="hidden lg:block">
               <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
             </div>
             <div className="space-y-6 md:mt-6">
