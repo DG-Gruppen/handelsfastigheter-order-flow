@@ -9,6 +9,7 @@ export interface DocFolder {
   parent_id: string | null;
   icon: string;
   access_roles: string[] | null;
+  write_roles: string[] | null;
   sort_order: number;
   created_at: string;
 }
