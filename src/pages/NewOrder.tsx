@@ -174,7 +174,7 @@ export default function NewOrder() {
 
     setSubmitting(true);
 
-    const manager = managers.find((m) => m.id === approverId);
+    const manager = myManagerProfile; // For non-manager users, always use their direct manager
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
     const existingRecipientName = isManagerOrAdmin && selectedExistingRecipient !== "self"
