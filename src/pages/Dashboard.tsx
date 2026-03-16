@@ -12,7 +12,8 @@ import {
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
-import { kpis, okrs, recognitions, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
+import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
+import RecognitionDialog from "@/components/RecognitionDialog";
 import { newsPosts } from "@/data/news";
 
 /* ── Order helpers ── */
