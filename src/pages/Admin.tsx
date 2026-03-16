@@ -605,8 +605,8 @@ export default function Admin() {
               <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Administration</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt</p>
             </div>
-            <div className="space-y-6">
-              {visibleGroups.map((group) => (
+            <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
+            <div className="space-y-6 mt-6">
                 <div key={group.label} className="space-y-2">
                   <div className="flex items-center gap-2 px-1">
                     <group.icon className={`h-4 w-4 ${group.color}`} />
