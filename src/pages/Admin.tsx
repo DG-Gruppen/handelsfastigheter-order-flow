@@ -607,7 +607,7 @@ export default function Admin() {
             </div>
             <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
             <div className="space-y-6 mt-6">
-                <div key={group.label} className="space-y-2">
+              {visibleGroups.map((group) => (
                   <div className="flex items-center gap-2 px-1">
                     <group.icon className={`h-4 w-4 ${group.color}`} />
                     <h2 className={`text-xs font-semibold uppercase tracking-wider ${group.color}`}>{group.label}</h2>
