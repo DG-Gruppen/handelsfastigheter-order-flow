@@ -1,4 +1,4 @@
-import { Play, Clock, Star, Eye } from "lucide-react";
+import { Play, Clock, Eye } from "lucide-react";
 
 interface KbVideo {
   id: string;
@@ -13,9 +13,16 @@ interface KbVideo {
   created_at: string;
 }
 
+interface CategoryColor {
+  bg: string;
+  text: string;
+  border: string;
+}
+
 interface Props {
   video: KbVideo;
   categoryName?: string;
+  categoryColor?: CategoryColor;
   onClick: () => void;
 }
 
@@ -31,7 +38,7 @@ function formatDuration(seconds: number | null): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function KbVideoCard({ video, categoryName, onClick }: Props) {
+export default function KbVideoCard({ video, categoryName, categoryColor, onClick }: Props) {
   const ytId = extractYouTubeId(video.video_url);
   const thumb = video.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null);
   const durationMin = video.duration_seconds ? Math.ceil(video.duration_seconds / 60) : null;
@@ -39,10 +46,10 @@ export default function KbVideoCard({ video, categoryName, onClick }: Props) {
   return (
     <div
       onClick={onClick}
-      className="bg-card rounded-xl border border-border overflow-hidden hover:border-primary/30 transition-colors cursor-pointer group"
+      className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-all cursor-pointer group"
     >
-      {/* Thumbnail / gradient header */}
-      <div className="relative h-36 bg-gradient-to-br from-primary via-primary-glow to-accent/30 flex items-center justify-center overflow-hidden">
+      {/* Thumbnail */}
+      <div className="relative h-36 bg-gradient-to-br from-primary via-primary-glow to-accent/40 flex items-center justify-center overflow-hidden">
         {thumb ? (
           <img src={thumb} alt={video.title} className="w-full h-full object-cover" />
         ) : (
@@ -58,30 +65,32 @@ export default function KbVideoCard({ video, categoryName, onClick }: Props) {
             {formatDuration(video.duration_seconds)}
           </span>
         )}
+        {categoryName && (
+          <span className={`absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm ${
+            categoryColor ? `${categoryColor.bg} ${categoryColor.text}` : "bg-primary/20 text-primary-foreground"
+          }`}>
+            {categoryName}
+          </span>
+        )}
       </div>
 
       {/* Content */}
       <div className="p-4 space-y-2">
-        <h3 className="font-heading font-semibold text-sm line-clamp-2">{video.title}</h3>
+        <h3 className="font-heading font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{video.title}</h3>
         {video.description && (
           <p className="text-xs text-muted-foreground line-clamp-1">{video.description}</p>
         )}
-        <div className="flex items-center gap-2 flex-wrap">
-          {categoryName && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/8 text-primary">
-              {categoryName}
-            </span>
-          )}
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
           {durationMin && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />{durationMin} min
             </span>
           )}
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+          <span className="flex items-center gap-1 ml-auto">
             <Eye className="w-3 h-3" />{video.views}
           </span>
         </div>
-        <button className="w-full mt-1 text-xs font-medium bg-primary text-primary-foreground rounded-lg py-2 hover:bg-primary/90 transition-colors">
+        <button className="w-full mt-1 text-xs font-medium gradient-primary text-primary-foreground rounded-lg py-2.5 hover:opacity-90 transition-opacity shadow-sm">
           Spela video
         </button>
       </div>
