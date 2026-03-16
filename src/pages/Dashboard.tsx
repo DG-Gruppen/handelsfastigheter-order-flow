@@ -211,17 +211,23 @@ export default function Dashboard() {
             <CardTitle className="font-heading text-base flex items-center gap-2">
               <PartyPopper className="w-5 h-5 text-primary" />
               Senaste erkännanden
+              <span className="ml-auto">
+                <RecognitionDialog onCreated={fetchRecognitions} />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recognitions.map((r, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <span className="text-lg mt-0.5">{r.value === "Erfarenhet" ? "⭐" : r.value === "Driv" ? "🚀" : "🌱"}</span>
+            {recognitions.length === 0 && (
+              <p className="text-sm text-muted-foreground">Inga erkännanden ännu. Var först med att uppmärksamma en kollega!</p>
+            )}
+            {recognitions.map((r) => (
+              <div key={r.id} className="flex items-start gap-3">
+                <span className="text-lg mt-0.5">{r.icon}</span>
                 <div className="min-w-0">
                   <div className="text-sm">
-                    <span className="font-medium">{r.from}</span>
+                    <span className="font-medium">{r.from_name}</span>
                     <span className="text-muted-foreground"> → </span>
-                    <span className="font-medium">{r.to}</span>
+                    <span className="font-medium">{r.to_name}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.message}</p>
                 </div>
