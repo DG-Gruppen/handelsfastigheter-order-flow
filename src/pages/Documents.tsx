@@ -243,11 +243,13 @@ export default function Documents() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Policys, mallar och riktlinjer</p>
         </div>
-        {isAdmin && (
+        {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setNewFolderDialog({ parentId: null })}>
-              <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => setNewFolderDialog({ parentId: null })}>
+                <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
+              </Button>
+            )}
             <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!selectedFolderId}>
               <Upload className="w-4 h-4 mr-2" /> Ladda upp
             </Button>
