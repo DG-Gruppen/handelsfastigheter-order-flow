@@ -161,7 +161,7 @@ export default function KnowledgeBase() {
         </div>
 
         {/* Stats row */}
-        <div className="relative flex gap-6 mt-6">
+        <div className="relative flex flex-wrap gap-x-5 gap-y-2 mt-6">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary-foreground/60" />
             <span className="text-primary-foreground/90 text-sm font-medium">{articles.length} artiklar</span>
