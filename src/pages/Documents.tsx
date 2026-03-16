@@ -147,7 +147,7 @@ export default function Documents() {
             <Shield className="w-3 h-3 opacity-50 shrink-0" />
           )}
           {(isAdmin || canWrite) && (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <button className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-black/10 transition-opacity">
                   <MoreHorizontal className="w-3.5 h-3.5" />
