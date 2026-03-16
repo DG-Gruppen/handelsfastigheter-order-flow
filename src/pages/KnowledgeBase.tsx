@@ -1,14 +1,11 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, BookOpen, PlayCircle, Settings2, GraduationCap, Sparkles } from "lucide-react";
+import { Search, BookOpen, PlayCircle, GraduationCap, Sparkles } from "lucide-react";
 import KbArticleCard from "@/components/kb/KbArticleCard";
 import KbVideoCard from "@/components/kb/KbVideoCard";
 import KbArticleViewer from "@/components/kb/KbArticleViewer";
 import KbVideoPlayer from "@/components/kb/KbVideoPlayer";
-import KbAdminPanel from "@/components/kb/KbAdminPanel";
 
 interface KbCategory { id: string; name: string; slug: string; icon: string; sort_order: number; is_active: boolean; }
 interface KbArticle { id: string; title: string; slug: string; content: string; excerpt: string; category_id: string | null; tags: string[]; is_published: boolean; views: number; created_at: string; updated_at: string; author_id: string; }
@@ -26,9 +23,6 @@ const CATEGORY_COLORS = [
 ];
 
 export default function KnowledgeBase() {
-  const { roles } = useAuth();
-  const isAdmin = roles.includes("admin");
-
   const [categories, setCategories] = useState<KbCategory[]>([]);
   const [articles, setArticles] = useState<KbArticle[]>([]);
   const [videos, setVideos] = useState<KbVideo[]>([]);
@@ -38,7 +32,6 @@ export default function KnowledgeBase() {
   const [tab, setTab] = useState<"wiki" | "courses">("wiki");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [showAdmin, setShowAdmin] = useState(false);
 
   const [viewArticle, setViewArticle] = useState<KbArticle | null>(null);
   const [viewVideo, setViewVideo] = useState<KbVideo | null>(null);
@@ -154,32 +147,17 @@ export default function KnowledgeBase() {
           <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/20 -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/10 translate-y-1/3 -translate-x-1/4" />
         </div>
-        <div className="relative flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <GraduationCap className="h-6 w-6 text-primary-foreground/80" />
-              <span className="text-primary-foreground/70 text-xs font-medium uppercase tracking-wider">SHF Kunskapsbanken</span>
-            </div>
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-primary-foreground">
-              Lär, väx och dela kunskap
-            </h1>
-            <p className="text-primary-foreground/70 mt-2 text-sm max-w-lg">
-              Utforska wiki-artiklar och utbildningsvideor – samlad kompetens för hela organisationen.
-            </p>
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-2">
+            <GraduationCap className="h-6 w-6 text-primary-foreground/80" />
+            <span className="text-primary-foreground/70 text-xs font-medium uppercase tracking-wider">SHF Kunskapsbanken</span>
           </div>
-          <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Button
-                variant={showAdmin ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setShowAdmin(!showAdmin)}
-                className={showAdmin ? "" : "border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"}
-              >
-                <Settings2 className="h-4 w-4 mr-1.5" />
-                {showAdmin ? "Stäng admin" : "Hantera"}
-              </Button>
-            )}
-          </div>
+          <h1 className="font-heading text-2xl md:text-3xl font-bold text-primary-foreground">
+            Lär, väx och dela kunskap
+          </h1>
+          <p className="text-primary-foreground/70 mt-2 text-sm max-w-lg">
+            Utforska wiki-artiklar och utbildningsvideor – samlad kompetens för hela organisationen.
+          </p>
         </div>
 
         {/* Stats row */}
@@ -198,11 +176,6 @@ export default function KnowledgeBase() {
           </div>
         </div>
       </div>
-
-      {/* Admin panel */}
-      {showAdmin && isAdmin && (
-        <KbAdminPanel onDataChange={fetchData} />
-      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-secondary rounded-lg p-1 w-fit">
@@ -236,7 +209,6 @@ export default function KnowledgeBase() {
           />
         </div>
 
-        {/* Category filter chips */}
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button
