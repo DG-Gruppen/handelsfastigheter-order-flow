@@ -42,7 +42,26 @@ export function useDocuments() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+
+    const debounceRef = { current: null as ReturnType<typeof setTimeout> | null };
+    const debouncedRefetch = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchData(), 500);
+    };
+
+    const channel = supabase
+      .channel("documents-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "document_folders" }, debouncedRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "document_files" }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [fetchData]);
 
   // ── Folder CRUD ──
   const createFolder = async (name: string, parentId: string | null) => {

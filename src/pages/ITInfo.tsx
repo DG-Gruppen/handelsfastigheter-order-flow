@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,18 +31,34 @@ export default function ITInfo() {
   // Local edit state for remote help
   const [remoteForm, setRemoteForm] = useState({ label: "", url: "", visible: true });
 
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase
-        .from("it_faq")
-        .select("id, question, answer, sort_order")
-        .eq("is_active", true)
-        .order("sort_order");
-      setFaq((data as FaqItem[]) ?? []);
-      setLoading(false);
-    };
-    load();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadFaq = useCallback(async () => {
+    const { data } = await supabase
+      .from("it_faq")
+      .select("id, question, answer, sort_order")
+      .eq("is_active", true)
+      .order("sort_order");
+    setFaq((data as FaqItem[]) ?? []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadFaq();
+
+    const channel = supabase
+      .channel("itinfo-faq")
+      .on("postgres_changes", { event: "*", schema: "public", table: "it_faq" }, () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => loadFaq(), 500);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [loadFaq]);
 
   const remoteHelpUrl = settings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU";
   const remoteHelpLabel = settings["it_remote_help_label"] || "Fjärrhjälp (Splashtop)";
