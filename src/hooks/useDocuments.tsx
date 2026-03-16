@@ -9,6 +9,7 @@ export interface DocFolder {
   parent_id: string | null;
   icon: string;
   access_roles: string[] | null;
+  write_roles: string[] | null;
   sort_order: number;
   created_at: string;
 }
@@ -78,11 +79,20 @@ export function useDocuments() {
     fetchData();
   };
 
-  const updateFolderAccess = async (id: string, accessRoles: string[] | null) => {
-    const { error } = await supabase.from("document_folders").update({ access_roles: accessRoles } as any).eq("id", id);
+  const updateFolderAccess = async (id: string, accessRoles: string[] | null, writeRoles: string[] | null) => {
+    const { error } = await supabase.from("document_folders").update({ access_roles: accessRoles, write_roles: writeRoles } as any).eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Behörighet uppdaterad" });
     fetchData();
+  };
+
+  // Check if current user can write to a specific folder
+  const canWriteFolder = (folderId: string): boolean => {
+    if (isAdmin) return true;
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return false;
+    if (!folder.write_roles) return false;
+    return roles.some(r => folder.write_roles!.includes(r));
   };
 
   // ── File operations ──
@@ -137,9 +147,9 @@ export function useDocuments() {
   };
 
   return {
-    folders, files, loading, isAdmin,
+    folders, files, loading, isAdmin, roles,
     createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile,
-    refresh: fetchData,
+    canWriteFolder, refresh: fetchData,
   };
 }
