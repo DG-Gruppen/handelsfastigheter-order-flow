@@ -132,6 +132,14 @@ export default function Documents() {
     mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("text/");
 
   const openPreview = async (file: DocFile) => {
+    // For PDFs, get a signed URL instead of blob to avoid Chrome blocking
+    if (file.mime_type === "application/pdf") {
+      const { data, error } = await supabase.storage.from("documents").createSignedUrl(file.storage_path, 3600);
+      if (error || !data?.signedUrl) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
+      setPreviewUrl(data.signedUrl);
+      setPreviewFile(file);
+      return;
+    }
     const { data, error } = await supabase.storage.from("documents").download(file.storage_path);
     if (error || !data) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
     const url = URL.createObjectURL(data);
