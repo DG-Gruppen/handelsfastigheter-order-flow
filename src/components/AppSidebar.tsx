@@ -443,6 +443,20 @@ export default function AppSidebar() {
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 text-center">Inställningar</h3>
                       <div className="grid grid-cols-3 gap-3">
+                        {(roles.includes("admin") || roles.includes("it")) && (
+                          <button
+                            onClick={() => handleMobileNav("/admin")}
+                            className={cn(
+                              "flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-colors active:scale-[0.92] min-h-[44px]",
+                              location.pathname === "/admin"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
+                          >
+                            <Shield className="h-5 w-5" />
+                            <span className="text-[10px] font-medium text-center leading-tight">Admin</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setTheme(theme === "dark" ? "light" : "dark");
