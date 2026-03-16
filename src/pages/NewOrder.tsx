@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
-import { sendNewOrderEmailToApprover } from "@/lib/orderEmails";
+import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
