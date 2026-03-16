@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, ChevronRight, ChevronDown, Search, Upload,
   MoreHorizontal, Pencil, Trash2, FolderInput, Download, FolderPlus, Shield,
+  FolderUp,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export default function Documents() {
     folders, files, loading, isAdmin,
     createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile, canWriteFolder,
+    refresh,
   } = useDocuments();
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -107,9 +109,105 @@ export default function Documents() {
     selectFolder(rootFolders[0].id);
   }
 
+  const [uploadProgress, setUploadProgress] = useState<{ total: number; done: number } | null>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBatchUpload = useCallback(async (files: FileList, targetFolderId: string) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    setUploadProgress({ total: fileArray.length, done: 0 });
+
+    // Group files by their relative folder paths for folder uploads
+    const fileFolderMap = new Map<string, File[]>();
+    for (const file of fileArray) {
+      const relativePath = (file as any).webkitRelativePath as string;
+      if (relativePath) {
+        // e.g. "MyFolder/sub/file.txt" → parts = ["MyFolder", "sub"]
+        const parts = relativePath.split("/").slice(0, -1);
+        const key = parts.join("/");
+        if (!fileFolderMap.has(key)) fileFolderMap.set(key, []);
+        fileFolderMap.get(key)!.push(file);
+      } else {
+        if (!fileFolderMap.has("")) fileFolderMap.set("", []);
+        fileFolderMap.get("")!.push(file);
+      }
+    }
+
+    // If it's a simple multi-file upload (no folder structure)
+    if (fileFolderMap.size === 1 && fileFolderMap.has("")) {
+      let done = 0;
+      for (const file of fileArray) {
+        await uploadFile(targetFolderId, file);
+        done++;
+        setUploadProgress({ total: fileArray.length, done });
+      }
+    } else {
+      // Folder upload: create subfolders as needed
+      const createdFolders = new Map<string, string>(); // path → folderId
+      let done = 0;
+
+      for (const [folderPath, filesInFolder] of fileFolderMap) {
+        let currentParentId = targetFolderId;
+
+        if (folderPath) {
+          const parts = folderPath.split("/");
+          let builtPath = "";
+          for (const part of parts) {
+            builtPath = builtPath ? `${builtPath}/${part}` : part;
+            if (createdFolders.has(builtPath)) {
+              currentParentId = createdFolders.get(builtPath)!;
+            } else {
+              // Check if folder already exists
+              const existing = folders.find(
+                f => f.name === part && f.parent_id === currentParentId
+              );
+              if (existing) {
+                createdFolders.set(builtPath, existing.id);
+                currentParentId = existing.id;
+              } else {
+                await createFolder(part, currentParentId);
+                // Refresh to get the new folder ID
+                await refresh();
+                // We need to find the newly created folder - it won't be in current state yet
+                // So we'll fetch fresh data and find it
+                const { data: newFolders } = await (await import("@/integrations/supabase/client")).supabase
+                  .from("document_folders")
+                  .select("id")
+                  .eq("name", part)
+                  .eq("parent_id", currentParentId)
+                  .limit(1)
+                  .single();
+                if (newFolders) {
+                  createdFolders.set(builtPath, newFolders.id);
+                  currentParentId = newFolders.id;
+                }
+              }
+            }
+          }
+        }
+
+        for (const file of filesInFolder) {
+          await uploadFile(currentParentId, file);
+          done++;
+          setUploadProgress({ total: fileArray.length, done });
+        }
+      }
+    }
+
+    setUploadProgress(null);
+    refresh();
+  }, [folders, uploadFile, createFolder, refresh]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!selectedFolderId || !e.target.files) return;
-    Array.from(e.target.files).forEach(file => uploadFile(selectedFolderId, file));
+    handleBatchUpload(e.target.files, selectedFolderId);
+    e.target.value = "";
+  };
+
+  const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedFolderId || !e.target.files) return;
+    handleBatchUpload(e.target.files, selectedFolderId);
     e.target.value = "";
   };
 
@@ -254,10 +352,20 @@ export default function Documents() {
                 <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
               </Button>
             )}
-            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!selectedFolderId}>
-              <Upload className="w-4 h-4 mr-2" /> Ladda upp
+            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!selectedFolderId || !!uploadProgress}>
+              <Upload className="w-4 h-4 mr-2" /> Filer
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()} disabled={!selectedFolderId || !!uploadProgress}>
+              <FolderUp className="w-4 h-4 mr-2" /> Mapp
             </Button>
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileUpload} />
+            <input ref={folderInputRef} type="file" className="hidden" onChange={handleFolderUpload}
+              {...({ webkitdirectory: "", directory: "", mozdirectory: "" } as any)} />
+            {uploadProgress && (
+              <span className="text-xs text-muted-foreground self-center">
+                {uploadProgress.done}/{uploadProgress.total} filer…
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -339,9 +447,14 @@ export default function Documents() {
                     <FileText className="w-12 h-12 mb-3 opacity-30" />
                     <p className="text-sm">Inga filer i denna mapp</p>
                     {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
-                      <Button variant="outline" size="sm" className="mt-3" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
-                      </Button>
+                      <div className="flex gap-2 mt-3">
+                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                          <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => folderInputRef.current?.click()}>
+                          <FolderUp className="w-4 h-4 mr-2" /> Ladda upp mapp
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ) : (
