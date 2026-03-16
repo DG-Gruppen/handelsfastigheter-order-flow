@@ -143,7 +143,13 @@ export default function NewOrder() {
       const myMgrId = (myProfileRes.data as any)?.manager_id;
       if (myMgrId) {
         const mgrProfile = (fullProfiles ?? []).find((p: any) => p.id === myMgrId);
-        if (mgrProfile) setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+        if (mgrProfile) {
+          setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+          // Auto-set approver for non-manager users
+          if (!managerUserIds.has(user?.id ?? "") && !adminUserIds.has(user?.id ?? "")) {
+            setApproverId(mgrProfile.id);
+          }
+        }
       }
     };
     if (user) fetchData();
