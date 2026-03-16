@@ -61,9 +61,9 @@ export default function Documents() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Tree structure ──
-  const rootFolders = useMemo(() => folders.filter(f => !f.parent_id).sort((a, b) => a.sort_order - b.sort_order), [folders]);
-  const childrenOf = (parentId: string) => folders.filter(f => f.parent_id === parentId).sort((a, b) => a.sort_order - b.sort_order);
+  // ── Tree structure (alphabetical) ──
+  const rootFolders = useMemo(() => folders.filter(f => !f.parent_id).sort((a, b) => a.name.localeCompare(b.name, "sv-SE")), [folders]);
+  const childrenOf = (parentId: string) => folders.filter(f => f.parent_id === parentId).sort((a, b) => a.name.localeCompare(b.name, "sv-SE"));
 
   const currentFiles = useMemo(() => {
     if (!selectedFolderId) return [];
