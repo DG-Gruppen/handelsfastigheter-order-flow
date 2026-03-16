@@ -84,7 +84,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   try {
     const { error } = await supabase.functions.invoke("send-email", {
       body: {
-        to: "helpdesk@dggruppen.se",
+        to: itEmail,
         subject,
         html,
         reply_to: requesterEmail,
