@@ -216,12 +216,6 @@ export default function OrgTree() {
     setRoleMap(rm);
 
     setProfiles(((profilesRes.data as OrgProfile[]) ?? []).filter(p => !itUserIds.has(p.user_id) && p.full_name.trim() !== ""));
-    const rm: RoleMap = {};
-    for (const r of (rolesRes.data ?? []) as { user_id: string; role: string }[]) {
-      rm[r.user_id] = r.role;
-    }
-    setRoleMap(rm);
-
     const cs = { ...DEFAULT_COLORS };
     for (const s of (settingsRes.data as any[]) ?? []) {
       if (s.setting_key in cs) (cs as any)[s.setting_key] = s.setting_value;
