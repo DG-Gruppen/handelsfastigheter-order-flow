@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail } from "@/lib/orderEmails";
+import { getAppBaseUrl } from "@/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,7 @@ export default function OrderDetail() {
       });
 
       if (requesterProfile?.email) {
-        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
         const commentHtml = comment
           ? `<div style="margin:16px 0;padding:12px 16px;background:#f9f9f9;border-left:4px solid #1a1a2e;border-radius:4px;">
                <p style="margin:0 0 4px;font-size:12px;color:#666;font-weight:bold;">Kommentar från IT:</p>
@@ -168,7 +169,7 @@ export default function OrderDetail() {
       }
 
       if (requesterProfile?.email) {
-        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
         const approverName = approverProfile?.full_name || "Attestanten";
         const itemsHtml = items.map((i) => `<li><strong>${i.name}</strong>${i.quantity > 1 ? ` ×${i.quantity}` : ""}</li>`).join("");
         const approvalHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">

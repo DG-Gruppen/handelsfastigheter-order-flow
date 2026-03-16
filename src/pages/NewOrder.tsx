@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover } from "@/lib/orderEmails";
+import { getAppBaseUrl } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -310,7 +311,7 @@ export default function NewOrder() {
 
       // Send confirmation email to requester
       if (requesterEmail) {
-        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
         const itemsHtml = orderItemsToInsert
           .map((i) => `<li><strong>${i.name}</strong>${i.quantity > 1 ? ` ×${i.quantity}` : ""}</li>`)
           .join("");

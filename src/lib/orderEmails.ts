@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAppBaseUrl } from "@/lib/utils";
 
 /** Fetch the IT contact email from org_chart_settings, fallback to hardcoded default */
 export async function getItContactEmail(): Promise<string> {
@@ -49,7 +50,7 @@ interface NewOrderEmailParams {
 
 export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   const { orderId, title, description, requesterName, approverName, approverEmail, items, recipientName } = params;
-  const orderUrl = `${window.location.origin}/orders/${orderId}`;
+  const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
   const recipientLine = recipientName ? `<p style="margin:0 0 8px;color:#333;">Mottagare: <strong>${recipientName}</strong></p>` : "";
 
   const html = emailShell("📋 Ny beställning att attestera", `
@@ -90,7 +91,7 @@ interface RejectionEmailParams {
 
 export async function sendRejectionEmail(params: RejectionEmailParams) {
   const { orderId, title, requesterName, requesterEmail, approverName, rejectionReason } = params;
-  const orderUrl = `${window.location.origin}/orders/${orderId}`;
+  const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
   const reasonHtml = rejectionReason
     ? `<div style="margin:16px 0;padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:4px;">
