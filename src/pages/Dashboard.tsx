@@ -1,57 +1,17 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Plus, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus,
-  ClipboardList, ShieldCheck, TrendingUp, Banknote, Building2, Percent,
+  TrendingUp, Banknote, Building2, Percent,
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
 import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
 import RecognitionDialog from "@/components/RecognitionDialog";
 import { newsPosts } from "@/data/news";
-
-/* ── Order helpers ── */
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
-  pending: { label: "Väntar", variant: "secondary", icon: Clock },
-  approved: { label: "Godkänd", variant: "default", icon: CheckCircle2 },
-  rejected: { label: "Avslagen", variant: "destructive", icon: XCircle },
-  delivered: { label: "Levererad", variant: "outline", icon: Package },
-};
-
-interface Order {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  category: string;
-  created_at: string;
-  approved_at: string | null;
-  requester_id: string;
-  approver_id: string | null;
-  order_reason: string | null;
-  recipient_type: string | null;
-}
-
-function isAutoApproved(o: Order) { return o.status === "approved" && o.requester_id === o.approver_id; }
-
-function getOrderTag(o: Order) {
-  if (o.order_reason === "end_of_employment") return { label: "Offboarding", icon: LogOut, className: "bg-destructive/10 text-destructive border-destructive/20" };
-  if (o.recipient_type === "new") return { label: "Nyanställning", icon: UserPlus, className: "bg-primary/10 text-primary border-primary/20" };
-  return null;
-}
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "God morgon";
-  if (h < 18) return "God eftermiddag";
-  return "God kväll";
-}
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
