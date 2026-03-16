@@ -18,7 +18,7 @@ import {
   Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2,
   Palette, Wrench, LayoutGrid, BookOpen, ShoppingCart, Cog
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+
 
 interface ProfileWithRoles {
   id: string;
