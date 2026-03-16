@@ -62,6 +62,10 @@ export default function Documents() {
   const [moveDialog, setMoveDialog] = useState<{ type: "folder" | "file"; id: string; name: string } | null>(null);
   const [accessDialog, setAccessDialog] = useState<DocFolder | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "folder" | "file"; id: string; name: string } | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [bulkMoveDialog, setBulkMoveDialog] = useState(false);
+  const [previewFile, setPreviewFile] = useState<DocFile | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
