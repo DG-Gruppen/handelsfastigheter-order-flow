@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, ChevronRight, ChevronDown, Search, Upload,
   MoreHorizontal, Pencil, Trash2, FolderInput, Download, FolderPlus, Shield,
+  FolderUp,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
 import { Button } from "@/components/ui/button";
