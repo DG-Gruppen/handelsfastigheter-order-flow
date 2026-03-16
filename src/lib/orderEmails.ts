@@ -91,7 +91,7 @@ interface RejectionEmailParams {
 
 export async function sendRejectionEmail(params: RejectionEmailParams) {
   const { orderId, title, requesterName, requesterEmail, approverName, rejectionReason } = params;
-  const orderUrl = `${window.location.origin}/orders/${orderId}`;
+  const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
   const reasonHtml = rejectionReason
     ? `<div style="margin:16px 0;padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:4px;">

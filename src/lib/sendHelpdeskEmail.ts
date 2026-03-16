@@ -32,7 +32,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   } = params;
 
   const itEmail = await getItContactEmail();
-  const orderUrl = `${window.location.origin}/orders/${orderId}`;
+  const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
   const isOnboarding = orderReason === "new_employee";
   const isOffboarding = orderReason === "end_of_employment";
