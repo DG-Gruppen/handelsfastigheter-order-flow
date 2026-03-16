@@ -59,6 +59,7 @@ const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 export default function Dashboard() {
   const { user, profile, roles } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [recognitions, setRecognitions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isAdmin = roles.includes("admin");
