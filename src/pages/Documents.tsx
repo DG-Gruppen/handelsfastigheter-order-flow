@@ -320,7 +320,7 @@ export default function Documents() {
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <FileText className="w-12 h-12 mb-3 opacity-30" />
                     <p className="text-sm">Inga filer i denna mapp</p>
-                    {isAdmin && (
+                    {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
                       <Button variant="outline" size="sm" className="mt-3" onClick={() => fileInputRef.current?.click()}>
                         <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
                       </Button>
