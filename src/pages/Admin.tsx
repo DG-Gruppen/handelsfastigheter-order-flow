@@ -142,7 +142,7 @@ const adminGroups: AdminGroup[] = [
 
 export default function Admin() {
   const { roles } = useAuth();
-  const isMobile = useIsMobile();
+  
   const [profiles, setProfiles] = useState<ProfileWithRoles[]>([]);
   const [userRoles, setUserRoles] = useState<Record<string, string[]>>({});
   const [selectedRole, setSelectedRole] = useState<Record<string, string>>({});
