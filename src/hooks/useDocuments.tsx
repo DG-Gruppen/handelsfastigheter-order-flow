@@ -147,9 +147,9 @@ export function useDocuments() {
   };
 
   return {
-    folders, files, loading, isAdmin,
+    folders, files, loading, isAdmin, roles,
     createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile,
-    refresh: fetchData,
+    canWriteFolder, refresh: fetchData,
   };
 }
