@@ -35,7 +35,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url,
-        limit: 50,
+        limit,
         includeSubdomains: false,
       }),
     });
