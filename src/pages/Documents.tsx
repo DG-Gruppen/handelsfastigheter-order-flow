@@ -120,6 +120,7 @@ export default function Documents() {
     const isSelected = selectedFolderId === folder.id;
     const hasChildren = children.length > 0;
     const IconComponent = getModuleIcon(folder.icon);
+    const canWrite = canWriteFolder(folder.id);
 
     return (
       <div>
@@ -145,7 +146,7 @@ export default function Documents() {
           {folder.access_roles && (
             <Shield className="w-3 h-3 opacity-50 shrink-0" />
           )}
-          {isAdmin && (
+          {(isAdmin || canWrite) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <button className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-black/10 transition-opacity">
@@ -162,9 +163,11 @@ export default function Documents() {
                 <DropdownMenuItem onClick={() => setMoveDialog({ type: "folder", id: folder.id, name: folder.name })}>
                   <FolderInput className="w-4 h-4 mr-2" /> Flytta
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setAccessDialog(folder)}>
-                  <Shield className="w-4 h-4 mr-2" /> Behörighet
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => setAccessDialog(folder)}>
+                    <Shield className="w-4 h-4 mr-2" /> Behörighet
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => setDeleteConfirm({ type: "folder", id: folder.id, name: folder.name })}>
                   <Trash2 className="w-4 h-4 mr-2" /> Ta bort
