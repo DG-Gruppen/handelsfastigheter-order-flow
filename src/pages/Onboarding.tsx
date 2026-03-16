@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
+import { sendNewOrderEmailToApprover } from "@/lib/orderEmails";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -387,7 +388,40 @@ export default function Onboarding() {
       }
     }
 
-    // Send helpdesk email for auto-approved orders
+    // Notification + email to approver (if not auto-approved)
+    if (!autoApprove && resolvedApproverId && resolvedApproverId !== user.id) {
+      const requesterName2 = allProfiles.find(p => p.user_id === user.id)?.full_name || "Någon";
+      await supabase.rpc("create_notification", {
+        _user_id: resolvedApproverId,
+        _title: "Ny beställning att attestera",
+        _message: `${requesterName2} har skickat en beställning: ${title}`,
+        _type: "approval_request",
+        _reference_id: order.id,
+      });
+
+      const approverProfileData = allProfiles.find(p => p.user_id === resolvedApproverId);
+      if (approverProfileData) {
+        const { data: approverEmailData } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("user_id", resolvedApproverId)
+          .single();
+        if (approverEmailData?.email) {
+          await sendNewOrderEmailToApprover({
+            orderId: order.id,
+            title,
+            description: description.trim(),
+            requesterName: requesterName2,
+            approverName: approverProfileData.full_name,
+            approverEmail: approverEmailData.email,
+            items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+            recipientName: recipientName.trim(),
+          });
+        }
+      }
+    }
+
+    // Send helpdesk email + confirmation for auto-approved orders
     if (autoApprove) {
       const requesterProfile = allProfiles.find(p => p.user_id === user.id);
       const { data: reqEmail } = await supabase
@@ -414,6 +448,31 @@ export default function Onboarding() {
         items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
         systems: selectedSystemDetails,
       });
+
+      // Send confirmation email to requester (auto-approved)
+      if (reqEmail?.email) {
+        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const itemsHtml = orderItemsToInsert
+          .map((i) => `<li><strong>${i.name}</strong></li>`)
+          .join("");
+        const confirmHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#1a1a2e;color:white;padding:20px 24px;border-radius:8px 8px 0 0;"><h1 style="margin:0;font-size:18px;">✅ Beställning godkänd</h1></div>
+          <div style="padding:24px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;">
+            <p style="margin:0 0 16px;color:#333;">Hej <strong>${requesterProfile?.full_name || "du"}</strong>,</p>
+            <p style="margin:0 0 16px;color:#333;">Din beställning <strong>"${title}"</strong> har godkänts automatiskt och skickats vidare till IT för hantering.</p>
+            <h3 style="margin:16px 0 8px;color:#1a1a2e;">Beställd utrustning</h3><ul>${itemsHtml}</ul>
+            <div style="margin:24px 0 0;padding:16px;background:#f0f4ff;border-radius:8px;text-align:center;">
+              <a href="${orderUrl}" style="display:inline-block;padding:10px 24px;background:#1a1a2e;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Visa din beställning</a>
+              <p style="margin:8px 0 0;font-size:12px;color:#666;">Länken kräver inloggning</p>
+            </div></div></div>`;
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: { to: reqEmail.email, subject: `[SHF IT] Din beställning har godkänts: ${title}`, html: confirmHtml },
+          });
+        } catch (err) {
+          console.error("Failed to send approval confirmation email:", err);
+        }
+      }
     }
 
     const successMsg = autoApprove

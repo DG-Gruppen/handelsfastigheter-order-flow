@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getItContactEmail } from "@/lib/orderEmails";
 
 interface HelpdeskEmailParams {
   orderId: string;
@@ -29,6 +30,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
     systems = [],
   } = params;
 
+  const itEmail = await getItContactEmail();
   const orderUrl = `${window.location.origin}/orders/${orderId}`;
 
   const isOnboarding = orderReason === "new_employee";
@@ -82,7 +84,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   try {
     const { error } = await supabase.functions.invoke("send-email", {
       body: {
-        to: "helpdesk@dggruppen.se",
+        to: itEmail,
         subject,
         html,
         reply_to: requesterEmail,
