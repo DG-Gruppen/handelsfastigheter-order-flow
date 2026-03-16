@@ -8,6 +8,7 @@ import SystemsManager from "@/components/SystemsManager";
 import ModulesManager from "@/components/ModulesManager";
 import KbAdminPanel from "@/components/kb/KbAdminPanel";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import ImpersonateUserCard from "@/components/admin/ImpersonateUserCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -525,6 +526,14 @@ export default function Admin() {
   function ITContent() {
     return (
       <div className="space-y-6">
+        <ImpersonateUserCard
+          profiles={profiles.map((p) => ({
+            user_id: p.user_id,
+            full_name: p.full_name,
+            email: p.email,
+            department: p.department,
+          }))}
+        />
         <Card className="glass-card border-t-2 border-t-primary/40">
           <CardHeader className="px-4 md:px-6">
             <div className="flex items-center gap-3">
