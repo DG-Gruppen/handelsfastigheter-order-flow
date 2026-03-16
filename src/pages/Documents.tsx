@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef } from "react";
 import {
-  FolderOpen, FileText, ChevronRight, ChevronDown, Search, Plus, Upload,
+  FolderOpen, FileText, ChevronRight, ChevronDown, Search, Upload,
   MoreHorizontal, Pencil, Trash2, FolderInput, Download, FolderPlus, Shield,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
 import { Button } from "@/components/ui/button";
+import { getModuleIcon } from "@/lib/moduleIcons";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,

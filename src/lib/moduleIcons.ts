@@ -2,6 +2,7 @@ import {
   Home, Plus, UserPlus, History, Headphones, Building2, Settings,
   Target, Newspaper, Building, Users, FolderOpen, BookOpen,
   Heart, BarChart3, User, LayoutGrid, Monitor, Package,
+  Palette, Calculator, Leaf, Shield,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -24,6 +25,11 @@ const moduleIconMap: Record<string, LucideIcon> = {
   user: User,
   "layout-grid": LayoutGrid,
   monitor: Monitor,
+  folder: FolderOpen,
+  palette: Palette,
+  calculator: Calculator,
+  leaf: Leaf,
+  shield: Shield,
 };
 
 export function getModuleIcon(name: string): LucideIcon {
