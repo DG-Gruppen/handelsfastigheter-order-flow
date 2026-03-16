@@ -23,6 +23,7 @@ import History from "./pages/History";
 import Profile from "./pages/Profile";
 import Personnel from "./pages/Personnel";
 import Documents from "./pages/Documents";
+import KnowledgeBase from "./pages/KnowledgeBase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
