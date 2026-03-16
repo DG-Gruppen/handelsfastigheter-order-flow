@@ -51,8 +51,8 @@ const App = () => (
                     <Route path="/it-info" element={<ITInfo />} />
                     <Route path="/personal" element={<Personnel />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="*" element={<NotFound />} />
                   </Route>
-                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </ModulesProvider>
             </NavSettingsProvider>

@@ -18,7 +18,7 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center gradient-bg px-4">
+    <div className="flex flex-1 items-center justify-center px-4 py-16">
       <motion.div
         className="text-center max-w-md w-full"
         initial={{ opacity: 0, y: 24 }}
