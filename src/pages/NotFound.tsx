@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 const quickLinks = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Lägg en beställning", to: "/new-order", icon: ShoppingCart },
+  { label: "Lägg en beställning", to: "/orders/new", icon: ShoppingCart },
   { label: "IT-support", to: "/it-info", icon: Headphones },
 ];
 
