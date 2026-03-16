@@ -648,6 +648,20 @@ export default function Admin() {
       </div>
 
       <div className="flex gap-6 min-h-[600px]">
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {activeSection === "menu" ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center space-y-3">
+                <Cog className="h-12 w-12 mx-auto opacity-20" />
+                <p className="text-sm">Välj en sektion i menyn till höger</p>
+              </div>
+            </div>
+          ) : (
+            renderSection(activeSection)
+          )}
+        </div>
+
         {/* Sidebar navigation */}
         <nav className="w-56 shrink-0 space-y-5">
           {visibleGroups.map((group) => (
@@ -676,20 +690,6 @@ export default function Admin() {
             </div>
           ))}
         </nav>
-
-        {/* Content area */}
-        <div className="flex-1 min-w-0">
-          {activeSection === "menu" ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center space-y-3">
-                <Cog className="h-12 w-12 mx-auto opacity-20" />
-                <p className="text-sm">Välj en sektion i menyn till vänster</p>
-              </div>
-            </div>
-          ) : (
-            renderSection(activeSection)
-          )}
-        </div>
       </div>
     </div>
   );
