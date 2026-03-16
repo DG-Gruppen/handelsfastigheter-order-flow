@@ -907,6 +907,33 @@ export type Database = {
           },
         ]
       }
+      recognitions: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          icon: string
+          id: string
+          message: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          icon?: string
+          id?: string
+          message: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          icon?: string
+          id?: string
+          message?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
