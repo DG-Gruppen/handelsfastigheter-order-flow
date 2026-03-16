@@ -119,7 +119,7 @@ export default function Documents() {
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolderId === folder.id;
     const hasChildren = children.length > 0;
-    const IconComponent = getIcon(folder.icon) || FolderOpen;
+    const IconComponent = getModuleIcon(folder.icon);
 
     return (
       <div>
