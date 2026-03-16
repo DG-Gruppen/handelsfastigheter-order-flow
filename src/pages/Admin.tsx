@@ -584,14 +584,24 @@ export default function Admin() {
     );
   }
 
-  // Mobile: card-based navigation with groups
-  if (isMobile) {
+  // Mobile & Tablet: card-based navigation (< 1024px)
+  const [compact, setCompact] = useState(() => typeof window !== "undefined" && window.innerWidth < 1024);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const onChange = () => setCompact(mql.matches);
+    mql.addEventListener("change", onChange);
+    setCompact(mql.matches);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  if (compact) {
     return (
       <div className="space-y-5">
         {activeSection === "menu" ? (
           <>
             <div>
-              <h1 className="font-heading text-xl font-bold text-foreground">Administration</h1>
+              <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Administration</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt</p>
             </div>
             <div className="space-y-6">
@@ -601,7 +611,7 @@ export default function Admin() {
                     <group.icon className={`h-4 w-4 ${group.color}`} />
                     <h2 className={`text-xs font-semibold uppercase tracking-wider ${group.color}`}>{group.label}</h2>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {group.items.map((s, i) => (
                       <button
                         key={s.id}
