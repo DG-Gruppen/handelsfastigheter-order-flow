@@ -7,6 +7,7 @@ import CategoriesManager from "@/components/CategoriesManager";
 import SystemsManager from "@/components/SystemsManager";
 import ModulesManager from "@/components/ModulesManager";
 import KbAdminPanel from "@/components/kb/KbAdminPanel";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 import {
   UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2,
   Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2,
-  Palette, Wrench, LayoutGrid, BookOpen, ShoppingCart, Cog
+  Palette, Wrench, LayoutGrid, BookOpen, ShoppingCart, Cog, Activity
 } from "lucide-react";
 
 
@@ -604,7 +605,8 @@ export default function Admin() {
               <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Administration</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt</p>
             </div>
-            <div className="space-y-6">
+            <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
+            <div className="space-y-6 mt-6">
               {visibleGroups.map((group) => (
                 <div key={group.label} className="space-y-2">
                   <div className="flex items-center gap-2 px-1">
@@ -622,9 +624,9 @@ export default function Admin() {
                         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-lg`}>
                           <s.icon className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-heading font-semibold text-sm text-foreground">{s.label}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{s.description}</p>
                         </div>
                       </button>
                     ))}
@@ -661,12 +663,7 @@ export default function Admin() {
         {/* Content area */}
         <div className="flex-1 min-w-0">
           {activeSection === "menu" ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center space-y-3">
-                <Cog className="h-12 w-12 mx-auto opacity-20" />
-                <p className="text-sm">Välj en sektion i menyn till höger</p>
-              </div>
-            </div>
+            <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
           ) : (
             renderSection(activeSection)
           )}
@@ -674,6 +671,17 @@ export default function Admin() {
 
         {/* Sidebar navigation */}
         <nav className="w-56 shrink-0 space-y-5">
+          <button
+            onClick={() => setActiveSection("menu")}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all text-left ${
+              activeSection === "menu"
+                ? "bg-primary/10 text-primary shadow-sm"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Activity className="h-4 w-4 shrink-0" />
+            Dashboard
+          </button>
           {visibleGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               <div className="flex items-center gap-2 px-3 mb-1.5">
