@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getItContactEmail } from "@/lib/orderEmails";
 
 interface HelpdeskEmailParams {
   orderId: string;
@@ -29,6 +30,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
     systems = [],
   } = params;
 
+  const itEmail = await getItContactEmail();
   const orderUrl = `${window.location.origin}/orders/${orderId}`;
 
   const isOnboarding = orderReason === "new_employee";
