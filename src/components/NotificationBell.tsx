@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell } from "lucide-react";
+import {
+  Bell, FileText, BookOpen, Video, ShoppingCart, CheckCircle2,
+  XCircle, Package, Truck, Info,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -22,6 +25,51 @@ interface Notification {
   created_at: string;
 }
 
+const typeConfig: Record<string, { icon: typeof Bell; color: string; route: (refId: string | null) => string | null }> = {
+  order_approved: {
+    icon: CheckCircle2,
+    color: "text-emerald-500",
+    route: (id) => id ? `/orders/${id}` : "/history",
+  },
+  order_rejected: {
+    icon: XCircle,
+    color: "text-destructive",
+    route: (id) => id ? `/orders/${id}` : "/history",
+  },
+  order_delivered: {
+    icon: Truck,
+    color: "text-primary",
+    route: (id) => id ? `/orders/${id}` : "/history",
+  },
+  order_pending: {
+    icon: ShoppingCart,
+    color: "text-amber-500",
+    route: (id) => id ? `/orders/${id}` : "/history",
+  },
+  document_new: {
+    icon: FileText,
+    color: "text-sky-500",
+    route: () => "/documents",
+  },
+  kb_article: {
+    icon: BookOpen,
+    color: "text-violet-500",
+    route: () => "/kunskapsbanken",
+  },
+  kb_video: {
+    icon: Video,
+    color: "text-rose-500",
+    route: () => "/kunskapsbanken",
+  },
+  info: {
+    icon: Info,
+    color: "text-muted-foreground",
+    route: () => null,
+  },
+};
+
+const defaultConfig = typeConfig.info;
+
 export default function NotificationBell() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -37,7 +85,7 @@ export default function NotificationBell() {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(30);
     setNotifications((data as Notification[]) ?? []);
   };
 
@@ -59,7 +107,7 @@ export default function NotificationBell() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 20));
+          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 30));
         }
       )
       .subscribe();
@@ -86,8 +134,10 @@ export default function NotificationBell() {
 
   const handleClick = (notification: Notification) => {
     markAsRead(notification.id);
-    if (notification.reference_id) {
-      navigate(`/orders/${notification.reference_id}`);
+    const config = typeConfig[notification.type] || defaultConfig;
+    const route = config.route(notification.reference_id);
+    if (route) {
+      navigate(route);
       setOpen(false);
     }
   };
@@ -101,6 +151,8 @@ export default function NotificationBell() {
     if (diffMin < 60) return `${diffMin} min sedan`;
     const diffH = Math.floor(diffMin / 60);
     if (diffH < 24) return `${diffH}h sedan`;
+    const diffD = Math.floor(diffH / 24);
+    if (diffD < 7) return `${diffD}d sedan`;
     return date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
   };
 
@@ -110,13 +162,13 @@ export default function NotificationBell() {
         <button className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-secondary/60 transition-colors">
           <Bell className="h-5 w-5 text-muted-foreground" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold shadow-sm">
+            <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold shadow-sm animate-pulse">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0 glass-surface" sideOffset={8}>
+      <PopoverContent align="end" className="w-[340px] p-0 glass-surface" sideOffset={8}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
           <h3 className="text-sm font-semibold text-foreground">Notiser</h3>
           {unreadCount > 0 && (
@@ -125,36 +177,48 @@ export default function NotificationBell() {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="max-h-[400px]">
           {notifications.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              Inga notiser ännu
+            <div className="py-10 text-center">
+              <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">Inga notiser ännu</p>
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {notifications.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => handleClick(n)}
-                  className={cn(
-                    "w-full text-left px-4 py-3 hover:bg-secondary/40 transition-colors",
-                    !n.is_read && "bg-primary/5"
-                  )}
-                >
-                  <div className="flex items-start gap-2">
-                    {!n.is_read && (
-                      <span className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
+              {notifications.map((n) => {
+                const config = typeConfig[n.type] || defaultConfig;
+                const TypeIcon = config.icon;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => handleClick(n)}
+                    className={cn(
+                      "w-full text-left px-4 py-3 hover:bg-secondary/40 transition-colors",
+                      !n.is_read && "bg-primary/5"
                     )}
-                    <div className={cn("flex-1 min-w-0", n.is_read && "ml-4")}>
-                      <p className="text-sm font-medium text-foreground truncate">{n.title}</p>
-                      {n.message && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                      )}
-                      <p className="text-[10px] text-muted-foreground mt-1">{formatTime(n.created_at)}</p>
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn("mt-0.5 shrink-0", config.color)}>
+                        <TypeIcon className="h-4.5 w-4.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={cn("text-sm text-foreground truncate", !n.is_read && "font-semibold")}>
+                            {n.title}
+                          </p>
+                          {!n.is_read && (
+                            <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                          )}
+                        </div>
+                        {n.message && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground/70 mt-1">{formatTime(n.created_at)}</p>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </ScrollArea>
