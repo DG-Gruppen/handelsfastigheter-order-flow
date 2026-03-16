@@ -33,7 +33,7 @@ export function useDocuments() {
 
   const fetchData = useCallback(async () => {
     const [foldersRes, filesRes] = await Promise.all([
-      supabase.from("document_folders").select("*").order("sort_order"),
+      supabase.from("document_folders").select("*").order("name"),
       supabase.from("document_files").select("*").order("name"),
     ]);
     setFolders((foldersRes.data as DocFolder[]) ?? []);
