@@ -38,6 +38,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      <AiChatBubble />
     </div>
   );
 }
