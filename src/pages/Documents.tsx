@@ -130,7 +130,7 @@ export default function Documents() {
               ? "bg-primary text-primary-foreground"
               : "hover:bg-secondary text-foreground"
           }`}
-          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          style={{ paddingLeft: '8px' }}
           onClick={() => selectFolder(folder.id)}
         >
           <button
@@ -176,9 +176,13 @@ export default function Documents() {
             </DropdownMenu>
           )}
         </div>
-        {isExpanded && children.map(child => (
-          <FolderTreeItem key={child.id} folder={child} depth={depth + 1} />
-        ))}
+        {isExpanded && children.length > 0 && (
+          <div className="ml-3 border-l border-border pl-1 space-y-0.5">
+            {children.map(child => (
+              <FolderTreeItem key={child.id} folder={child} depth={depth + 1} />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -298,11 +302,25 @@ export default function Documents() {
         /* Main two-column layout */
         <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
           {/* Folder tree */}
-          <div className="bg-card rounded-lg border border-border p-3 space-y-0.5 overflow-y-auto max-h-[70vh]">
+          <div className="bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
+            {/* Hem (root) */}
+            <div
+              className={`flex items-center gap-1.5 px-2 py-2 md:py-1.5 rounded-md text-sm cursor-pointer transition-colors min-h-[44px] md:min-h-0 font-semibold ${
+                selectedFolderId === null && !search
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-secondary text-foreground"
+              }`}
+              onClick={() => { setSelectedFolderId(null); setSearch(""); }}
+            >
+              <FolderOpen className="w-4 h-4 shrink-0" />
+              <span>Hem</span>
+            </div>
             {rootFolders.length === 0 ? (
               <p className="text-sm text-muted-foreground p-3">Inga mappar ännu.</p>
             ) : (
-              rootFolders.map(f => <FolderTreeItem key={f.id} folder={f} />)
+              <div className="ml-2 border-l border-border pl-1 mt-0.5 space-y-0.5">
+                {rootFolders.map(f => <FolderTreeItem key={f.id} folder={f} />)}
+              </div>
             )}
           </div>
 
