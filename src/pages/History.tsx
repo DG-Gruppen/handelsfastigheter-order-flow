@@ -39,7 +39,7 @@ export default function History() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const isAdmin = roles.includes("admin");
+  const isAdmin = roles.includes("admin") || roles.includes("it");
   const isManager = roles.includes("manager");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
