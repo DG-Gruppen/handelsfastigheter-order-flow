@@ -54,7 +54,7 @@ export default function NewOrder() {
   // Form state
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
-  const [approverId, setApproverId] = useState("");
+  const [approverId, setApproverId] = useState(""); // kept for backward compat, auto-set from manager
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -143,7 +143,13 @@ export default function NewOrder() {
       const myMgrId = (myProfileRes.data as any)?.manager_id;
       if (myMgrId) {
         const mgrProfile = (fullProfiles ?? []).find((p: any) => p.id === myMgrId);
-        if (mgrProfile) setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+        if (mgrProfile) {
+          setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+          // Auto-set approver for non-manager users
+          if (!managerUserIds.has(user?.id ?? "") && !adminUserIds.has(user?.id ?? "")) {
+            setApproverId(mgrProfile.id);
+          }
+        }
       }
     };
     if (user) fetchData();
@@ -159,14 +165,16 @@ export default function NewOrder() {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
 
-    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !approverId)) {
-      toast.error("Lägg till minst en utrustning" + (!isManagerOrAdmin ? " och välj godkännare" : ""));
+    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !myManagerProfile)) {
+      toast.error(!myManagerProfile && !isManagerOrAdmin
+        ? "Du har ingen chef kopplad till din profil. Kontakta din administratör."
+        : "Lägg till minst en utrustning");
       return;
     }
 
     setSubmitting(true);
 
-    const manager = managers.find((m) => m.id === approverId);
+    const manager = myManagerProfile; // For non-manager users, always use their direct manager
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
 
     const existingRecipientName = isManagerOrAdmin && selectedExistingRecipient !== "self"
@@ -485,21 +493,19 @@ export default function NewOrder() {
                 </p>
               </div>
             )}
-            {!isManagerOrAdmin && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Godkännare (närmaste chef) *</Label>
-                <Select value={approverId} onValueChange={setApproverId}>
-                  <SelectTrigger className="h-12 md:h-10">
-                    <SelectValue placeholder="Välj chef..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map((m) => (
-                      <SelectItem key={m.id} value={m.id} className="py-3 md:py-2">
-                        {m.full_name || m.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {!isManagerOrAdmin && myManagerProfile && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">Attesteras av:</span>{" "}
+                  {myManagerProfile.full_name}
+                </p>
+              </div>
+            )}
+            {!isManagerOrAdmin && !myManagerProfile && (
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
+                <p className="text-sm text-destructive">
+                  Du har ingen chef kopplad till din profil. Kontakta din administratör.
+                </p>
               </div>
             )}
 
