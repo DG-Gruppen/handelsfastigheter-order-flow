@@ -25,6 +25,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Personnel = lazy(() => import("./pages/Personnel"));
 const Documents = lazy(() => import("./pages/Documents"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
+const MySHF = lazy(() => import("./pages/MySHF"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const App = () => (
                       <Route path="/personal" element={<Personnel />} />
                       <Route path="/dokument" element={<Documents />} />
                       <Route path="/kunskapsbanken" element={<KnowledgeBase />} />
+                      <Route path="/mitt-shf" element={<MySHF />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
