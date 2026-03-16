@@ -1015,6 +1015,12 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_subordinate_user_ids: {
+        Args: { _manager_profile_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       has_folder_access: {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
