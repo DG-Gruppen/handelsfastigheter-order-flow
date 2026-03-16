@@ -671,6 +671,17 @@ export default function Admin() {
 
         {/* Sidebar navigation */}
         <nav className="w-56 shrink-0 space-y-5">
+          <button
+            onClick={() => setActiveSection("menu")}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all text-left ${
+              activeSection === "menu"
+                ? "bg-primary/10 text-primary shadow-sm"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Activity className="h-4 w-4 shrink-0" />
+            Dashboard
+          </button>
           {visibleGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               <div className="flex items-center gap-2 px-3 mb-1.5">
