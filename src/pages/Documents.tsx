@@ -183,7 +183,7 @@ export default function Documents() {
             ))}
           </div>
         )}
-      </div>
+    );
   }
 
   // ── File row ──
