@@ -48,19 +48,25 @@ export default function History() {
     if (!user || !profile) return;
 
     if (isAdmin) {
+      // VD/Admin: alla beställningar
       const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
       const requesterIds = [...new Set((data ?? []).map(o => o.requester_id))];
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", requesterIds);
       const nameMap = new Map((profiles ?? []).map(p => [p.user_id, p.full_name]));
       setOrders((data ?? []).map(o => ({ ...o, requester_name: nameMap.get(o.requester_id) || "Okänd" })));
     } else if (isManager) {
-      const { data: managedProfiles } = await supabase.from("profiles").select("user_id, full_name").eq("manager_id", profile.id);
-      const employeeIds = (managedProfiles ?? []).map(p => p.user_id);
-      const allUserIds = [user.id, ...employeeIds];
+      // Chef: egna + alla underställda rekursivt nedåt i hierarkin
+      const { data: subRows } = await supabase.rpc("get_subordinate_user_ids", { _manager_profile_id: profile.id });
+      const subordinateIds = (subRows ?? []).map((r: { user_id: string }) => r.user_id);
+      const allUserIds = [...new Set([user.id, ...subordinateIds])];
+
       const { data } = await supabase.from("orders").select("*").in("requester_id", allUserIds).order("created_at", { ascending: false });
-      const nameMap = new Map([[user.id, profile.full_name], ...(managedProfiles ?? []).map(p => [p.user_id, p.full_name] as [string, string])]);
+
+      const { data: allProfiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", allUserIds);
+      const nameMap = new Map((allProfiles ?? []).map(p => [p.user_id, p.full_name] as [string, string]));
       setOrders((data ?? []).map(o => ({ ...o, requester_name: nameMap.get(o.requester_id) || "Okänd" })));
     } else {
+      // Anställd: bara egna
       const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
       setOrders((data ?? []).map(o => ({ ...o, requester_name: profile.full_name })));
     }
