@@ -113,7 +113,7 @@ export default function History() {
     fetchHistory();
   }, [user, profile, isAdmin, isManager]);
 
-  const filtered = orders.filter(o => {
+  const filtered = useMemo(() => orders.filter(o => {
     if (statusFilter !== "all" && o.status !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -124,7 +124,7 @@ export default function History() {
       );
     }
     return true;
-  });
+  }), [orders, statusFilter, search]);
 
   function getOrderTag(order: HistoryOrder) {
     if (order.order_reason === "end_of_employment") {

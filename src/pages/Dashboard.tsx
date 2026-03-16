@@ -84,12 +84,12 @@ export default function Dashboard() {
     fetchOrders();
   }, [user, profile, isAdmin, isManager]);
 
-  const counts = {
+  const counts = useMemo(() => ({
     pending: orders.filter((o) => o.status === "pending").length,
     approved: orders.filter((o) => o.status === "approved").length,
     total: orders.length,
     needsMyApproval: orders.filter((o) => o.status === "pending" && o.approver_id === user?.id).length,
-  };
+  }), [orders, user?.id]);
 
   const firstName = profile?.full_name?.split(" ")[0] || "du";
   const latestNews = newsPosts.slice(0, 3);

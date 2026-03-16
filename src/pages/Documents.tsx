@@ -22,10 +22,11 @@ import { toast } from "@/hooks/use-toast";
 
 function TextPreview({ url }: { url: string }) {
   const [text, setText] = useState("Laddar…");
-  // Load text on mount
-  useMemo(() => {
+  const fetchedRef = useRef(false);
+  if (!fetchedRef.current) {
+    fetchedRef.current = true;
     fetch(url).then(r => r.text()).then(setText).catch(() => setText("Kunde inte läsa filen."));
-  }, [url]);
+  }
   return <pre className="whitespace-pre-wrap text-sm font-mono bg-secondary/50 rounded p-4 max-h-[60vh] overflow-auto">{text}</pre>;
 }
 

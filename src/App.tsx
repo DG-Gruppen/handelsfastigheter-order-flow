@@ -8,25 +8,32 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { NavSettingsProvider } from "@/hooks/useNavSettings";
 import { ModulesProvider } from "@/hooks/useModules";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import NewOrder from "./pages/NewOrder";
-
-import Admin from "./pages/Admin";
-import OrgTree from "./pages/OrgTree";
-import Onboarding from "./pages/Onboarding";
-import ITInfo from "./pages/ITInfo";
 import LayoutRoute from "./components/LayoutRoute";
+import { lazy, Suspense } from "react";
 
-import OrderDetail from "./pages/OrderDetail";
-import History from "./pages/History";
-import Profile from "./pages/Profile";
-import Personnel from "./pages/Personnel";
-import Documents from "./pages/Documents";
-import KnowledgeBase from "./pages/KnowledgeBase";
-import NotFound from "./pages/NotFound";
+// Lazy-loaded pages
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NewOrder = lazy(() => import("./pages/NewOrder"));
+const Admin = lazy(() => import("./pages/Admin"));
+const OrgTree = lazy(() => import("./pages/OrgTree"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const ITInfo = lazy(() => import("./pages/ITInfo"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const History = lazy(() => import("./pages/History"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Personnel = lazy(() => import("./pages/Personnel"));
+const Documents = lazy(() => import("./pages/Documents"));
+const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+const PageFallback = () => (
+  <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+);
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -38,26 +45,28 @@ const App = () => (
           <AuthProvider>
             <NavSettingsProvider>
               <ModulesProvider>
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/orders/new" element={<NewOrder />} />
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/orders/:id" element={<OrderDetail />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/org" element={<OrgTree />} />
-                    <Route path="/it-info" element={<ITInfo />} />
-                    <Route path="/personal" element={<Personnel />} />
-                    <Route path="/dokument" element={<Documents />} />
-                    <Route path="/kunskapsbanken" element={<KnowledgeBase />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
-                </Routes>
+                <Suspense fallback={<PageFallback />}>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/orders/new" element={<NewOrder />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/orders/:id" element={<OrderDetail />} />
+                      <Route path="/history" element={<History />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/org" element={<OrgTree />} />
+                      <Route path="/it-info" element={<ITInfo />} />
+                      <Route path="/personal" element={<Personnel />} />
+                      <Route path="/dokument" element={<Documents />} />
+                      <Route path="/kunskapsbanken" element={<KnowledgeBase />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Route>
+                  </Routes>
+                </Suspense>
               </ModulesProvider>
             </NavSettingsProvider>
           </AuthProvider>
