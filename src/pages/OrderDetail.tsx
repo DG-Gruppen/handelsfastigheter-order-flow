@@ -214,6 +214,18 @@ export default function OrderDetail() {
           _message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
           _type: "order_rejected", _reference_id: order.id,
         });
+
+        // Send rejection email to requester
+        if (requesterProfile?.email) {
+          await sendRejectionEmail({
+            orderId: order.id,
+            title: order.title,
+            requesterName: requesterProfile.full_name,
+            requesterEmail: requesterProfile.email,
+            approverName,
+            rejectionReason: rejectionReason.trim() || null,
+          });
+        }
       }
     }
   };

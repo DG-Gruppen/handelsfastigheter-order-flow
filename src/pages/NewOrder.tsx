@@ -244,7 +244,7 @@ export default function NewOrder() {
 
     await supabase.from("order_items").insert(orderItemsToInsert as any);
 
-    // Create notification for approver (if not auto-approved)
+    // Create notification + email for approver (if not auto-approved)
     if (!autoApprove && resolvedApproverId && resolvedApproverId !== user.id) {
       const requesterName = allProfiles.find(p => p.user_id === user.id)?.full_name || "Någon";
       await supabase.rpc("create_notification", {
@@ -254,6 +254,28 @@ export default function NewOrder() {
         _type: "approval_request",
         _reference_id: order.id,
       });
+
+      // Send email to approver
+      const approverProfileData = allProfiles.find(p => p.user_id === resolvedApproverId);
+      if (approverProfileData) {
+        const { data: approverEmailData } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("user_id", resolvedApproverId)
+          .single();
+        if (approverEmailData?.email) {
+          await sendNewOrderEmailToApprover({
+            orderId: order.id,
+            title,
+            description: description.trim(),
+            requesterName,
+            approverName: approverProfileData.full_name,
+            approverEmail: approverEmailData.email,
+            items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+            recipientName: existingRecipientName || null,
+          });
+        }
+      }
     }
 
     // Send helpdesk email and confirmation email for auto-approved orders
