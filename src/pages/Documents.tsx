@@ -147,7 +147,7 @@ export default function Documents() {
             <Shield className="w-3 h-3 opacity-50 shrink-0" />
           )}
           {(isAdmin || canWrite) && (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <button className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded hover:bg-black/10 transition-opacity">
                   <MoreHorizontal className="w-3.5 h-3.5" />
@@ -199,7 +199,7 @@ export default function Documents() {
             <Download className="w-4 h-4" />
           </Button>
           {(isAdmin || canWriteFolder(file.folder_id)) && (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                   <MoreHorizontal className="w-4 h-4" />
