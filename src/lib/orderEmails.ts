@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAppBaseUrl } from "@/lib/utils";
 
 /** Fetch the IT contact email from org_chart_settings, fallback to hardcoded default */
 export async function getItContactEmail(): Promise<string> {
