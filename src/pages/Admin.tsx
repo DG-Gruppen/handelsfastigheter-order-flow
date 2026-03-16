@@ -687,9 +687,9 @@ export default function Admin() {
           </button>
           {visibleGroups.map((group) => (
             <div key={group.label} className="space-y-1">
-              <div className="flex items-center gap-2 px-3 mb-1.5">
-                <group.icon className={`h-3.5 w-3.5 ${group.color}`} />
-                <span className={`text-[10px] font-semibold uppercase tracking-wider ${group.color}`}>{group.label}</span>
+              <div className="flex items-center gap-2 px-3 pt-1 pb-1 select-none pointer-events-none">
+                <group.icon className={`h-3 w-3 ${group.color} opacity-50`} />
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">{group.label}</span>
               </div>
               {group.items.map((item) => {
                 const isActive = activeSection === item.id;
