@@ -513,11 +513,38 @@ export default function Documents() {
             {selectedFolder ? (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
+                  <div className="flex items-center gap-3">
+                    {(isAdmin || canWriteFolder(selectedFolder.id)) && currentFiles.length > 0 && (
+                      <Checkbox
+                        checked={selectedFiles.size === currentFiles.length && currentFiles.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                        title="Markera alla"
+                      />
+                    )}
+                    <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
                   </span>
                 </div>
+
+                {/* Bulk action bar */}
+                {selectedFiles.size > 0 && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20">
+                    <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
+                    <div className="flex-1" />
+                    <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
+                      <FolderInput className="w-4 h-4 mr-1" /> Flytta
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                      <Trash2 className="w-4 h-4 mr-1" /> Ta bort
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={clearSelection}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
                 {currentFiles.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <FileText className="w-12 h-12 mb-3 opacity-30" />
