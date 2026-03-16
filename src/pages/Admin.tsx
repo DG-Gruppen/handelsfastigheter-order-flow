@@ -7,6 +7,7 @@ import CategoriesManager from "@/components/CategoriesManager";
 import SystemsManager from "@/components/SystemsManager";
 import ModulesManager from "@/components/ModulesManager";
 import KbAdminPanel from "@/components/kb/KbAdminPanel";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
