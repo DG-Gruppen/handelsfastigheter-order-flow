@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -61,18 +61,18 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     fetchModules();
   }, [user, roles.length]);
 
-  // Filter modules the current user can access based on their roles
-  const accessibleModules = modules.filter((m) => {
-    if (!m.is_active) return false;
-    // If no access rules exist for this module, it's accessible by default
-    const moduleRules = allAccess.filter((a) => a.module_id === m.id);
-    if (moduleRules.length === 0) return true;
-    // User has access if ANY of their roles grants access
-    return roles.some((role) => {
-      const rule = moduleRules.find((a) => a.role === role);
-      return rule ? rule.has_access : false;
+  // Memoize accessible modules to prevent unnecessary re-renders downstream
+  const accessibleModules = useMemo(() => {
+    return modules.filter((m) => {
+      if (!m.is_active) return false;
+      const moduleRules = allAccess.filter((a) => a.module_id === m.id);
+      if (moduleRules.length === 0) return true;
+      return roles.some((role) => {
+        const rule = moduleRules.find((a) => a.role === role);
+        return rule ? rule.has_access : false;
+      });
     });
-  });
+  }, [modules, allAccess, roles]);
 
   return (
     <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, loading, refresh: fetchModules }}>
