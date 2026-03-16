@@ -613,6 +613,59 @@ export default function Documents() {
           }
         }}
       />
+
+      {/* Bulk move dialog */}
+      <Dialog open={bulkMoveDialog} onOpenChange={() => setBulkMoveDialog(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Flytta {selectedFiles.size} filer</DialogTitle>
+            <DialogDescription>Välj målmapp</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1 max-h-60 overflow-y-auto">
+            {folders.map(f => (
+              <button key={f.id} onClick={() => bulkMove(f.id)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left hover:bg-secondary">
+                <FolderOpen className="w-4 h-4" /> {f.name}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkMoveDialog(false)}>Avbryt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* File preview dialog */}
+      <Dialog open={!!previewFile} onOpenChange={closePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="truncate">{previewFile?.name}</DialogTitle>
+            <DialogDescription>
+              {previewFile && `${formatFileSize(previewFile.file_size)} · ${new Date(previewFile.created_at).toLocaleDateString("sv-SE")}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto min-h-0">
+            {previewFile && previewUrl && (
+              <>
+                {previewFile.mime_type.startsWith("image/") && (
+                  <img src={previewUrl} alt={previewFile.name} className="max-w-full h-auto mx-auto rounded" />
+                )}
+                {previewFile.mime_type === "application/pdf" && (
+                  <iframe src={previewUrl} className="w-full h-[70vh] rounded border border-border" title={previewFile.name} />
+                )}
+                {previewFile.mime_type.startsWith("text/") && (
+                  <TextPreview url={previewUrl} />
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => previewFile && downloadFile(previewFile)}>
+              <Download className="w-4 h-4 mr-2" /> Ladda ner
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
