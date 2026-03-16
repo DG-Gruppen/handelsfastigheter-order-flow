@@ -84,10 +84,32 @@ export default function Dashboard() {
     setLoading(false);
   }, [user, profile, isAdmin, isManager]);
 
+  const fetchRecognitions = useCallback(async () => {
+    const { data } = await supabase
+      .from("recognitions")
+      .select("id, icon, message, created_at, from_user_id, to_user_id")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (!data) return;
+    const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+    const nameMap: Record<string, string> = {};
+    for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
+    setRecognitions(data.map((r: any) => ({
+      ...r,
+      from_name: nameMap[r.from_user_id] || "Okänd",
+      to_name: nameMap[r.to_user_id] || "Okänd",
+    })));
+  }, []);
+
   useEffect(() => {
     if (!user || !profile) return;
     setLoading(true);
     fetchOrders();
+    fetchRecognitions();
 
     const channel = supabase
       .channel("dashboard-orders")
@@ -101,7 +123,7 @@ export default function Dashboard() {
       supabase.removeChannel(channel);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [user, profile, isAdmin, isManager, fetchOrders]);
+  }, [user, profile, isAdmin, isManager, fetchOrders, fetchRecognitions]);
 
   const counts = useMemo(() => ({
     pending: orders.filter((o) => o.status === "pending").length,
