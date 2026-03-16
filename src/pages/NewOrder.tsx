@@ -311,7 +311,7 @@ export default function NewOrder() {
 
       // Send confirmation email to requester
       if (requesterEmail) {
-        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
         const itemsHtml = orderItemsToInsert
           .map((i) => `<li><strong>${i.name}</strong>${i.quantity > 1 ? ` ×${i.quantity}` : ""}</li>`)
           .join("");

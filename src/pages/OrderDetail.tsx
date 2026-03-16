@@ -169,7 +169,7 @@ export default function OrderDetail() {
       }
 
       if (requesterProfile?.email) {
-        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
         const approverName = approverProfile?.full_name || "Attestanten";
         const itemsHtml = items.map((i) => `<li><strong>${i.name}</strong>${i.quantity > 1 ? ` ×${i.quantity}` : ""}</li>`).join("");
         const approvalHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">

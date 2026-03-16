@@ -452,7 +452,7 @@ export default function Onboarding() {
 
       // Send confirmation email to requester (auto-approved)
       if (reqEmail?.email) {
-        const orderUrl = `${window.location.origin}/orders/${order.id}`;
+        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
         const itemsHtml = orderItemsToInsert
           .map((i) => `<li><strong>${i.name}</strong></li>`)
           .join("");
