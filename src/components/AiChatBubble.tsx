@@ -155,12 +155,18 @@ export default function AiChatBubble() {
                   </div>
                 )}
                 <div className={cn(
-                  "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap",
+                  "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm",
                   m.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    ? "bg-primary text-primary-foreground rounded-br-md whitespace-pre-wrap"
                     : "bg-secondary text-secondary-foreground rounded-bl-md"
                 )}>
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_a]:text-primary [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded">
+                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    m.content
+                  )}
                 </div>
                 {m.role === "user" && (
                   <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
