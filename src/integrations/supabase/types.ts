@@ -74,6 +74,39 @@ export type Database = {
           },
         ]
       }
+      content_index: {
+        Row: {
+          content: string
+          fts: unknown
+          id: string
+          metadata: Json | null
+          source_id: string
+          source_table: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string
+          fts?: unknown
+          id?: string
+          metadata?: Json | null
+          source_id: string
+          source_table: string
+          title?: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          fts?: unknown
+          id?: string
+          metadata?: Json | null
+          source_id?: string
+          source_table?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           color: string | null
@@ -1014,6 +1047,20 @@ export type Database = {
           read_ct: number
         }[]
       }
+      search_content: {
+        Args: { match_limit?: number; query_text: string }
+        Returns: {
+          content: string
+          id: string
+          metadata: Json
+          relevance: number
+          source_id: string
+          source_table: string
+          title: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "employee" | "manager" | "admin" | "staff" | "it"
