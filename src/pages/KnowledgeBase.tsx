@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, BookOpen, PlayCircle, Settings2, GraduationCap } from "lucide-react";
+import { Search, BookOpen, PlayCircle, Settings2, GraduationCap, Sparkles } from "lucide-react";
 import KbArticleCard from "@/components/kb/KbArticleCard";
 import KbVideoCard from "@/components/kb/KbVideoCard";
 import KbArticleViewer from "@/components/kb/KbArticleViewer";
@@ -14,6 +14,16 @@ interface KbCategory { id: string; name: string; slug: string; icon: string; sor
 interface KbArticle { id: string; title: string; slug: string; content: string; excerpt: string; category_id: string | null; tags: string[]; is_published: boolean; views: number; created_at: string; updated_at: string; author_id: string; }
 interface KbVideo { id: string; title: string; description: string; video_url: string; thumbnail_url: string | null; category_id: string | null; tags: string[]; is_published: boolean; views: number; duration_seconds: number | null; created_at: string; author_id: string; }
 interface Profile { user_id: string; full_name: string; }
+
+// SHF category color palette mapped by index
+const CATEGORY_COLORS = [
+  { bg: "bg-primary/10", text: "text-primary", border: "border-l-primary" },
+  { bg: "bg-accent/10", text: "text-accent", border: "border-l-accent" },
+  { bg: "bg-destructive/10", text: "text-destructive", border: "border-l-destructive" },
+  { bg: "bg-[hsl(262,30%,45%)]/10", text: "text-[hsl(262,30%,45%)]", border: "border-l-[hsl(262,30%,45%)]" },
+  { bg: "bg-primary/10", text: "text-primary", border: "border-l-primary" },
+  { bg: "bg-accent/10", text: "text-accent", border: "border-l-accent" },
+];
 
 export default function KnowledgeBase() {
   const { roles } = useAuth();
@@ -27,6 +37,7 @@ export default function KnowledgeBase() {
 
   const [tab, setTab] = useState<"wiki" | "courses">("wiki");
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
 
   const [viewArticle, setViewArticle] = useState<KbArticle | null>(null);
@@ -75,6 +86,12 @@ export default function KnowledgeBase() {
     return map;
   }, [categories]);
 
+  const categoryColorMap = useMemo(() => {
+    const map: Record<string, typeof CATEGORY_COLORS[0]> = {};
+    categories.forEach((c, i) => { map[c.id] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
+    return map;
+  }, [categories]);
+
   const profileMap = useMemo(() => {
     const map: Record<string, string> = {};
     profiles.forEach(p => { map[p.user_id] = p.full_name; });
@@ -82,26 +99,34 @@ export default function KnowledgeBase() {
   }, [profiles]);
 
   const filteredArticles = useMemo(() => {
-    if (!search.trim()) return articles;
-    const q = search.toLowerCase();
-    return articles.filter(a =>
-      a.title.toLowerCase().includes(q) ||
-      a.excerpt.toLowerCase().includes(q) ||
-      a.tags?.some(t => t.toLowerCase().includes(q)) ||
-      (a.category_id && categoryMap[a.category_id]?.toLowerCase().includes(q))
-    );
-  }, [articles, search, categoryMap]);
+    let result = articles;
+    if (selectedCategory) result = result.filter(a => a.category_id === selectedCategory);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(a =>
+        a.title.toLowerCase().includes(q) ||
+        a.excerpt.toLowerCase().includes(q) ||
+        a.tags?.some(t => t.toLowerCase().includes(q)) ||
+        (a.category_id && categoryMap[a.category_id]?.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [articles, search, categoryMap, selectedCategory]);
 
   const filteredVideos = useMemo(() => {
-    if (!search.trim()) return videos;
-    const q = search.toLowerCase();
-    return videos.filter(v =>
-      v.title.toLowerCase().includes(q) ||
-      v.description.toLowerCase().includes(q) ||
-      v.tags?.some(t => t.toLowerCase().includes(q)) ||
-      (v.category_id && categoryMap[v.category_id]?.toLowerCase().includes(q))
-    );
-  }, [videos, search, categoryMap]);
+    let result = videos;
+    if (selectedCategory) result = result.filter(v => v.category_id === selectedCategory);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(v =>
+        v.title.toLowerCase().includes(q) ||
+        v.description.toLowerCase().includes(q) ||
+        v.tags?.some(t => t.toLowerCase().includes(q)) ||
+        (v.category_id && categoryMap[v.category_id]?.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [videos, search, categoryMap, selectedCategory]);
 
   const openArticle = async (article: KbArticle) => {
     setViewArticle(article);
@@ -116,30 +141,61 @@ export default function KnowledgeBase() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-muted-foreground">Laddar kunskapsbasen...</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">Kunskapsbanken</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Lär, väx och dela kunskap</p>
+    <div className="w-full max-w-6xl mx-auto space-y-6">
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-2xl gradient-primary px-6 py-8 md:px-10 md:py-10">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/20 -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/10 translate-y-1/3 -translate-x-1/4" />
         </div>
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button
-              variant={showAdmin ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowAdmin(!showAdmin)}
-            >
-              <Settings2 className="h-4 w-4 mr-1.5" />
-              {showAdmin ? "Stäng admin" : "Hantera"}
-            </Button>
-          )}
+        <div className="relative flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <GraduationCap className="h-6 w-6 text-primary-foreground/80" />
+              <span className="text-primary-foreground/70 text-xs font-medium uppercase tracking-wider">SHF Kunskapsbanken</span>
+            </div>
+            <h1 className="font-heading text-2xl md:text-3xl font-bold text-primary-foreground">
+              Lär, väx och dela kunskap
+            </h1>
+            <p className="text-primary-foreground/70 mt-2 text-sm max-w-lg">
+              Utforska wiki-artiklar och utbildningsvideor – samlad kompetens för hela organisationen.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                variant={showAdmin ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowAdmin(!showAdmin)}
+                className={showAdmin ? "" : "border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"}
+              >
+                <Settings2 className="h-4 w-4 mr-1.5" />
+                {showAdmin ? "Stäng admin" : "Hantera"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="relative flex gap-6 mt-6">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary-foreground/60" />
+            <span className="text-primary-foreground/90 text-sm font-medium">{articles.length} artiklar</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <PlayCircle className="h-4 w-4 text-primary-foreground/60" />
+            <span className="text-primary-foreground/90 text-sm font-medium">{videos.length} utbildningar</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary-foreground/60" />
+            <span className="text-primary-foreground/90 text-sm font-medium">{categories.length} kategorier</span>
+          </div>
         </div>
       </div>
 
@@ -148,12 +204,12 @@ export default function KnowledgeBase() {
         <KbAdminPanel onDataChange={fetchData} />
       )}
 
-      {/* Tabs – styled like the mockup */}
+      {/* Tabs */}
       <div className="flex gap-1 bg-secondary rounded-lg p-1 w-fit">
         <button
           onClick={() => setTab("wiki")}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            tab === "wiki" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:bg-card/50"
+            tab === "wiki" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
           }`}
         >
           <BookOpen className="w-4 h-4" /> Wiki
@@ -161,22 +217,57 @@ export default function KnowledgeBase() {
         <button
           onClick={() => setTab("courses")}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            tab === "courses" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:bg-card/50"
+            tab === "courses" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
           }`}
         >
           <PlayCircle className="w-4 h-4" /> Utbildningar
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={tab === "wiki" ? "Sök i wiki-artiklar..." : "Sök utbildningar..."}
-          className="pl-10 h-11"
-        />
+      {/* Search + category filter */}
+      <div className="space-y-3">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={tab === "wiki" ? "Sök i wiki-artiklar..." : "Sök utbildningar..."}
+            className="pl-10 h-11"
+          />
+        </div>
+
+        {/* Category filter chips */}
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[36px] ${
+                !selectedCategory
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
+              }`}
+            >
+              Alla
+            </button>
+            {categories.filter(c => c.is_active).map((cat) => {
+              const colors = categoryColorMap[cat.id];
+              const isActive = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(isActive ? null : cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[36px] ${
+                    isActive
+                      ? `${colors.bg} ${colors.text} ring-1 ring-current`
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -185,7 +276,7 @@ export default function KnowledgeBase() {
           {filteredArticles.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">{search ? "Inga artiklar matchar din sökning" : "Inga artiklar publicerade ännu"}</p>
+              <p className="text-sm">{search || selectedCategory ? "Inga artiklar matchar din sökning" : "Inga artiklar publicerade ännu"}</p>
             </div>
           ) : (
             filteredArticles.map(article => (
@@ -193,6 +284,7 @@ export default function KnowledgeBase() {
                 key={article.id}
                 article={article}
                 categoryName={article.category_id ? categoryMap[article.category_id] : undefined}
+                categoryColor={article.category_id ? categoryColorMap[article.category_id] : undefined}
                 authorName={profileMap[article.author_id]}
                 onClick={() => openArticle(article)}
               />
@@ -204,7 +296,7 @@ export default function KnowledgeBase() {
           {filteredVideos.length === 0 ? (
             <div className="col-span-full text-center py-16 text-muted-foreground">
               <PlayCircle className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">{search ? "Inga utbildningar matchar din sökning" : "Inga utbildningar publicerade ännu"}</p>
+              <p className="text-sm">{search || selectedCategory ? "Inga utbildningar matchar din sökning" : "Inga utbildningar publicerade ännu"}</p>
             </div>
           ) : (
             filteredVideos.map(video => (
@@ -212,6 +304,7 @@ export default function KnowledgeBase() {
                 key={video.id}
                 video={video}
                 categoryName={video.category_id ? categoryMap[video.category_id] : undefined}
+                categoryColor={video.category_id ? categoryColorMap[video.category_id] : undefined}
                 onClick={() => openVideo(video)}
               />
             ))
