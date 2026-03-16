@@ -54,7 +54,7 @@ export default function NewOrder() {
   // Form state
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
   const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
-  const [approverId, setApproverId] = useState("");
+  const [approverId, setApproverId] = useState(""); // kept for backward compat, auto-set from manager
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
