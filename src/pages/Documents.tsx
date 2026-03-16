@@ -19,6 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
+function TextPreview({ url }: { url: string }) {
+  const [text, setText] = useState("Laddar…");
+  useState(() => {
+    fetch(url).then(r => r.text()).then(setText).catch(() => setText("Kunde inte läsa filen."));
+  });
+  return <pre className="whitespace-pre-wrap text-sm font-mono bg-secondary/50 rounded p-4 max-h-[60vh] overflow-auto">{text}</pre>;
+}
 
 
 // ── Helpers ──
