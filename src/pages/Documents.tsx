@@ -352,10 +352,20 @@ export default function Documents() {
                 <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
               </Button>
             )}
-            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!selectedFolderId}>
-              <Upload className="w-4 h-4 mr-2" /> Ladda upp
+            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!selectedFolderId || !!uploadProgress}>
+              <Upload className="w-4 h-4 mr-2" /> Filer
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()} disabled={!selectedFolderId || !!uploadProgress}>
+              <FolderUp className="w-4 h-4 mr-2" /> Mapp
             </Button>
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileUpload} />
+            <input ref={folderInputRef} type="file" className="hidden" onChange={handleFolderUpload}
+              {...({ webkitdirectory: "", directory: "", mozdirectory: "" } as any)} />
+            {uploadProgress && (
+              <span className="text-xs text-muted-foreground self-center">
+                {uploadProgress.done}/{uploadProgress.total} filer…
+              </span>
+            )}
           </div>
         )}
       </div>
