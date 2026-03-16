@@ -161,6 +161,7 @@ export type Database = {
           parent_id: string | null
           sort_order: number
           updated_at: string
+          write_roles: string[] | null
         }
         Insert: {
           access_roles?: string[] | null
@@ -172,6 +173,7 @@ export type Database = {
           parent_id?: string | null
           sort_order?: number
           updated_at?: string
+          write_roles?: string[] | null
         }
         Update: {
           access_roles?: string[] | null
@@ -183,6 +185,7 @@ export type Database = {
           parent_id?: string | null
           sort_order?: number
           updated_at?: string
+          write_roles?: string[] | null
         }
         Relationships: [
           {
@@ -841,6 +844,10 @@ export type Database = {
         }[]
       }
       has_folder_access: {
+        Args: { _folder_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_folder_write_access: {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
       }
