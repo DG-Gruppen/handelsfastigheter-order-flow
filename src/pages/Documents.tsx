@@ -199,7 +199,7 @@ export default function Documents() {
             <Download className="w-4 h-4" />
           </Button>
           {(isAdmin || canWriteFolder(file.folder_id)) && (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                   <MoreHorizontal className="w-4 h-4" />
