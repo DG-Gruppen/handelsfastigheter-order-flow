@@ -61,17 +61,6 @@ const NotFound = () => {
             </Button>
           ))}
         </div>
-
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => window.history.back()}
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Gå tillbaka
-        </Button>
       </motion.div>
     </div>
   );
