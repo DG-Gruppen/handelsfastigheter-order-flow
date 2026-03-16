@@ -115,10 +115,10 @@ export default function AiChatBubble() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-4 z-50 h-14 w-14 rounded-full gradient-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105"
+          className="fixed bottom-20 md:bottom-6 right-4 z-50 h-11 w-11 md:h-14 md:w-14 rounded-full gradient-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105"
           aria-label="Öppna AI-assistent"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-5 w-5 md:h-6 md:w-6" />
         </button>
       )}
 
