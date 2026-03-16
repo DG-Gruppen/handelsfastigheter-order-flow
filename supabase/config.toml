@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.sync-content-index]
 verify_jwt = false
+
+[functions.scrape-website]
+verify_jwt = false
