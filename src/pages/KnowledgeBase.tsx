@@ -32,7 +32,9 @@ export default function KnowledgeBase() {
   const [viewArticle, setViewArticle] = useState<KbArticle | null>(null);
   const [viewVideo, setViewVideo] = useState<KbVideo | null>(null);
 
-  const fetchData = async () => {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchData = useCallback(async () => {
     const [catRes, artRes, vidRes, profRes] = await Promise.all([
       supabase.from("kb_categories").select("*").order("sort_order"),
       supabase.from("kb_articles").select("*").order("created_at", { ascending: false }),
@@ -44,9 +46,28 @@ export default function KnowledgeBase() {
     setVideos((vidRes.data as KbVideo[]) ?? []);
     setProfiles((profRes.data as Profile[]) ?? []);
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+
+    const debouncedRefetch = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchData(), 500);
+    };
+
+    const channel = supabase
+      .channel("kb-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "kb_articles" }, debouncedRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "kb_videos" }, debouncedRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "kb_categories" }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [fetchData]);
 
   const categoryMap = useMemo(() => {
     const map: Record<string, string> = {};

@@ -110,36 +110,50 @@ export default function OrderDetail() {
 
   const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadOrder = useCallback(async () => {
+    if (!id || !user) return;
+    const [orderRes, itemsRes, systemsRes] = await Promise.all([
+      supabase.from("orders").select("*").eq("id", id).single(),
+      supabase.from("order_items").select("*").eq("order_id", id),
+      supabase.from("order_systems").select("id, system:systems(id, name, description, icon)").eq("order_id", id),
+    ]);
+    const o = orderRes.data as Order | null;
+    setOrder(o);
+    setItems((itemsRes.data as OrderItem[]) ?? []);
+    setOrderSystems((systemsRes.data as any[]) ?? []);
+
+    if (o) {
+      const ids = [o.requester_id, o.approver_id].filter(Boolean) as string[];
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", ids);
+      if (profiles) {
+        const req = profiles.find((p: any) => p.user_id === o.requester_id);
+        const app = profiles.find((p: any) => p.user_id === o.approver_id);
+        if (req) setRequesterProfile({ full_name: req.full_name, email: req.email });
+        if (app) setApproverProfile({ full_name: app.full_name, email: app.email });
+      }
+    }
+    setLoading(false);
+  }, [id, user]);
+
   useEffect(() => {
     if (!id || !user) return;
-    const load = async () => {
-      const [orderRes, itemsRes, systemsRes] = await Promise.all([
-        supabase.from("orders").select("*").eq("id", id).single(),
-        supabase.from("order_items").select("*").eq("order_id", id),
-        supabase.from("order_systems").select("id, system:systems(id, name, description, icon)").eq("order_id", id),
-      ]);
-      const o = orderRes.data as Order | null;
-      setOrder(o);
-      setItems((itemsRes.data as OrderItem[]) ?? []);
-      setOrderSystems((systemsRes.data as any[]) ?? []);
+    loadOrder();
 
-      if (o) {
-        const ids = [o.requester_id, o.approver_id].filter(Boolean) as string[];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, email")
-          .in("user_id", ids);
-        if (profiles) {
-          const req = profiles.find((p: any) => p.user_id === o.requester_id);
-          const app = profiles.find((p: any) => p.user_id === o.approver_id);
-          if (req) setRequesterProfile({ full_name: req.full_name, email: req.email });
-          if (app) setApproverProfile({ full_name: app.full_name, email: app.email });
-        }
-      }
-      setLoading(false);
+    const channel = supabase
+      .channel(`order-detail-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `id=eq.${id}` }, () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => loadOrder(), 500);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-    load();
-  }, [id, user]);
+  }, [id, user, loadOrder]);
 
   const handleMarkDelivered = async () => {
     if (!order) return;

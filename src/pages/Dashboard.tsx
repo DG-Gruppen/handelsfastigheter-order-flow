@@ -63,26 +63,43 @@ export default function Dashboard() {
   const isAdmin = roles.includes("admin");
   const isManager = roles.includes("manager");
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchOrders = useCallback(async () => {
+    if (!user || !profile) return;
+    if (isAdmin) {
+      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+      setOrders((data as Order[]) ?? []);
+    } else if (isManager) {
+      const { data: managed } = await supabase.from("profiles").select("user_id").eq("manager_id", profile.id);
+      const ids = [user.id, ...(managed ?? []).map((p) => p.user_id)];
+      const { data } = await supabase.from("orders").select("*").in("requester_id", ids).order("created_at", { ascending: false });
+      setOrders((data as Order[]) ?? []);
+    } else {
+      const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
+      setOrders((data as Order[]) ?? []);
+    }
+    setLoading(false);
+  }, [user, profile, isAdmin, isManager]);
+
   useEffect(() => {
     if (!user || !profile) return;
-    const fetchOrders = async () => {
-      setLoading(true);
-      if (isAdmin) {
-        const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-        setOrders((data as Order[]) ?? []);
-      } else if (isManager) {
-        const { data: managed } = await supabase.from("profiles").select("user_id").eq("manager_id", profile.id);
-        const ids = [user.id, ...(managed ?? []).map((p) => p.user_id)];
-        const { data } = await supabase.from("orders").select("*").in("requester_id", ids).order("created_at", { ascending: false });
-        setOrders((data as Order[]) ?? []);
-      } else {
-        const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
-        setOrders((data as Order[]) ?? []);
-      }
-      setLoading(false);
-    };
+    setLoading(true);
     fetchOrders();
-  }, [user, profile, isAdmin, isManager]);
+
+    const channel = supabase
+      .channel("dashboard-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchOrders(), 500);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [user, profile, isAdmin, isManager, fetchOrders]);
 
   const counts = useMemo(() => ({
     pending: orders.filter((o) => o.status === "pending").length,

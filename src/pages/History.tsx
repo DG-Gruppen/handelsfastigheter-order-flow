@@ -42,76 +42,50 @@ export default function History() {
   const isAdmin = roles.includes("admin");
   const isManager = roles.includes("manager");
 
-  useEffect(() => {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchHistory = useCallback(async () => {
     if (!user || !profile) return;
 
-    const fetchHistory = async () => {
-      setLoading(true);
+    if (isAdmin) {
+      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+      const requesterIds = [...new Set((data ?? []).map(o => o.requester_id))];
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", requesterIds);
+      const nameMap = new Map((profiles ?? []).map(p => [p.user_id, p.full_name]));
+      setOrders((data ?? []).map(o => ({ ...o, requester_name: nameMap.get(o.requester_id) || "Okänd" })));
+    } else if (isManager) {
+      const { data: managedProfiles } = await supabase.from("profiles").select("user_id, full_name").eq("manager_id", profile.id);
+      const employeeIds = (managedProfiles ?? []).map(p => p.user_id);
+      const allUserIds = [user.id, ...employeeIds];
+      const { data } = await supabase.from("orders").select("*").in("requester_id", allUserIds).order("created_at", { ascending: false });
+      const nameMap = new Map([[user.id, profile.full_name], ...(managedProfiles ?? []).map(p => [p.user_id, p.full_name] as [string, string])]);
+      setOrders((data ?? []).map(o => ({ ...o, requester_name: nameMap.get(o.requester_id) || "Okänd" })));
+    } else {
+      const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
+      setOrders((data ?? []).map(o => ({ ...o, requester_name: profile.full_name })));
+    }
 
-      if (isAdmin) {
-        // Admins see all orders
-        const { data } = await supabase
-          .from("orders")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        // Fetch requester names
-        const requesterIds = [...new Set((data ?? []).map(o => o.requester_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
-          .in("user_id", requesterIds);
-
-        const nameMap = new Map((profiles ?? []).map(p => [p.user_id, p.full_name]));
-        setOrders((data ?? []).map(o => ({
-          ...o,
-          requester_name: nameMap.get(o.requester_id) || "Okänd",
-        })));
-      } else if (isManager) {
-        // Managers see own + their employees' orders
-        // Get employees managed by this user
-        const { data: managedProfiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
-          .eq("manager_id", profile.id);
-
-        const employeeIds = (managedProfiles ?? []).map(p => p.user_id);
-        const allUserIds = [user.id, ...employeeIds];
-
-        const { data } = await supabase
-          .from("orders")
-          .select("*")
-          .in("requester_id", allUserIds)
-          .order("created_at", { ascending: false });
-
-        const nameMap = new Map([
-          [user.id, profile.full_name],
-          ...(managedProfiles ?? []).map(p => [p.user_id, p.full_name] as [string, string]),
-        ]);
-
-        setOrders((data ?? []).map(o => ({
-          ...o,
-          requester_name: nameMap.get(o.requester_id) || "Okänd",
-        })));
-      } else {
-        // Employees see only own orders
-        const { data } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("requester_id", user.id)
-          .order("created_at", { ascending: false });
-
-        setOrders((data ?? []).map(o => ({
-          ...o,
-          requester_name: profile.full_name,
-        })));
-      }
-
-      setLoading(false);
-    };
-
-    fetchHistory();
+    setLoading(false);
   }, [user, profile, isAdmin, isManager]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    setLoading(true);
+    fetchHistory();
+
+    const channel = supabase
+      .channel("history-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchHistory(), 500);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [user, profile, isAdmin, isManager, fetchHistory]);
 
   const filtered = useMemo(() => orders.filter(o => {
     if (statusFilter !== "all" && o.status !== statusFilter) return false;
