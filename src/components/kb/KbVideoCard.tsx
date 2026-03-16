@@ -1,6 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Play, Clock, Eye } from "lucide-react";
+import { Play, Clock, Star, Eye } from "lucide-react";
 
 interface KbVideo {
   id: string;
@@ -36,19 +34,19 @@ function formatDuration(seconds: number | null): string {
 export default function KbVideoCard({ video, categoryName, onClick }: Props) {
   const ytId = extractYouTubeId(video.video_url);
   const thumb = video.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null);
+  const durationMin = video.duration_seconds ? Math.ceil(video.duration_seconds / 60) : null;
 
   return (
-    <Card
-      className="glass-card cursor-pointer overflow-hidden transition-all hover:shadow-md hover:border-primary/20 group"
+    <div
       onClick={onClick}
+      className="bg-card rounded-xl border border-border overflow-hidden hover:border-primary/30 transition-colors cursor-pointer group"
     >
-      <div className="relative aspect-video bg-muted">
+      {/* Thumbnail / gradient header */}
+      <div className="relative h-36 bg-gradient-to-br from-primary via-primary-glow to-accent/30 flex items-center justify-center overflow-hidden">
         {thumb ? (
           <img src={thumb} alt={video.title} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-primary/5">
-            <Play className="h-10 w-10 text-primary/40" />
-          </div>
+          <Play className="w-12 h-12 text-primary-foreground/60" />
         )}
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
@@ -61,20 +59,32 @@ export default function KbVideoCard({ video, categoryName, onClick }: Props) {
           </span>
         )}
       </div>
-      <CardContent className="p-3 md:p-4">
-        <h3 className="font-heading font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">
-          {video.title}
-        </h3>
-        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{video.description}</p>
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
+
+      {/* Content */}
+      <div className="p-4 space-y-2">
+        <h3 className="font-heading font-semibold text-sm line-clamp-2">{video.title}</h3>
+        {video.description && (
+          <p className="text-xs text-muted-foreground line-clamp-1">{video.description}</p>
+        )}
+        <div className="flex items-center gap-2 flex-wrap">
           {categoryName && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{categoryName}</Badge>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/8 text-primary">
+              {categoryName}
+            </span>
           )}
-          <span className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
-            <Eye className="h-3 w-3" />{video.views}
+          {durationMin && (
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Clock className="w-3 h-3" />{durationMin} min
+            </span>
+          )}
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+            <Eye className="w-3 h-3" />{video.views}
           </span>
         </div>
-      </CardContent>
-    </Card>
+        <button className="w-full mt-1 text-xs font-medium bg-primary text-primary-foreground rounded-lg py-2 hover:bg-primary/90 transition-colors">
+          Spela video
+        </button>
+      </div>
+    </div>
   );
 }
