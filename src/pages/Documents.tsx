@@ -2,9 +2,10 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, ChevronRight, ChevronDown, Search, Upload,
   MoreHorizontal, Pencil, Trash2, FolderInput, Download, FolderPlus, Shield,
-  FolderUp,
+  FolderUp, Eye, X,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import {
@@ -12,11 +13,12 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "@/hooks/use-toast";
 
 
 // ── Helpers ──
