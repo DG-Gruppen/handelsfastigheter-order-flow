@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getAppBaseUrl } from "@/lib/utils";
+import {
+  emailLayout, emailGreeting, emailText, emailHeading,
+  emailItemsList, emailButton, emailWarningCallout,
+} from "@/lib/emailTemplates";
 
 /** Fetch the IT contact email from org_chart_settings, fallback to hardcoded default */
 export async function getItContactEmail(): Promise<string> {
@@ -9,30 +13,6 @@ export async function getItContactEmail(): Promise<string> {
     .eq("setting_key", "it_contact_email")
     .single();
   return data?.setting_value || "helpdesk@dggruppen.se";
-}
-
-function emailShell(title: string, body: string): string {
-  return `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-    <div style="background:#1a1a2e;color:white;padding:20px 24px;border-radius:8px 8px 0 0;">
-      <h1 style="margin:0;font-size:18px;">${title}</h1>
-    </div>
-    <div style="padding:24px;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 8px 8px;">
-      ${body}
-    </div>
-  </div>`;
-}
-
-function orderButton(orderUrl: string, label = "Visa beställning"): string {
-  return `<div style="margin:24px 0 0;padding:16px;background:#f0f4ff;border-radius:8px;text-align:center;">
-    <a href="${orderUrl}" style="display:inline-block;padding:10px 24px;background:#1a1a2e;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">${label}</a>
-    <p style="margin:8px 0 0;font-size:12px;color:#666;">Länken kräver inloggning</p>
-  </div>`;
-}
-
-function itemsListHtml(items: { name: string; quantity: number; description?: string | null }[]): string {
-  return items
-    .map((i) => `<li><strong>${i.name}</strong>${i.quantity > 1 ? ` ×${i.quantity}` : ""}${i.description ? ` – ${i.description}` : ""}</li>`)
-    .join("");
 }
 
 // ─── Email to approver when a new order is created ───
@@ -51,27 +31,25 @@ interface NewOrderEmailParams {
 export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   const { orderId, title, description, requesterName, approverName, approverEmail, items, recipientName } = params;
   const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
-  const recipientLine = recipientName ? `<p style="margin:0 0 8px;color:#333;">Mottagare: <strong>${recipientName}</strong></p>` : "";
 
-  const html = emailShell("📋 Ny beställning att attestera", `
-    <p style="margin:0 0 16px;color:#333;">Hej <strong>${approverName}</strong>,</p>
-    <p style="margin:0 0 16px;color:#333;"><strong>${requesterName}</strong> har skickat en beställning som behöver din attestering:</p>
-    <p style="margin:0 0 8px;color:#333;"><strong>"${title}"</strong></p>
+  const recipientLine = recipientName
+    ? emailText(`Mottagare: <strong>${recipientName}</strong>`)
+    : "";
+
+  const html = emailLayout("Ny beställning att attestera", "📋", `
+    ${emailGreeting(approverName)}
+    ${emailText(`<strong>${requesterName}</strong> har skickat en beställning som behöver din attestering:`)}
+    ${emailText(`<strong>"${title}"</strong>`)}
     ${recipientLine}
-    ${description ? `<p style="margin:0 0 16px;color:#666;font-style:italic;">${description}</p>` : ""}
-    <h3 style="margin:16px 0 8px;color:#1a1a2e;">Utrustning</h3>
-    <ul>${itemsListHtml(items)}</ul>
-    ${orderButton(orderUrl, "Granska och attestera")}
+    ${description ? emailText(`<em style="color:#6b7685;">${description}</em>`) : ""}
+    ${emailHeading("Utrustning")}
+    ${emailItemsList(items)}
+    ${emailButton(orderUrl, "Granska och attestera")}
   `);
 
   try {
     await supabase.functions.invoke("send-email", {
-      body: {
-        to: approverEmail,
-        subject: `[SHF IT] Ny beställning att attestera: ${title}`,
-        html,
-        reply_to: params.approverEmail, // not needed but harmless
-      },
+      body: { to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html },
     });
   } catch (err) {
     console.error("Failed to send new order email to approver:", err);
@@ -94,28 +72,74 @@ export async function sendRejectionEmail(params: RejectionEmailParams) {
   const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
   const reasonHtml = rejectionReason
-    ? `<div style="margin:16px 0;padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:4px;">
-         <p style="margin:0 0 4px;font-size:12px;color:#666;font-weight:bold;">Motivering:</p>
-         <p style="margin:0;color:#333;">${rejectionReason}</p>
-       </div>`
+    ? emailWarningCallout("Motivering", rejectionReason)
     : "";
 
-  const html = emailShell("❌ Beställning avslagen", `
-    <p style="margin:0 0 16px;color:#333;">Hej <strong>${requesterName}</strong>,</p>
-    <p style="margin:0 0 16px;color:#333;">Din beställning <strong>"${title}"</strong> har avslagits av <strong>${approverName}</strong>.</p>
+  const html = emailLayout("Beställning avslagen", "❌", `
+    ${emailGreeting(requesterName)}
+    ${emailText(`Din beställning <strong>"${title}"</strong> har avslagits av <strong>${approverName}</strong>.`)}
     ${reasonHtml}
-    ${orderButton(orderUrl)}
+    ${emailButton(orderUrl, "Visa beställning")}
   `);
 
   try {
     await supabase.functions.invoke("send-email", {
-      body: {
-        to: requesterEmail,
-        subject: `[SHF IT] Din beställning har avslagits: ${title}`,
-        html,
-      },
+      body: { to: requesterEmail, subject: `[SHF IT] Din beställning har avslagits: ${title}`, html },
     });
   } catch (err) {
     console.error("Failed to send rejection email:", err);
   }
+}
+
+// ─── Approval confirmation email to requester ───
+
+export function buildApprovalEmailHtml(params: {
+  recipientName: string;
+  title: string;
+  approverName?: string;
+  items: { name: string; quantity?: number }[];
+  orderUrl: string;
+  isAutoApproved?: boolean;
+}): string {
+  const { recipientName, title, approverName, items, orderUrl, isAutoApproved } = params;
+  const approvalText = isAutoApproved
+    ? `Din beställning <strong>"${title}"</strong> har godkänts automatiskt och skickats vidare till IT för hantering.`
+    : `Din beställning <strong>"${title}"</strong> har godkänts av <strong>${approverName}</strong> och skickats vidare till IT för hantering.`;
+
+  return emailLayout("Beställning godkänd", "✅", `
+    ${emailGreeting(recipientName)}
+    ${emailText(approvalText)}
+    ${emailHeading("Beställd utrustning")}
+    ${emailItemsList(items)}
+    ${emailButton(orderUrl, "Visa din beställning")}
+  `);
+}
+
+// ─── Delivery confirmation email to requester ───
+
+export function buildDeliveryEmailHtml(params: {
+  recipientName: string;
+  title: string;
+  orderRecipientName?: string | null;
+  comment?: string | null;
+  orderUrl: string;
+}): string {
+  const { recipientName, title, orderRecipientName, comment, orderUrl } = params;
+  const recipientLine = orderRecipientName
+    ? emailText(`Mottagare: <strong>${orderRecipientName}</strong>`)
+    : "";
+  const commentHtml = comment
+    ? `<div style="margin:16px 0;padding:14px 18px;background:#f4f5f7;border-left:4px solid #2e4a62;border-radius:0 8px 8px 0;">
+         <p style="margin:0 0 4px;font-size:11px;color:#6b7685;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Kommentar från IT</p>
+         <p style="margin:0;font-size:14px;color:#1a2332;line-height:1.5;">${comment}</p>
+       </div>`
+    : "";
+
+  return emailLayout("Beställning levererad", "📦", `
+    ${emailGreeting(recipientName)}
+    ${emailText(`Din beställning <strong>"${title}"</strong> har nu markerats som levererad.`)}
+    ${recipientLine}
+    ${commentHtml}
+    ${emailButton(orderUrl, "Visa beställning")}
+  `);
 }
