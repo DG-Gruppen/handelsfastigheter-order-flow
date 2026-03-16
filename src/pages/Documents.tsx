@@ -447,9 +447,14 @@ export default function Documents() {
                     <FileText className="w-12 h-12 mb-3 opacity-30" />
                     <p className="text-sm">Inga filer i denna mapp</p>
                     {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
-                      <Button variant="outline" size="sm" className="mt-3" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
-                      </Button>
+                      <div className="flex gap-2 mt-3">
+                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                          <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => folderInputRef.current?.click()}>
+                          <FolderUp className="w-4 h-4 mr-2" /> Ladda upp mapp
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ) : (
