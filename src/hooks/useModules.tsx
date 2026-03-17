@@ -78,7 +78,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     const [modulesRes, accessRes, permRes, groupRes] = await Promise.all([
       supabase.from("modules").select("*").order("sort_order"),
       supabase.from("module_role_access").select("module_id, role, has_access"),
-      supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view"),
+      supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view, can_edit, can_delete, is_owner"),
       supabase.from("group_members").select("group_id").eq("user_id", user.id),
     ]);
 
