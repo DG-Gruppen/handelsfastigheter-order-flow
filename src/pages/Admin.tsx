@@ -16,7 +16,7 @@ import ToolsManager from "@/components/admin/ToolsManager";
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
 } from "lucide-react";
 
 type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions";
