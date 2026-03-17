@@ -63,6 +63,7 @@ export default function CardDetailDialog({
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showMovePicker, setShowMovePicker] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
 
   useEffect(() => {
     if (card) {
