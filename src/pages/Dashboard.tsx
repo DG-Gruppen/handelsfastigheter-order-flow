@@ -219,13 +219,16 @@ export default function Dashboard() {
           <CardContent>
             <div className="grid grid-cols-4 gap-2">
               {quickTools.map((tool) => (
-                <button
+                <a
                   key={tool.label}
+                  href={tool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                 >
                   <span className="text-xl">{tool.emoji}</span>
                   <span className="text-[10px] font-medium text-muted-foreground text-center">{tool.label}</span>
-                </button>
+                </a>
               ))}
             </div>
           </CardContent>
