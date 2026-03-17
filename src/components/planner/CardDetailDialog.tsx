@@ -143,10 +143,10 @@ export default function CardDetailDialog({
 
             <div>
               <Label>Tilldelad</Label>
-              <Select value={assigneeId} onValueChange={setAssigneeId}>
+              <Select value={assigneeId || "__none__"} onValueChange={v => setAssigneeId(v === "__none__" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="Ingen" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ingen</SelectItem>
+                  <SelectItem value="__none__">Ingen</SelectItem>
                   {profiles.map(p => (
                     <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
                   ))}
