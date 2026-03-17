@@ -19,7 +19,7 @@ import {
   Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools";
 
 interface AdminGroup {
   label: string;
