@@ -60,6 +60,7 @@ export default function Planner() {
 
   // DnD
   const [activeCard, setActiveCard] = useState<PlannerCard | null>(null);
+  const [activeColumn, setActiveColumn] = useState<PlannerColumn | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
