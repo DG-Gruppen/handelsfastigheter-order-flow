@@ -96,6 +96,36 @@ export default function Planner() {
   useEffect(() => { fetchBoards(); }, []);
   useEffect(() => { fetchBoardData(); }, [activeBoardId]);
 
+  // Realtime subscriptions
+  useEffect(() => {
+    const boardChannel = supabase
+      .channel('planner-boards')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'planner_boards' }, () => {
+        fetchBoards();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(boardChannel); };
+  }, []);
+
+  useEffect(() => {
+    if (!activeBoardId) return;
+
+    const channel = supabase
+      .channel(`planner-board-${activeBoardId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'planner_columns',
+        filter: `board_id=eq.${activeBoardId}`,
+      }, () => { fetchBoardData(); })
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'planner_cards',
+        filter: `board_id=eq.${activeBoardId}`,
+      }, () => { fetchBoardData(); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [activeBoardId]);
+
   // Board operations
   const handleCreateBoard = async (name: string, description: string) => {
     if (!user) return;
