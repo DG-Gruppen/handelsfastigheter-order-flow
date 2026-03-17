@@ -60,7 +60,6 @@ const App = () => (
                 <Routes>
                     <Route path="/login" element={<Suspense fallback={<LoginFallback />}><Login /></Suspense>} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/orders/new" element={<NewOrder />} />
@@ -79,6 +78,7 @@ const App = () => (
                       <Route path="/verktyg" element={<Tools />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
+                    </Route>
                 </Routes>
               </ModulesProvider>
             </NavSettingsProvider>
