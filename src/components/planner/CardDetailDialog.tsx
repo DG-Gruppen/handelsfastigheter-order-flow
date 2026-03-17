@@ -3,13 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trash2, X, Plus, CreditCard, Users, Tag, CheckSquare, Calendar,
-  Paperclip, ArrowRight, FileText, Pencil, AlignLeft,
+  Paperclip, ArrowRight, FileText, AlignLeft, Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlannerCard } from "./KanbanCard";
@@ -53,6 +51,7 @@ export default function CardDetailDialog({
   const [dueDone, setDueDone] = useState(false);
   const [columnId, setColumnId] = useState("");
   const [labels, setLabels] = useState<string[]>([]);
+  const [coverColor, setCoverColor] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState("");
   const [editingDescription, setEditingDescription] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -62,6 +61,7 @@ export default function CardDetailDialog({
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showMovePicker, setShowMovePicker] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
 
   useEffect(() => {
     if (card) {
@@ -73,14 +73,15 @@ export default function CardDetailDialog({
       setDueDone(card.due_done ?? false);
       setColumnId(card.column_id);
       setLabels(card.labels ?? []);
+      setCoverColor(card.cover_color ?? null);
     } else {
       setTitle(""); setDescription(""); setPriority("medium");
       setAssigneeId(""); setDueDate(""); setDueDone(false);
-      setColumnId(defaultColumnId ?? ""); setLabels([]);
+      setColumnId(defaultColumnId ?? ""); setLabels([]); setCoverColor(null);
     }
     setEditingDescription(false); setEditingTitle(false);
     setShowMemberPicker(false); setShowLabelPicker(false);
-    setShowDatePicker(false); setShowMovePicker(false);
+    setShowDatePicker(false); setShowMovePicker(false); setShowCoverPicker(false);
   }, [card, open, defaultColumnId]);
 
   const handleSave = useCallback(() => {
@@ -92,9 +93,10 @@ export default function CardDetailDialog({
       assignee_id: assigneeId || null,
       due_date: dueDate || null,
       due_done: dueDone, column_id: columnId, labels,
-    });
+      cover_color: coverColor,
+    } as any);
     onClose();
-  }, [card, title, description, priority, assigneeId, dueDate, dueDone, columnId, labels, onSave, onClose]);
+  }, [card, title, description, priority, assigneeId, dueDate, dueDone, columnId, labels, coverColor, onSave, onClose]);
 
   const addLabel = () => {
     const l = newLabel.trim();
@@ -118,8 +120,10 @@ export default function CardDetailDialog({
           <DialogDescription>{card ? "Redigera kortets detaljer" : "Skapa ett nytt kort"}</DialogDescription>
         </DialogHeader>
 
-        {/* Cover bar */}
-        <div className="h-12 bg-primary rounded-t-lg shrink-0" />
+        <div
+          className="h-12 rounded-t-lg shrink-0 transition-colors"
+          style={{ backgroundColor: coverColor || "hsl(var(--primary))" }}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] overflow-hidden" style={{ maxHeight: "calc(90vh - 48px)" }}>
 
@@ -265,6 +269,11 @@ export default function CardDetailDialog({
 
             {/* ADD TO CARD */}
             <p className="text-[11px] font-medium text-muted-foreground px-1 mb-1.5">LÄGG TILL KORT</p>
+
+            <SidebarButton icon={Palette} label="Omslagsfärg" active={showCoverPicker} onClick={() => setShowCoverPicker(v => !v)} />
+            {showCoverPicker && (
+              <CoverColorPicker value={coverColor} onChange={setCoverColor} onClose={() => setShowCoverPicker(false)} />
+            )}
 
             <SidebarButton icon={Users} label="Medlemmar" active={showMemberPicker} onClick={() => setShowMemberPicker(v => !v)} />
             {showMemberPicker && (
@@ -429,5 +438,51 @@ function SidebarButton({ icon: Icon, label, onClick, active, className }: {
       <Icon className="h-3.5 w-3.5 shrink-0" />
       {label}
     </button>
+  );
+}
+
+/* ─── Cover Color Picker ─── */
+const COVER_COLORS = [
+  { value: "#2e4a62", label: "Himmel" },
+  { value: "#3d7a6a", label: "Land" },
+  { value: "#b34304", label: "Eld" },
+  { value: "#5b9bd5", label: "Ljusblå" },
+  { value: "#7c3aed", label: "Lila" },
+  { value: "#059669", label: "Grön" },
+  { value: "#d97706", label: "Amber" },
+  { value: "#dc2626", label: "Röd" },
+  { value: "#6b7280", label: "Grå" },
+];
+
+function CoverColorPicker({ value, onChange, onClose }: {
+  value: string | null;
+  onChange: (color: string | null) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="bg-muted/50 rounded-md p-2 space-y-2">
+      <div className="grid grid-cols-3 gap-1.5">
+        {COVER_COLORS.map(c => (
+          <button
+            key={c.value}
+            className={cn(
+              "h-6 rounded transition-all",
+              value === c.value && "ring-2 ring-offset-1 ring-primary"
+            )}
+            style={{ backgroundColor: c.value }}
+            onClick={() => { onChange(c.value); onClose(); }}
+            title={c.label}
+          />
+        ))}
+      </div>
+      {value && (
+        <button
+          className="text-xs text-destructive hover:underline"
+          onClick={() => { onChange(null); onClose(); }}
+        >
+          Ta bort omslag
+        </button>
+      )}
+    </div>
   );
 }

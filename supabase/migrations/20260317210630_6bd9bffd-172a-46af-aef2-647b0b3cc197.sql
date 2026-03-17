@@ -1,0 +1,1 @@
+ALTER TABLE public.planner_cards ADD COLUMN cover_color text DEFAULT NULL;
