@@ -139,7 +139,7 @@ export default function Planner() {
   };
 
   const handleDeleteColumn = async (id: string) => {
-    await supabase.from("planner_columns").delete().eq("id", id);
+    await supabase.from("planner_columns" as any).delete().eq("id", id);
     toast.success("Kolumn borttagen");
     fetchBoardData();
   };
