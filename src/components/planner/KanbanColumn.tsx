@@ -121,6 +121,7 @@ export default function KanbanColumn({
               reporterName={profileMap[card.reporter_id]}
               onClick={() => onCardClick(card)}
               checklistSummary={checklistSummaries?.[card.id]}
+              attachmentCount={attachmentCounts?.[card.id]}
             />
           ))}
         </SortableContext>
