@@ -206,8 +206,9 @@ export default function Planner() {
   };
 
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
-    await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
+    skipNextBoardFetchRef.current = true;
     setBoards(prev => prev.map(b => b.id === id ? { ...b, name, description } : b));
+    await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
     toast.success("Board uppdaterad");
   };
 
