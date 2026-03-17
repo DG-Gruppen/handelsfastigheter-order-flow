@@ -128,7 +128,15 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
           </div>
         );
       })}
-      <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditingBoard(null); setDialogOpen(true); }}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5 shrink-0"
+        onClick={() => {
+          setEditingBoard(null);
+          setDialogOpen(true);
+        }}
+      >
         <Plus className="h-3.5 w-3.5" /> Ny board
       </Button>
 
