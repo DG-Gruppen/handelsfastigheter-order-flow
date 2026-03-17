@@ -1148,6 +1148,7 @@ export type Database = {
           assignee_id: string | null
           board_id: string
           column_id: string
+          cover_color: string | null
           created_at: string
           description: string | null
           due_date: string | null
@@ -1164,6 +1165,7 @@ export type Database = {
           assignee_id?: string | null
           board_id: string
           column_id: string
+          cover_color?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -1180,6 +1182,7 @@ export type Database = {
           assignee_id?: string | null
           board_id?: string
           column_id?: string
+          cover_color?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
