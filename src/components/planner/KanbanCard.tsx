@@ -31,8 +31,8 @@ interface Props {
 
 const priorityConfig = {
   urgent: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive", label: "Brådskande" },
-  high: { icon: ArrowUp, color: "text-warning", bg: "bg-warning/10", dot: "bg-warning", label: "Hög" },
-  medium: { icon: Minus, color: "text-muted-foreground", bg: "bg-muted", dot: "bg-muted-foreground", label: "Medium" },
+  high: { icon: ArrowUp, color: "text-warning", bg: "bg-warning/10", dot: "bg-destructive", label: "Hög" },
+  medium: { icon: Minus, color: "text-muted-foreground", bg: "bg-muted", dot: "bg-warning", label: "Medium" },
   low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", dot: "bg-accent", label: "Låg" },
 };
 
