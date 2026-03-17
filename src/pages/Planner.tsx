@@ -129,7 +129,7 @@ export default function Planner() {
       toast.success("Kolumn uppdaterad");
     } else {
       if (!activeBoardId) return;
-      await supabase.from("planner_columns").insert({
+      await supabase.from("planner_columns" as any).insert({
         name: data.name, color: data.color, wip_limit: data.wip_limit,
         board_id: activeBoardId, sort_order: columns.length,
       });
