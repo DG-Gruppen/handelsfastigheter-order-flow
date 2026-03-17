@@ -66,7 +66,13 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     return modules.filter((m) => {
       if (!m.is_active) return false;
       const moduleRules = allAccess.filter((a) => a.module_id === m.id);
+      // No rules defined → accessible to everyone
       if (moduleRules.length === 0) return true;
+      // User has no roles → allow if all defined roles have access (i.e. no restriction intended)
+      if (roles.length === 0) {
+        const allGranted = moduleRules.every((a) => a.has_access);
+        return allGranted;
+      }
       return roles.some((role) => {
         const rule = moduleRules.find((a) => a.role === role);
         return rule ? rule.has_access : false;
