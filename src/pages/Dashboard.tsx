@@ -42,9 +42,14 @@ export default function Dashboard() {
     })));
   }, []);
 
+  const [quickTools, setQuickTools] = useState<{ id: string; name: string; emoji: string; url: string }[]>([]);
+
   useEffect(() => {
     if (!user || !profile) return;
     fetchRecognitions();
+    supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).order("sort_order").then(({ data }) => {
+      setQuickTools((data as any[]) ?? []);
+    });
   }, [user, profile, fetchRecognitions]);
 
   function getGreeting(): string {
