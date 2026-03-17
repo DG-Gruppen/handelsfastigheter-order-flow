@@ -24,6 +24,7 @@ export interface PlannerCard {
 interface Props {
   card: PlannerCard;
   assigneeName?: string;
+  reporterName?: string;
   onClick: () => void;
   overlay?: boolean;
 }
