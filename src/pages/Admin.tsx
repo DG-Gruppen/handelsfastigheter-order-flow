@@ -491,6 +491,14 @@ export default function Admin() {
   function SettingsContent() {
     return (
       <div className="space-y-6">
+        <ImpersonateUserCard
+          profiles={profiles.map((p) => ({
+            user_id: p.user_id,
+            full_name: p.full_name,
+            email: p.email,
+            department: p.department,
+          }))}
+        />
         <Card className="glass-card border-t-2 border-t-muted-foreground/30">
           <CardHeader className="px-4 md:px-6">
             <div className="flex items-center gap-3">
@@ -520,21 +528,6 @@ export default function Admin() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  function ITContent() {
-    return (
-      <div className="space-y-6">
-        <ImpersonateUserCard
-          profiles={profiles.map((p) => ({
-            user_id: p.user_id,
-            full_name: p.full_name,
-            email: p.email,
-            department: p.department,
-          }))}
-        />
         <Card className="glass-card border-t-2 border-t-primary/40">
           <CardHeader className="px-4 md:px-6">
             <div className="flex items-center gap-3">
