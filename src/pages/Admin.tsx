@@ -120,6 +120,7 @@ export default function Admin() {
       case "settings": return <SettingsContent />;
       case "it": return <ITContent />;
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
+      case "news": return <NewsAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
       case "tools": return <ToolsManager />;
