@@ -272,6 +272,11 @@ export default function CardDetailDialog({
             {/* ADD TO CARD */}
             <p className="text-[11px] font-medium text-muted-foreground px-1 mb-1.5">LÄGG TILL KORT</p>
 
+            <SidebarButton icon={Palette} label="Omslagsfärg" active={showCoverPicker} onClick={() => setShowCoverPicker(v => !v)} />
+            {showCoverPicker && (
+              <CoverColorPicker value={coverColor} onChange={setCoverColor} onClose={() => setShowCoverPicker(false)} />
+            )}
+
             <SidebarButton icon={Users} label="Medlemmar" active={showMemberPicker} onClick={() => setShowMemberPicker(v => !v)} />
             {showMemberPicker && (
               <div className="bg-muted/50 rounded-md p-2 space-y-1">
