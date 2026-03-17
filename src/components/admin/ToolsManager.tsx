@@ -161,10 +161,17 @@ export default function ToolsManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="flex gap-3">
-              <div className="w-20">
+            <div className="flex gap-3 items-end">
+              <div>
                 <Label>Emoji</Label>
-                <Input value={emoji} onChange={e => setEmoji(e.target.value)} className="text-center text-lg" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-14 h-10 text-xl">{emoji}</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border-0" side="bottom" align="start">
+                    <Picker data={data} onEmojiSelect={(e: any) => setEmoji(e.native)} theme="light" previewPosition="none" skinTonePosition="none" />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex-1">
                 <Label>Namn</Label>
