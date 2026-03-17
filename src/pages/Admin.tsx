@@ -355,6 +355,8 @@ export default function Admin() {
       case "it": return <ITContent />;
       case "modules": return <ModulesManager onClose={() => setActiveSection("menu")} />;
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
+      case "groups": return <GroupsManager />;
+      case "permissions": return <ModulePermissionsManager />;
       default: return null;
     }
   };
