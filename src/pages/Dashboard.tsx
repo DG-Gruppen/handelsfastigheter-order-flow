@@ -11,7 +11,7 @@ import {
 
 import { kpis, okrs, weeklyWin, jubilees } from "@/data/dashboard";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
-import { newsPosts } from "@/data/news";
+import { newsPosts } from "@/data/news"; // fallback static data
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
@@ -168,7 +168,7 @@ export default function Dashboard() {
         <CardHeader className="pb-2 px-4 md:px-6">
           <div className="flex items-center justify-between">
             <CardTitle className="font-heading text-base">Senaste nyheter</CardTitle>
-            <Link to="/news" className="text-xs text-primary hover:underline font-medium">Alla nyheter →</Link>
+            <Link to="/nyheter" className="text-xs text-primary hover:underline font-medium">Alla nyheter →</Link>
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-4">

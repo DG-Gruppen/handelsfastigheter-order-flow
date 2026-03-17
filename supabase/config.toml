@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.scrape-website]
 verify_jwt = false
+
+[functions.fetch-cision-feed]
+verify_jwt = false
