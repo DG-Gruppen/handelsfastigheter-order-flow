@@ -344,45 +344,25 @@ export default function Documents() {
           )}
         </div>
       ) : (
-        <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
-          {/* Folder tree */}
-          <div className="bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
-            <div
-              className={`flex items-center gap-1.5 px-2 py-2 md:py-1.5 rounded-md text-sm cursor-pointer transition-colors min-h-[44px] md:min-h-0 font-semibold ${
-                selectedFolderId === null && !search ? "bg-primary text-primary-foreground" : "hover:bg-secondary text-foreground"
-              }`}
-              onClick={() => { setSelectedFolderId(null); setSearch(""); }}
-            >
-              <FolderOpen className="w-4 h-4 shrink-0" /> <span>Hem</span>
-            </div>
-            {rootFolders.length === 0 ? (
-              <p className="text-sm text-muted-foreground p-3">Inga mappar ännu.</p>
-            ) : (
-              <div className="ml-2 border-l border-border pl-1 mt-0.5 space-y-0.5">
-                {rootFolders.map(f => (
-                  <FolderTreeItem
-                    key={f.id}
-                    folder={f}
-                    childrenOf={childrenOf}
-                    expandedFolders={expandedFolders}
-                    selectedFolderId={selectedFolderId}
-                    isAdmin={isAdmin}
-                    canWriteFolder={canWriteFolder}
-                    onSelect={selectFolder}
-                    onToggleExpand={toggleExpand}
-                    onNewFolder={(parentId) => setNewFolderDialog({ parentId })}
-                    onRename={(id, name) => setRenameDialog({ type: "folder", id, name })}
-                    onMove={(id, name) => setMoveDialog({ type: "folder", id, name })}
-                    onAccess={(folder) => setAccessDialog(folder)}
-                    onDelete={(id, name) => setDeleteConfirm({ type: "folder", id, name })}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        <>
+          {/* Mobile folder sheet */}
+          {isMobile && (
+            <Sheet open={folderSheetOpen} onOpenChange={setFolderSheetOpen}>
+              <SheetContent side="left" className="w-[85vw] max-w-xs p-4 overflow-y-auto">
+                <SheetTitle className="font-heading text-base mb-3">Mappar</SheetTitle>
+                {folderTreeContent}
+              </SheetContent>
+            </Sheet>
+          )}
 
-          {/* File list */}
-          <div className="bg-card rounded-lg border border-border p-4">
+          <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
+            {/* Folder tree – desktop only */}
+            <div className="hidden md:block bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
+              {folderTreeContent}
+            </div>
+
+            {/* File list */}
+            <div className="bg-card rounded-lg border border-border p-4">
             {selectedFolder ? (
               <>
                 {/* Breadcrumbs */}
