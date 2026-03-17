@@ -28,6 +28,7 @@ interface Props {
   onUpdate: (id: string, name: string, description: string) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
 }
 
 export default function BoardSelector({ boards, activeBoardId, onSelect, onCreate, onUpdate, onDelete, onArchive }: Props) {
