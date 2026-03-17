@@ -60,27 +60,19 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
-        "group rounded-xl border border-border/60 bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer select-none",
+        "group rounded-xl border border-border/60 bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none touch-none",
         isDragging && "opacity-40 rotate-2 scale-105",
         overlay && "shadow-xl rotate-2 scale-105 ring-2 ring-primary/30"
       )}
       onClick={onClick}
     >
-      {/* Drag handle + priority */}
-      <div className="flex items-start gap-2">
-        <button
-          {...attributes}
-          {...listeners}
-          className="mt-0.5 p-0.5 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
-          onClick={e => e.stopPropagation()}
-        >
-          <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
-        <div className="flex-1 min-w-0 flex items-start gap-1.5">
-          <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", pri.dot)} title={pri.label} />
-          <p className="text-sm font-medium text-foreground leading-snug">{card.title}</p>
-        </div>
+      {/* Title with priority dot */}
+      <div className="flex items-start gap-1.5">
+        <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", pri.dot)} title={pri.label} />
+        <p className="text-sm font-medium text-foreground leading-snug">{card.title}</p>
       </div>
 
       {/* Labels */}
