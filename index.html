@@ -9,7 +9,25 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#2e4a63" />
     <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
+    <link rel="apple-touch-startup-image" href="/pwa-icon-512.png" />
     <title>SHF Intra</title>
+    <style>
+      #splash-screen {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #2e4a63;
+        transition: opacity .4s ease-out;
+      }
+      #splash-screen.fade-out { opacity: 0; pointer-events: none; }
+      #splash-screen img { width: 96px; height: 96px; margin-bottom: 20px; animation: pulse-icon 1.6s ease-in-out infinite; }
+      #splash-screen p { color: rgba(255,255,255,.85); font-family: 'Roboto Slab', serif; font-size: 18px; letter-spacing: 1px; }
+      #splash-screen .dot-loader { display: flex; gap: 6px; margin-top: 24px; }
+      #splash-screen .dot-loader span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.5); animation: bounce .6s alternate infinite; }
+      #splash-screen .dot-loader span:nth-child(2) { animation-delay: .2s; }
+      #splash-screen .dot-loader span:nth-child(3) { animation-delay: .4s; }
+      @keyframes pulse-icon { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
+      @keyframes bounce { to { transform: translateY(-8px); opacity: 1; } }
+    </style>
     <meta name="description" content="Svensk Handelsfastigheters intranät">
 
     <meta property="og:type" content="website" />
