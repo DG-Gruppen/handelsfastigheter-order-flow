@@ -39,7 +39,7 @@ export default function KanbanColumn({
   const isAtLimit = column.wip_limit !== null && cards.length >= column.wip_limit;
 
   return (
-    <div className="flex flex-col w-72 shrink-0">
+    <div className="flex flex-col w-72 shrink-0 relative">
       {/* Column header */}
       <div className="flex items-center justify-between px-2 py-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -61,7 +61,7 @@ export default function KanbanColumn({
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-50">
               <DropdownMenuItem onClick={onEditColumn}>Redigera kolumn</DropdownMenuItem>
               <DropdownMenuItem onClick={onDeleteColumn} className="text-destructive">Ta bort kolumn</DropdownMenuItem>
             </DropdownMenuContent>
