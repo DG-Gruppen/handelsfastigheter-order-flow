@@ -13,7 +13,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import FolderTreeItem from "@/components/documents/FolderTreeItem";
 import FileRow from "@/components/documents/FileRow";
-import { TextPreview, formatFileSize, canPreview } from "@/components/documents/documentHelpers";
+import { TextPreview, formatFileSize, canPreview, isOfficeMime } from "@/components/documents/documentHelpers";
 import {
   NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog,
 } from "@/components/documents/DocumentDialogs";
@@ -95,10 +95,15 @@ export default function Documents() {
 
   // ── Preview ──
   const openPreview = async (file: DocFile) => {
-    if (file.mime_type === "application/pdf") {
+    if (file.mime_type === "application/pdf" || isOfficeMime(file.mime_type)) {
       const { data, error } = await supabase.storage.from("documents").createSignedUrl(file.storage_path, 3600);
       if (error || !data?.signedUrl) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
-      setPreviewUrl(data.signedUrl);
+      if (isOfficeMime(file.mime_type)) {
+        const officeUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(data.signedUrl)}`;
+        setPreviewUrl(officeUrl);
+      } else {
+        setPreviewUrl(data.signedUrl);
+      }
       setPreviewFile(file);
       return;
     }
@@ -485,7 +490,7 @@ export default function Documents() {
                 {previewFile.mime_type.startsWith("image/") && (
                   <img src={previewUrl} alt={previewFile.name} className="max-w-full h-auto mx-auto rounded" />
                 )}
-                {previewFile.mime_type === "application/pdf" && (
+                {(previewFile.mime_type === "application/pdf" || isOfficeMime(previewFile.mime_type)) && (
                   <iframe src={previewUrl} className="w-full h-[70vh] rounded border border-border" title={previewFile.name} />
                 )}
                 {previewFile.mime_type.startsWith("text/") && <TextPreview url={previewUrl} />}

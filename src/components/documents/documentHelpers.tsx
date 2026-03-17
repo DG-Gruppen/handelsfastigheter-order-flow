@@ -15,8 +15,21 @@ export function getFileIcon(mime: string) {
   return "📎";
 }
 
+const OFFICE_MIMES = [
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation", // pptx
+  "application/msword", // doc
+  "application/vnd.ms-excel", // xls
+  "application/vnd.ms-powerpoint", // ppt
+];
+
+export function isOfficeMime(mime: string) {
+  return OFFICE_MIMES.includes(mime);
+}
+
 export function canPreview(mime: string) {
-  return mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("text/");
+  return mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("text/") || isOfficeMime(mime);
 }
 
 export const ALL_ROLES = [
