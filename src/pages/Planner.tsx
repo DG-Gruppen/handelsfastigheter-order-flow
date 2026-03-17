@@ -624,6 +624,7 @@ export default function Planner() {
               <KanbanCard
                 card={activeCard}
                 assigneeName={activeCard.assignee_id ? profileMap[activeCard.assignee_id] : undefined}
+                reporterName={profileMap[activeCard.reporter_id]}
                 onClick={() => {}}
                 overlay
               />
