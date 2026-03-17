@@ -85,7 +85,7 @@ export default function CardDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{card ? "Redigera kort" : "Nytt kort"}</DialogTitle>
         </DialogHeader>
