@@ -1,11 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, Search, Upload, FolderPlus, FolderUp, X, Trash2,
-  FolderInput, Download, ChevronRight, ArrowUp, PanelLeft,
+  FolderInput, Download, ChevronRight, ArrowUp,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,8 +29,6 @@ export default function Documents() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
-  const [folderSheetOpen, setFolderSheetOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   // Dialogs
   const [newFolderDialog, setNewFolderDialog] = useState<{ parentId: string | null } | null>(null);
@@ -151,7 +147,6 @@ export default function Documents() {
     setSelectedFolderId(id);
     setSearch("");
     setSelectedFiles(new Set());
-    setFolderSheetOpen(false);
     let current = folders.find(f => f.id === id);
     const toExpand = new Set(expandedFolders);
     while (current?.parent_id) {
@@ -254,43 +249,6 @@ export default function Documents() {
     );
   }
 
-  const folderTreeContent = (
-    <>
-      <div
-        className={`flex items-center gap-1.5 px-2 py-2 md:py-1.5 rounded-md text-sm cursor-pointer transition-colors min-h-[44px] md:min-h-0 font-semibold ${
-          selectedFolderId === null && !search ? "bg-primary text-primary-foreground" : "hover:bg-secondary text-foreground"
-        }`}
-        onClick={() => { setSelectedFolderId(null); setSearch(""); setFolderSheetOpen(false); }}
-      >
-        <FolderOpen className="w-4 h-4 shrink-0" /> <span>Hem</span>
-      </div>
-      {rootFolders.length === 0 ? (
-        <p className="text-sm text-muted-foreground p-3">Inga mappar ännu.</p>
-      ) : (
-        <div className="ml-2 border-l border-border pl-1 mt-0.5 space-y-0.5">
-          {rootFolders.map(f => (
-            <FolderTreeItem
-              key={f.id}
-              folder={f}
-              childrenOf={childrenOf}
-              expandedFolders={expandedFolders}
-              selectedFolderId={selectedFolderId}
-              isAdmin={isAdmin}
-              canWriteFolder={canWriteFolder}
-              onSelect={selectFolder}
-              onToggleExpand={toggleExpand}
-              onNewFolder={(parentId) => setNewFolderDialog({ parentId })}
-              onRename={(id, name) => setRenameDialog({ type: "folder", id, name })}
-              onMove={(id, name) => setMoveDialog({ type: "folder", id, name })}
-              onAccess={(folder) => setAccessDialog(folder)}
-              onDelete={(id, name) => setDeleteConfirm({ type: "folder", id, name })}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -381,25 +339,45 @@ export default function Documents() {
           )}
         </div>
       ) : (
-        <>
-          {/* Mobile folder sheet */}
-          {isMobile && (
-            <Sheet open={folderSheetOpen} onOpenChange={setFolderSheetOpen}>
-              <SheetContent side="left" className="w-[85vw] max-w-xs p-4 overflow-y-auto">
-                <SheetTitle className="font-heading text-base mb-3">Mappar</SheetTitle>
-                {folderTreeContent}
-              </SheetContent>
-            </Sheet>
-          )}
-
-          <div className="grid md:grid-cols-[280px_1fr] gap-4 md:min-h-[500px]">
-            {/* Folder tree – desktop only */}
-            <div className="hidden md:block bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
-              {folderTreeContent}
+        <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
+          {/* Folder tree */}
+          <div className="bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
+            <div
+              className={`flex items-center gap-1.5 px-2 py-2 md:py-1.5 rounded-md text-sm cursor-pointer transition-colors min-h-[44px] md:min-h-0 font-semibold ${
+                selectedFolderId === null && !search ? "bg-primary text-primary-foreground" : "hover:bg-secondary text-foreground"
+              }`}
+              onClick={() => { setSelectedFolderId(null); setSearch(""); }}
+            >
+              <FolderOpen className="w-4 h-4 shrink-0" /> <span>Hem</span>
             </div>
+            {rootFolders.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-3">Inga mappar ännu.</p>
+            ) : (
+              <div className="ml-2 border-l border-border pl-1 mt-0.5 space-y-0.5">
+                {rootFolders.map(f => (
+                  <FolderTreeItem
+                    key={f.id}
+                    folder={f}
+                    childrenOf={childrenOf}
+                    expandedFolders={expandedFolders}
+                    selectedFolderId={selectedFolderId}
+                    isAdmin={isAdmin}
+                    canWriteFolder={canWriteFolder}
+                    onSelect={selectFolder}
+                    onToggleExpand={toggleExpand}
+                    onNewFolder={(parentId) => setNewFolderDialog({ parentId })}
+                    onRename={(id, name) => setRenameDialog({ type: "folder", id, name })}
+                    onMove={(id, name) => setMoveDialog({ type: "folder", id, name })}
+                    onAccess={(folder) => setAccessDialog(folder)}
+                    onDelete={(id, name) => setDeleteConfirm({ type: "folder", id, name })}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* File list */}
-            <div className="bg-card rounded-lg border border-border p-3 md:p-4">
+          {/* File list */}
+          <div className="bg-card rounded-lg border border-border p-4">
             {selectedFolder ? (
               <>
                 {/* Breadcrumbs */}
@@ -423,22 +401,11 @@ export default function Documents() {
 
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    {isMobile && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10 md:hidden"
-                        onClick={() => setFolderSheetOpen(true)}
-                        title="Visa mappar"
-                      >
-                        <PanelLeft className="w-4 h-4" />
-                      </Button>
-                    )}
                     {selectedFolder.parent_id && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 md:h-8 md:w-8"
+                        className="h-8 w-8"
                         onClick={() => selectFolder(selectedFolder.parent_id!)}
                         title="Gå upp en nivå"
                       >
@@ -452,25 +419,25 @@ export default function Documents() {
                         title="Markera alla"
                       />
                     )}
-                    <h2 className="font-heading font-semibold text-base md:text-lg truncate">{selectedFolder.name}</h2>
+                    <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground">
                     {currentSubfolders.length > 0 && `${currentSubfolders.length} ${currentSubfolders.length === 1 ? "mapp" : "mappar"} · `}
                     {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
                   </span>
                 </div>
 
                 {selectedFiles.size > 0 && (
-                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20 flex-wrap">
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20">
                     <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
                     <div className="flex-1" />
-                    <Button variant="outline" size="sm" className="h-10 md:h-8" onClick={() => setBulkMoveDialog(true)}>
+                    <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
                       <FolderInput className="w-4 h-4 mr-1" /> Flytta
                     </Button>
-                    <Button variant="destructive" size="sm" className="h-10 md:h-8" onClick={bulkDelete}>
+                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
                       <Trash2 className="w-4 h-4 mr-1" /> Ta bort
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-10 w-10 md:h-8 md:w-8" onClick={clearSelection}>
+                    <Button variant="ghost" size="sm" onClick={clearSelection}>
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
@@ -478,12 +445,12 @@ export default function Documents() {
 
                 {/* Subfolders */}
                 {currentSubfolders.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                     {currentSubfolders.map(sub => (
                       <button
                         key={sub.id}
                         onClick={() => selectFolder(sub.id)}
-                        className="flex items-center gap-2 px-3 py-3 md:py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left min-h-[44px]"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left"
                       >
                         <FolderOpen className="w-4 h-4 text-primary shrink-0" />
                         <span className="truncate font-medium">{sub.name}</span>
@@ -527,18 +494,12 @@ export default function Documents() {
                 ) : null}
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
-                {isMobile && (
-                  <Button variant="outline" onClick={() => setFolderSheetOpen(true)} className="h-12">
-                    <PanelLeft className="w-4 h-4 mr-2" /> Visa mappar
-                  </Button>
-                )}
-                <p className="text-sm">Välj en mapp {isMobile ? "ovan" : "till vänster"}</p>
+              <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <p className="text-sm">Välj en mapp till vänster</p>
               </div>
             )}
           </div>
-          </div>
-        </>
+        </div>
       )}
 
       {/* Dialogs */}
