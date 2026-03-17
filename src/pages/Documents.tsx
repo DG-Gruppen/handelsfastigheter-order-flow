@@ -240,8 +240,13 @@ export default function Documents() {
         </div>
         {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
           <div className="flex gap-2">
-            {isAdmin && (
-              <Button variant="outline" size="sm" onClick={() => setNewFolderDialog({ parentId: null })}>
+            {canCreateFolderInCurrentContext && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewFolderDialog({ parentId: isAdmin ? null : selectedFolderId })}
+                disabled={!isAdmin && !selectedFolderId}
+              >
                 <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
               </Button>
             )}
