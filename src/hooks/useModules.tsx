@@ -35,27 +35,42 @@ const ModulesContext = createContext<ModulesContextType>({
   refresh: () => {},
 });
 
+interface ModulePermission {
+  module_id: string;
+  grantee_type: string;
+  grantee_id: string;
+  can_view: boolean;
+}
+
 export function ModulesProvider({ children }: { children: ReactNode }) {
   const { user, roles } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [allAccess, setAllAccess] = useState<ModuleAccess[]>([]);
+  const [permissions, setPermissions] = useState<ModulePermission[]>([]);
+  const [userGroupIds, setUserGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchModules = async () => {
     if (!user) {
       setModules([]);
       setAllAccess([]);
+      setPermissions([]);
+      setUserGroupIds([]);
       setLoading(false);
       return;
     }
 
-    const [modulesRes, accessRes] = await Promise.all([
+    const [modulesRes, accessRes, permRes, groupRes] = await Promise.all([
       supabase.from("modules").select("*").order("sort_order"),
       supabase.from("module_role_access").select("module_id, role, has_access"),
+      supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view"),
+      supabase.from("group_members").select("group_id").eq("user_id", user.id),
     ]);
 
     setModules((modulesRes.data as Module[]) ?? []);
     setAllAccess((accessRes.data as ModuleAccess[]) ?? []);
+    setPermissions((permRes.data as ModulePermission[]) ?? []);
+    setUserGroupIds((groupRes.data ?? []).map((g: any) => g.group_id));
     setLoading(false);
   };
 
@@ -67,20 +82,30 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const accessibleModules = useMemo(() => {
     return modules.filter((m) => {
       if (!m.is_active) return false;
+
+      // Check if user has explicit module_permissions (user or group-level)
+      const hasExplicitPermission = permissions.some((p) => {
+        if (p.module_id !== m.id || !p.can_view) return false;
+        if (p.grantee_type === "user" && p.grantee_id === user?.id) return true;
+        if (p.grantee_type === "group" && userGroupIds.includes(p.grantee_id)) return true;
+        return false;
+      });
+      if (hasExplicitPermission) return true;
+
+      // Fall back to role-based access
       const moduleRules = allAccess.filter((a) => a.module_id === m.id);
       // No rules defined → accessible to everyone
       if (moduleRules.length === 0) return true;
-      // User has no roles → allow if all defined roles have access (i.e. no restriction intended)
+      // User has no roles → allow if all defined roles have access
       if (roles.length === 0) {
-        const allGranted = moduleRules.every((a) => a.has_access);
-        return allGranted;
+        return moduleRules.every((a) => a.has_access);
       }
       return roles.some((role) => {
         const rule = moduleRules.find((a) => a.role === role);
         return rule ? rule.has_access : false;
       });
     });
-  }, [modules, allAccess, roles]);
+  }, [modules, allAccess, permissions, userGroupIds, roles, user?.id]);
 
   return (
     <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, loading, refresh: fetchModules }}>
