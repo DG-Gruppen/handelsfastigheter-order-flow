@@ -42,7 +42,7 @@ const getLabelColor = (label: string) => {
 };
 
 export default function CardDetailDialog({
-  card, columns, profiles, open, onClose, onSave, onDelete, defaultColumnId,
+  card, columns, profiles, open, onClose, onSave, onDelete, onCopy, defaultColumnId,
 }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
