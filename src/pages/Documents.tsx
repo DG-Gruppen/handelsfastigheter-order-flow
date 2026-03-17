@@ -486,6 +486,7 @@ export default function Documents() {
       <RenameDialog open={!!renameDialog} item={renameDialog} onClose={() => setRenameDialog(null)} onRename={(id, name, type) => type === "folder" ? renameFolder(id, name) : renameFile(id, name)} />
       <MoveDialog open={!!moveDialog} item={moveDialog} folders={folders} onClose={() => setMoveDialog(null)} onMove={(id, targetFolderId, type) => type === "folder" ? moveFolder(id, targetFolderId) : moveFile(id, targetFolderId!)} />
       <AccessDialog open={!!accessDialog} folder={accessDialog} onClose={() => setAccessDialog(null)} onSave={updateFolderAccess} />
+      <ChangeIconDialog open={!!iconDialog} folder={iconDialog} onClose={() => setIconDialog(null)} onSave={updateFolderIcon} />
       <DeleteConfirmDialog
         open={!!deleteConfirm}
         item={deleteConfirm}
