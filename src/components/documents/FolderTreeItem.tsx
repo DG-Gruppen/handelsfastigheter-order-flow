@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, Shield } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, Shield, Palette } from "lucide-react";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import type { DocFolder } from "@/hooks/useDocuments";
 import {
@@ -21,13 +21,14 @@ interface Props {
   onRename: (id: string, name: string) => void;
   onMove: (id: string, name: string) => void;
   onAccess: (folder: DocFolder) => void;
+  onChangeIcon: (folder: DocFolder) => void;
   onDelete: (id: string, name: string) => void;
 }
 
 function FolderTreeItemBase({
   folder, depth = 0, childrenOf, expandedFolders, selectedFolderId,
   isAdmin, canWriteFolder, onSelect, onToggleExpand,
-  onNewFolder, onRename, onMove, onAccess, onDelete,
+  onNewFolder, onRename, onMove, onAccess, onChangeIcon, onDelete,
 }: Props) {
   const children = childrenOf(folder.id);
   const isExpanded = expandedFolders.has(folder.id);
@@ -77,6 +78,9 @@ function FolderTreeItemBase({
               <DropdownMenuItem onClick={() => onMove(folder.id, folder.name)}>
                 <FolderInput className="w-4 h-4 mr-2" /> Flytta
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangeIcon(folder)}>
+                <Palette className="w-4 h-4 mr-2" /> Byt ikon
+              </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem onClick={() => onAccess(folder)}>
                   <Shield className="w-4 h-4 mr-2" /> Behörighet
@@ -108,6 +112,7 @@ function FolderTreeItemBase({
               onRename={onRename}
               onMove={onMove}
               onAccess={onAccess}
+              onChangeIcon={onChangeIcon}
               onDelete={onDelete}
             />
           ))}

@@ -234,3 +234,44 @@ export function DeleteConfirmDialog({ open, item, onClose, onConfirm }: {
     </Dialog>
   );
 }
+
+export function ChangeIconDialog({ open, folder, onClose, onSave }: {
+  open: boolean; folder: DocFolder | null; onClose: () => void;
+  onSave: (id: string, icon: string) => void;
+}) {
+  const [icon, setIcon] = useState(folder?.icon ?? "folder");
+  if (folder && icon !== folder.icon && icon === "folder" && folder.icon !== "folder") setIcon(folder.icon);
+
+  if (!folder) return null;
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Byt ikon: {folder.name}</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-8 gap-1.5">
+          {FOLDER_ICON_OPTIONS.map(opt => {
+            const Icon = getModuleIcon(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                title={opt.label}
+                onClick={() => setIcon(opt.value)}
+                className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                  icon === opt.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            );
+          })}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Avbryt</Button>
+          <Button onClick={() => { onSave(folder.id, icon); onClose(); }}>Spara</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

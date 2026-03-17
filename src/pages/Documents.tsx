@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, Search, Upload, FolderPlus, FolderUp, X, Trash2,
-  FolderInput, Download, ChevronRight, Home, Shield, MoreHorizontal, Pencil,
+  FolderInput, Download, ChevronRight, Home, Shield, MoreHorizontal, Pencil, Palette,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,14 +18,14 @@ import { toast } from "@/hooks/use-toast";
 import FileRow from "@/components/documents/FileRow";
 import { TextPreview, formatFileSize, canPreview, isOfficeMime, getFileIcon } from "@/components/documents/documentHelpers";
 import {
-  NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog,
+  NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog, ChangeIconDialog,
 } from "@/components/documents/DocumentDialogs";
 import { getModuleIcon } from "@/lib/moduleIcons";
 
 export default function Documents() {
   const {
     folders, files, loading, isAdmin,
-    createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
+    createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess, updateFolderIcon,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile, canWriteFolder,
     refresh,
   } = useDocuments();
@@ -39,6 +39,7 @@ export default function Documents() {
   const [moveDialog, setMoveDialog] = useState<{ type: "folder" | "file"; id: string; name: string } | null>(null);
   const [accessDialog, setAccessDialog] = useState<DocFolder | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "folder" | "file"; id: string; name: string } | null>(null);
+  const [iconDialog, setIconDialog] = useState<DocFolder | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [bulkMoveDialog, setBulkMoveDialog] = useState(false);
   const [previewFile, setPreviewFile] = useState<DocFile | null>(null);
@@ -349,6 +350,7 @@ export default function Documents() {
                         onRename={() => setRenameDialog({ type: "folder", id: f.id, name: f.name })}
                         onMove={() => setMoveDialog({ type: "folder", id: f.id, name: f.name })}
                         onAccess={() => setAccessDialog(f)}
+                        onChangeIcon={() => setIconDialog(f)}
                         onDelete={() => setDeleteConfirm({ type: "folder", id: f.id, name: f.name })}
                       />
                     ))}
@@ -411,6 +413,7 @@ export default function Documents() {
                         onRename={() => setRenameDialog({ type: "folder", id: sub.id, name: sub.name })}
                         onMove={() => setMoveDialog({ type: "folder", id: sub.id, name: sub.name })}
                         onAccess={() => setAccessDialog(sub)}
+                        onChangeIcon={() => setIconDialog(sub)}
                         onDelete={() => setDeleteConfirm({ type: "folder", id: sub.id, name: sub.name })}
                       />
                     ))}
@@ -483,6 +486,7 @@ export default function Documents() {
       <RenameDialog open={!!renameDialog} item={renameDialog} onClose={() => setRenameDialog(null)} onRename={(id, name, type) => type === "folder" ? renameFolder(id, name) : renameFile(id, name)} />
       <MoveDialog open={!!moveDialog} item={moveDialog} folders={folders} onClose={() => setMoveDialog(null)} onMove={(id, targetFolderId, type) => type === "folder" ? moveFolder(id, targetFolderId) : moveFile(id, targetFolderId!)} />
       <AccessDialog open={!!accessDialog} folder={accessDialog} onClose={() => setAccessDialog(null)} onSave={updateFolderAccess} />
+      <ChangeIconDialog open={!!iconDialog} folder={iconDialog} onClose={() => setIconDialog(null)} onSave={updateFolderIcon} />
       <DeleteConfirmDialog
         open={!!deleteConfirm}
         item={deleteConfirm}
@@ -550,7 +554,7 @@ export default function Documents() {
 /* ── Folder card with context menu ── */
 function FolderCard({
   folder, onClick, isAdmin, canWrite,
-  onNewFolder, onRename, onMove, onAccess, onDelete,
+  onNewFolder, onRename, onMove, onAccess, onChangeIcon, onDelete,
 }: {
   folder: DocFolder;
   onClick: () => void;
@@ -560,6 +564,7 @@ function FolderCard({
   onRename: () => void;
   onMove: () => void;
   onAccess: () => void;
+  onChangeIcon: () => void;
   onDelete: () => void;
 }) {
   const IconComponent = getModuleIcon(folder.icon);
@@ -592,6 +597,9 @@ function FolderCard({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }}>
               <Pencil className="w-4 h-4 mr-2" /> Byt namn
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onChangeIcon(); }}>
+              <Palette className="w-4 h-4 mr-2" /> Byt ikon
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }}>
               <FolderInput className="w-4 h-4 mr-2" /> Flytta
