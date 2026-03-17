@@ -380,8 +380,38 @@ export default function Documents() {
           <div className="bg-card rounded-lg border border-border p-4">
             {selectedFolder ? (
               <>
+                {/* Breadcrumbs */}
+                <div className="flex items-center gap-1 mb-3 text-sm flex-wrap">
+                  <button onClick={() => { setSelectedFolderId(null); setSearch(""); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                    Hem
+                  </button>
+                  {breadcrumbPath.map((f, i) => (
+                    <span key={f.id} className="flex items-center gap-1">
+                      <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                      {i === breadcrumbPath.length - 1 ? (
+                        <span className="font-medium text-foreground">{f.name}</span>
+                      ) : (
+                        <button onClick={() => selectFolder(f.id)} className="text-muted-foreground hover:text-foreground transition-colors">
+                          {f.name}
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
+                    {selectedFolder.parent_id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => selectFolder(selectedFolder.parent_id!)}
+                        title="Gå upp en nivå"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </Button>
+                    )}
                     {(isAdmin || canWriteFolder(selectedFolder.id)) && currentFiles.length > 0 && (
                       <Checkbox
                         checked={selectedFiles.size === currentFiles.length && currentFiles.length > 0}
@@ -392,6 +422,7 @@ export default function Documents() {
                     <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
                   </div>
                   <span className="text-xs text-muted-foreground">
+                    {currentSubfolders.length > 0 && `${currentSubfolders.length} ${currentSubfolders.length === 1 ? "mapp" : "mappar"} · `}
                     {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
                   </span>
                 </div>
@@ -412,7 +443,23 @@ export default function Documents() {
                   </div>
                 )}
 
-                {currentFiles.length === 0 ? (
+                {/* Subfolders */}
+                {currentSubfolders.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    {currentSubfolders.map(sub => (
+                      <button
+                        key={sub.id}
+                        onClick={() => selectFolder(sub.id)}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left"
+                      >
+                        <FolderOpen className="w-4 h-4 text-primary shrink-0" />
+                        <span className="truncate font-medium">{sub.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {currentFiles.length === 0 && currentSubfolders.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                     <FileText className="w-12 h-12 mb-3 opacity-30" />
                     <p className="text-sm">Inga filer i denna mapp</p>
@@ -427,7 +474,7 @@ export default function Documents() {
                       </div>
                     )}
                   </div>
-                ) : (
+                ) : currentFiles.length > 0 ? (
                   <div className="space-y-1">
                     {currentFiles.map(f => (
                       <FileRow
