@@ -1,5 +1,9 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Award, PartyPopper, Pen, BookOpen, ChevronRight } from "lucide-react";
 import RecognitionDialog from "@/components/RecognitionDialog";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
 
 const veckansVinst = {
   title: "Region Syd knäcker alla förväntningar",
@@ -8,14 +12,6 @@ const veckansVinst = {
   week: "v.11 2026",
 };
 
-const recognitions = [
-  { from: "Malin Ekwall", to: "Mats Jäverlind", value: "Erfarenhet", emoji: "⭐", message: "Tack för strålande årsredovisning – din noggrannhet gör skillnad!", date: "2026-03-14" },
-  { from: "Knud Lauridsen", to: "Peter Högberg", value: "Driv", emoji: "🚀", message: "Fantastiskt arbete med Bernstorp-förvaltningen. Imponerad!", date: "2026-03-13" },
-  { from: "Petra Bondesson", to: "Mikaela Karlsson", value: "Långsiktighet", emoji: "🌱", message: "Ditt engagemang för energiloggningen inspirerar hela teamet.", date: "2026-03-12" },
-  { from: "Thomas Holm", to: "Malin Ekwall", value: "Erfarenhet", emoji: "⭐", message: "Din finansiella analys möjliggjorde den gröna obligationen. Tack!", date: "2026-03-10" },
-  { from: "Benny Andersson", to: "Louise Eldwinger", value: "Samverkan", emoji: "🔗", message: "Otroligt bra samarbete med XXL-etableringen i Skövde!", date: "2026-03-09" },
-];
-
 const vdBlogg = {
   title: "Reflektioner efter ett rekordår",
   date: "Q4 2025",
@@ -23,7 +19,46 @@ const vdBlogg = {
   author: "Thomas Holm",
 };
 
+interface Recognition {
+  id: string;
+  icon: string;
+  message: string;
+  created_at: string;
+  from_name: string;
+  to_name: string;
+}
+
 export default function Culture() {
+  const [recognitions, setRecognitions] = useState<Recognition[]>([]);
+
+  const fetchRecognitions = useCallback(async () => {
+    const { data } = await supabase
+      .from("recognitions")
+      .select("id, icon, message, created_at, from_user_id, to_user_id")
+      .order("created_at", { ascending: false });
+    if (!data) return;
+    const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
+    if (userIds.length === 0) { setRecognitions([]); return; }
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+    const nameMap: Record<string, string> = {};
+    for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
+    setRecognitions(data.map((r: any) => ({
+      id: r.id,
+      icon: r.icon,
+      message: r.message,
+      created_at: r.created_at,
+      from_name: nameMap[r.from_user_id] || "Okänd",
+      to_name: nameMap[r.to_user_id] || "Okänd",
+    })));
+  }, []);
+
+  useEffect(() => {
+    fetchRecognitions();
+  }, [fetchRecognitions]);
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
@@ -50,21 +85,25 @@ export default function Culture() {
             <PartyPopper className="w-5 h-5 text-primary" />
             <h2 className="font-heading text-xl font-semibold text-foreground">Klapp på axeln</h2>
           </div>
-          <RecognitionDialog onCreated={() => {}} />
+          <RecognitionDialog onCreated={fetchRecognitions} />
         </div>
+        {recognitions.length === 0 && (
+          <p className="text-sm text-muted-foreground">Inga erkännanden ännu. Var först med att uppmärksamma en kollega!</p>
+        )}
         <div className="space-y-3">
-          {recognitions.map((r, i) => (
-            <div key={i} className="glass-card rounded-2xl p-4 flex gap-4">
-              <span className="text-2xl shrink-0">{r.emoji}</span>
+          {recognitions.map((r) => (
+            <div key={r.id} className="glass-card rounded-2xl p-4 flex gap-4">
+              <span className="text-2xl shrink-0">{r.icon}</span>
               <div className="min-w-0">
                 <div className="text-sm">
-                  <span className="font-medium text-foreground">{r.from}</span>
+                  <span className="font-medium text-foreground">{r.from_name}</span>
                   <span className="text-muted-foreground"> → </span>
-                  <span className="font-medium text-foreground">{r.to}</span>
-                  <span className="text-[10px] ml-2 bg-accent/15 text-accent px-2 py-0.5 rounded-full font-medium">{r.value}</span>
+                  <span className="font-medium text-foreground">{r.to_name}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{r.message}</p>
-                <span className="text-[10px] text-muted-foreground/60 mt-1 block">{r.date}</span>
+                <span className="text-[10px] text-muted-foreground/60 mt-1 block">
+                  {format(new Date(r.created_at), "d MMM yyyy", { locale: sv })}
+                </span>
               </div>
             </div>
           ))}
