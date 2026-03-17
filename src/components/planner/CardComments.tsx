@@ -85,7 +85,7 @@ export default function CardComments({ cardId, profiles }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("planner_card_comments" as any).delete().eq("id", id);
+    await supabase.from("planner_card_comments").delete().eq("id", id);
   };
 
   if (loading) {

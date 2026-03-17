@@ -46,6 +46,7 @@ export default function Planner() {
   const [defaultColumnId, setDefaultColumnId] = useState<string | undefined>();
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<PlannerColumn | null>(null);
+  const [confirmDeleteColumn, setConfirmDeleteColumn] = useState<PlannerColumn | null>(null);
 
   // Filters
   const [filters, setFilters] = useState<PlannerFilterState>(EMPTY_FILTERS);
