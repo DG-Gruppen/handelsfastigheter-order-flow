@@ -421,8 +421,57 @@ export default function Planner() {
 
     fetchBoardData();
   };
-...
-              {sortedColumns.map(col => {
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Planner</h1>
+          <p className="text-sm text-muted-foreground">Kanban-board för projektplanering</p>
+        </div>
+      </div>
+
+      {/* Board tabs */}
+      <BoardSelector
+        boards={boards}
+        activeBoardId={activeBoardId}
+        onSelect={setActiveBoardId}
+        onCreate={handleCreateBoard}
+        onUpdate={handleUpdateBoard}
+        onDelete={handleDeleteBoard}
+        onArchive={handleArchiveBoard}
+      />
+
+      {/* Filters */}
+      {activeBoardId && columns.length > 0 && (
+        <PlannerFilters
+          filters={filters}
+          onChange={setFilters}
+          profiles={profiles}
+          availableLabels={availableLabels}
+        />
+      )}
+
+      {/* Kanban board */}
+      {activeBoardId && columns.length > 0 ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="w-full overflow-x-auto kanban-scroll pb-2">
+            <div className="flex gap-4 pb-4 min-h-[60vh]">
+              {sortedColumns.map((col) => {
                   const colCards = filteredCards
                     .filter(c => c.column_id === col.id)
                     .sort((a, b) => a.sort_order - b.sort_order);
