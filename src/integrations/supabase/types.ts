@@ -1317,6 +1317,7 @@ export type Database = {
           emoji: string
           id: string
           is_active: boolean
+          is_starred: boolean
           name: string
           sort_order: number
           url: string
@@ -1327,6 +1328,7 @@ export type Database = {
           emoji?: string
           id?: string
           is_active?: boolean
+          is_starred?: boolean
           name: string
           sort_order?: number
           url: string
@@ -1337,6 +1339,7 @@ export type Database = {
           emoji?: string
           id?: string
           is_active?: boolean
+          is_starred?: boolean
           name?: string
           sort_order?: number
           url?: string

@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Pencil, Trash2, ExternalLink, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, GripVertical, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import data from "@emoji-mart/data";
@@ -23,6 +23,7 @@ interface Tool {
   url: string;
   sort_order: number;
   is_active: boolean;
+  is_starred: boolean;
 }
 
 export default function ToolsManager() {
@@ -97,6 +98,11 @@ export default function ToolsManager() {
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_active: !t.is_active } : t));
   };
 
+  const handleToggleStar = async (tool: Tool) => {
+    await supabase.from("tools" as any).update({ is_starred: !tool.is_starred }).eq("id", tool.id);
+    setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_starred: !t.is_starred } : t));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -136,6 +142,13 @@ export default function ToolsManager() {
               </div>
               <p className="text-xs text-muted-foreground truncate">{tool.description}</p>
             </div>
+            <button
+              onClick={() => handleToggleStar(tool)}
+              className="shrink-0 p-1 rounded hover:bg-secondary transition-colors"
+              title={tool.is_starred ? "Ta bort från snabbåtkomst" : "Visa i snabbåtkomst"}
+            >
+              <Star className={`h-4 w-4 ${tool.is_starred ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
+            </button>
             <Switch
               checked={tool.is_active}
               onCheckedChange={() => handleToggleActive(tool)}
