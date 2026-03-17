@@ -26,7 +26,7 @@ export default function Dashboard() {
       .from("recognitions")
       .select("id, icon, message, created_at, from_user_id, to_user_id")
       .order("created_at", { ascending: false })
-      .limit(5);
+      .limit(3);
     if (!data) return;
     const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
     const { data: profiles } = await supabase
