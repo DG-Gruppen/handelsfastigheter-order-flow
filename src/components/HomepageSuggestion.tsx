@@ -276,7 +276,7 @@ export default function HomepageSuggestion() {
                   <div className="rounded-lg bg-muted/50 p-3">
                     <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-2">
                       {showPwaTab
-                        ? isIos() ? "iPhone / iPad" : "Android"
+                        ? pwaLabel
                         : BROWSER_LABELS[browser]}
                     </p>
                     <ol className="space-y-1.5">
