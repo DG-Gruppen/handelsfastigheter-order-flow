@@ -1151,6 +1151,7 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string | null
+          due_done: boolean
           id: string
           labels: string[] | null
           priority: string
@@ -1166,6 +1167,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          due_done?: boolean
           id?: string
           labels?: string[] | null
           priority?: string
@@ -1181,6 +1183,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          due_done?: boolean
           id?: string
           labels?: string[] | null
           priority?: string
@@ -1202,6 +1205,73 @@ export type Database = {
             columns: ["column_id"]
             isOneToOne: false
             referencedRelation: "planner_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planner_checklist_items: {
+        Row: {
+          checked: boolean
+          checklist_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          text: string
+        }
+        Insert: {
+          checked?: boolean
+          checklist_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          text?: string
+        }
+        Update: {
+          checked?: boolean
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "planner_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planner_checklists: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_checklists_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "planner_cards"
             referencedColumns: ["id"]
           },
         ]
