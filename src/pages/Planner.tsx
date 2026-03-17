@@ -719,6 +719,7 @@ export default function Planner() {
                 cards={filteredCards.filter(c => c.column_id === activeColumn.id).sort((a, b) => a.sort_order - b.sort_order)}
                 profileMap={profileMap}
                 checklistSummaries={checklistSummaries}
+                attachmentCounts={attachmentCounts}
                 onAddCard={() => {}}
                 onEditColumn={() => {}}
                 onDeleteColumn={() => {}}
