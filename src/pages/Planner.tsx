@@ -711,6 +711,7 @@ export default function Planner() {
                 onClick={() => {}}
                 overlay
                 checklistSummary={checklistSummaries[activeCard.id]}
+                attachmentCount={attachmentCounts[activeCard.id]}
               />
             )}
             {activeColumn && (
