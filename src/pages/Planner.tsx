@@ -148,12 +148,12 @@ export default function Planner() {
   const handleSaveCard = async (data: Partial<PlannerCard> & { id?: string }) => {
     if (data.id) {
       const { id, ...update } = data;
-      await supabase.from("planner_cards").update(update).eq("id", id);
+      await supabase.from("planner_cards" as any).update(update).eq("id", id);
       toast.success("Kort uppdaterat");
     } else {
       if (!user || !activeBoardId) return;
       const colCards = cards.filter(c => c.column_id === data.column_id);
-      await supabase.from("planner_cards").insert({
+      await supabase.from("planner_cards" as any).insert({
         ...data,
         board_id: activeBoardId,
         reporter_id: user.id,
