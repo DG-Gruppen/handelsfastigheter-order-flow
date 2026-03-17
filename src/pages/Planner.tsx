@@ -274,7 +274,7 @@ export default function Planner() {
       const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
-    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
+    await supabase.from("planner_boards").update({ is_archived: true }).eq("id", id);
     toast.success("Board arkiverad");
   };
 
