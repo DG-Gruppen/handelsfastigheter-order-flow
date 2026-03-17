@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, Eye, Pencil, Trash2, Crown, Plus, Users, User, Clock } from "lucide-react";
+import { Shield, Eye, Pencil, Trash2, Crown, Plus, Users, User, Clock, X } from "lucide-react";
 import { getModuleIcon } from "@/lib/moduleIcons";
 
 interface Module {
