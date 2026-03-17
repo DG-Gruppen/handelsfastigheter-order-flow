@@ -368,8 +368,12 @@ export default function Planner() {
 
   const handleDeleteCard = async (id: string) => {
     suppressDataRealtime();
+    const card = cards.find(c => c.id === id);
     await supabase.from("planner_cards").delete().eq("id", id);
     toast.success("Kort borttaget");
+    if (user && activeBoardId && card) {
+      logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "deleted", entityType: "card", entityName: card.title });
+    }
     fetchBoardData();
   };
 
