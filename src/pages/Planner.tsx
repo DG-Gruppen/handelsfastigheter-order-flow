@@ -67,7 +67,7 @@ export default function Planner() {
       .from("planner_boards" as any)
       .select("*")
       .order("sort_order");
-    const b = (data as Board[]) ?? [];
+    const b = ((data as unknown) as Board[]) ?? [];
     setBoards(b);
     if (b.length > 0 && !activeBoardId) {
       setActiveBoardId(b[0].id);
