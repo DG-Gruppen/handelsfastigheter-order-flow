@@ -28,7 +28,7 @@ function FileRowBase({
   const previewable = canPreview(file.mime_type);
 
   return (
-    <div className={`group flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors border ${
+    <div className={`group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-3 md:py-3 rounded-md text-sm transition-colors border min-h-[56px] ${
       isSelected ? "bg-primary/10 border-primary/30" : "hover:bg-secondary/50 border-transparent hover:border-border"
     }`}>
       {canWrite && (
@@ -43,28 +43,28 @@ function FileRowBase({
         className={`flex-1 min-w-0 ${previewable ? "cursor-pointer" : ""}`}
         onClick={() => previewable && onPreview(file)}
       >
-        <p className="truncate font-medium">{file.name}</p>
+        <p className="truncate font-medium text-sm">{file.name}</p>
         <p className="text-xs text-muted-foreground">
           {formatFileSize(file.file_size)} · {new Date(file.created_at).toLocaleDateString("sv-SE")}
         </p>
       </div>
-      <div className="flex items-center gap-1">
-        {previewable && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onPreview(file)} title="Förhandsvisa">
-            <Eye className="w-4 h-4" />
-          </Button>
-        )}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDownload(file)} title="Ladda ner">
+      <div className="flex items-center gap-0.5 shrink-0">
+        <Button variant="ghost" size="icon" className="h-9 w-9 md:h-8 md:w-8" onClick={() => onDownload(file)} title="Ladda ner">
           <Download className="w-4 h-4" />
         </Button>
         {canWrite && (
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="ghost" size="icon" className="h-9 w-9 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              {previewable && (
+                <DropdownMenuItem onClick={() => onPreview(file)}>
+                  <Eye className="w-4 h-4 mr-2" /> Förhandsvisa
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onRename(file.id, file.name)}>
                 <Pencil className="w-4 h-4 mr-2" /> Byt namn
               </DropdownMenuItem>

@@ -392,14 +392,14 @@ export default function Documents() {
             </Sheet>
           )}
 
-          <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
+          <div className="grid md:grid-cols-[280px_1fr] gap-4 md:min-h-[500px]">
             {/* Folder tree – desktop only */}
             <div className="hidden md:block bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
               {folderTreeContent}
             </div>
 
             {/* File list */}
-            <div className="bg-card rounded-lg border border-border p-4">
+            <div className="bg-card rounded-lg border border-border p-3 md:p-4">
             {selectedFolder ? (
               <>
                 {/* Breadcrumbs */}
@@ -452,25 +452,25 @@ export default function Documents() {
                         title="Markera alla"
                       />
                     )}
-                    <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
+                    <h2 className="font-heading font-semibold text-base md:text-lg truncate">{selectedFolder.name}</h2>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {currentSubfolders.length > 0 && `${currentSubfolders.length} ${currentSubfolders.length === 1 ? "mapp" : "mappar"} · `}
                     {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
                   </span>
                 </div>
 
                 {selectedFiles.size > 0 && (
-                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20 flex-wrap">
                     <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
                     <div className="flex-1" />
-                    <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
+                    <Button variant="outline" size="sm" className="h-10 md:h-8" onClick={() => setBulkMoveDialog(true)}>
                       <FolderInput className="w-4 h-4 mr-1" /> Flytta
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                    <Button variant="destructive" size="sm" className="h-10 md:h-8" onClick={bulkDelete}>
                       <Trash2 className="w-4 h-4 mr-1" /> Ta bort
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    <Button variant="ghost" size="sm" className="h-10 w-10 md:h-8 md:w-8" onClick={clearSelection}>
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
@@ -478,12 +478,12 @@ export default function Documents() {
 
                 {/* Subfolders */}
                 {currentSubfolders.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
                     {currentSubfolders.map(sub => (
                       <button
                         key={sub.id}
                         onClick={() => selectFolder(sub.id)}
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left"
+                        className="flex items-center gap-2 px-3 py-3 md:py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left min-h-[44px]"
                       >
                         <FolderOpen className="w-4 h-4 text-primary shrink-0" />
                         <span className="truncate font-medium">{sub.name}</span>
