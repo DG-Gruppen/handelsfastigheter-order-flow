@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, Shield } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, FolderInput, FolderPlus, Shield, Palette } from "lucide-react";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import type { DocFolder } from "@/hooks/useDocuments";
 import {
