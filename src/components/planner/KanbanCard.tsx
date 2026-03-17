@@ -93,7 +93,7 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
         </div>
       )}
 
-      {/* Footer: priority, due date, assignee */}
+      {/* Footer: priority, due date, reporter, assignee */}
       <div className="flex items-center justify-between mt-2.5 gap-2">
         <div className="flex items-center gap-2">
           <span className={cn("flex items-center gap-0.5 text-[10px] font-medium rounded-md px-1.5 py-0.5", pri.bg, pri.color)}>
@@ -110,13 +110,20 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
             </span>
           )}
         </div>
-        {initials && (
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-[9px] font-semibold bg-primary/10 text-primary">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        )}
+        <div className="flex items-center gap-1.5">
+          {reporterName && (
+            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]" title={`Skapad av ${reporterName}`}>
+              {reporterName.split(" ")[0]}
+            </span>
+          )}
+          {initials && (
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[9px] font-semibold bg-primary/10 text-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
       </div>
     </div>
   );

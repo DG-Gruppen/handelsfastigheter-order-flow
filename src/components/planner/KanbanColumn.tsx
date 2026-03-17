@@ -116,6 +116,7 @@ export default function KanbanColumn({
               key={card.id}
               card={card}
               assigneeName={card.assignee_id ? profileMap[card.assignee_id] : undefined}
+              reporterName={profileMap[card.reporter_id]}
               onClick={() => onCardClick(card)}
             />
           ))}
