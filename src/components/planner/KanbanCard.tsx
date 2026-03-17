@@ -30,10 +30,10 @@ interface Props {
 }
 
 const priorityConfig = {
-  urgent: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", label: "Brådskande" },
-  high: { icon: ArrowUp, color: "text-warning", bg: "bg-warning/10", label: "Hög" },
-  medium: { icon: Minus, color: "text-muted-foreground", bg: "bg-muted", label: "Medium" },
-  low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", label: "Låg" },
+  urgent: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive", label: "Brådskande" },
+  high: { icon: ArrowUp, color: "text-warning", bg: "bg-warning/10", dot: "bg-warning", label: "Hög" },
+  medium: { icon: Minus, color: "text-muted-foreground", bg: "bg-muted", dot: "bg-muted-foreground", label: "Medium" },
+  low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", dot: "bg-accent", label: "Låg" },
 };
 
 export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay }: Props) {
@@ -77,7 +77,8 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
         >
           <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-start gap-1.5">
+          <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", pri.dot)} title={pri.label} />
           <p className="text-sm font-medium text-foreground leading-snug">{card.title}</p>
         </div>
       </div>
