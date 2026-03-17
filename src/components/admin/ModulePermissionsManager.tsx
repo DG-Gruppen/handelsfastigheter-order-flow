@@ -67,7 +67,7 @@ export default function ModulePermissionsManager() {
 
   const fetchData = useCallback(async () => {
     const [m, p, g, pr] = await Promise.all([
-      supabase.from("modules").select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("modules").select("*").order("sort_order"),
       supabase.from("module_permissions").select("*"),
       supabase.from("groups").select("id, name, color, is_system").order("name"),
       supabase.from("profiles").select("user_id, full_name, email"),
