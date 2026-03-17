@@ -143,7 +143,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   }, [modules, allAccess, permissions, userGroupIds, roles, user?.id]);
 
   return (
-    <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, loading, refresh: fetchModules }}>
+    <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, allPermissions: fullPermissions, userGroupIds, loading, refresh: fetchModules }}>
       {children}
     </ModulesContext.Provider>
   );
