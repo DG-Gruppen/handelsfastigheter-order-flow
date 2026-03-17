@@ -272,9 +272,23 @@ export default function RichTextEditor({ content, onChange }: Props) {
             />
             <ToolBtn
               active={false}
-              onClick={addImage}
+              onClick={() => fileInputRef.current?.click()}
+              icon={uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              title="Ladda upp bild"
+              disabled={uploading}
+            />
+            <ToolBtn
+              active={false}
+              onClick={addImageFromUrl}
               icon={<ImageIcon className="h-3.5 w-3.5" />}
-              title="Infoga bild"
+              title="Infoga bild via URL"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onFileChange}
             />
             <Separator orientation="vertical" className="h-5 mx-1" />
             <ToolBtn
