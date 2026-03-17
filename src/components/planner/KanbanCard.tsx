@@ -1,8 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, AlertTriangle, ArrowUp, ArrowDown, Minus, FileText, CheckSquare } from "lucide-react";
+import { Calendar, FileText, CheckSquare, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PlannerCard {
@@ -35,16 +34,20 @@ interface Props {
   onClick: () => void;
   overlay?: boolean;
   checklistSummary?: ChecklistSummary;
+  attachmentCount?: number;
 }
 
-const priorityConfig = {
-  urgent: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive", label: "Brådskande" },
-  high: { icon: ArrowUp, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive", label: "Hög" },
-  medium: { icon: Minus, color: "text-muted-foreground", bg: "bg-muted", dot: "bg-warning", label: "Medium" },
-  low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", dot: "bg-accent", label: "Låg" },
-};
+const LABEL_COLORS = [
+  "bg-accent", "bg-warning", "bg-primary", "bg-destructive",
+  "hsl(280 60% 50%)", "hsl(330 70% 50%)",
+];
 
-export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay, checklistSummary }: Props) {
+function getInitials(name?: string) {
+  if (!name) return null;
+  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay, checklistSummary, attachmentCount }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", card },
@@ -55,22 +58,14 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
     transition,
   };
 
-  const pri = priorityConfig[card.priority];
-  const PriIcon = pri.icon;
-
-  const initials = assigneeName
-    ? assigneeName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-    : null;
-
+  const assigneeInitials = getInitials(assigneeName);
+  const reporterInitials = getInitials(reporterName);
   const isOverdue = card.due_date && !card.due_done && new Date(card.due_date) < new Date();
   const hasDescription = !!card.description?.trim();
   const hasChecklist = checklistSummary && checklistSummary.total > 0;
+  const hasAttachments = attachmentCount && attachmentCount > 0;
 
-  // Label colors for colored pills (cycle through)
-  const labelColors = [
-    "bg-accent", "bg-warning", "bg-primary", "bg-destructive",
-    "hsl(280 60% 50%)", "hsl(330 70% 50%)",
-  ];
+  const hasFooter = card.due_date || hasDescription || hasChecklist || hasAttachments || assigneeInitials;
 
   return (
     <div
@@ -85,17 +80,17 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
       )}
       onClick={onClick}
     >
-      {/* Cover block */}
+      {/* ── Cover ── */}
       {card.cover_color && (
-        <div className="h-9 w-full rounded-t-lg" style={{ backgroundColor: card.cover_color }} />
+        <div className="h-10 w-full" style={{ backgroundColor: card.cover_color }} />
       )}
 
-      <div className="px-2.5 pt-2 pb-2">
-        {/* Label pills (colored dots, no text) */}
+      <div className="px-3 pt-2.5 pb-2.5 space-y-2">
+        {/* ── Label pills ── */}
         {card.labels && card.labels.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-1.5">
+          <div className="flex flex-wrap gap-1">
             {card.labels.map((label, i) => {
-              const c = labelColors[i % labelColors.length];
+              const c = LABEL_COLORS[i % LABEL_COLORS.length];
               const isTw = c.startsWith("bg-");
               return (
                 <span
@@ -109,14 +104,15 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
           </div>
         )}
 
-        {/* Title */}
-        <p className="text-[13px] font-normal text-foreground leading-snug mb-1.5">{card.title}</p>
+        {/* ── Title ── */}
+        <p className="text-sm text-foreground leading-snug">{card.title}</p>
 
-        {/* Footer */}
-        {(card.due_date || hasDescription || hasChecklist || initials) && (
-          <div className="flex items-center justify-between gap-2">
+        {/* ── Footer ── */}
+        {hasFooter && (
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            {/* Left: badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Due date badge */}
+              {/* Due date */}
               {card.due_date && (
                 <span className={cn(
                   "flex items-center gap-1 text-[11px] rounded-sm px-1.5 py-0.5 font-medium",
@@ -150,16 +146,33 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
                   <FileText className="h-3 w-3" />
                 </span>
               )}
+
+              {/* Attachments */}
+              {hasAttachments && (
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Paperclip className="h-3 w-3" />
+                  {attachmentCount}
+                </span>
+              )}
             </div>
 
-            {/* Assignee avatar */}
-            {initials && (
-              <Avatar className="h-6 w-6 border-2 border-card">
-                <AvatarFallback className="text-[9px] font-semibold bg-primary text-primary-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            )}
+            {/* Right: avatars */}
+            <div className="flex items-center -space-x-1.5">
+              {reporterInitials && reporterInitials !== assigneeInitials && (
+                <Avatar className="h-6 w-6 border-2 border-card">
+                  <AvatarFallback className="text-[9px] font-semibold bg-muted text-muted-foreground">
+                    {reporterInitials}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              {assigneeInitials && (
+                <Avatar className="h-6 w-6 border-2 border-card">
+                  <AvatarFallback className="text-[9px] font-semibold bg-primary text-primary-foreground">
+                    {assigneeInitials}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
           </div>
         )}
       </div>
