@@ -27,7 +27,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -235,7 +235,7 @@ export default function ToolsManager() {
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={tools.map(t => t.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={tools.map(t => t.id)} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
             {tools.map((tool) => (
               <SortableToolRow
