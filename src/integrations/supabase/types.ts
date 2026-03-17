@@ -1111,6 +1111,47 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_card_attachments: {
+        Row: {
+          card_id: string
+          created_at: string
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          file_name: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_card_attachments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "planner_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planner_card_comments: {
         Row: {
           card_id: string
