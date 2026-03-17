@@ -84,26 +84,6 @@ export default function ModulesManager({ onClose }: { onClose?: () => void }) {
                 </div>
               </div>
 
-              {mod.is_active && (
-                <div className="flex flex-wrap gap-2">
-                  {ALL_ROLES.map((role) => {
-                    const active = hasAccess(mod.id, role);
-                    return (
-                      <button
-                        key={role}
-                        onClick={() => toggleRoleAccess(mod.id, role)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                          active
-                            ? ROLE_COLORS[role] + " ring-1 ring-current/20"
-                            : "bg-muted text-muted-foreground opacity-50 hover:opacity-75"
-                        }`}
-                      >
-                        {ROLE_LABELS[role]}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
