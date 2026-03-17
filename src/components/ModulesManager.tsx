@@ -37,28 +37,6 @@ export default function ModulesManager({ onClose }: { onClose?: () => void }) {
     fetchData();
   };
 
-  const toggleRoleAccess = async (moduleId: string, role: string) => {
-    const existing = access.find((a) => a.module_id === moduleId && a.role === role);
-    if (existing) {
-      await supabase
-        .from("module_role_access")
-        .update({ has_access: !existing.has_access } as any)
-        .eq("module_id", moduleId)
-        .eq("role", role as any);
-    } else {
-      await supabase.from("module_role_access").insert({
-        module_id: moduleId,
-        role: role as any,
-        has_access: true,
-      } as any);
-    }
-    fetchData();
-  };
-
-  const hasAccess = (moduleId: string, role: string): boolean => {
-    const rule = access.find((a) => a.module_id === moduleId && a.role === role);
-    return rule ? rule.has_access : false;
-  };
 
   if (loading) {
     return <p className="text-muted-foreground py-8 text-center">Laddar...</p>;
