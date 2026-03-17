@@ -35,7 +35,7 @@ interface CeoBlog {
 }
 
 export default function Culture() {
-  const { roles } = useAuth();
+  const { roles, profile } = useAuth();
   const isAdmin = roles.includes("admin");
 
   const [recognitions, setRecognitions] = useState<Recognition[]>([]);
