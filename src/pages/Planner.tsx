@@ -362,6 +362,16 @@ export default function Planner() {
         onArchive={handleArchiveBoard}
       />
 
+      {/* Filters */}
+      {activeBoardId && columns.length > 0 && (
+        <PlannerFilters
+          filters={filters}
+          onChange={setFilters}
+          profiles={profiles}
+          availableLabels={availableLabels}
+        />
+      )}
+
       {/* Kanban board */}
       {activeBoardId && columns.length > 0 ? (
         <DndContext
