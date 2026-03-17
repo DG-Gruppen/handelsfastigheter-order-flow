@@ -54,7 +54,8 @@ interface SystemOption {
 
 export default function Onboarding() {
   const { user, roles } = useAuth();
-  const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
+  const { canEdit: canEditOnboarding } = useModulePermission("onboarding");
+  const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin") || canEditOnboarding;
   const navigate = useNavigate();
 
   const [categories, setCategories] = useState<Category[]>([]);
