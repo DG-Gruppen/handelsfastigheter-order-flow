@@ -74,7 +74,7 @@ export default function CardComments({ cardId, profiles }: Props) {
     if (!content || !user) return;
 
     const { error } = await supabase
-      .from("planner_card_comments" as any)
+      .from("planner_card_comments")
       .insert({ card_id: cardId, user_id: user.id, content });
 
     if (error) {
