@@ -1,12 +1,13 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { Construction, LayoutDashboard, ShoppingCart } from "lucide-react";
+import { Construction, LayoutDashboard, ShoppingCart, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 const quickLinks = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Lägg en beställning", to: "/orders/new", icon: ShoppingCart },
+  { label: "IT-support", to: "/it-info", icon: Headphones },
 ];
 
 const NotFound = () => {

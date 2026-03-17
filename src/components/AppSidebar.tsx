@@ -21,7 +21,7 @@ const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
   { label: "Information", slugs: ["home", "news", "strategy", "knowledge", "documents"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "culture", "pulse"] },
-  { label: "IT & Verktyg", slugs: ["tools"] },
+  { label: "IT & Verktyg", slugs: ["it-support", "it-portal", "tools"] },
   { label: "Personligt", slugs: ["my-shf"] },
   // "admin" removed – accessed via profile menu
 ];

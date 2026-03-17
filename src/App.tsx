@@ -18,7 +18,7 @@ const NewOrder = lazy(() => import("./pages/NewOrder"));
 const Admin = lazy(() => import("./pages/Admin"));
 const OrgTree = lazy(() => import("./pages/OrgTree"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
-
+const ITInfo = lazy(() => import("./pages/ITInfo"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const History = lazy(() => import("./pages/History"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -59,7 +59,7 @@ const App = () => (
                       <Route path="/history" element={<History />} />
                       <Route path="/admin" element={<Admin />} />
                       <Route path="/org" element={<OrgTree />} />
-                      
+                      <Route path="/it-info" element={<ITInfo />} />
                       <Route path="/personal" element={<Personnel />} />
                       <Route path="/dokument" element={<Documents />} />
                       <Route path="/kunskapsbanken" element={<KnowledgeBase />} />

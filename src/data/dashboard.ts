@@ -36,5 +36,5 @@ export const quickTools = [
   { label: "Planon", emoji: "🔧" },
   { label: "Fortnox", emoji: "🧾" },
   { label: "DocuSign", emoji: "✍️" },
-  
+  { label: "IT-portalen", emoji: "💻" },
 ];
