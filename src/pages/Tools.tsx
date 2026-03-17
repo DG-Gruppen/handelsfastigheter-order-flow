@@ -20,7 +20,7 @@ export default function Tools() {
       .from("tools" as any)
       .select("*")
       .eq("is_active", true)
-      .order("sort_order")
+      .order("name")
       .then(({ data }) => {
         setTools(((data as unknown) as Tool[]) ?? []);
         setLoading(false);
