@@ -10,12 +10,12 @@ export interface PlannerCard {
   column_id: string;
   board_id: string;
   title: string;
-  description: string;
+  description: string | null;
   priority: "low" | "medium" | "high" | "urgent";
   assignee_id: string | null;
   reporter_id: string;
   due_date: string | null;
-  labels: string[];
+  labels: string[] | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -82,7 +82,7 @@ export default function KanbanCard({ card, assigneeName, onClick, overlay }: Pro
       </div>
 
       {/* Labels */}
-      {card.labels.length > 0 && (
+      {card.labels && card.labels.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {card.labels.map(label => (
             <Badge key={label} variant="secondary" className="text-[10px] px-1.5 py-0 h-5">

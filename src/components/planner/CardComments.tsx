@@ -37,11 +37,11 @@ export default function CardComments({ cardId, profiles }: Props) {
 
   const fetchComments = async () => {
     const { data } = await supabase
-      .from("planner_card_comments" as any)
+      .from("planner_card_comments")
       .select("*")
       .eq("card_id", cardId)
       .order("created_at", { ascending: true });
-    setComments(((data as unknown) as Comment[]) ?? []);
+    setComments((data as Comment[]) ?? []);
     setLoading(false);
   };
 
@@ -74,7 +74,7 @@ export default function CardComments({ cardId, profiles }: Props) {
     if (!content || !user) return;
 
     const { error } = await supabase
-      .from("planner_card_comments" as any)
+      .from("planner_card_comments")
       .insert({ card_id: cardId, user_id: user.id, content });
 
     if (error) {
@@ -85,7 +85,7 @@ export default function CardComments({ cardId, profiles }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("planner_card_comments" as any).delete().eq("id", id);
+    await supabase.from("planner_card_comments").delete().eq("id", id);
   };
 
   if (loading) {

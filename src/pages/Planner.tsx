@@ -16,6 +16,10 @@ import ColumnDialog from "@/components/planner/ColumnDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Kanban } from "lucide-react";
 import PlannerFilters, { EMPTY_FILTERS, type PlannerFilterState } from "@/components/planner/PlannerFilters";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Board {
   id: string;
@@ -46,6 +50,7 @@ export default function Planner() {
   const [defaultColumnId, setDefaultColumnId] = useState<string | undefined>();
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<PlannerColumn | null>(null);
+  const [confirmDeleteColumn, setConfirmDeleteColumn] = useState<PlannerColumn | null>(null);
 
   // Filters
   const [filters, setFilters] = useState<PlannerFilterState>(EMPTY_FILTERS);
@@ -97,11 +102,11 @@ export default function Planner() {
   // Fetch boards
   const fetchBoards = useCallback(async () => {
     const { data } = await supabase
-      .from("planner_boards" as any)
+      .from("planner_boards")
       .select("*")
       .order("sort_order");
 
-    const b = ((data as unknown) as Board[]) ?? [];
+    const b = (data ?? []) as Board[];
     setBoards(b);
     setActiveBoardId((current) => {
       if (b.length === 0) return null;
@@ -118,12 +123,12 @@ export default function Planner() {
     if (!activeBoardId) return;
 
     const [colRes, cardRes] = await Promise.all([
-      supabase.from("planner_columns" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
-      supabase.from("planner_cards" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
+      supabase.from("planner_columns").select("*").eq("board_id", activeBoardId).order("sort_order"),
+      supabase.from("planner_cards").select("*").eq("board_id", activeBoardId).order("sort_order"),
     ]);
 
-    setColumns(((colRes.data as unknown) as PlannerColumn[]) ?? []);
-    setCards(((cardRes.data as unknown) as PlannerCard[]) ?? []);
+    setColumns((colRes.data ?? []) as PlannerColumn[]);
+    setCards((cardRes.data ?? []) as PlannerCard[]);
   }, [activeBoardId]);
 
   // Fetch profiles
@@ -219,7 +224,7 @@ export default function Planner() {
     suppressBoardRealtime();
 
     const { data, error } = await supabase
-      .from("planner_boards" as any)
+      .from("planner_boards")
       .insert({ name, description, created_by: user.id, sort_order: boards.length })
       .select()
       .single();
@@ -229,7 +234,7 @@ export default function Planner() {
       return;
     }
 
-    const newBoard = (data as unknown) as Board;
+    const newBoard = data as Board;
     setBoards((prev) => [...prev, newBoard]);
     setActiveBoardId(newBoard.id);
 
@@ -242,7 +247,7 @@ export default function Planner() {
     ];
 
     await supabase
-      .from("planner_columns" as any)
+      .from("planner_columns")
       .insert(defaults.map((d) => ({ ...d, board_id: newBoard.id })));
 
     fetchBoardData();
@@ -252,7 +257,7 @@ export default function Planner() {
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
     suppressBoardRealtime();
     setBoards((prev) => prev.map((b) => (b.id === id ? { ...b, name, description } : b)));
-    await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
+    await supabase.from("planner_boards").update({ name, description }).eq("id", id);
     toast.success("Board uppdaterad");
   };
 
@@ -263,7 +268,7 @@ export default function Planner() {
       const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
-    await supabase.from("planner_boards" as any).delete().eq("id", id);
+    await supabase.from("planner_boards").delete().eq("id", id);
     toast.success("Board borttagen");
   };
 
@@ -274,7 +279,7 @@ export default function Planner() {
       const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
-    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
+    await supabase.from("planner_boards").update({ is_archived: true }).eq("id", id);
     toast.success("Board arkiverad");
   };
 
@@ -283,13 +288,13 @@ export default function Planner() {
 
     if (data.id) {
       await supabase
-        .from("planner_columns" as any)
+        .from("planner_columns")
         .update({ name: data.name, color: data.color, wip_limit: data.wip_limit })
         .eq("id", data.id);
       toast.success("Kolumn uppdaterad");
     } else {
       if (!activeBoardId) return;
-      await supabase.from("planner_columns" as any).insert({
+      await supabase.from("planner_columns").insert({
         name: data.name,
         color: data.color,
         wip_limit: data.wip_limit,
@@ -304,7 +309,7 @@ export default function Planner() {
 
   const handleDeleteColumn = async (id: string) => {
     suppressDataRealtime();
-    await supabase.from("planner_columns" as any).delete().eq("id", id);
+    await supabase.from("planner_columns").delete().eq("id", id);
     toast.success("Kolumn borttagen");
     fetchBoardData();
   };
@@ -315,13 +320,19 @@ export default function Planner() {
 
     if (data.id) {
       const { id, ...update } = data;
-      await supabase.from("planner_cards" as any).update(update).eq("id", id);
+      await supabase.from("planner_cards").update(update as any).eq("id", id);
       toast.success("Kort uppdaterat");
     } else {
       if (!user || !activeBoardId) return;
       const colCards = cards.filter((c) => c.column_id === data.column_id);
-      await supabase.from("planner_cards" as any).insert({
-        ...data,
+      await supabase.from("planner_cards").insert({
+        title: data.title!,
+        description: data.description ?? "",
+        priority: data.priority ?? "medium",
+        assignee_id: data.assignee_id ?? null,
+        due_date: data.due_date ?? null,
+        column_id: data.column_id!,
+        labels: data.labels ?? [],
         board_id: activeBoardId,
         reporter_id: user.id,
         sort_order: colCards.length,
@@ -334,7 +345,7 @@ export default function Planner() {
 
   const handleDeleteCard = async (id: string) => {
     suppressDataRealtime();
-    await supabase.from("planner_cards" as any).delete().eq("id", id);
+    await supabase.from("planner_cards").delete().eq("id", id);
     toast.success("Kort borttaget");
     fetchBoardData();
   };
@@ -414,7 +425,7 @@ export default function Planner() {
     }));
 
     for (const u of updates) {
-      await supabase.from("planner_cards" as any)
+      await supabase.from("planner_cards")
         .update({ column_id: u.column_id, sort_order: u.sort_order })
         .eq("id", u.id);
     }
@@ -490,7 +501,7 @@ export default function Planner() {
                         setEditingColumn(col);
                         setColumnDialogOpen(true);
                       }}
-                      onDeleteColumn={() => handleDeleteColumn(col.id)}
+                      onDeleteColumn={() => setConfirmDeleteColumn(col)}
                       onCardClick={(card) => {
                         setEditingCard(card);
                         setCardDialogOpen(true);
@@ -557,6 +568,27 @@ export default function Planner() {
         onClose={() => { setColumnDialogOpen(false); setEditingColumn(null); }}
         onSave={handleSaveColumn}
       />
+
+      {/* Column delete confirm */}
+      <AlertDialog open={!!confirmDeleteColumn} onOpenChange={v => !v && setConfirmDeleteColumn(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ta bort kolumn</AlertDialogTitle>
+            <AlertDialogDescription>
+              Är du säker på att du vill ta bort kolumnen <span className="font-semibold">"{confirmDeleteColumn?.name}"</span>? Alla kort i kolumnen raderas permanent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (confirmDeleteColumn) handleDeleteColumn(confirmDeleteColumn.id); setConfirmDeleteColumn(null); }}
+            >
+              Ta bort
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

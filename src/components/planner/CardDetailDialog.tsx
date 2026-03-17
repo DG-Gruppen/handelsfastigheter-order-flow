@@ -43,7 +43,7 @@ export default function CardDetailDialog({
   useEffect(() => {
     if (card) {
       setTitle(card.title);
-      setDescription(card.description);
+      setDescription(card.description ?? "");
       setPriority(card.priority);
       setAssigneeId(card.assignee_id ?? "");
       setDueDate(card.due_date ?? "");
