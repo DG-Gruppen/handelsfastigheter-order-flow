@@ -23,6 +23,7 @@ interface Props {
   cards: PlannerCard[];
   profileMap: Record<string, string>;
   checklistSummaries?: Record<string, ChecklistSummary>;
+  attachmentCounts?: Record<string, number>;
   onAddCard: () => void;
   onEditColumn: () => void;
   onDeleteColumn: () => void;
@@ -31,7 +32,7 @@ interface Props {
 }
 
 export default function KanbanColumn({
-  column, cards, profileMap, checklistSummaries, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
+  column, cards, profileMap, checklistSummaries, attachmentCounts, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
 }: Props) {
   const {
     attributes,
@@ -120,6 +121,7 @@ export default function KanbanColumn({
               reporterName={profileMap[card.reporter_id]}
               onClick={() => onCardClick(card)}
               checklistSummary={checklistSummaries?.[card.id]}
+              attachmentCount={attachmentCounts?.[card.id]}
             />
           ))}
         </SortableContext>

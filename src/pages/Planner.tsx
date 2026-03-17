@@ -124,6 +124,8 @@ export default function Planner() {
 
   // Checklist summaries per card
   const [checklistSummaries, setChecklistSummaries] = useState<Record<string, { total: number; checked: number }>>({});
+  // Attachment counts per card
+  const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
 
   // Fetch columns & cards for active board
   const fetchBoardData = useCallback(async () => {
@@ -169,6 +171,21 @@ export default function Planner() {
       } else {
         setChecklistSummaries({});
       }
+
+      // Fetch attachment counts
+      const { data: attData } = await supabase
+        .from("planner_card_attachments")
+        .select("card_id")
+        .in("card_id", cardIds);
+
+      const attCounts: Record<string, number> = {};
+      (attData ?? []).forEach((a: any) => {
+        attCounts[a.card_id] = (attCounts[a.card_id] || 0) + 1;
+      });
+      setAttachmentCounts(attCounts);
+    } else {
+      setChecklistSummaries({});
+      setAttachmentCounts({});
     }
   }, [activeBoardId]);
 
@@ -651,6 +668,7 @@ export default function Planner() {
                         cards={colCards}
                         profileMap={profileMap}
                         checklistSummaries={checklistSummaries}
+                        attachmentCounts={attachmentCounts}
                         onAddCard={() => {
                           setEditingCard(null);
                           setDefaultColumnId(col.id);
@@ -693,6 +711,7 @@ export default function Planner() {
                 onClick={() => {}}
                 overlay
                 checklistSummary={checklistSummaries[activeCard.id]}
+                attachmentCount={attachmentCounts[activeCard.id]}
               />
             )}
             {activeColumn && (
@@ -701,6 +720,7 @@ export default function Planner() {
                 cards={filteredCards.filter(c => c.column_id === activeColumn.id).sort((a, b) => a.sort_order - b.sort_order)}
                 profileMap={profileMap}
                 checklistSummaries={checklistSummaries}
+                attachmentCounts={attachmentCounts}
                 onAddCard={() => {}}
                 onEditColumn={() => {}}
                 onDeleteColumn={() => {}}
