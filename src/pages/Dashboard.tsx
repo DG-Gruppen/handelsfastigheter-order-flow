@@ -26,7 +26,7 @@ export default function Dashboard() {
       .from("recognitions")
       .select("id, icon, message, created_at, from_user_id, to_user_id")
       .order("created_at", { ascending: false })
-      .limit(5);
+      .limit(3);
     if (!data) return;
     const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
     const { data: profiles } = await supabase
@@ -144,20 +144,20 @@ export default function Dashboard() {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             {recognitions.length === 0 && (
-              <p className="text-sm text-muted-foreground">Inga erkännanden ännu. Var först med att uppmärksamma en kollega!</p>
+              <p className="text-xs text-muted-foreground">Inga erkännanden ännu. Var först med att uppmärksamma en kollega!</p>
             )}
             {recognitions.map((r) => (
-              <div key={r.id} className="flex items-start gap-3">
-                <span className="text-lg mt-0.5">{r.icon}</span>
+              <div key={r.id} className="flex items-start gap-2">
+                <span className="text-sm mt-0.5">{r.icon}</span>
                 <div className="min-w-0">
-                  <div className="text-sm">
+                  <div className="text-xs">
                     <span className="font-medium">{r.from_name}</span>
                     <span className="text-muted-foreground"> → </span>
                     <span className="font-medium">{r.to_name}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.message}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{r.message}</p>
                 </div>
               </div>
             ))}
