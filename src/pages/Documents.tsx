@@ -478,12 +478,12 @@ export default function Documents() {
 
                 {/* Subfolders */}
                 {currentSubfolders.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
                     {currentSubfolders.map(sub => (
                       <button
                         key={sub.id}
                         onClick={() => selectFolder(sub.id)}
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left"
+                        className="flex items-center gap-2 px-3 py-3 md:py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left min-h-[44px]"
                       >
                         <FolderOpen className="w-4 h-4 text-primary shrink-0" />
                         <span className="truncate font-medium">{sub.name}</span>
