@@ -554,7 +554,7 @@ export default function Documents() {
 /* ── Folder card with context menu ── */
 function FolderCard({
   folder, onClick, isAdmin, canWrite,
-  onNewFolder, onRename, onMove, onAccess, onDelete,
+  onNewFolder, onRename, onMove, onAccess, onChangeIcon, onDelete,
 }: {
   folder: DocFolder;
   onClick: () => void;
@@ -564,6 +564,7 @@ function FolderCard({
   onRename: () => void;
   onMove: () => void;
   onAccess: () => void;
+  onChangeIcon: () => void;
   onDelete: () => void;
 }) {
   const IconComponent = getModuleIcon(folder.icon);
@@ -596,6 +597,9 @@ function FolderCard({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }}>
               <Pencil className="w-4 h-4 mr-2" /> Byt namn
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onChangeIcon(); }}>
+              <Palette className="w-4 h-4 mr-2" /> Byt ikon
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }}>
               <FolderInput className="w-4 h-4 mr-2" /> Flytta
