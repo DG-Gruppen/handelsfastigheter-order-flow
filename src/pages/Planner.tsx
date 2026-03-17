@@ -79,8 +79,8 @@ export default function Planner() {
   const fetchBoardData = useCallback(async () => {
     if (!activeBoardId) return;
     const [colRes, cardRes] = await Promise.all([
-      supabase.from("planner_columns").select("*").eq("board_id", activeBoardId).order("sort_order"),
-      supabase.from("planner_cards").select("*").eq("board_id", activeBoardId).order("sort_order"),
+      supabase.from("planner_columns" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
+      supabase.from("planner_cards" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
     ]);
     setColumns((colRes.data as PlannerColumn[]) ?? []);
     setCards((cardRes.data as PlannerCard[]) ?? []);
