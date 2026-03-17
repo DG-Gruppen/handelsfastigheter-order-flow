@@ -381,8 +381,14 @@ export default function Planner() {
   // DnD handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const card = cards.find(c => c.id === active.id);
-    if (card) setActiveCard(card);
+    const dragType = active.data.current?.type;
+    if (dragType === "column") {
+      const col = columns.find(c => c.id === active.id);
+      if (col) setActiveColumn(col);
+    } else {
+      const card = cards.find(c => c.id === active.id);
+      if (card) setActiveCard(card);
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
