@@ -74,6 +74,36 @@ export type Database = {
           },
         ]
       }
+      ceo_blog: {
+        Row: {
+          author: string
+          created_at: string
+          excerpt: string
+          id: string
+          period: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          created_at?: string
+          excerpt?: string
+          id?: string
+          period?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          excerpt?: string
+          id?: string
+          period?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_index: {
         Row: {
           content: string
