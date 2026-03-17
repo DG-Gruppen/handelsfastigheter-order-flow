@@ -290,7 +290,6 @@ export default function Planner() {
     await supabase.from("planner_boards").update({ is_archived: false }).eq("id", id);
     toast.success("Board återställd");
   };
-  };
 
   const handleSaveColumn = async (data: { name: string; color: string | null; wip_limit: number | null; id?: string }) => {
     suppressDataRealtime();
