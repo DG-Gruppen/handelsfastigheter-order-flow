@@ -23,6 +23,8 @@ interface ModulesContextType {
   modules: Module[];
   accessibleModules: Module[];
   allAccess: ModuleAccess[];
+  allPermissions: FullModulePermission[];
+  userGroupIds: string[];
   loading: boolean;
   refresh: () => void;
 }
@@ -31,6 +33,8 @@ const ModulesContext = createContext<ModulesContextType>({
   modules: [],
   accessibleModules: [],
   allAccess: [],
+  allPermissions: [],
+  userGroupIds: [],
   loading: true,
   refresh: () => {},
 });
