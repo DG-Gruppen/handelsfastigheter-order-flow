@@ -83,6 +83,17 @@ export default function Admin() {
   const { roles } = useAuth();
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
 
+  // Responsive: detect compact mode
+  const [compact, setCompact] = useState(() => typeof window !== "undefined" && window.innerWidth < 1024);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const onChange = () => setCompact(mql.matches);
+    mql.addEventListener("change", onChange);
+    setCompact(mql.matches);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
   if (!roles.includes("admin")) {
     return (
       <div className="text-center py-20">
@@ -95,9 +106,6 @@ export default function Admin() {
   const visibleGroups = adminGroups
     .map(g => ({ ...g, items: g.items.filter(item => !item.roles || item.roles.some(r => roles.includes(r))) }))
     .filter(g => g.items.length > 0);
-
-  const allItems = visibleGroups.flatMap(g => g.items);
-  const activeItem = allItems.find(i => i.id === activeSection);
 
   const renderSection = (sectionId: AdminSection) => {
     switch (sectionId) {
