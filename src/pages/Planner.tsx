@@ -15,7 +15,7 @@ import CardDetailDialog from "@/components/planner/CardDetailDialog";
 import ColumnDialog from "@/components/planner/ColumnDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Kanban } from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
 
 interface Board {
   id: string;
