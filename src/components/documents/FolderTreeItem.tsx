@@ -112,6 +112,7 @@ function FolderTreeItemBase({
               onRename={onRename}
               onMove={onMove}
               onAccess={onAccess}
+              onChangeIcon={onChangeIcon}
               onDelete={onDelete}
             />
           ))}
