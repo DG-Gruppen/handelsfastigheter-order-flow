@@ -122,6 +122,9 @@ export default function Planner() {
     setLoading(false);
   }, []);
 
+  // Checklist summaries per card
+  const [checklistSummaries, setChecklistSummaries] = useState<Record<string, { total: number; checked: number }>>({});
+
   // Fetch columns & cards for active board
   const fetchBoardData = useCallback(async () => {
     if (!activeBoardId) return;
@@ -132,7 +135,41 @@ export default function Planner() {
     ]);
 
     setColumns((colRes.data ?? []) as PlannerColumn[]);
-    setCards((cardRes.data ?? []) as PlannerCard[]);
+    const fetchedCards = (cardRes.data ?? []) as PlannerCard[];
+    setCards(fetchedCards);
+
+    // Fetch checklist summaries for all cards in this board
+    if (fetchedCards.length > 0) {
+      const cardIds = fetchedCards.map(c => c.id);
+      const { data: clData } = await supabase
+        .from("planner_checklists")
+        .select("id, card_id")
+        .in("card_id", cardIds);
+
+      if (clData && clData.length > 0) {
+        const clIds = clData.map((c: any) => c.id);
+        const { data: itemData } = await supabase
+          .from("planner_checklist_items")
+          .select("checklist_id, checked")
+          .in("checklist_id", clIds);
+
+        const summaries: Record<string, { total: number; checked: number }> = {};
+        const clToCard: Record<string, string> = {};
+        clData.forEach((cl: any) => { clToCard[cl.id] = cl.card_id; });
+
+        (itemData ?? []).forEach((item: any) => {
+          const cId = clToCard[item.checklist_id];
+          if (!cId) return;
+          if (!summaries[cId]) summaries[cId] = { total: 0, checked: 0 };
+          summaries[cId].total++;
+          if (item.checked) summaries[cId].checked++;
+        });
+
+        setChecklistSummaries(summaries);
+      } else {
+        setChecklistSummaries({});
+      }
+    }
   }, [activeBoardId]);
 
   // Fetch profiles
