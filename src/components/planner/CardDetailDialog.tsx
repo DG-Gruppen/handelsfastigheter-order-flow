@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trash2, X, Plus, CreditCard, Users, Tag, CheckSquare, Calendar,
-  Paperclip, ArrowRight, FileText, Pencil, AlignLeft,
+  Paperclip, ArrowRight, FileText, Pencil, AlignLeft, Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlannerCard } from "./KanbanCard";
