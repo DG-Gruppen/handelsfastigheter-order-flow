@@ -45,7 +45,8 @@ interface OrderSystem { id: string; system: { id: string; name: string; descript
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, roles } = useAuth();
-  const isAdmin = roles.includes("admin");
+  const { canEdit: canEditAdmin } = useModulePermission("admin");
+  const isAdmin = roles.includes("admin") || canEditAdmin;
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [orderSystems, setOrderSystems] = useState<OrderSystem[]>([]);
