@@ -24,6 +24,7 @@ export interface PlannerCard {
 interface Props {
   card: PlannerCard;
   assigneeName?: string;
+  reporterName?: string;
   onClick: () => void;
   overlay?: boolean;
 }
@@ -35,7 +36,7 @@ const priorityConfig = {
   low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", label: "Låg" },
 };
 
-export default function KanbanCard({ card, assigneeName, onClick, overlay }: Props) {
+export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", card },
@@ -92,7 +93,7 @@ export default function KanbanCard({ card, assigneeName, onClick, overlay }: Pro
         </div>
       )}
 
-      {/* Footer: priority, due date, assignee */}
+      {/* Footer: priority, due date, reporter, assignee */}
       <div className="flex items-center justify-between mt-2.5 gap-2">
         <div className="flex items-center gap-2">
           <span className={cn("flex items-center gap-0.5 text-[10px] font-medium rounded-md px-1.5 py-0.5", pri.bg, pri.color)}>
@@ -109,13 +110,20 @@ export default function KanbanCard({ card, assigneeName, onClick, overlay }: Pro
             </span>
           )}
         </div>
-        {initials && (
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-[9px] font-semibold bg-primary/10 text-primary">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        )}
+        <div className="flex items-center gap-1.5">
+          {reporterName && (
+            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]" title={`Skapad av ${reporterName}`}>
+              {reporterName.split(" ")[0]}
+            </span>
+          )}
+          {initials && (
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[9px] font-semibold bg-primary/10 text-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
       </div>
     </div>
   );
