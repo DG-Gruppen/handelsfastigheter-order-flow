@@ -124,6 +124,8 @@ export default function Planner() {
 
   // Checklist summaries per card
   const [checklistSummaries, setChecklistSummaries] = useState<Record<string, { total: number; checked: number }>>({});
+  // Attachment counts per card
+  const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
 
   // Fetch columns & cards for active board
   const fetchBoardData = useCallback(async () => {
