@@ -117,6 +117,11 @@ const adminGroups: AdminGroup[] = [
         icon: Users, color: "from-warning to-warning", borderColor: "border-t-warning/40",
         bgColor: "bg-warning/10", textColor: "text-warning",
       },
+      {
+        id: "groups", label: "Grupper", description: "Skapa och hantera grupper",
+        icon: Users, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
+        bgColor: "bg-primary/10", textColor: "text-primary",
+      },
     ],
   },
   {
