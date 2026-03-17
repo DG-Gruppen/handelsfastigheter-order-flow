@@ -11,6 +11,7 @@ import {
 
 import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
 import RecognitionDialog from "@/components/RecognitionDialog";
+import HomepageSuggestion from "@/components/HomepageSuggestion";
 import { newsPosts } from "@/data/news";
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
