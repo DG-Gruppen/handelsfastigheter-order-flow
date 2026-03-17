@@ -98,6 +98,11 @@ export default function ToolsManager() {
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_active: !t.is_active } : t));
   };
 
+  const handleToggleStar = async (tool: Tool) => {
+    await supabase.from("tools" as any).update({ is_starred: !tool.is_starred }).eq("id", tool.id);
+    setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_starred: !t.is_starred } : t));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
