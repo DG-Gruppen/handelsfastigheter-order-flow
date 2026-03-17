@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, Search, Upload, FolderPlus, FolderUp, X, Trash2,
-  FolderInput, Download, ChevronRight, ArrowUp,
+  FolderInput, Download, ChevronRight, Home, Shield, MoreHorizontal, Pencil,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,13 +10,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
-import FolderTreeItem from "@/components/documents/FolderTreeItem";
 import FileRow from "@/components/documents/FileRow";
-import { TextPreview, formatFileSize, canPreview, isOfficeMime } from "@/components/documents/documentHelpers";
+import { TextPreview, formatFileSize, canPreview, isOfficeMime, getFileIcon } from "@/components/documents/documentHelpers";
 import {
   NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog,
 } from "@/components/documents/DocumentDialogs";
+import { getModuleIcon } from "@/lib/moduleIcons";
 
 export default function Documents() {
   const {
@@ -26,8 +30,7 @@ export default function Documents() {
     refresh,
   } = useDocuments();
 
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   // Dialogs
@@ -45,30 +48,31 @@ export default function Documents() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Tree structure ──
-  const rootFolders = useMemo(() => folders.filter(f => !f.parent_id).sort((a, b) => a.name.localeCompare(b.name, "sv-SE")), [folders]);
-  const childrenOf = useCallback((parentId: string) => folders.filter(f => f.parent_id === parentId).sort((a, b) => a.name.localeCompare(b.name, "sv-SE")), [folders]);
+  // ── Current view data ──
+  const currentSubfolders = useMemo(() =>
+    folders
+      .filter(f => f.parent_id === currentFolderId)
+      .sort((a, b) => a.name.localeCompare(b.name, "sv-SE")),
+    [folders, currentFolderId]
+  );
 
   const currentFiles = useMemo(() => {
-    if (!selectedFolderId) return [];
-    return files.filter(f => f.folder_id === selectedFolderId);
-  }, [files, selectedFolderId]);
-
-  const currentSubfolders = useMemo(() => {
-    if (!selectedFolderId) return [];
-    return folders.filter(f => f.parent_id === selectedFolderId).sort((a, b) => a.name.localeCompare(b.name, "sv-SE"));
-  }, [folders, selectedFolderId]);
+    if (!currentFolderId) return [];
+    return files.filter(f => f.folder_id === currentFolderId);
+  }, [files, currentFolderId]);
 
   const breadcrumbPath = useMemo(() => {
-    if (!selectedFolderId) return [];
+    if (!currentFolderId) return [];
     const path: DocFolder[] = [];
-    let current = folders.find(f => f.id === selectedFolderId);
+    let current = folders.find(f => f.id === currentFolderId);
     while (current) {
       path.unshift(current);
       current = current.parent_id ? folders.find(f => f.id === current!.parent_id) : undefined;
     }
     return path;
-  }, [folders, selectedFolderId]);
+  }, [folders, currentFolderId]);
+
+  const currentFolder = folders.find(f => f.id === currentFolderId);
 
   const searchResults = useMemo(() => {
     if (!search) return null;
@@ -79,8 +83,8 @@ export default function Documents() {
     };
   }, [search, files, folders]);
 
-  const selectedFolder = folders.find(f => f.id === selectedFolderId);
-  const canCreateFolderInCurrentContext = isAdmin || (selectedFolderId ? canWriteFolder(selectedFolderId) : false);
+  const canWrite = currentFolderId ? (isAdmin || canWriteFolder(currentFolderId)) : isAdmin;
+  const canCreateFolder = isAdmin || (currentFolderId ? canWriteFolder(currentFolderId) : false);
 
   // ── Multi-select ──
   const toggleFileSelection = (fileId: string) => {
@@ -109,6 +113,13 @@ export default function Documents() {
     toast({ title: `${selectedFiles.size} filer flyttade` });
   };
 
+  // ── Navigate ──
+  const navigateTo = useCallback((folderId: string | null) => {
+    setCurrentFolderId(folderId);
+    setSearch("");
+    setSelectedFiles(new Set());
+  }, []);
+
   // ── Preview ──
   const openPreview = async (file: DocFile) => {
     if (file.mime_type === "application/pdf" || isOfficeMime(file.mime_type)) {
@@ -134,33 +145,6 @@ export default function Documents() {
     setPreviewUrl(null);
     setPreviewFile(null);
   };
-
-  const toggleExpand = useCallback((id: string) => {
-    setExpandedFolders(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const selectFolder = useCallback((id: string) => {
-    setSelectedFolderId(id);
-    setSearch("");
-    setSelectedFiles(new Set());
-    let current = folders.find(f => f.id === id);
-    const toExpand = new Set(expandedFolders);
-    while (current?.parent_id) {
-      toExpand.add(current.parent_id);
-      current = folders.find(f => f.id === current!.parent_id);
-    }
-    toExpand.add(id);
-    setExpandedFolders(toExpand);
-  }, [folders, expandedFolders]);
-
-  // Auto-select first folder
-  if (!selectedFolderId && rootFolders.length > 0 && !loading) {
-    selectFolder(rootFolders[0].id);
-  }
 
   const handleBatchUpload = useCallback(async (fileList: FileList, targetFolderId: string) => {
     const fileArray = Array.from(fileList);
@@ -230,14 +214,14 @@ export default function Documents() {
   }, [folders, uploadFile, createFolder, refresh]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedFolderId || !e.target.files) return;
-    handleBatchUpload(e.target.files, selectedFolderId);
+    if (!currentFolderId || !e.target.files) return;
+    handleBatchUpload(e.target.files, currentFolderId);
     e.target.value = "";
   };
 
   const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedFolderId || !e.target.files) return;
-    handleBatchUpload(e.target.files, selectedFolderId);
+    if (!currentFolderId || !e.target.files) return;
+    handleBatchUpload(e.target.files, currentFolderId);
     e.target.value = "";
   };
 
@@ -249,258 +233,250 @@ export default function Documents() {
     );
   }
 
+  const isRoot = currentFolderId === null;
+  const itemCount = currentSubfolders.length + currentFiles.length;
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
             <FolderOpen className="h-7 w-7 text-primary" /> Dokument
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Policys, mallar och riktlinjer</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Policys, mallar och riktlinjer</p>
         </div>
-        {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
-          <div className="flex gap-2">
-            {canCreateFolderInCurrentContext && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNewFolderDialog({ parentId: isAdmin ? null : selectedFolderId })}
-                disabled={!isAdmin && !selectedFolderId}
-              >
-                <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
+        <div className="flex gap-2 flex-wrap">
+          {canCreateFolder && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNewFolderDialog({ parentId: currentFolderId })}
+            >
+              <FolderPlus className="w-4 h-4 mr-2" /> Ny mapp
+            </Button>
+          )}
+          {canWrite && currentFolderId && (
+            <>
+              <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!!uploadProgress}>
+                <Upload className="w-4 h-4 mr-2" /> Filer
               </Button>
-            )}
-            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={!selectedFolderId || !!uploadProgress}>
-              <Upload className="w-4 h-4 mr-2" /> Filer
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()} disabled={!selectedFolderId || !!uploadProgress}>
-              <FolderUp className="w-4 h-4 mr-2" /> Mapp
-            </Button>
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileUpload} />
-            <input ref={folderInputRef} type="file" className="hidden" onChange={handleFolderUpload}
-              {...({ webkitdirectory: "", directory: "", mozdirectory: "" } as any)} />
-            {uploadProgress && (
-              <span className="text-xs text-muted-foreground self-center">
-                {uploadProgress.done}/{uploadProgress.total} filer…
+              <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()} disabled={!!uploadProgress}>
+                <FolderUp className="w-4 h-4 mr-2" /> Mapp
+              </Button>
+            </>
+          )}
+          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileUpload} />
+          <input ref={folderInputRef} type="file" className="hidden" onChange={handleFolderUpload}
+            {...({ webkitdirectory: "", directory: "", mozdirectory: "" } as any)} />
+          {uploadProgress && (
+            <span className="text-xs text-muted-foreground self-center">
+              {uploadProgress.done}/{uploadProgress.total} filer…
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Breadcrumbs + Search */}
+      <div className="bg-card rounded-xl border border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border-b border-border">
+          {/* Breadcrumbs */}
+          <div className="flex items-center gap-1 text-sm flex-1 min-w-0 flex-wrap">
+            <button
+              onClick={() => navigateTo(null)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isRoot ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>Hem</span>
+            </button>
+            {breadcrumbPath.map((f, i) => (
+              <span key={f.id} className="flex items-center gap-1">
+                <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                {i === breadcrumbPath.length - 1 ? (
+                  <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium truncate max-w-[200px]">{f.name}</span>
+                ) : (
+                  <button onClick={() => navigateTo(f.id)} className="px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors truncate max-w-[150px]">
+                    {f.name}
+                  </button>
+                )}
               </span>
-            )}
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative w-full sm:w-64 shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Sök..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 h-9 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+        </div>
+
+        {/* Bulk action bar */}
+        {selectedFiles.size > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border-b border-border">
+            <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
+            <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
+              <FolderInput className="w-4 h-4 mr-1" /> Flytta
+            </Button>
+            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+              <Trash2 className="w-4 h-4 mr-1" /> Ta bort
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         )}
-      </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Sök filer och mappar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 h-12 md:h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        />
-      </div>
-
-      {/* Search results or main layout */}
-      {searchResults ? (
-        <div className="bg-card rounded-lg border border-border p-4 space-y-4">
-          <h2 className="font-heading font-semibold text-lg">Sökresultat för "{search}"</h2>
-          {searchResults.folders.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Mappar</p>
-              {searchResults.folders.map(f => (
-                <button key={f.id} onClick={() => selectFolder(f.id)} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-secondary w-full text-left text-sm">
-                  <FolderOpen className="w-4 h-4 text-primary" /> {f.name}
-                </button>
-              ))}
-            </div>
-          )}
-          {searchResults.files.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Filer</p>
-              {searchResults.files.map(f => (
-                <FileRow
-                  key={f.id}
-                  file={f}
-                  isSelected={selectedFiles.has(f.id)}
-                  canWrite={isAdmin || canWriteFolder(f.folder_id)}
-                  onToggleSelect={toggleFileSelection}
-                  onPreview={openPreview}
-                  onDownload={downloadFile}
-                  onRename={(id, name) => setRenameDialog({ type: "file", id, name })}
-                  onMove={(id, name) => setMoveDialog({ type: "file", id, name })}
-                  onDelete={(id, name) => setDeleteConfirm({ type: "file", id, name })}
-                />
-              ))}
-            </div>
-          )}
-          {searchResults.folders.length === 0 && searchResults.files.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4">Inga resultat hittades.</p>
-          )}
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
-          {/* Folder tree */}
-          <div className="bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
-            <div
-              className={`flex items-center gap-1.5 px-2 py-2 md:py-1.5 rounded-md text-sm cursor-pointer transition-colors min-h-[44px] md:min-h-0 font-semibold ${
-                selectedFolderId === null && !search ? "bg-primary text-primary-foreground" : "hover:bg-secondary text-foreground"
-              }`}
-              onClick={() => { setSelectedFolderId(null); setSearch(""); }}
-            >
-              <FolderOpen className="w-4 h-4 shrink-0" /> <span>Hem</span>
-            </div>
-            {rootFolders.length === 0 ? (
-              <p className="text-sm text-muted-foreground p-3">Inga mappar ännu.</p>
-            ) : (
-              <div className="ml-2 border-l border-border pl-1 mt-0.5 space-y-0.5">
-                {rootFolders.map(f => (
-                  <FolderTreeItem
-                    key={f.id}
-                    folder={f}
-                    childrenOf={childrenOf}
-                    expandedFolders={expandedFolders}
-                    selectedFolderId={selectedFolderId}
-                    isAdmin={isAdmin}
-                    canWriteFolder={canWriteFolder}
-                    onSelect={selectFolder}
-                    onToggleExpand={toggleExpand}
-                    onNewFolder={(parentId) => setNewFolderDialog({ parentId })}
-                    onRename={(id, name) => setRenameDialog({ type: "folder", id, name })}
-                    onMove={(id, name) => setMoveDialog({ type: "folder", id, name })}
-                    onAccess={(folder) => setAccessDialog(folder)}
-                    onDelete={(id, name) => setDeleteConfirm({ type: "folder", id, name })}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* File list */}
-          <div className="bg-card rounded-lg border border-border p-4">
-            {selectedFolder ? (
-              <>
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1 mb-3 text-sm flex-wrap">
-                  <button onClick={() => { setSelectedFolderId(null); setSearch(""); }} className="text-muted-foreground hover:text-foreground transition-colors">
-                    Hem
-                  </button>
-                  {breadcrumbPath.map((f, i) => (
-                    <span key={f.id} className="flex items-center gap-1">
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
-                      {i === breadcrumbPath.length - 1 ? (
-                        <span className="font-medium text-foreground">{f.name}</span>
-                      ) : (
-                        <button onClick={() => selectFolder(f.id)} className="text-muted-foreground hover:text-foreground transition-colors">
-                          {f.name}
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {selectedFolder.parent_id && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => selectFolder(selectedFolder.parent_id!)}
-                        title="Gå upp en nivå"
-                      >
-                        <ArrowUp className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {(isAdmin || canWriteFolder(selectedFolder.id)) && currentFiles.length > 0 && (
-                      <Checkbox
-                        checked={selectedFiles.size === currentFiles.length && currentFiles.length > 0}
-                        onCheckedChange={toggleSelectAll}
-                        title="Markera alla"
+        {/* Content area */}
+        <div className="p-4 min-h-[400px]">
+          {searchResults ? (
+            /* Search results */
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Sökresultat för "<span className="font-medium text-foreground">{search}</span>"</p>
+              {searchResults.folders.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Mappar</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {searchResults.folders.map(f => (
+                      <FolderCard key={f.id} folder={f} onClick={() => navigateTo(f.id)} isAdmin={isAdmin} canWrite={canWriteFolder(f.id)}
+                        onNewFolder={() => setNewFolderDialog({ parentId: f.id })}
+                        onRename={() => setRenameDialog({ type: "folder", id: f.id, name: f.name })}
+                        onMove={() => setMoveDialog({ type: "folder", id: f.id, name: f.name })}
+                        onAccess={() => setAccessDialog(f)}
+                        onDelete={() => setDeleteConfirm({ type: "folder", id: f.id, name: f.name })}
                       />
-                    )}
-                    <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {currentSubfolders.length > 0 && `${currentSubfolders.length} ${currentSubfolders.length === 1 ? "mapp" : "mappar"} · `}
-                    {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
-                  </span>
-                </div>
-
-                {selectedFiles.size > 0 && (
-                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20">
-                    <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
-                    <div className="flex-1" />
-                    <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
-                      <FolderInput className="w-4 h-4 mr-1" /> Flytta
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
-                      <Trash2 className="w-4 h-4 mr-1" /> Ta bort
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={clearSelection}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Subfolders */}
-                {currentSubfolders.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                    {currentSubfolders.map(sub => (
-                      <button
-                        key={sub.id}
-                        onClick={() => selectFolder(sub.id)}
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-secondary/50 hover:border-primary/20 transition-colors text-sm text-left"
-                      >
-                        <FolderOpen className="w-4 h-4 text-primary shrink-0" />
-                        <span className="truncate font-medium">{sub.name}</span>
-                      </button>
                     ))}
                   </div>
-                )}
-
-                {currentFiles.length === 0 && currentSubfolders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                    <FileText className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">Inga filer i denna mapp</p>
-                    {(isAdmin || (selectedFolderId && canWriteFolder(selectedFolderId))) && (
-                      <div className="flex gap-2 mt-3">
-                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                          <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => folderInputRef.current?.click()}>
-                          <FolderUp className="w-4 h-4 mr-2" /> Ladda upp mapp
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : currentFiles.length > 0 ? (
+                </div>
+              )}
+              {searchResults.files.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Filer</p>
                   <div className="space-y-1">
-                    {currentFiles.map(f => (
+                    {searchResults.files.map(f => (
                       <FileRow
-                        key={f.id}
-                        file={f}
+                        key={f.id} file={f}
                         isSelected={selectedFiles.has(f.id)}
                         canWrite={isAdmin || canWriteFolder(f.folder_id)}
                         onToggleSelect={toggleFileSelection}
-                        onPreview={openPreview}
-                        onDownload={downloadFile}
+                        onPreview={openPreview} onDownload={downloadFile}
                         onRename={(id, name) => setRenameDialog({ type: "file", id, name })}
                         onMove={(id, name) => setMoveDialog({ type: "file", id, name })}
                         onDelete={(id, name) => setDeleteConfirm({ type: "file", id, name })}
                       />
                     ))}
                   </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <p className="text-sm">Välj en mapp till vänster</p>
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+              {searchResults.folders.length === 0 && searchResults.files.length === 0 && (
+                <div className="flex flex-col items-center py-12 text-muted-foreground">
+                  <Search className="w-10 h-10 mb-3 opacity-20" />
+                  <p className="text-sm">Inga resultat hittades</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Folder contents */
+            <>
+              {/* Select-all row */}
+              {canWrite && currentFiles.length > 0 && (
+                <div className="flex items-center gap-3 mb-3 pb-2 border-b border-border">
+                  <Checkbox
+                    checked={selectedFiles.size === currentFiles.length && currentFiles.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {currentSubfolders.length > 0 && `${currentSubfolders.length} ${currentSubfolders.length === 1 ? "mapp" : "mappar"} · `}
+                    {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
+                  </span>
+                </div>
+              )}
+
+              {/* Subfolders */}
+              {currentSubfolders.length > 0 && (
+                <div className="mb-4">
+                  {currentFiles.length > 0 && (
+                    <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Mappar</p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {currentSubfolders.map(sub => (
+                      <FolderCard key={sub.id} folder={sub} onClick={() => navigateTo(sub.id)} isAdmin={isAdmin} canWrite={canWriteFolder(sub.id)}
+                        onNewFolder={() => setNewFolderDialog({ parentId: sub.id })}
+                        onRename={() => setRenameDialog({ type: "folder", id: sub.id, name: sub.name })}
+                        onMove={() => setMoveDialog({ type: "folder", id: sub.id, name: sub.name })}
+                        onAccess={() => setAccessDialog(sub)}
+                        onDelete={() => setDeleteConfirm({ type: "folder", id: sub.id, name: sub.name })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Files */}
+              {currentFiles.length > 0 && (
+                <div>
+                  {currentSubfolders.length > 0 && (
+                    <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Filer</p>
+                  )}
+                  <div className="space-y-1">
+                    {currentFiles.map(f => (
+                      <FileRow
+                        key={f.id} file={f}
+                        isSelected={selectedFiles.has(f.id)}
+                        canWrite={isAdmin || canWriteFolder(f.folder_id)}
+                        onToggleSelect={toggleFileSelection}
+                        onPreview={openPreview} onDownload={downloadFile}
+                        onRename={(id, name) => setRenameDialog({ type: "file", id, name })}
+                        onMove={(id, name) => setMoveDialog({ type: "file", id, name })}
+                        onDelete={(id, name) => setDeleteConfirm({ type: "file", id, name })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {itemCount === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  {isRoot ? (
+                    <>
+                      <FolderOpen className="w-14 h-14 mb-4 opacity-20" />
+                      <p className="text-base font-medium mb-1">Inga mappar ännu</p>
+                      <p className="text-sm mb-4">Skapa din första mapp för att komma igång</p>
+                      {isAdmin && (
+                        <Button variant="outline" onClick={() => setNewFolderDialog({ parentId: null })}>
+                          <FolderPlus className="w-4 h-4 mr-2" /> Skapa mapp
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-12 h-12 mb-3 opacity-20" />
+                      <p className="text-sm mb-3">Denna mapp är tom</p>
+                      {canWrite && (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="w-4 h-4 mr-2" /> Ladda upp filer
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setNewFolderDialog({ parentId: currentFolderId })}>
+                            <FolderPlus className="w-4 h-4 mr-2" /> Ny undermapp
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Dialogs */}
       <NewFolderDialog open={!!newFolderDialog} parentId={newFolderDialog?.parentId ?? null} onClose={() => setNewFolderDialog(null)} onCreate={createFolder} />
@@ -567,6 +543,71 @@ export default function Documents() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ── Folder card with context menu ── */
+function FolderCard({
+  folder, onClick, isAdmin, canWrite,
+  onNewFolder, onRename, onMove, onAccess, onDelete,
+}: {
+  folder: DocFolder;
+  onClick: () => void;
+  isAdmin: boolean;
+  canWrite: boolean;
+  onNewFolder: () => void;
+  onRename: () => void;
+  onMove: () => void;
+  onAccess: () => void;
+  onDelete: () => void;
+}) {
+  const IconComponent = getModuleIcon(folder.icon);
+  const showMenu = isAdmin || canWrite;
+
+  return (
+    <div
+      className="group relative flex items-center gap-3 px-4 py-3 rounded-lg border border-border hover:border-primary/30 hover:bg-secondary/50 cursor-pointer transition-all min-h-[52px]"
+      onClick={onClick}
+    >
+      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <IconComponent className="w-4.5 h-4.5 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{folder.name}</p>
+      </div>
+      {folder.access_roles && (
+        <Shield className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+      )}
+      {showMenu && (
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <button className="opacity-0 group-hover:opacity-100 shrink-0 p-1.5 rounded-md hover:bg-background transition-opacity">
+              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onNewFolder(); }}>
+              <FolderPlus className="w-4 h-4 mr-2" /> Ny undermapp
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }}>
+              <Pencil className="w-4 h-4 mr-2" /> Byt namn
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }}>
+              <FolderInput className="w-4 h-4 mr-2" /> Flytta
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAccess(); }}>
+                <Shield className="w-4 h-4 mr-2" /> Behörighet
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+              <Trash2 className="w-4 h-4 mr-2" /> Ta bort
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
