@@ -157,6 +157,7 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
           )}
         </div>
       </div>
+      </div>
     </div>
   );
 }
