@@ -30,6 +30,7 @@ export function useDocuments() {
   const [folders, setFolders] = useState<DocFolder[]>([]);
   const [files, setFiles] = useState<DocFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasModuleEdit, setHasModuleEdit] = useState(false);
   const isAdmin = roles.includes("admin");
 
   const fetchData = useCallback(async () => {
@@ -41,6 +42,52 @@ export function useDocuments() {
     setFiles((filesRes.data as DocFile[]) ?? []);
     setLoading(false);
   }, []);
+
+  // Check if user has module-level edit/owner permission on the documents module
+  useEffect(() => {
+    if (!user || isAdmin) return;
+    (async () => {
+      // Get the documents module id
+      const { data: mod } = await supabase
+        .from("modules")
+        .select("id")
+        .eq("slug", "documents")
+        .maybeSingle();
+      if (!mod) return;
+
+      // Check user-level permission
+      const { data: userPerm } = await supabase
+        .from("module_permissions")
+        .select("can_edit, is_owner")
+        .eq("module_id", mod.id)
+        .eq("grantee_type", "user")
+        .eq("grantee_id", user.id);
+
+      if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) {
+        setHasModuleEdit(true);
+        return;
+      }
+
+      // Check group-level permission
+      const { data: groups } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user.id);
+      if (!groups?.length) return;
+
+      const groupIds = groups.map((g: any) => g.group_id);
+      const { data: groupPerm } = await supabase
+        .from("module_permissions")
+        .select("can_edit, is_owner")
+        .eq("module_id", mod.id)
+        .eq("grantee_type", "group")
+        .in("grantee_id", groupIds);
+
+      if (groupPerm?.some((p: any) => p.can_edit || p.is_owner)) {
+        setHasModuleEdit(true);
+      }
+    })();
+  }, [user?.id, isAdmin]);
 
   useEffect(() => {
     fetchData();
