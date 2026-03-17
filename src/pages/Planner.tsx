@@ -417,6 +417,31 @@ export default function Planner() {
     fetchBoardData();
   };
 
+  const handleCopyCard = async (id: string) => {
+    if (!user || !activeBoardId) return;
+    suppressDataRealtime();
+    const source = cards.find(c => c.id === id);
+    if (!source) return;
+    const colCards = cards.filter(c => c.column_id === source.column_id);
+    await supabase.from("planner_cards").insert({
+      title: `${source.title} (kopia)`,
+      description: source.description ?? "",
+      priority: source.priority,
+      assignee_id: source.assignee_id,
+      due_date: source.due_date,
+      due_done: false,
+      column_id: source.column_id,
+      labels: source.labels ?? [],
+      cover_color: source.cover_color ?? null,
+      board_id: activeBoardId,
+      reporter_id: user.id,
+      sort_order: colCards.length,
+    } as any);
+    toast.success("Kort kopierat");
+    logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "created", entityType: "card", entityName: `${source.title} (kopia)` });
+    fetchBoardData();
+  };
+
   // DnD handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
