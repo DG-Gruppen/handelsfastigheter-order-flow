@@ -242,7 +242,7 @@ export default function Planner() {
     ];
 
     await supabase
-      .from("planner_columns" as any)
+      .from("planner_columns")
       .insert(defaults.map((d) => ({ ...d, board_id: newBoard.id })));
 
     fetchBoardData();
