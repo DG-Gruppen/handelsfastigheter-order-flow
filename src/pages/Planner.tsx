@@ -16,6 +16,10 @@ import ColumnDialog from "@/components/planner/ColumnDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Kanban } from "lucide-react";
 import PlannerFilters, { EMPTY_FILTERS, type PlannerFilterState } from "@/components/planner/PlannerFilters";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Board {
   id: string;
