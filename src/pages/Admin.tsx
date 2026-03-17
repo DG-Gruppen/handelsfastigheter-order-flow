@@ -14,13 +14,14 @@ import UsersContent from "@/components/admin/UsersContent";
 import SettingsContent from "@/components/admin/SettingsContent";
 import ITContent from "@/components/admin/ITContent";
 import ToolsManager from "@/components/admin/ToolsManager";
+import NewsAdminPanel from "@/components/news/NewsAdminPanel";
 import {
   Shield, Users, ChevronLeft,
-  Settings, Monitor,
+  Settings, Monitor, Newspaper,
   Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news";
 
 interface AdminGroup {
   label: string;
