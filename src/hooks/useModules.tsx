@@ -78,6 +78,25 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     fetchModules();
   }, [user?.id]);
 
+  // Realtime: refresh when module_permissions change
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("module-permissions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "module_permissions" },
+        () => fetchModules()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_members" },
+        () => fetchModules()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   // Memoize accessible modules to prevent unnecessary re-renders downstream
   const accessibleModules = useMemo(() => {
     return modules.filter((m) => {
