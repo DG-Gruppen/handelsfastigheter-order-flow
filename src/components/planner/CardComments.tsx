@@ -37,11 +37,11 @@ export default function CardComments({ cardId, profiles }: Props) {
 
   const fetchComments = async () => {
     const { data } = await supabase
-      .from("planner_card_comments" as any)
+      .from("planner_card_comments")
       .select("*")
       .eq("card_id", cardId)
       .order("created_at", { ascending: true });
-    setComments(((data as unknown) as Comment[]) ?? []);
+    setComments((data as Comment[]) ?? []);
     setLoading(false);
   };
 
