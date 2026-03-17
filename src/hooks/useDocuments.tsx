@@ -153,6 +153,13 @@ export function useDocuments() {
     fetchData();
   };
 
+  const updateFolderIcon = async (id: string, icon: string) => {
+    const { error } = await supabase.from("document_folders").update({ icon } as any).eq("id", id);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Ikon uppdaterad" });
+    fetchData();
+  };
+
   // Check if current user can write to a specific folder
   const canWriteFolder = (folderId: string): boolean => {
     if (isAdmin) return true;
