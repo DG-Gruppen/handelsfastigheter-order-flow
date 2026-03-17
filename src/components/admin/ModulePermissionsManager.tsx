@@ -136,14 +136,19 @@ export default function ModulePermissionsManager() {
 
   const handleToggle = async (permId: string, field: string, value: boolean) => {
     const update: any = { [field]: value };
-    // If setting owner, also enable all other permissions
     if (field === "is_owner" && value) {
       update.can_view = true;
       update.can_edit = true;
       update.can_delete = true;
     }
-    await supabase.from("module_permissions").update(update).eq("id", permId);
-    fetchData();
+    const { error } = await supabase.from("module_permissions").update(update).eq("id", permId);
+    if (error) {
+      toast.error("Kunde inte uppdatera rättighet");
+      return;
+    }
+    toast.success("Rättighet uppdaterad");
+    await fetchData();
+    refreshSidebar();
   };
 
   const handleRemovePermission = async (permId: string) => {
