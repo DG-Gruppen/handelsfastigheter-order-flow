@@ -2,7 +2,7 @@ import {
   Home, Plus, UserPlus, History, Headphones, Building2, Settings,
   Target, Newspaper, Building, Users, FolderOpen, BookOpen,
   Heart, BarChart3, User, LayoutGrid, Monitor, Package,
-  Palette, Calculator, Leaf, Shield,
+  Palette, Calculator, Leaf, Shield, Kanban,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -30,6 +30,7 @@ const moduleIconMap: Record<string, LucideIcon> = {
   calculator: Calculator,
   leaf: Leaf,
   shield: Shield,
+  kanban: Kanban,
 };
 
 export function getModuleIcon(name: string): LucideIcon {
