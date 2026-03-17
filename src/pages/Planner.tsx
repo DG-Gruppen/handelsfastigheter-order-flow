@@ -124,16 +124,30 @@ export default function Planner() {
   useEffect(() => { fetchBoards(); }, []);
   useEffect(() => { fetchBoardData(); }, [activeBoardId]);
 
+  // Debounced realtime to prevent flicker
+  const boardDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const dataDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const skipNextBoardFetchRef = useRef(false);
+  const skipNextDataFetchRef = useRef(false);
+
   // Realtime subscriptions
   useEffect(() => {
     const boardChannel = supabase
       .channel('planner-boards')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'planner_boards' }, () => {
-        fetchBoards();
+        if (skipNextBoardFetchRef.current) {
+          skipNextBoardFetchRef.current = false;
+          return;
+        }
+        clearTimeout(boardDebounceRef.current);
+        boardDebounceRef.current = setTimeout(() => fetchBoards(), 500);
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(boardChannel); };
+    return () => {
+      clearTimeout(boardDebounceRef.current);
+      supabase.removeChannel(boardChannel);
+    };
   }, []);
 
   useEffect(() => {
@@ -144,14 +158,25 @@ export default function Planner() {
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'planner_columns',
         filter: `board_id=eq.${activeBoardId}`,
-      }, () => { fetchBoardData(); })
+      }, () => {
+        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
+        clearTimeout(dataDebounceRef.current);
+        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+      })
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'planner_cards',
         filter: `board_id=eq.${activeBoardId}`,
-      }, () => { fetchBoardData(); })
+      }, () => {
+        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
+        clearTimeout(dataDebounceRef.current);
+        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      clearTimeout(dataDebounceRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [activeBoardId]);
 
   // Board operations
