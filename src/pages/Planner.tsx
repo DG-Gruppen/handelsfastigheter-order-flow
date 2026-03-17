@@ -229,7 +229,7 @@ export default function Planner() {
       return;
     }
 
-    const newBoard = (data as unknown) as Board;
+    const newBoard = data as Board;
     setBoards((prev) => [...prev, newBoard]);
     setActiveBoardId(newBoard.id);
 
