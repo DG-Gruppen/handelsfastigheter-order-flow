@@ -53,6 +53,7 @@ export default function CardDetailDialog({
   const [dueDone, setDueDone] = useState(false);
   const [columnId, setColumnId] = useState("");
   const [labels, setLabels] = useState<string[]>([]);
+  const [coverColor, setCoverColor] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState("");
   const [editingDescription, setEditingDescription] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
