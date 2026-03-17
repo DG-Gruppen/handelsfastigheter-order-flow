@@ -343,7 +343,7 @@ export default function Planner() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <ScrollArea className="w-full">
+          <div className="w-full overflow-x-auto scrollbar-hide">
             <div className="flex gap-4 pb-4 min-h-[60vh]">
               {columns
                 .sort((a, b) => a.sort_order - b.sort_order)
@@ -387,8 +387,7 @@ export default function Planner() {
                 <span className="text-sm font-medium">Ny kolumn</span>
               </button>
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
 
           <DragOverlay>
             {activeCard && (
