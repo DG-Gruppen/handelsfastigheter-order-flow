@@ -527,8 +527,13 @@ export default function Documents() {
                 ) : null}
               </>
             ) : (
-              <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <p className="text-sm">Välj en mapp till vänster</p>
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+                {isMobile && (
+                  <Button variant="outline" onClick={() => setFolderSheetOpen(true)} className="h-12">
+                    <PanelLeft className="w-4 h-4 mr-2" /> Visa mappar
+                  </Button>
+                )}
+                <p className="text-sm">Välj en mapp {isMobile ? "ovan" : "till vänster"}</p>
               </div>
             )}
           </div>
