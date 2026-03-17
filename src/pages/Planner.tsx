@@ -320,7 +320,7 @@ export default function Planner() {
     } else {
       if (!user || !activeBoardId) return;
       const colCards = cards.filter((c) => c.column_id === data.column_id);
-      await supabase.from("planner_cards" as any).insert({
+      await supabase.from("planner_cards").insert({
         ...data,
         board_id: activeBoardId,
         reporter_id: user.id,
