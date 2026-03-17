@@ -31,7 +31,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <ImpersonationBanner />
-      <div className="flex flex-col md:flex-row min-h-screen w-full">
+      <div className="flex flex-col md:flex-row md:items-start min-h-screen w-full">
         {/* Desktop Sidebar */}
         <AppSidebar />
 

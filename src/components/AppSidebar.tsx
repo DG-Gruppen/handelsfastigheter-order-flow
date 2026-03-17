@@ -164,7 +164,7 @@ export default function AppSidebar() {
       {/* ─── DESKTOP SIDEBAR ─── */}
       <aside
         className={cn(
-          "hidden md:flex flex-col h-screen bg-sidebar sticky top-0 transition-[width] duration-200 shrink-0",
+          "hidden md:flex flex-col h-dvh max-h-dvh self-start bg-sidebar sticky top-0 transition-[width] duration-200 shrink-0",
           collapsed ? "w-14" : "w-52"
         )}
       >
