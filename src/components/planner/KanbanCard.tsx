@@ -10,12 +10,12 @@ export interface PlannerCard {
   column_id: string;
   board_id: string;
   title: string;
-  description: string;
+  description: string | null;
   priority: "low" | "medium" | "high" | "urgent";
   assignee_id: string | null;
   reporter_id: string;
   due_date: string | null;
-  labels: string[];
+  labels: string[] | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
