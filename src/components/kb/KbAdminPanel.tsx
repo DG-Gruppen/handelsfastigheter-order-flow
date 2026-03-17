@@ -394,8 +394,11 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
               <Input value={articleForm.excerpt} onChange={e => setArticleForm(f => ({ ...f, excerpt: e.target.value }))} placeholder="Kort beskrivning..." className="h-11" />
             </div>
             <div className="space-y-2">
-              <Label>Innehåll (HTML)</Label>
-              <Textarea value={articleForm.content} onChange={e => setArticleForm(f => ({ ...f, content: e.target.value }))} rows={10} className="font-mono text-xs" />
+              <Label>Innehåll</Label>
+              <RichTextEditor
+                content={articleForm.content}
+                onChange={(html) => setArticleForm(f => ({ ...f, content: html }))}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
