@@ -61,7 +61,7 @@ export default function KanbanColumn({
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-50">
               <DropdownMenuItem onClick={onEditColumn}>Redigera kolumn</DropdownMenuItem>
               <DropdownMenuItem onClick={onDeleteColumn} className="text-destructive">Ta bort kolumn</DropdownMenuItem>
             </DropdownMenuContent>
