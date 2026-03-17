@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2,
   Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2,
-  Palette, Wrench, BookOpen, ShoppingCart, Cog, Activity
+  Palette, BookOpen, ShoppingCart, Cog, Activity
 } from "lucide-react";
 
 
@@ -35,7 +35,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "knowledge" | "groups" | "permissions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -135,15 +135,9 @@ const adminGroups: AdminGroup[] = [
         bgColor: "bg-accent/10", textColor: "text-accent",
       },
       {
-        id: "settings", label: "Inställningar", description: "Attestering och andra inställningar",
+        id: "settings", label: "Inställningar", description: "Attestering, navigering och utseende",
         icon: Settings, color: "from-muted-foreground to-muted-foreground", borderColor: "border-t-muted-foreground/30",
         bgColor: "bg-muted-foreground/10", textColor: "text-muted-foreground",
-      },
-      {
-        id: "it", label: "IT", description: "Navigationslänkar och utseende",
-        icon: Wrench, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
-        bgColor: "bg-primary/10", textColor: "text-primary",
-        roles: ["it", "admin"],
       },
     ],
   },
@@ -252,7 +246,6 @@ export default function Admin() {
     { key: "nav_onboarding", label: "On-/Offboarding", description: "Formulär för nyanställning och avslut" },
     { key: "nav_approvals", label: "Att attestera", description: "Attesteringssida (chefer/admin)" },
     { key: "nav_history", label: "Historik", description: "Orderhistorik" },
-    { key: "nav_it_info", label: "IT-support", description: "IT-informationssida" },
     { key: "nav_org", label: "Organisation", description: "Organisationsträd (admin)" },
     { key: "nav_admin", label: "Admin", description: "Administrationspanel (admin)" },
   ];
@@ -347,7 +340,6 @@ export default function Admin() {
       case "systems": return <SystemsManager />;
       case "users": return <UsersContent />;
       case "settings": return <SettingsContent />;
-      case "it": return <ITContent />;
       
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
@@ -499,6 +491,14 @@ export default function Admin() {
   function SettingsContent() {
     return (
       <div className="space-y-6">
+        <ImpersonateUserCard
+          profiles={profiles.map((p) => ({
+            user_id: p.user_id,
+            full_name: p.full_name,
+            email: p.email,
+            department: p.department,
+          }))}
+        />
         <Card className="glass-card border-t-2 border-t-muted-foreground/30">
           <CardHeader className="px-4 md:px-6">
             <div className="flex items-center gap-3">
@@ -528,21 +528,6 @@ export default function Admin() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  function ITContent() {
-    return (
-      <div className="space-y-6">
-        <ImpersonateUserCard
-          profiles={profiles.map((p) => ({
-            user_id: p.user_id,
-            full_name: p.full_name,
-            email: p.email,
-            department: p.department,
-          }))}
-        />
         <Card className="glass-card border-t-2 border-t-primary/40">
           <CardHeader className="px-4 md:px-6">
             <div className="flex items-center gap-3">
