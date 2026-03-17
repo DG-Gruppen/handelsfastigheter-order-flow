@@ -339,6 +339,9 @@ export default function Planner() {
       const { id, ...update } = data;
       await supabase.from("planner_cards").update(update as any).eq("id", id);
       toast.success("Kort uppdaterat");
+      if (user && activeBoardId) {
+        logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "updated", entityType: "card", entityName: data.title });
+      }
     } else {
       if (!user || !activeBoardId) return;
       const colCards = cards.filter((c) => c.column_id === data.column_id);
