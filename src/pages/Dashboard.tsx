@@ -9,7 +9,7 @@ import {
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
-import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
+import { kpis, okrs, weeklyWin, jubilees } from "@/data/dashboard";
 import RecognitionDialog from "@/components/RecognitionDialog";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import { newsPosts } from "@/data/news";
@@ -42,9 +42,14 @@ export default function Dashboard() {
     })));
   }, []);
 
+  const [quickTools, setQuickTools] = useState<{ id: string; name: string; emoji: string; url: string }[]>([]);
+
   useEffect(() => {
     if (!user || !profile) return;
     fetchRecognitions();
+    supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).order("sort_order").then(({ data }) => {
+      setQuickTools((data as any[]) ?? []);
+    });
   }, [user, profile, fetchRecognitions]);
 
   function getGreeting(): string {
@@ -220,14 +225,14 @@ export default function Dashboard() {
             <div className="grid grid-cols-4 gap-2">
               {quickTools.map((tool) => (
                 <a
-                  key={tool.label}
+                  key={tool.id}
                   href={tool.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                 >
                   <span className="text-xl">{tool.emoji}</span>
-                  <span className="text-[10px] font-medium text-muted-foreground text-center">{tool.label}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground text-center">{tool.name}</span>
                 </a>
               ))}
             </div>

@@ -12,13 +12,14 @@ import ModulePermissionsManager from "@/components/admin/ModulePermissionsManage
 import UsersContent from "@/components/admin/UsersContent";
 import SettingsContent from "@/components/admin/SettingsContent";
 import ITContent from "@/components/admin/ITContent";
+import ToolsManager from "@/components/admin/ToolsManager";
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools";
 
 interface AdminGroup {
   label: string;
@@ -56,6 +57,7 @@ const adminGroups: AdminGroup[] = [
     color: "text-primary",
     items: [
       { id: "knowledge", label: "Kunskapsbanken", description: "Artiklar, videor och kategorier", icon: BookOpen, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
+      { id: "tools", label: "Verktyg", description: "Hantera snabblänkar på verktygssidan", icon: Link2, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
     ],
   },
   {
@@ -118,6 +120,7 @@ export default function Admin() {
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
+      case "tools": return <ToolsManager />;
       default: return null;
     }
   };
