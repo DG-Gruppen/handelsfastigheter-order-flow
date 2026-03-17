@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, AlertTriangle, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { Calendar, AlertTriangle, ArrowUp, ArrowDown, Minus, FileText, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PlannerCard {
@@ -15,10 +15,16 @@ export interface PlannerCard {
   assignee_id: string | null;
   reporter_id: string;
   due_date: string | null;
+  due_done: boolean;
   labels: string[] | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ChecklistSummary {
+  total: number;
+  checked: number;
 }
 
 interface Props {
@@ -27,16 +33,17 @@ interface Props {
   reporterName?: string;
   onClick: () => void;
   overlay?: boolean;
+  checklistSummary?: ChecklistSummary;
 }
 
 const priorityConfig = {
   urgent: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive", label: "Brådskande" },
-  high: { icon: ArrowUp, color: "text-warning", bg: "bg-warning/10", dot: "bg-destructive", label: "Hög" },
+  high: { icon: ArrowUp, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive", label: "Hög" },
   medium: { icon: Minus, color: "text-muted-foreground", bg: "bg-muted", dot: "bg-warning", label: "Medium" },
   low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", dot: "bg-accent", label: "Låg" },
 };
 
-export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay }: Props) {
+export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay, checklistSummary }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", card },
@@ -54,7 +61,9 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
     ? assigneeName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : null;
 
-  const isOverdue = card.due_date && new Date(card.due_date) < new Date();
+  const isOverdue = card.due_date && !card.due_done && new Date(card.due_date) < new Date();
+  const hasDescription = !!card.description?.trim();
+  const hasChecklist = checklistSummary && checklistSummary.total > 0;
 
   return (
     <div
@@ -69,15 +78,9 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
       )}
       onClick={onClick}
     >
-      {/* Title with priority dot */}
-      <div className="flex items-start gap-1.5">
-        <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", pri.dot)} title={pri.label} />
-        <p className="text-sm font-medium text-foreground leading-snug">{card.title}</p>
-      </div>
-
       {/* Labels */}
       {card.labels && card.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="flex flex-wrap gap-1 mb-2">
           {card.labels.map(label => (
             <Badge key={label} variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
               {label}
@@ -86,23 +89,52 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
         </div>
       )}
 
-      {/* Footer: priority, due date, reporter, assignee */}
+      {/* Title with priority dot */}
+      <div className="flex items-start gap-1.5">
+        <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", pri.dot)} title={pri.label} />
+        <p className="text-sm font-medium text-foreground leading-snug">{card.title}</p>
+      </div>
+
+      {/* Footer: badges row */}
       <div className="flex items-center justify-between mt-2.5 gap-2">
-        <div className="flex items-center gap-2">
-          <span className={cn("flex items-center gap-0.5 text-[10px] font-medium rounded-md px-1.5 py-0.5", pri.bg, pri.color)}>
-            <PriIcon className="h-3 w-3" />
-            {pri.label}
-          </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Due date badge */}
           {card.due_date && (
             <span className={cn(
-              "flex items-center gap-1 text-[10px]",
-              isOverdue ? "text-destructive font-medium" : "text-muted-foreground"
+              "flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5",
+              card.due_done
+                ? "bg-accent/10 text-accent font-medium"
+                : isOverdue
+                  ? "bg-destructive/10 text-destructive font-medium"
+                  : "text-muted-foreground"
             )}>
               <Calendar className="h-3 w-3" />
               {new Date(card.due_date).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
             </span>
           )}
+
+          {/* Description icon */}
+          {hasDescription && (
+            <span className="text-muted-foreground" title="Har beskrivning">
+              <FileText className="h-3 w-3" />
+            </span>
+          )}
+
+          {/* Checklist progress */}
+          {hasChecklist && (
+            <span className={cn(
+              "flex items-center gap-1 text-[10px]",
+              checklistSummary.checked === checklistSummary.total
+                ? "text-accent font-medium"
+                : "text-muted-foreground"
+            )}>
+              <CheckSquare className="h-3 w-3" />
+              {checklistSummary.checked}/{checklistSummary.total}
+            </span>
+          )}
         </div>
+
+        {/* Assignee / Reporter */}
         <div className="flex items-center gap-1.5">
           {reporterName && (
             <span className="text-[10px] text-muted-foreground truncate max-w-[80px]" title={`Skapad av ${reporterName}`}>

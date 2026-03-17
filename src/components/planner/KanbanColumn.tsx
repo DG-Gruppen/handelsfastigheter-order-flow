@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import KanbanCard, { type PlannerCard } from "./KanbanCard";
+import KanbanCard, { type PlannerCard, type ChecklistSummary } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreHorizontal, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ interface Props {
   column: PlannerColumn;
   cards: PlannerCard[];
   profileMap: Record<string, string>;
+  checklistSummaries?: Record<string, ChecklistSummary>;
   onAddCard: () => void;
   onEditColumn: () => void;
   onDeleteColumn: () => void;
@@ -30,7 +31,7 @@ interface Props {
 }
 
 export default function KanbanColumn({
-  column, cards, profileMap, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
+  column, cards, profileMap, checklistSummaries, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
 }: Props) {
   const {
     attributes,
@@ -118,6 +119,7 @@ export default function KanbanColumn({
               assigneeName={card.assignee_id ? profileMap[card.assignee_id] : undefined}
               reporterName={profileMap[card.reporter_id]}
               onClick={() => onCardClick(card)}
+              checklistSummary={checklistSummaries?.[card.id]}
             />
           ))}
         </SortableContext>
