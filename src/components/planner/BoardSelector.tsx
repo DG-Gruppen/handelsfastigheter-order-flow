@@ -31,7 +31,7 @@ interface Props {
   onRestore: (id: string) => void;
 }
 
-export default function BoardSelector({ boards, activeBoardId, onSelect, onCreate, onUpdate, onDelete, onArchive }: Props) {
+export default function BoardSelector({ boards, activeBoardId, onSelect, onCreate, onUpdate, onDelete, onArchive, onRestore }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [name, setName] = useState("");
