@@ -568,6 +568,27 @@ export default function Planner() {
         onClose={() => { setColumnDialogOpen(false); setEditingColumn(null); }}
         onSave={handleSaveColumn}
       />
+
+      {/* Column delete confirm */}
+      <AlertDialog open={!!confirmDeleteColumn} onOpenChange={v => !v && setConfirmDeleteColumn(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ta bort kolumn</AlertDialogTitle>
+            <AlertDialogDescription>
+              Är du säker på att du vill ta bort kolumnen <span className="font-semibold">"{confirmDeleteColumn?.name}"</span>? Alla kort i kolumnen raderas permanent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (confirmDeleteColumn) handleDeleteColumn(confirmDeleteColumn.id); setConfirmDeleteColumn(null); }}
+            >
+              Ta bort
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
