@@ -334,6 +334,9 @@ export default function ITInfo() {
           </CardContent>
         </Card>
       ) : null}
+
+      {/* PWA Installation Guide */}
+      <PwaInstallGuide />
     </div>
   );
 }
