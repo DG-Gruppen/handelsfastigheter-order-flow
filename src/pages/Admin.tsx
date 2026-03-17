@@ -15,13 +15,14 @@ import SettingsContent from "@/components/admin/SettingsContent";
 import ITContent from "@/components/admin/ITContent";
 import ToolsManager from "@/components/admin/ToolsManager";
 import NewsAdminPanel from "@/components/news/NewsAdminPanel";
+import DatabaseBackup from "@/components/admin/DatabaseBackup";
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup";
 
 interface AdminGroup {
   label: string;
@@ -80,6 +81,7 @@ const adminGroups: AdminGroup[] = [
       { id: "permissions", label: "Modulrättigheter", description: "Hantera moduler, åtkomst och rättigheter", icon: Shield, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
       { id: "settings", label: "Inställningar", description: "Attestering och andra inställningar", icon: Settings, color: "from-muted-foreground to-muted-foreground", borderColor: "border-t-muted-foreground/30", bgColor: "bg-muted-foreground/10", textColor: "text-muted-foreground" },
       { id: "it", label: "IT", description: "Navigationslänkar och utseende", icon: Wrench, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary", roles: ["it", "admin"] },
+      { id: "backup", label: "Backup", description: "Exportera och säkerhetskopiera databasen", icon: Database, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
     ],
   },
 ];
@@ -124,6 +126,7 @@ export default function Admin() {
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
       case "tools": return <ToolsManager />;
+      case "backup": return <DatabaseBackup />;
       default: return null;
     }
   };
