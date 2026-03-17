@@ -155,6 +155,8 @@ export function useDocuments() {
   // Check if current user can write to a specific folder
   const canWriteFolder = (folderId: string): boolean => {
     if (isAdmin) return true;
+    // Module-level edit/owner permission grants write access to all folders
+    if (hasModuleEdit) return true;
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return false;
     if (!folder.write_roles) return false;
