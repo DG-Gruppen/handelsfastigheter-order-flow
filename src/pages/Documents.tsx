@@ -491,7 +491,7 @@ export default function Documents() {
                       />
                     ))}
                   </div>
-                )}
+                ) : null}
               </>
             ) : (
               <div className="flex items-center justify-center py-16 text-muted-foreground">
