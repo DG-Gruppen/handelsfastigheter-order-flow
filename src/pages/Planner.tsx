@@ -321,7 +321,13 @@ export default function Planner() {
       if (!user || !activeBoardId) return;
       const colCards = cards.filter((c) => c.column_id === data.column_id);
       await supabase.from("planner_cards").insert({
-        ...data,
+        title: data.title!,
+        description: data.description ?? "",
+        priority: data.priority ?? "medium",
+        assignee_id: data.assignee_id ?? null,
+        due_date: data.due_date ?? null,
+        column_id: data.column_id!,
+        labels: data.labels ?? [],
         board_id: activeBoardId,
         reporter_id: user.id,
         sort_order: colCards.length,
