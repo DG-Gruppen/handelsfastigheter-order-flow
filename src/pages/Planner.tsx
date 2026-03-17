@@ -467,6 +467,7 @@ export default function Planner() {
         onUpdate={handleUpdateBoard}
         onDelete={handleDeleteBoard}
         onArchive={handleArchiveBoard}
+        onRestore={handleRestoreBoard}
       />
 
       {/* Filters */}
