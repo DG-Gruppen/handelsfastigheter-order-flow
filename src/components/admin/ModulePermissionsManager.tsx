@@ -179,26 +179,41 @@ export default function ModulePermissionsManager() {
               const Icon = getModuleIcon(mod.icon);
               const isSelected = selectedModule?.id === mod.id;
               return (
-                <button
+                <div
                   key={mod.id}
-                  onClick={() => setSelectedModule(isSelected ? null : mod)}
-                  className={`rounded-xl border p-3 text-left transition-all ${
+                  className={`rounded-xl border p-3 transition-all ${
                     isSelected ? "border-accent bg-accent/5 shadow-md" : "border-border/50 bg-secondary/30 hover:bg-secondary/50"
-                  }`}
+                  } ${!mod.is_active ? "opacity-50" : ""}`}
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <p className="font-medium text-sm truncate">{mod.name}</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <button
+                      onClick={() => setSelectedModule(isSelected ? null : mod)}
+                      className="flex items-center gap-2 text-left min-w-0 flex-1"
+                    >
+                      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <p className="font-medium text-sm truncate">{mod.name}</p>
+                    </button>
+                    <Switch
+                      checked={mod.is_active}
+                      onCheckedChange={async () => {
+                        await supabase.from("modules").update({ is_active: !mod.is_active } as any).eq("id", mod.id);
+                        toast.success(!mod.is_active ? "Modul aktiverad" : "Modul inaktiverad");
+                        fetchData();
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <button
+                    onClick={() => setSelectedModule(isSelected ? null : mod)}
+                    className="flex items-center gap-2 text-xs text-muted-foreground text-left w-full"
+                  >
                     <span>{perms.length} rättighet{perms.length !== 1 ? "er" : ""}</span>
                     {owners.length > 0 && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5 bg-warning/10 text-warning border-warning/20">
                         <Crown className="h-2.5 w-2.5" /> {owners.length}
                       </Badge>
                     )}
-                  </div>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>
