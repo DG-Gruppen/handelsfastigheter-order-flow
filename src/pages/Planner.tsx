@@ -315,7 +315,7 @@ export default function Planner() {
 
     if (data.id) {
       const { id, ...update } = data;
-      await supabase.from("planner_cards" as any).update(update).eq("id", id);
+      await supabase.from("planner_cards").update(update as any).eq("id", id);
       toast.success("Kort uppdaterat");
     } else {
       if (!user || !activeBoardId) return;
