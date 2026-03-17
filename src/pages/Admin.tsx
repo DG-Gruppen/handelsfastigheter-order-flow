@@ -66,7 +66,7 @@ const adminGroups: AdminGroup[] = [
     icon: Users,
     color: "text-warning",
     items: [
-      { id: "users", label: "Användare & Roller", description: "Tilldela roller till användare", icon: Users, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
+      { id: "users", label: "Användare", description: "Hantera användare och roller", icon: Users, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
       { id: "groups", label: "Grupper", description: "Skapa och hantera grupper", icon: Users, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
     ],
   },
