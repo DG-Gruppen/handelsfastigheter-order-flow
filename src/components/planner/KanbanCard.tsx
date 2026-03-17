@@ -66,6 +66,12 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
   const hasDescription = !!card.description?.trim();
   const hasChecklist = checklistSummary && checklistSummary.total > 0;
 
+  // Label colors for colored pills (cycle through)
+  const labelColors = [
+    "bg-accent", "bg-warning", "bg-primary", "bg-destructive",
+    "hsl(280 60% 50%)", "hsl(330 70% 50%)",
+  ];
+
   return (
     <div
       ref={setNodeRef}
@@ -73,90 +79,89 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
       {...attributes}
       {...listeners}
       className={cn(
-        "group rounded-xl border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none touch-none overflow-hidden",
+        "group rounded-lg border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none touch-none overflow-hidden",
         isDragging && "opacity-40 rotate-2 scale-105",
         overlay && "shadow-xl rotate-2 scale-105 ring-2 ring-primary/30"
       )}
       onClick={onClick}
     >
-      {/* Cover color strip */}
+      {/* Cover block */}
       {card.cover_color && (
-        <div className="h-2 w-full" style={{ backgroundColor: card.cover_color }} />
+        <div className="h-9 w-full rounded-t-lg" style={{ backgroundColor: card.cover_color }} />
       )}
 
-      <div className="p-3">
-      {/* Labels */}
-      {card.labels && card.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {card.labels.map(label => (
-            <Badge key={label} variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-              {label}
-            </Badge>
-          ))}
-        </div>
-      )}
+      <div className="px-2.5 pt-2 pb-2">
+        {/* Label pills (colored dots, no text) */}
+        {card.labels && card.labels.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {card.labels.map((label, i) => {
+              const c = labelColors[i % labelColors.length];
+              const isTw = c.startsWith("bg-");
+              return (
+                <span
+                  key={label}
+                  title={label}
+                  className={cn("h-2 w-10 rounded-full", isTw && c)}
+                  style={!isTw ? { backgroundColor: c } : undefined}
+                />
+              );
+            })}
+          </div>
+        )}
 
-      {/* Title with priority dot */}
-      <div className="flex items-start gap-1.5">
-        <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", pri.dot)} title={pri.label} />
-        <p className="text-sm font-medium text-foreground leading-snug">{card.title}</p>
-      </div>
+        {/* Title */}
+        <p className="text-[13px] font-normal text-foreground leading-snug mb-1.5">{card.title}</p>
 
-      {/* Footer: badges row */}
-      <div className="flex items-center justify-between mt-2.5 gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Due date badge */}
-          {card.due_date && (
-            <span className={cn(
-              "flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5",
-              card.due_done
-                ? "bg-accent/10 text-accent font-medium"
-                : isOverdue
-                  ? "bg-destructive/10 text-destructive font-medium"
-                  : "text-muted-foreground"
-            )}>
-              <Calendar className="h-3 w-3" />
-              {new Date(card.due_date).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
-            </span>
-          )}
+        {/* Footer */}
+        {(card.due_date || hasDescription || hasChecklist || initials) && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Due date badge */}
+              {card.due_date && (
+                <span className={cn(
+                  "flex items-center gap-1 text-[11px] rounded-sm px-1.5 py-0.5 font-medium",
+                  card.due_done
+                    ? "bg-accent text-accent-foreground"
+                    : isOverdue
+                      ? "bg-destructive text-destructive-foreground"
+                      : "bg-muted text-muted-foreground"
+                )}>
+                  <Calendar className="h-3 w-3" />
+                  {new Date(card.due_date).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
+                </span>
+              )}
 
-          {/* Description icon */}
-          {hasDescription && (
-            <span className="text-muted-foreground" title="Har beskrivning">
-              <FileText className="h-3 w-3" />
-            </span>
-          )}
+              {/* Checklist progress */}
+              {hasChecklist && (
+                <span className={cn(
+                  "flex items-center gap-1 text-[11px]",
+                  checklistSummary.checked === checklistSummary.total
+                    ? "text-accent font-medium"
+                    : "text-muted-foreground"
+                )}>
+                  <CheckSquare className="h-3 w-3" />
+                  {checklistSummary.checked}/{checklistSummary.total}
+                </span>
+              )}
 
-          {/* Checklist progress */}
-          {hasChecklist && (
-            <span className={cn(
-              "flex items-center gap-1 text-[10px]",
-              checklistSummary.checked === checklistSummary.total
-                ? "text-accent font-medium"
-                : "text-muted-foreground"
-            )}>
-              <CheckSquare className="h-3 w-3" />
-              {checklistSummary.checked}/{checklistSummary.total}
-            </span>
-          )}
-        </div>
+              {/* Description icon */}
+              {hasDescription && (
+                <span className="text-muted-foreground" title="Har beskrivning">
+                  <FileText className="h-3 w-3" />
+                </span>
+              )}
+            </div>
 
-        {/* Assignee / Reporter */}
-        <div className="flex items-center gap-1.5">
-          {reporterName && (
-            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]" title={`Skapad av ${reporterName}`}>
-              {reporterName.split(" ")[0]}
-            </span>
-          )}
-          {initials && (
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[9px] font-semibold bg-primary/10 text-primary">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-      </div>
+            {/* Assignee avatar */}
+            {initials && (
+              <Avatar className="h-6 w-6 border-2 border-card">
+                <AvatarFallback className="text-[9px] font-semibold bg-primary text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
