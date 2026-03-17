@@ -170,7 +170,8 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
 export default function OrgTree() {
   const { roles } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = roles.includes("admin");
+  const { canEdit: canEditOrg } = useModulePermission("org");
+  const isAdmin = roles.includes("admin") || canEditOrg;
   const [profiles, setProfiles] = useState<OrgProfile[]>([]);
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);
