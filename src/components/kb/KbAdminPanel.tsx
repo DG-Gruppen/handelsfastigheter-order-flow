@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/kb/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -393,8 +394,11 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
               <Input value={articleForm.excerpt} onChange={e => setArticleForm(f => ({ ...f, excerpt: e.target.value }))} placeholder="Kort beskrivning..." className="h-11" />
             </div>
             <div className="space-y-2">
-              <Label>Innehåll (HTML)</Label>
-              <Textarea value={articleForm.content} onChange={e => setArticleForm(f => ({ ...f, content: e.target.value }))} rows={10} className="font-mono text-xs" />
+              <Label>Innehåll</Label>
+              <RichTextEditor
+                content={articleForm.content}
+                onChange={(html) => setArticleForm(f => ({ ...f, content: html }))}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
