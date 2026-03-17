@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModules } from "@/hooks/useModules";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ interface ActivityLog {
 
 export default function ModulePermissionsManager() {
   const { user } = useAuth();
+  const { refresh: refreshSidebar } = useModules();
   const [modules, setModules] = useState<Module[]>([]);
   const [permissions, setPermissions] = useState<ModulePermission[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -198,6 +200,7 @@ export default function ModulePermissionsManager() {
                         await supabase.from("modules").update({ is_active: !mod.is_active } as any).eq("id", mod.id);
                         toast.success(!mod.is_active ? "Modul aktiverad" : "Modul inaktiverad");
                         fetchData();
+                        refreshSidebar();
                       }}
                       className={`relative h-8 w-4 rounded-full p-[2px] transition-colors ${
                         mod.is_active ? "bg-emerald-500" : "bg-destructive"
