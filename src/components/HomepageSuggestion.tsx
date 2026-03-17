@@ -20,6 +20,10 @@ function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+function isSamsungBrowser() {
+  return /samsungbrowser/i.test(navigator.userAgent);
+}
+
 function isInStandaloneMode() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
