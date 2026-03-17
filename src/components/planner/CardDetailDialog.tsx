@@ -75,6 +75,7 @@ export default function CardDetailDialog({
       setDueDone(card.due_done ?? false);
       setColumnId(card.column_id);
       setLabels(card.labels ?? []);
+      setCoverColor(card.cover_color ?? null);
     } else {
       setTitle(""); setDescription(""); setPriority("medium");
       setAssigneeId(""); setDueDate(""); setDueDone(false);
