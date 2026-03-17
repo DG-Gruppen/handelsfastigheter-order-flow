@@ -457,6 +457,20 @@ export default function Planner() {
         .eq("id", u.id);
     }
 
+    // Log move if column changed
+    const originalColumn = columns.find(c => c.id === activeCardData.column_id);
+    const targetColumn = columns.find(c => c.id === targetColumnId);
+    if (user && activeBoardId && activeCardData.column_id !== targetColumnId) {
+      logPlannerActivity({
+        boardId: activeBoardId,
+        userId: user.id,
+        action: "moved",
+        entityType: "card",
+        entityName: activeCardData.title,
+        metadata: { from_column: originalColumn?.name, to_column: targetColumn?.name },
+      });
+    }
+
     fetchBoardData();
   };
 
