@@ -89,6 +89,11 @@ export default function Planner() {
     });
   }, [cards, filters]);
 
+  const sortedColumns = useMemo(
+    () => [...columns].sort((a, b) => a.sort_order - b.sort_order),
+    [columns],
+  );
+
   // Fetch boards
   const fetchBoards = useCallback(async () => {
     const { data } = await supabase
