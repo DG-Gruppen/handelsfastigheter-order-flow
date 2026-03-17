@@ -317,6 +317,71 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          role_equivalent: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          role_equivalent?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          role_equivalent?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       it_faq: {
         Row: {
           answer: string
@@ -479,6 +544,97 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "kb_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_activity_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          module_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          module_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          module_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_activity_log_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_permissions: {
+        Row: {
+          can_delete: boolean | null
+          can_edit: boolean | null
+          can_view: boolean | null
+          created_at: string | null
+          created_by: string | null
+          grantee_id: string
+          grantee_type: string
+          id: string
+          is_owner: boolean | null
+          module_id: string
+        }
+        Insert: {
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          grantee_id: string
+          grantee_type?: string
+          id?: string
+          is_owner?: boolean | null
+          module_id: string
+        }
+        Update: {
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          grantee_id?: string
+          grantee_type?: string
+          id?: string
+          is_owner?: boolean | null
+          module_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_permissions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
             referencedColumns: ["id"]
           },
         ]
@@ -1054,6 +1210,10 @@ export type Database = {
       }
       has_folder_write_access: {
         Args: { _folder_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_module_permission: {
+        Args: { _module_id: string; _permission: string; _user_id: string }
         Returns: boolean
       }
       has_role: {
