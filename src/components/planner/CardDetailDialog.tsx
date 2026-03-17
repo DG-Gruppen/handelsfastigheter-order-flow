@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trash2, X, Plus, CreditCard, Users, Tag, CheckSquare, Calendar,
-  Paperclip, ArrowRight, FileText, AlignLeft, Palette,
+  Paperclip, ArrowRight, FileText, AlignLeft, Palette, Copy, Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlannerCard } from "./KanbanCard";
@@ -28,6 +28,7 @@ interface Props {
   onClose: () => void;
   onSave: (card: Partial<PlannerCard> & { id?: string }) => void;
   onDelete: (id: string) => void;
+  onCopy?: (id: string) => void;
   defaultColumnId?: string;
 }
 
@@ -41,7 +42,7 @@ const getLabelColor = (label: string) => {
 };
 
 export default function CardDetailDialog({
-  card, columns, profiles, open, onClose, onSave, onDelete, defaultColumnId,
+  card, columns, profiles, open, onClose, onSave, onDelete, onCopy, defaultColumnId,
 }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -392,9 +393,17 @@ export default function CardDetailDialog({
               </div>
             )}
 
+            {card && onCopy && (
+              <SidebarButton
+                icon={Copy}
+                label="Kopiera"
+                onClick={() => { onCopy(card.id); onClose(); }}
+              />
+            )}
+
             {card && (
               <SidebarButton
-                icon={Trash2}
+                icon={Archive}
                 label="Arkivera"
                 className="text-destructive hover:bg-destructive/10"
                 onClick={() => { onDelete(card.id); onClose(); }}
