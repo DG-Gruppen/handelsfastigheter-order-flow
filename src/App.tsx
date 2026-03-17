@@ -26,6 +26,7 @@ const Personnel = lazy(() => import("./pages/Personnel"));
 const Documents = lazy(() => import("./pages/Documents"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const MySHF = lazy(() => import("./pages/MySHF"));
+const Planner = lazy(() => import("./pages/Planner"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
