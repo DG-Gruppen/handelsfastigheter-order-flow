@@ -461,16 +461,16 @@ export default function Documents() {
                 </div>
 
                 {selectedFiles.size > 0 && (
-                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-primary/10 border border-primary/20 flex-wrap">
                     <span className="text-sm font-medium">{selectedFiles.size} markerade</span>
                     <div className="flex-1" />
-                    <Button variant="outline" size="sm" onClick={() => setBulkMoveDialog(true)}>
+                    <Button variant="outline" size="sm" className="h-10 md:h-8" onClick={() => setBulkMoveDialog(true)}>
                       <FolderInput className="w-4 h-4 mr-1" /> Flytta
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                    <Button variant="destructive" size="sm" className="h-10 md:h-8" onClick={bulkDelete}>
                       <Trash2 className="w-4 h-4 mr-1" /> Ta bort
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    <Button variant="ghost" size="sm" className="h-10 w-10 md:h-8 md:w-8" onClick={clearSelection}>
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
