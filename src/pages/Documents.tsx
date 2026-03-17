@@ -95,10 +95,15 @@ export default function Documents() {
 
   // ── Preview ──
   const openPreview = async (file: DocFile) => {
-    if (file.mime_type === "application/pdf") {
+    if (file.mime_type === "application/pdf" || isOfficeMime(file.mime_type)) {
       const { data, error } = await supabase.storage.from("documents").createSignedUrl(file.storage_path, 3600);
       if (error || !data?.signedUrl) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
-      setPreviewUrl(data.signedUrl);
+      if (isOfficeMime(file.mime_type)) {
+        const officeUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(data.signedUrl)}`;
+        setPreviewUrl(officeUrl);
+      } else {
+        setPreviewUrl(data.signedUrl);
+      }
       setPreviewFile(file);
       return;
     }
