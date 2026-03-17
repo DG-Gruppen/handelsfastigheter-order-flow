@@ -501,7 +501,7 @@ export default function Planner() {
                         setEditingColumn(col);
                         setColumnDialogOpen(true);
                       }}
-                      onDeleteColumn={() => handleDeleteColumn(col.id)}
+                      onDeleteColumn={() => setConfirmDeleteColumn(col)}
                       onCardClick={(card) => {
                         setEditingCard(card);
                         setCardDialogOpen(true);
