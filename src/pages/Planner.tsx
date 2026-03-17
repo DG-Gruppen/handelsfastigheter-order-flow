@@ -389,6 +389,7 @@ export default function Planner() {
         priority: data.priority ?? "medium",
         assignee_id: data.assignee_id ?? null,
         due_date: data.due_date ?? null,
+        due_done: data.due_done ?? false,
         column_id: data.column_id!,
         labels: data.labels ?? [],
         board_id: activeBoardId,
