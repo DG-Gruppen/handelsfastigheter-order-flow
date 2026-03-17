@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FolderOpen } from "lucide-react";
+import { getModuleIcon } from "@/lib/moduleIcons";
 import type { DocFolder } from "@/hooks/useDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
