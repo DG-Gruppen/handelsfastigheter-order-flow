@@ -31,6 +31,8 @@ export default function Documents() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [folderSheetOpen, setFolderSheetOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Dialogs
   const [newFolderDialog, setNewFolderDialog] = useState<{ parentId: string | null } | null>(null);
