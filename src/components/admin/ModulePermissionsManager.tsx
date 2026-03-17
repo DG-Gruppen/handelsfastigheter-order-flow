@@ -154,7 +154,8 @@ export default function ModulePermissionsManager() {
   const handleRemovePermission = async (permId: string) => {
     await supabase.from("module_permissions").delete().eq("id", permId);
     toast.success("Rättighet borttagen");
-    fetchData();
+    await fetchData();
+    refreshSidebar();
   };
 
   const existingGranteeIds = selectedModule
