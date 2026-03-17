@@ -120,6 +120,7 @@ export default function Admin() {
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
+      case "tools": return <ToolsManager />;
       default: return null;
     }
   };
