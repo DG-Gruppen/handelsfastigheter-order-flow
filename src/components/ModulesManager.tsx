@@ -21,16 +21,11 @@ interface Module {
 
 export default function ModulesManager({ onClose }: { onClose?: () => void }) {
   const [modules, setModules] = useState<Module[]>([]);
-  const [access, setAccess] = useState<Access[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    const [modRes, accessRes] = await Promise.all([
-      supabase.from("modules").select("*").order("sort_order"),
-      supabase.from("module_role_access").select("*"),
-    ]);
-    setModules((modRes.data as Module[]) ?? []);
-    setAccess((accessRes.data as Access[]) ?? []);
+    const { data } = await supabase.from("modules").select("*").order("sort_order");
+    setModules((data as Module[]) ?? []);
     setLoading(false);
   };
 
