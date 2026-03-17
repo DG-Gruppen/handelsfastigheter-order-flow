@@ -392,14 +392,14 @@ export default function Documents() {
             </Sheet>
           )}
 
-          <div className="grid md:grid-cols-[280px_1fr] gap-4 min-h-[500px]">
+          <div className="grid md:grid-cols-[280px_1fr] gap-4 md:min-h-[500px]">
             {/* Folder tree – desktop only */}
             <div className="hidden md:block bg-card rounded-lg border border-border p-3 overflow-y-auto max-h-[70vh]">
               {folderTreeContent}
             </div>
 
             {/* File list */}
-            <div className="bg-card rounded-lg border border-border p-4">
+            <div className="bg-card rounded-lg border border-border p-3 md:p-4">
             {selectedFolder ? (
               <>
                 {/* Breadcrumbs */}
