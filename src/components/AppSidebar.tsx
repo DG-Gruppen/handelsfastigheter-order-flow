@@ -283,7 +283,7 @@ export default function AppSidebar() {
                   <User className="w-4 h-4" />
                   Min profil
                 </button>
-                {roles.includes("admin") && (
+                {canViewAdmin && (
                   <button
                     onClick={() => { setProfileOpen(false); navigate("/admin"); }}
                     className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
