@@ -14,7 +14,10 @@ import KanbanCard, { type PlannerCard } from "@/components/planner/KanbanCard";
 import CardDetailDialog from "@/components/planner/CardDetailDialog";
 import ColumnDialog from "@/components/planner/ColumnDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Kanban } from "lucide-react";
+import { Plus, Kanban, History } from "lucide-react";
+import BoardActivityLog from "@/components/planner/BoardActivityLog";
+import { logPlannerActivity } from "@/components/planner/logActivity";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import PlannerFilters, { EMPTY_FILTERS, type PlannerFilterState } from "@/components/planner/PlannerFilters";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -252,6 +255,9 @@ export default function Planner() {
 
     fetchBoardData();
     toast.success("Board skapad");
+
+    // Log activity
+    logPlannerActivity({ boardId: newBoard.id, userId: user.id, action: "created", entityType: "column", entityName: "Standardkolumner" });
   };
 
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
@@ -301,7 +307,7 @@ export default function Planner() {
         .eq("id", data.id);
       toast.success("Kolumn uppdaterad");
     } else {
-      if (!activeBoardId) return;
+      if (!activeBoardId || !user) return;
       await supabase.from("planner_columns").insert({
         name: data.name,
         color: data.color,
@@ -310,6 +316,9 @@ export default function Planner() {
         sort_order: columns.length,
       });
       toast.success("Kolumn skapad");
+      if (user && activeBoardId) {
+        logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "created", entityType: "column", entityName: data.name });
+      }
     }
 
     fetchBoardData();
@@ -330,6 +339,9 @@ export default function Planner() {
       const { id, ...update } = data;
       await supabase.from("planner_cards").update(update as any).eq("id", id);
       toast.success("Kort uppdaterat");
+      if (user && activeBoardId) {
+        logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "updated", entityType: "card", entityName: data.title });
+      }
     } else {
       if (!user || !activeBoardId) return;
       const colCards = cards.filter((c) => c.column_id === data.column_id);
@@ -346,6 +358,9 @@ export default function Planner() {
         sort_order: colCards.length,
       });
       toast.success("Kort skapat");
+      if (user && activeBoardId) {
+        logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "created", entityType: "card", entityName: data.title });
+      }
     }
 
     fetchBoardData();
@@ -353,8 +368,12 @@ export default function Planner() {
 
   const handleDeleteCard = async (id: string) => {
     suppressDataRealtime();
+    const card = cards.find(c => c.id === id);
     await supabase.from("planner_cards").delete().eq("id", id);
     toast.success("Kort borttaget");
+    if (user && activeBoardId && card) {
+      logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "deleted", entityType: "card", entityName: card.title });
+    }
     fetchBoardData();
   };
 
@@ -438,6 +457,20 @@ export default function Planner() {
         .eq("id", u.id);
     }
 
+    // Log move if column changed
+    const originalColumn = columns.find(c => c.id === activeCardData.column_id);
+    const targetColumn = columns.find(c => c.id === targetColumnId);
+    if (user && activeBoardId && activeCardData.column_id !== targetColumnId) {
+      logPlannerActivity({
+        boardId: activeBoardId,
+        userId: user.id,
+        action: "moved",
+        entityType: "card",
+        entityName: activeCardData.title,
+        metadata: { from_column: originalColumn?.name, to_column: targetColumn?.name },
+      });
+    }
+
     fetchBoardData();
   };
 
@@ -456,6 +489,24 @@ export default function Planner() {
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Planner</h1>
           <p className="text-sm text-muted-foreground">Kanban-board för projektplanering</p>
         </div>
+        {activeBoardId && (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <History className="h-3.5 w-3.5" /> Aktivitet
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Aktivitetslogg</SheetTitle>
+                <SheetDescription>Senaste ändringar på denna board</SheetDescription>
+              </SheetHeader>
+              <div className="mt-4">
+                <BoardActivityLog boardId={activeBoardId} profiles={profiles} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       {/* Board tabs */}
