@@ -171,8 +171,21 @@ export default function Planner() {
       } else {
         setChecklistSummaries({});
       }
+
+      // Fetch attachment counts
+      const { data: attData } = await supabase
+        .from("planner_card_attachments")
+        .select("card_id")
+        .in("card_id", cardIds);
+
+      const attCounts: Record<string, number> = {};
+      (attData ?? []).forEach((a: any) => {
+        attCounts[a.card_id] = (attCounts[a.card_id] || 0) + 1;
+      });
+      setAttachmentCounts(attCounts);
+    } else {
+      setAttachmentCounts({});
     }
-  }, [activeBoardId]);
 
   // Fetch profiles
   useEffect(() => {
