@@ -193,14 +193,21 @@ export default function ModulePermissionsManager() {
                       <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                       <p className="font-medium text-sm truncate">{mod.name}</p>
                     </button>
-                    <Switch
-                      checked={mod.is_active}
-                      onCheckedChange={async () => {
+                    <button
+                      onClick={async () => {
                         await supabase.from("modules").update({ is_active: !mod.is_active } as any).eq("id", mod.id);
                         toast.success(!mod.is_active ? "Modul aktiverad" : "Modul inaktiverad");
                         fetchData();
                       }}
-                    />
+                      className={`flex flex-col items-center justify-center gap-0.5 rounded-lg px-1.5 py-1 text-[10px] font-medium transition-all ${
+                        mod.is_active
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      <div className={`h-2 w-2 rounded-full ${mod.is_active ? "bg-emerald-500" : "bg-destructive"}`} />
+                      {mod.is_active ? "Aktiv" : "Av"}
+                    </button>
                   </div>
                   <button
                     onClick={() => setSelectedModule(isSelected ? null : mod)}
