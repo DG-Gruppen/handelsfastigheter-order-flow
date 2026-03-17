@@ -89,27 +89,39 @@ export default function Planner() {
     });
   }, [cards, filters]);
 
+  const sortedColumns = useMemo(
+    () => [...columns].sort((a, b) => a.sort_order - b.sort_order),
+    [columns],
+  );
+
   // Fetch boards
   const fetchBoards = useCallback(async () => {
     const { data } = await supabase
       .from("planner_boards" as any)
       .select("*")
       .order("sort_order");
+
     const b = ((data as unknown) as Board[]) ?? [];
     setBoards(b);
-    if (b.length > 0 && !activeBoardId) {
-      setActiveBoardId(b[0].id);
-    }
+    setActiveBoardId((current) => {
+      if (b.length === 0) return null;
+      if (current && b.some((board) => board.id === current && !board.is_archived)) {
+        return current;
+      }
+      return b.find((board) => !board.is_archived)?.id ?? null;
+    });
     setLoading(false);
-  }, [activeBoardId]);
+  }, []);
 
   // Fetch columns & cards for active board
   const fetchBoardData = useCallback(async () => {
     if (!activeBoardId) return;
+
     const [colRes, cardRes] = await Promise.all([
       supabase.from("planner_columns" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
       supabase.from("planner_cards" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
     ]);
+
     setColumns(((colRes.data as unknown) as PlannerColumn[]) ?? []);
     setCards(((cardRes.data as unknown) as PlannerCard[]) ?? []);
   }, [activeBoardId]);
@@ -121,24 +133,34 @@ export default function Planner() {
     });
   }, []);
 
-  useEffect(() => { fetchBoards(); }, []);
-  useEffect(() => { fetchBoardData(); }, [activeBoardId]);
+  useEffect(() => {
+    fetchBoards();
+  }, [fetchBoards]);
+
+  useEffect(() => {
+    fetchBoardData();
+  }, [fetchBoardData]);
 
   // Debounced realtime to prevent flicker
   const boardDebounceRef = useRef<ReturnType<typeof setTimeout>>();
   const dataDebounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const skipNextBoardFetchRef = useRef(false);
-  const skipNextDataFetchRef = useRef(false);
+  const suppressBoardRealtimeUntilRef = useRef(0);
+  const suppressDataRealtimeUntilRef = useRef(0);
+
+  const suppressBoardRealtime = useCallback((durationMs = 1500) => {
+    suppressBoardRealtimeUntilRef.current = Date.now() + durationMs;
+  }, []);
+
+  const suppressDataRealtime = useCallback((durationMs = 1500) => {
+    suppressDataRealtimeUntilRef.current = Date.now() + durationMs;
+  }, []);
 
   // Realtime subscriptions
   useEffect(() => {
     const boardChannel = supabase
-      .channel('planner-boards')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'planner_boards' }, () => {
-        if (skipNextBoardFetchRef.current) {
-          skipNextBoardFetchRef.current = false;
-          return;
-        }
+      .channel("planner-boards")
+      .on("postgres_changes", { event: "*", schema: "public", table: "planner_boards" }, () => {
+        if (Date.now() < suppressBoardRealtimeUntilRef.current) return;
         clearTimeout(boardDebounceRef.current);
         boardDebounceRef.current = setTimeout(() => fetchBoards(), 500);
       })
@@ -148,75 +170,97 @@ export default function Planner() {
       clearTimeout(boardDebounceRef.current);
       supabase.removeChannel(boardChannel);
     };
-  }, []);
+  }, [fetchBoards]);
 
   useEffect(() => {
     if (!activeBoardId) return;
 
     const channel = supabase
       .channel(`planner-board-${activeBoardId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'planner_columns',
-        filter: `board_id=eq.${activeBoardId}`,
-      }, () => {
-        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
-        clearTimeout(dataDebounceRef.current);
-        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
-      })
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'planner_cards',
-        filter: `board_id=eq.${activeBoardId}`,
-      }, () => {
-        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
-        clearTimeout(dataDebounceRef.current);
-        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "planner_columns",
+          filter: `board_id=eq.${activeBoardId}`,
+        },
+        () => {
+          if (Date.now() < suppressDataRealtimeUntilRef.current) return;
+          clearTimeout(dataDebounceRef.current);
+          dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "planner_cards",
+          filter: `board_id=eq.${activeBoardId}`,
+        },
+        () => {
+          if (Date.now() < suppressDataRealtimeUntilRef.current) return;
+          clearTimeout(dataDebounceRef.current);
+          dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+        },
+      )
       .subscribe();
 
     return () => {
       clearTimeout(dataDebounceRef.current);
       supabase.removeChannel(channel);
     };
-  }, [activeBoardId]);
+  }, [activeBoardId, fetchBoardData]);
 
   // Board operations
   const handleCreateBoard = async (name: string, description: string) => {
     if (!user) return;
+    suppressBoardRealtime();
+
     const { data, error } = await supabase
       .from("planner_boards" as any)
       .insert({ name, description, created_by: user.id, sort_order: boards.length })
       .select()
       .single();
-    if (error) { toast.error("Kunde inte skapa board"); return; }
+
+    if (error) {
+      toast.error("Kunde inte skapa board");
+      return;
+    }
+
     const newBoard = (data as unknown) as Board;
-    setBoards(prev => [...prev, newBoard]);
+    setBoards((prev) => [...prev, newBoard]);
     setActiveBoardId(newBoard.id);
 
     // Create default columns
+    suppressDataRealtime(2500);
     const defaults = [
       { name: "Att göra", color: "#3b82f6", sort_order: 0 },
       { name: "Pågår", color: "#f59e0b", sort_order: 1 },
       { name: "Klart", color: "#10b981", sort_order: 2 },
     ];
+
     await supabase
       .from("planner_columns" as any)
-      .insert(defaults.map(d => ({ ...d, board_id: newBoard.id })));
+      .insert(defaults.map((d) => ({ ...d, board_id: newBoard.id })));
+
     fetchBoardData();
     toast.success("Board skapad");
   };
 
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
-    skipNextBoardFetchRef.current = true;
-    setBoards(prev => prev.map(b => b.id === id ? { ...b, name, description } : b));
+    suppressBoardRealtime();
+    setBoards((prev) => prev.map((b) => (b.id === id ? { ...b, name, description } : b)));
     await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
     toast.success("Board uppdaterad");
   };
 
   const handleDeleteBoard = async (id: string) => {
-    skipNextBoardFetchRef.current = true;
-    setBoards(prev => prev.filter(b => b.id !== id));
+    suppressBoardRealtime();
+    setBoards((prev) => prev.filter((b) => b.id !== id));
     if (activeBoardId === id) {
-      const remaining = boards.filter(b => b.id !== id && !b.is_archived);
+      const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
     await supabase.from("planner_boards" as any).delete().eq("id", id);
@@ -224,10 +268,10 @@ export default function Planner() {
   };
 
   const handleArchiveBoard = async (id: string) => {
-    skipNextBoardFetchRef.current = true;
-    setBoards(prev => prev.map(b => b.id === id ? { ...b, is_archived: true } : b));
+    suppressBoardRealtime();
+    setBoards((prev) => prev.map((b) => (b.id === id ? { ...b, is_archived: true } : b)));
     if (activeBoardId === id) {
-      const remaining = boards.filter(b => b.id !== id && !b.is_archived);
+      const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
     await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
@@ -235,21 +279,31 @@ export default function Planner() {
   };
 
   const handleSaveColumn = async (data: { name: string; color: string | null; wip_limit: number | null; id?: string }) => {
+    suppressDataRealtime();
+
     if (data.id) {
-      await supabase.from("planner_columns" as any).update({ name: data.name, color: data.color, wip_limit: data.wip_limit }).eq("id", data.id);
+      await supabase
+        .from("planner_columns" as any)
+        .update({ name: data.name, color: data.color, wip_limit: data.wip_limit })
+        .eq("id", data.id);
       toast.success("Kolumn uppdaterad");
     } else {
       if (!activeBoardId) return;
       await supabase.from("planner_columns" as any).insert({
-        name: data.name, color: data.color, wip_limit: data.wip_limit,
-        board_id: activeBoardId, sort_order: columns.length,
+        name: data.name,
+        color: data.color,
+        wip_limit: data.wip_limit,
+        board_id: activeBoardId,
+        sort_order: columns.length,
       });
       toast.success("Kolumn skapad");
     }
+
     fetchBoardData();
   };
 
   const handleDeleteColumn = async (id: string) => {
+    suppressDataRealtime();
     await supabase.from("planner_columns" as any).delete().eq("id", id);
     toast.success("Kolumn borttagen");
     fetchBoardData();
@@ -257,13 +311,15 @@ export default function Planner() {
 
   // Card operations
   const handleSaveCard = async (data: Partial<PlannerCard> & { id?: string }) => {
+    suppressDataRealtime();
+
     if (data.id) {
       const { id, ...update } = data;
       await supabase.from("planner_cards" as any).update(update).eq("id", id);
       toast.success("Kort uppdaterat");
     } else {
       if (!user || !activeBoardId) return;
-      const colCards = cards.filter(c => c.column_id === data.column_id);
+      const colCards = cards.filter((c) => c.column_id === data.column_id);
       await supabase.from("planner_cards" as any).insert({
         ...data,
         board_id: activeBoardId,
@@ -272,10 +328,12 @@ export default function Planner() {
       });
       toast.success("Kort skapat");
     }
+
     fetchBoardData();
   };
 
   const handleDeleteCard = async (id: string) => {
+    suppressDataRealtime();
     await supabase.from("planner_cards" as any).delete().eq("id", id);
     toast.success("Kort borttaget");
     fetchBoardData();
@@ -315,6 +373,8 @@ export default function Planner() {
     setActiveCard(null);
     const { active, over } = event;
     if (!over) return;
+
+    suppressDataRealtime(3000);
 
     const activeId = active.id as string;
     const overId = over.id as string;
@@ -411,9 +471,7 @@ export default function Planner() {
         >
           <div className="w-full overflow-x-auto kanban-scroll pb-2">
             <div className="flex gap-4 pb-4 min-h-[60vh]">
-              {columns
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map(col => {
+              {sortedColumns.map((col) => {
                   const colCards = filteredCards
                     .filter(c => c.column_id === col.id)
                     .sort((a, b) => a.sort_order - b.sort_order);
