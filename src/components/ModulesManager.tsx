@@ -8,22 +8,6 @@ import { LayoutGrid, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getModuleIcon } from "@/lib/moduleIcons";
 
-const ALL_ROLES = ["admin", "manager", "employee", "staff", "it"] as const;
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  manager: "Chef",
-  employee: "Anställd",
-  staff: "Stab",
-  it: "IT",
-};
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-destructive/10 text-destructive",
-  manager: "bg-warning/10 text-warning",
-  employee: "bg-accent/10 text-accent",
-  staff: "bg-primary/10 text-primary",
-  it: "bg-primary/10 text-primary",
-};
-
 interface Module {
   id: string;
   name: string;
@@ -33,13 +17,6 @@ interface Module {
   sort_order: number;
   is_active: boolean;
   description: string;
-}
-
-interface Access {
-  id?: string;
-  module_id: string;
-  role: string;
-  has_access: boolean;
 }
 
 export default function ModulesManager({ onClose }: { onClose?: () => void }) {
