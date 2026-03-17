@@ -125,7 +125,7 @@ export default function Planner() {
   // Column operations
   const handleSaveColumn = async (data: { name: string; color: string | null; wip_limit: number | null; id?: string }) => {
     if (data.id) {
-      await supabase.from("planner_columns").update({ name: data.name, color: data.color, wip_limit: data.wip_limit }).eq("id", data.id);
+      await supabase.from("planner_columns" as any).update({ name: data.name, color: data.color, wip_limit: data.wip_limit }).eq("id", data.id);
       toast.success("Kolumn uppdaterad");
     } else {
       if (!activeBoardId) return;
