@@ -142,6 +142,26 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
         <Plus className="h-3.5 w-3.5" /> Ny board
       </Button>
 
+      {/* Archived boards dropdown */}
+      {archivedBoards.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5 shrink-0 text-muted-foreground">
+              <Archive className="h-3.5 w-3.5" />
+              Arkiverade ({archivedBoards.length})
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {archivedBoards.map(b => (
+              <DropdownMenuItem key={b.id} onClick={() => onRestore(b.id)} className="gap-2">
+                <ArchiveRestore className="h-3.5 w-3.5" />
+                {b.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
       {/* Edit / Create dialog */}
       <Dialog open={dialogOpen} onOpenChange={v => !v && handleClose()}>
         <DialogContent className="max-w-sm">
