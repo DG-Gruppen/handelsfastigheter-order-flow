@@ -17,6 +17,7 @@ export interface PlannerCard {
   due_date: string | null;
   due_done: boolean;
   labels: string[] | null;
+  cover_color: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

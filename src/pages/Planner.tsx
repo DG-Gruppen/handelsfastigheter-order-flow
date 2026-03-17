@@ -392,10 +392,11 @@ export default function Planner() {
         due_done: data.due_done ?? false,
         column_id: data.column_id!,
         labels: data.labels ?? [],
+        cover_color: (data as any).cover_color ?? null,
         board_id: activeBoardId,
         reporter_id: user.id,
         sort_order: colCards.length,
-      });
+      } as any);
       toast.success("Kort skapat");
       if (user && activeBoardId) {
         logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "created", entityType: "card", entityName: data.title });
