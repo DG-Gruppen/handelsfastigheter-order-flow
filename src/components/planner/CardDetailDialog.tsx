@@ -6,9 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Trash2, X, Plus } from "lucide-react";
 import type { PlannerCard } from "./KanbanCard";
 import type { PlannerColumn } from "./KanbanColumn";
+import CardComments from "./CardComments";
 
 interface Profile {
   user_id: string;
@@ -83,7 +85,7 @@ export default function CardDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{card ? "Redigera kort" : "Nytt kort"}</DialogTitle>
         </DialogHeader>
@@ -183,7 +185,16 @@ export default function CardDetailDialog({
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          {/* Comments */}
+          {card && (
+            <>
+              <Separator />
+              <CardComments cardId={card.id} profiles={profiles} />
+            </>
+          )}
+
+          <Separator />
+          <div className="flex items-center justify-between pt-1">
             {card && (
               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10"
                 onClick={() => { onDelete(card.id); onClose(); }}>
