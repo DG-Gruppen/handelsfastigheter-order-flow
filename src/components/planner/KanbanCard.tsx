@@ -36,7 +36,7 @@ const priorityConfig = {
   low: { icon: ArrowDown, color: "text-accent", bg: "bg-accent/10", label: "Låg" },
 };
 
-export default function KanbanCard({ card, assigneeName, onClick, overlay }: Props) {
+export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", card },
