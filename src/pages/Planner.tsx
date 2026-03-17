@@ -283,6 +283,15 @@ export default function Planner() {
     toast.success("Board arkiverad");
   };
 
+  const handleRestoreBoard = async (id: string) => {
+    suppressBoardRealtime();
+    setBoards((prev) => prev.map((b) => (b.id === id ? { ...b, is_archived: false } : b)));
+    setActiveBoardId(id);
+    await supabase.from("planner_boards").update({ is_archived: false }).eq("id", id);
+    toast.success("Board återställd");
+  };
+  };
+
   const handleSaveColumn = async (data: { name: string; color: string | null; wip_limit: number | null; id?: string }) => {
     suppressDataRealtime();
 
