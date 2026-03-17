@@ -23,6 +23,7 @@ interface Props {
   cards: PlannerCard[];
   profileMap: Record<string, string>;
   checklistSummaries?: Record<string, ChecklistSummary>;
+  attachmentCounts?: Record<string, number>;
   onAddCard: () => void;
   onEditColumn: () => void;
   onDeleteColumn: () => void;
