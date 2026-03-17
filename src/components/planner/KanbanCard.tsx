@@ -60,7 +60,18 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
 
   const assigneeInitials = getInitials(assigneeName);
   const reporterInitials = getInitials(reporterName);
-  const isOverdue = card.due_date && !card.due_done && new Date(card.due_date) < new Date();
+  const getDueDateColor = () => {
+    if (!card.due_date || card.due_done) return card.due_done ? "done" : "neutral";
+    const now = new Date();
+    const due = new Date(card.due_date);
+    const diffMs = due.getTime() - now.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays < 0) return "overdue";
+    if (diffDays < 1) return "red";
+    if (diffDays < 2) return "orange";
+    return "green";
+  };
+  const dueDateColor = getDueDateColor();
   const hasDescription = !!card.description?.trim();
   const hasChecklist = checklistSummary && checklistSummary.total > 0;
   const hasAttachments = attachmentCount && attachmentCount > 0;
