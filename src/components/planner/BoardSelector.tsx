@@ -8,7 +8,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Kanban, MoreVertical, Pencil, Trash2, Archive } from "lucide-react";
+import { Plus, Kanban, MoreVertical, Pencil, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -28,9 +28,10 @@ interface Props {
   onUpdate: (id: string, name: string, description: string) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
 }
 
-export default function BoardSelector({ boards, activeBoardId, onSelect, onCreate, onUpdate, onDelete, onArchive }: Props) {
+export default function BoardSelector({ boards, activeBoardId, onSelect, onCreate, onUpdate, onDelete, onArchive, onRestore }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [name, setName] = useState("");
@@ -71,6 +72,7 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
   };
 
   const activeBoards = boards.filter(b => !b.is_archived);
+  const archivedBoards = boards.filter(b => b.is_archived);
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
@@ -139,6 +141,26 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
       >
         <Plus className="h-3.5 w-3.5" /> Ny board
       </Button>
+
+      {/* Archived boards dropdown */}
+      {archivedBoards.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5 shrink-0 text-muted-foreground">
+              <Archive className="h-3.5 w-3.5" />
+              Arkiverade ({archivedBoards.length})
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {archivedBoards.map(b => (
+              <DropdownMenuItem key={b.id} onClick={() => onRestore(b.id)} className="gap-2">
+                <ArchiveRestore className="h-3.5 w-3.5" />
+                {b.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {/* Edit / Create dialog */}
       <Dialog open={dialogOpen} onOpenChange={v => !v && handleClose()}>
