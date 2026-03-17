@@ -122,16 +122,8 @@ export default function Admin() {
     }
   };
 
-  // Mobile & Tablet: card-based navigation (< 1024px)
-  const [compact, setCompact] = useState(() => typeof window !== "undefined" && window.innerWidth < 1024);
 
-  useEffect(() => {
-    const mql = window.matchMedia("(max-width: 1023px)");
-    const onChange = () => setCompact(mql.matches);
-    mql.addEventListener("change", onChange);
-    setCompact(mql.matches);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
+
 
   if (compact) {
     return (
