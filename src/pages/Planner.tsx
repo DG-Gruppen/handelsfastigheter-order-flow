@@ -122,7 +122,32 @@ export default function Planner() {
     toast.success("Board skapad");
   };
 
-  // Column operations
+  const handleUpdateBoard = async (id: string, name: string, description: string) => {
+    await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
+    setBoards(prev => prev.map(b => b.id === id ? { ...b, name, description } : b));
+    toast.success("Board uppdaterad");
+  };
+
+  const handleDeleteBoard = async (id: string) => {
+    await supabase.from("planner_boards" as any).delete().eq("id", id);
+    setBoards(prev => prev.filter(b => b.id !== id));
+    if (activeBoardId === id) {
+      const remaining = boards.filter(b => b.id !== id && !b.is_archived);
+      setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
+    }
+    toast.success("Board borttagen");
+  };
+
+  const handleArchiveBoard = async (id: string) => {
+    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
+    setBoards(prev => prev.map(b => b.id === id ? { ...b, is_archived: true } : b));
+    if (activeBoardId === id) {
+      const remaining = boards.filter(b => b.id !== id && !b.is_archived);
+      setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
+    }
+    toast.success("Board arkiverad");
+  };
+
   const handleSaveColumn = async (data: { name: string; color: string | null; wip_limit: number | null; id?: string }) => {
     if (data.id) {
       await supabase.from("planner_columns" as any).update({ name: data.name, color: data.color, wip_limit: data.wip_limit }).eq("id", data.id);
@@ -274,6 +299,9 @@ export default function Planner() {
         activeBoardId={activeBoardId}
         onSelect={setActiveBoardId}
         onCreate={handleCreateBoard}
+        onUpdate={handleUpdateBoard}
+        onDelete={handleDeleteBoard}
+        onArchive={handleArchiveBoard}
       />
 
       {/* Kanban board */}
