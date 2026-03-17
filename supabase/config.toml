@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.fetch-cision-feed]
 verify_jwt = false
+
+[functions.database-backup]
+verify_jwt = false
