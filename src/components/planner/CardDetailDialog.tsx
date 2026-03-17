@@ -28,6 +28,7 @@ interface Props {
   onClose: () => void;
   onSave: (card: Partial<PlannerCard> & { id?: string }) => void;
   onDelete: (id: string) => void;
+  onCopy?: (id: string) => void;
   defaultColumnId?: string;
 }
 
