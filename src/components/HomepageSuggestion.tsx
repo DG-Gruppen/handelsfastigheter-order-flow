@@ -163,7 +163,17 @@ export default function HomepageSuggestion() {
     }
   };
 
-  const pwaSteps = isIos() ? IOS_PWA_STEPS : ANDROID_PWA_STEPS;
+  const pwaSteps = isIos()
+    ? IOS_PWA_STEPS
+    : isSamsungBrowser()
+      ? ANDROID_SAMSUNG_PWA_STEPS
+      : ANDROID_CHROME_PWA_STEPS;
+
+  const pwaLabel = isIos()
+    ? "iPhone / iPad (Safari)"
+    : isSamsungBrowser()
+      ? "Android (Samsung Internet)"
+      : "Android (Chrome)";
 
   return (
     <AnimatePresence>
