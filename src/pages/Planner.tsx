@@ -165,7 +165,7 @@ export default function Planner() {
   };
 
   const handleDeleteCard = async (id: string) => {
-    await supabase.from("planner_cards").delete().eq("id", id);
+    await supabase.from("planner_cards" as any).delete().eq("id", id);
     toast.success("Kort borttaget");
     fetchBoardData();
   };
