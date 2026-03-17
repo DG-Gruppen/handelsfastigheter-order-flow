@@ -1,22 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Award, PartyPopper, Pen, BookOpen, ChevronRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Award, PartyPopper, Pen, BookOpen, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import RecognitionDialog from "@/components/RecognitionDialog";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { toast } from "sonner";
 
 const veckansVinst = {
   title: "Region Syd knäcker alla förväntningar",
   body: "Förvaltningsteam Syd har genomfört omförhandling av samtliga utgående avtal under Q1 med en genomsnittlig hyreshöjning på 4,2%. Detta stärker vår position som Skandinaviens bästa extern-handelsförvaltare. Stort tack till Peter Högberg, Julia Parker och Alexander Bertilsson!",
   author: "Petra Bondesson",
   week: "v.11 2026",
-};
-
-const vdBlogg = {
-  title: "Reflektioner efter ett rekordår",
-  date: "Q4 2025",
-  excerpt: "2025 blev vårt starkaste år. Men det som gör mig mest stolt är inte siffrorna – det är hur vi nådde dit. Varje hyresförhandling, varje energimätning, varje felanmälan som hanterades inom 24 timmar. Det är ni som bygger SHF:s framgång. Tack.",
-  author: "Thomas Holm",
 };
 
 interface Recognition {
@@ -28,8 +26,23 @@ interface Recognition {
   to_name: string;
 }
 
+interface CeoBlog {
+  id: string;
+  title: string;
+  excerpt: string;
+  author: string;
+  period: string;
+}
+
 export default function Culture() {
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("admin");
+
   const [recognitions, setRecognitions] = useState<Recognition[]>([]);
+  const [ceoBlog, setCeoBlog] = useState<CeoBlog | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<CeoBlog | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const fetchRecognitions = useCallback(async () => {
     const { data } = await supabase
@@ -55,9 +68,55 @@ export default function Culture() {
     })));
   }, []);
 
+  const fetchCeoBlog = useCallback(async () => {
+    const { data } = await supabase
+      .from("ceo_blog" as any)
+      .select("id, title, excerpt, author, period")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (data) setCeoBlog(data as any);
+  }, []);
+
   useEffect(() => {
     fetchRecognitions();
-  }, [fetchRecognitions]);
+    fetchCeoBlog();
+  }, [fetchRecognitions, fetchCeoBlog]);
+
+  const startEdit = () => {
+    if (!ceoBlog) return;
+    setEditForm({ ...ceoBlog });
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setEditForm(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editForm) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("ceo_blog" as any)
+      .update({
+        title: editForm.title,
+        excerpt: editForm.excerpt,
+        author: editForm.author,
+        period: editForm.period,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("id", editForm.id);
+    if (error) {
+      toast.error("Kunde inte spara");
+    } else {
+      toast.success("Uppdaterat!");
+      setCeoBlog(editForm);
+      setEditing(false);
+      setEditForm(null);
+    }
+    setSaving(false);
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -110,16 +169,72 @@ export default function Culture() {
         </div>
       </div>
 
-      {/* VD-bloggen */}
-      <div className="rounded-2xl p-6 md:p-8 bg-[hsl(var(--sidebar-background))]">
-        <div className="flex items-center gap-2 mb-4">
-          <Pen className="w-5 h-5 text-[hsl(var(--sidebar-foreground))]/60" />
-          <h2 className="font-heading text-xl font-semibold text-[hsl(var(--sidebar-foreground))]">Från styrelserummet</h2>
+      {/* VD-bloggen / Från styrelserummet */}
+      {ceoBlog && (
+        <div className="rounded-2xl p-6 md:p-8 bg-[hsl(var(--sidebar-background))] relative">
+          {isAdmin && !editing && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startEdit}
+              className="absolute top-4 right-4 text-white/60 hover:text-white hover:bg-white/10"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+
+          <div className="flex items-center gap-2 mb-4">
+            <Pen className="w-5 h-5 text-white/60" />
+            <h2 className="font-heading text-xl font-semibold text-white">Från styrelserummet</h2>
+          </div>
+
+          {editing && editForm ? (
+            <div className="space-y-3">
+              <Input
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                placeholder="Rubrik"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              />
+              <Textarea
+                value={editForm.excerpt}
+                onChange={(e) => setEditForm({ ...editForm, excerpt: e.target.value })}
+                placeholder="Text"
+                rows={4}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              />
+              <div className="flex gap-2">
+                <Input
+                  value={editForm.author}
+                  onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
+                  placeholder="Författare"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40 flex-1"
+                />
+                <Input
+                  value={editForm.period}
+                  onChange={(e) => setEditForm({ ...editForm, period: e.target.value })}
+                  placeholder="Period (t.ex. Q1 2026)"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40 flex-1"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" onClick={saveEdit} disabled={saving} className="bg-white/20 hover:bg-white/30 text-white">
+                  <Check className="h-4 w-4 mr-1" /> Spara
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white/60 hover:text-white hover:bg-white/10">
+                  <X className="h-4 w-4 mr-1" /> Avbryt
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="font-heading text-lg text-white font-semibold mb-2">{ceoBlog.title}</h3>
+              <p className="text-sm text-white/80 leading-relaxed italic">"{ceoBlog.excerpt}"</p>
+              <p className="text-xs text-white/50 mt-4">— {ceoBlog.author}, {ceoBlog.period}</p>
+            </>
+          )}
         </div>
-        <h3 className="font-heading text-lg text-[hsl(var(--sidebar-foreground))] font-semibold mb-2">{vdBlogg.title}</h3>
-        <p className="text-sm text-[hsl(var(--sidebar-foreground))]/70 leading-relaxed italic">"{vdBlogg.excerpt}"</p>
-        <p className="text-xs text-[hsl(var(--sidebar-foreground))]/50 mt-4">— {vdBlogg.author}, {vdBlogg.date}</p>
-      </div>
+      )}
 
       {/* Karriärvägar */}
       <div className="rounded-2xl p-6 bg-accent/10">
@@ -134,7 +249,7 @@ export default function Culture() {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
             <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">Avtalsansvarig</span>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            <span className="bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] text-xs px-3 py-1 rounded-full">Chef</span>
+            <span className="bg-[hsl(var(--sidebar-background))] text-white text-xs px-3 py-1 rounded-full">Chef</span>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
             "Marit gick från koordinator till avtalsansvarig på 2 år"
