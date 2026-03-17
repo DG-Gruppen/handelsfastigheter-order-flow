@@ -14,7 +14,10 @@ import KanbanCard, { type PlannerCard } from "@/components/planner/KanbanCard";
 import CardDetailDialog from "@/components/planner/CardDetailDialog";
 import ColumnDialog from "@/components/planner/ColumnDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Kanban } from "lucide-react";
+import { Plus, Kanban, History } from "lucide-react";
+import BoardActivityLog from "@/components/planner/BoardActivityLog";
+import { logPlannerActivity } from "@/components/planner/logActivity";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import PlannerFilters, { EMPTY_FILTERS, type PlannerFilterState } from "@/components/planner/PlannerFilters";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
