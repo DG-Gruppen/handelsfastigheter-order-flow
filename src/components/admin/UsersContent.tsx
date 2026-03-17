@@ -244,12 +244,12 @@ export default function UsersContent() {
                     {p.department && <span className="flex items-center gap-1"><Building2 className="h-3 w-3 shrink-0" />{p.department}</span>}
                   </div>
                 </div>
-                {/* Effective roles from groups */}
-                {effectiveRoles.length > 0 && (
+                {/* Groups */}
+                {groupNames.length > 0 && (
                   <div className="flex gap-1.5 flex-wrap">
-                    {effectiveRoles.map(role => (
-                      <Badge key={role} variant="outline" className={`capitalize text-xs ${roleColors[role] ?? ""}`}>
-                        {roleLabels[role] ?? role}
+                    {groupNames.map(name => (
+                      <Badge key={name} variant="outline" className="text-[10px] bg-secondary/50 text-muted-foreground border-border/50">
+                        {name}
                       </Badge>
                     ))}
                   </div>
