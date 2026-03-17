@@ -35,7 +35,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules" | "knowledge" | "groups" | "permissions";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
