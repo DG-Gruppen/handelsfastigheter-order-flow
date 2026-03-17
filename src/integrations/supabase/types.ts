@@ -1040,6 +1040,38 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_card_comments: {
+        Row: {
+          card_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_card_comments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "planner_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planner_cards: {
         Row: {
           assignee_id: string | null
