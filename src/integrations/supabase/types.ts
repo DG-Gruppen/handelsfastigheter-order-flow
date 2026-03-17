@@ -1310,6 +1310,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tools: {
+        Row: {
+          created_at: string
+          description: string
+          emoji: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          url?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
