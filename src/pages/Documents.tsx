@@ -1,9 +1,11 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, Search, Upload, FolderPlus, FolderUp, X, Trash2,
-  FolderInput, Download, ChevronRight, ArrowUp,
+  FolderInput, Download, ChevronRight, ArrowUp, PanelLeft,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
