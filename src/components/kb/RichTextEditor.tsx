@@ -8,17 +8,19 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   List, ListOrdered, Heading1, Heading2, Heading3,
   AlignLeft, AlignCenter, AlignRight,
   Link as LinkIcon, Image as ImageIcon, Quote, Code,
-  Undo, Redo, Highlighter, Type, Code2,
+  Undo, Redo, Highlighter, Type, Code2, Upload, Loader2,
 } from "lucide-react";
 
 interface Props {
@@ -93,13 +95,41 @@ export default function RichTextEditor({ content, onChange }: Props) {
     }
   }, [editor]);
 
-  const addImage = useCallback(() => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const addImageFromUrl = useCallback(() => {
     if (!editor) return;
     const url = window.prompt("Ange bild-URL:");
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();
     }
   }, [editor]);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!editor) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Fel", description: "Filen måste vara en bild", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    const path = `${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from("kb-images").upload(path, file);
+    if (error) {
+      toast({ title: "Uppladdningsfel", description: error.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("kb-images").getPublicUrl(path);
+    editor.chain().focus().setImage({ src: urlData.publicUrl }).run();
+    setUploading(false);
+  }, [editor]);
+
+  const onFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageUpload(file);
+    e.target.value = "";
+  }, [handleImageUpload]);
 
   if (!editor) return null;
 
@@ -242,9 +272,23 @@ export default function RichTextEditor({ content, onChange }: Props) {
             />
             <ToolBtn
               active={false}
-              onClick={addImage}
+              onClick={() => fileInputRef.current?.click()}
+              icon={uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              title="Ladda upp bild"
+              disabled={uploading}
+            />
+            <ToolBtn
+              active={false}
+              onClick={addImageFromUrl}
               icon={<ImageIcon className="h-3.5 w-3.5" />}
-              title="Infoga bild"
+              title="Infoga bild via URL"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onFileChange}
             />
             <Separator orientation="vertical" className="h-5 mx-1" />
             <ToolBtn
