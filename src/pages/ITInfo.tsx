@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones, Settings, Check } from "lucide-react";
 import { toast } from "sonner";
 import FaqManager from "@/components/FaqManager";
+import PwaInstallGuide from "@/components/PwaInstallGuide";
 
 interface FaqItem {
   id: string;
