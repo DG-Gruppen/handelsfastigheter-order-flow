@@ -138,9 +138,7 @@ export default function Dashboard() {
             <CardTitle className="font-heading text-base flex items-center gap-2">
               <PartyPopper className="w-5 h-5 text-primary" />
               Senaste erkännanden
-              <span className="ml-auto">
-                <RecognitionDialog onCreated={fetchRecognitions} />
-              </span>
+              <Link to="/kulturen" className="ml-auto text-xs text-primary hover:underline font-medium">Alla →</Link>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
