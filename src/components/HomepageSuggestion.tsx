@@ -20,6 +20,10 @@ function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+function isSamsungBrowser() {
+  return /samsungbrowser/i.test(navigator.userAgent);
+}
+
 function isInStandaloneMode() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -74,15 +78,27 @@ const BROWSER_STEPS: Record<BrowserType, string[]> = {
 };
 
 const IOS_PWA_STEPS = [
-  "Tryck på Dela-knappen (▫︎↑) längst ner i Safari",
-  "Scrolla ner och tryck \"Lägg till på hemskärmen\"",
-  "Ge appen ett namn (t.ex. \"SHF\") och tryck \"Lägg till\"",
+  "Öppna SHF i Safari (det fungerar inte i Chrome eller andra webbläsare på iPhone)",
+  "Tryck på Dela-ikonen ⬆ (fyrkant med pil uppåt) längst ner i Safari",
+  "Scrolla ner i menyn och tryck på \"Lägg till på hemskärmen\" 📲",
+  "Skriv \"SHF\" som namn och tryck \"Lägg till\" uppe till höger",
+  "Appen finns nu som en ikon på din hemskärm — öppna den därifrån för bästa upplevelse!",
 ];
 
-const ANDROID_PWA_STEPS = [
-  "Tryck på menyn (⋮) uppe till höger i Chrome",
-  "Välj \"Lägg till på startskärmen\" eller \"Installera app\"",
-  "Bekräfta genom att trycka \"Lägg till\"",
+const ANDROID_CHROME_PWA_STEPS = [
+  "Öppna SHF i Google Chrome",
+  "Tryck på de tre prickarna ⋮ uppe till höger",
+  "Välj \"Installera app\" eller \"Lägg till på startskärmen\"",
+  "Tryck \"Installera\" i dialogrutan som visas",
+  "Appen finns nu i din applista och på hemskärmen — tryck på ikonen för att öppna!",
+];
+
+const ANDROID_SAMSUNG_PWA_STEPS = [
+  "Öppna SHF i Samsung Internet",
+  "Tryck på hamburgermenyn ☰ (tre streck) längst ner",
+  "Välj \"Lägg till sida på\" → \"Startskärm\"",
+  "Namnge genvägen \"SHF\" och tryck \"Lägg till\"",
+  "Appen finns nu som en ikon på din hemskärm!",
 ];
 
 const STORAGE_KEY = "shf-homepage-dismissed";
@@ -147,7 +163,17 @@ export default function HomepageSuggestion() {
     }
   };
 
-  const pwaSteps = isIos() ? IOS_PWA_STEPS : ANDROID_PWA_STEPS;
+  const pwaSteps = isIos()
+    ? IOS_PWA_STEPS
+    : isSamsungBrowser()
+      ? ANDROID_SAMSUNG_PWA_STEPS
+      : ANDROID_CHROME_PWA_STEPS;
+
+  const pwaLabel = isIos()
+    ? "iPhone / iPad (Safari)"
+    : isSamsungBrowser()
+      ? "Android (Samsung Internet)"
+      : "Android (Chrome)";
 
   return (
     <AnimatePresence>
@@ -250,7 +276,7 @@ export default function HomepageSuggestion() {
                   <div className="rounded-lg bg-muted/50 p-3">
                     <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-2">
                       {showPwaTab
-                        ? isIos() ? "iPhone / iPad" : "Android"
+                        ? pwaLabel
                         : BROWSER_LABELS[browser]}
                     </p>
                     <ol className="space-y-1.5">
