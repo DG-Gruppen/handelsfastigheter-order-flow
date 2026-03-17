@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import KanbanCard, { type PlannerCard } from "./KanbanCard";
+import KanbanCard, { type PlannerCard, type ChecklistSummary } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreHorizontal, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
