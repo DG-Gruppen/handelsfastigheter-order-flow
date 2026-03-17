@@ -111,7 +111,7 @@ export function useDocuments() {
   }, [fetchData]);
 
   // ── Folder CRUD ──
-  const createFolder = async (name: string, parentId: string | null) => {
+  const createFolder = async (name: string, parentId: string | null, icon?: string) => {
     if (!user) return;
     const maxSort = folders.filter(f => f.parent_id === parentId).reduce((m, f) => Math.max(m, f.sort_order), -1);
     const { error } = await supabase.from("document_folders").insert({
@@ -119,6 +119,7 @@ export function useDocuments() {
       parent_id: parentId,
       created_by: user.id,
       sort_order: maxSort + 1,
+      ...(icon ? { icon } : {}),
     } as any);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Mapp skapad" });
