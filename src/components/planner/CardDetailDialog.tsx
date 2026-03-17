@@ -95,9 +95,10 @@ export default function CardDetailDialog({
       assignee_id: assigneeId || null,
       due_date: dueDate || null,
       due_done: dueDone, column_id: columnId, labels,
-    });
+      cover_color: coverColor,
+    } as any);
     onClose();
-  }, [card, title, description, priority, assigneeId, dueDate, dueDone, columnId, labels, onSave, onClose]);
+  }, [card, title, description, priority, assigneeId, dueDate, dueDone, columnId, labels, coverColor, onSave, onClose]);
 
   const addLabel = () => {
     const l = newLabel.trim();
