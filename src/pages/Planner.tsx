@@ -575,33 +575,35 @@ export default function Planner() {
         >
           <div className="w-full overflow-x-auto kanban-scroll pb-2">
             <div className="flex gap-4 pb-4 min-h-[60vh]">
-              {sortedColumns.map((col) => {
-                  const colCards = filteredCards
-                    .filter(c => c.column_id === col.id)
-                    .sort((a, b) => a.sort_order - b.sort_order);
-                  return (
-                    <KanbanColumn
-                      key={col.id}
-                      column={col}
-                      cards={colCards}
-                      profileMap={profileMap}
-                      onAddCard={() => {
-                        setEditingCard(null);
-                        setDefaultColumnId(col.id);
-                        setCardDialogOpen(true);
-                      }}
-                      onEditColumn={() => {
-                        setEditingColumn(col);
-                        setColumnDialogOpen(true);
-                      }}
-                      onDeleteColumn={() => setConfirmDeleteColumn(col)}
-                      onCardClick={(card) => {
-                        setEditingCard(card);
-                        setCardDialogOpen(true);
-                      }}
-                    />
-                  );
-                })}
+              <SortableContext items={sortedColumns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                {sortedColumns.map((col) => {
+                    const colCards = filteredCards
+                      .filter(c => c.column_id === col.id)
+                      .sort((a, b) => a.sort_order - b.sort_order);
+                    return (
+                      <KanbanColumn
+                        key={col.id}
+                        column={col}
+                        cards={colCards}
+                        profileMap={profileMap}
+                        onAddCard={() => {
+                          setEditingCard(null);
+                          setDefaultColumnId(col.id);
+                          setCardDialogOpen(true);
+                        }}
+                        onEditColumn={() => {
+                          setEditingColumn(col);
+                          setColumnDialogOpen(true);
+                        }}
+                        onDeleteColumn={() => setConfirmDeleteColumn(col)}
+                        onCardClick={(card) => {
+                          setEditingCard(card);
+                          setCardDialogOpen(true);
+                        }}
+                      />
+                    );
+                  })}
+              </SortableContext>
 
               {/* Add column button */}
               <button
@@ -623,6 +625,18 @@ export default function Planner() {
                 card={activeCard}
                 assigneeName={activeCard.assignee_id ? profileMap[activeCard.assignee_id] : undefined}
                 onClick={() => {}}
+                overlay
+              />
+            )}
+            {activeColumn && (
+              <KanbanColumn
+                column={activeColumn}
+                cards={filteredCards.filter(c => c.column_id === activeColumn.id).sort((a, b) => a.sort_order - b.sort_order)}
+                profileMap={profileMap}
+                onAddCard={() => {}}
+                onEditColumn={() => {}}
+                onDeleteColumn={() => {}}
+                onCardClick={() => {}}
                 overlay
               />
             )}
