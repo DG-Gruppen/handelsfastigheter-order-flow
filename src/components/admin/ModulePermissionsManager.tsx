@@ -130,7 +130,8 @@ export default function ModulePermissionsManager() {
     }
     toast.success("Rättighet tillagd");
     setAddId("");
-    fetchData();
+    await fetchData();
+    refreshSidebar();
   };
 
   const handleToggle = async (permId: string, field: string, value: boolean) => {
