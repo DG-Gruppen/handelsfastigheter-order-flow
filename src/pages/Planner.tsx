@@ -263,7 +263,7 @@ export default function Planner() {
       const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
-    await supabase.from("planner_boards" as any).delete().eq("id", id);
+    await supabase.from("planner_boards").delete().eq("id", id);
     toast.success("Board borttagen");
   };
 
