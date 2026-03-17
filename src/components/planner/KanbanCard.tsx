@@ -127,11 +127,12 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
               {card.due_date && (
                 <span className={cn(
                   "flex items-center gap-1 text-[11px] rounded-sm px-1.5 py-0.5 font-medium",
-                  card.due_done
-                    ? "bg-accent text-accent-foreground"
-                    : isOverdue
-                      ? "bg-destructive text-destructive-foreground"
-                      : "bg-muted text-muted-foreground"
+                  dueDateColor === "done" && "bg-accent text-accent-foreground",
+                  dueDateColor === "overdue" && "bg-destructive text-destructive-foreground",
+                  dueDateColor === "red" && "bg-destructive text-destructive-foreground",
+                  dueDateColor === "orange" && "bg-orange-500 text-white",
+                  dueDateColor === "green" && "bg-green-600 text-white",
+                  dueDateColor === "neutral" && "bg-muted text-muted-foreground"
                 )}>
                   <Calendar className="h-3 w-3" />
                   {new Date(card.due_date).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
