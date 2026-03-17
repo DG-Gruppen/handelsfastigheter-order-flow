@@ -185,7 +185,16 @@ export default function CardDetailDialog({
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          {/* Comments */}
+          {card && (
+            <>
+              <Separator />
+              <CardComments cardId={card.id} profiles={profiles} />
+            </>
+          )}
+
+          <Separator />
+          <div className="flex items-center justify-between pt-1">
             {card && (
               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10"
                 onClick={() => { onDelete(card.id); onClose(); }}>
