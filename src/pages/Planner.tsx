@@ -82,8 +82,8 @@ export default function Planner() {
       supabase.from("planner_columns" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
       supabase.from("planner_cards" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
     ]);
-    setColumns((colRes.data as PlannerColumn[]) ?? []);
-    setCards((cardRes.data as PlannerCard[]) ?? []);
+    setColumns(((colRes.data as unknown) as PlannerColumn[]) ?? []);
+    setCards(((cardRes.data as unknown) as PlannerCard[]) ?? []);
   }, [activeBoardId]);
 
   // Fetch profiles
