@@ -130,12 +130,7 @@ const adminGroups: AdminGroup[] = [
     color: "text-muted-foreground",
     items: [
       {
-        id: "modules", label: "Moduler", description: "Hantera moduler och synlighet",
-        icon: LayoutGrid, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
-        bgColor: "bg-primary/10", textColor: "text-primary",
-      },
-      {
-        id: "permissions", label: "Modulrättigheter", description: "Styr åtkomst per modul",
+        id: "permissions", label: "Modulrättigheter", description: "Hantera moduler, åtkomst och rättigheter",
         icon: Shield, color: "from-accent to-accent", borderColor: "border-t-accent/40",
         bgColor: "bg-accent/10", textColor: "text-accent",
       },
