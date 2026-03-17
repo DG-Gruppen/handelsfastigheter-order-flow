@@ -97,11 +97,11 @@ export default function Planner() {
   // Fetch boards
   const fetchBoards = useCallback(async () => {
     const { data } = await supabase
-      .from("planner_boards" as any)
+      .from("planner_boards")
       .select("*")
       .order("sort_order");
 
-    const b = ((data as unknown) as Board[]) ?? [];
+    const b = (data ?? []) as Board[];
     setBoards(b);
     setActiveBoardId((current) => {
       if (b.length === 0) return null;
