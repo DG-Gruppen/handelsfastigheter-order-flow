@@ -14,13 +14,14 @@ import UsersContent from "@/components/admin/UsersContent";
 import SettingsContent from "@/components/admin/SettingsContent";
 import ITContent from "@/components/admin/ITContent";
 import ToolsManager from "@/components/admin/ToolsManager";
+import NewsAdminPanel from "@/components/news/NewsAdminPanel";
 import {
   Shield, Users, ChevronLeft,
-  Settings, Monitor,
+  Settings, Monitor, Newspaper,
   Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news";
 
 interface AdminGroup {
   label: string;
@@ -58,6 +59,7 @@ const adminGroups: AdminGroup[] = [
     color: "text-primary",
     items: [
       { id: "knowledge", label: "Kunskapsbanken", description: "Artiklar, videor och kategorier", icon: BookOpen, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
+      { id: "news", label: "Nyheter", description: "Skapa, redigera och publicera nyheter", icon: Newspaper, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
       { id: "tools", label: "Verktyg", description: "Hantera snabblänkar på verktygssidan", icon: Link2, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
     ],
   },
@@ -118,6 +120,7 @@ export default function Admin() {
       case "settings": return <SettingsContent />;
       case "it": return <ITContent />;
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
+      case "news": return <NewsAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
       case "tools": return <ToolsManager />;
