@@ -15,10 +15,11 @@ import SettingsContent from "@/components/admin/SettingsContent";
 import ITContent from "@/components/admin/ITContent";
 import ToolsManager from "@/components/admin/ToolsManager";
 import NewsAdminPanel from "@/components/news/NewsAdminPanel";
+import DatabaseBackup from "@/components/admin/DatabaseBackup";
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database,
 } from "lucide-react";
 
 type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news";
