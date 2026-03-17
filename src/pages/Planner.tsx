@@ -7,7 +7,7 @@ import {
   type DragStartEvent, type DragEndEvent, type DragOverEvent,
   PointerSensor, TouchSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import BoardSelector from "@/components/planner/BoardSelector";
 import KanbanColumn, { type PlannerColumn } from "@/components/planner/KanbanColumn";
 import KanbanCard, { type PlannerCard } from "@/components/planner/KanbanCard";
@@ -60,6 +60,7 @@ export default function Planner() {
 
   // DnD
   const [activeCard, setActiveCard] = useState<PlannerCard | null>(null);
+  const [activeColumn, setActiveColumn] = useState<PlannerColumn | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -380,13 +381,22 @@ export default function Planner() {
   // DnD handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const card = cards.find(c => c.id === active.id);
-    if (card) setActiveCard(card);
+    const dragType = active.data.current?.type;
+    if (dragType === "column") {
+      const col = columns.find(c => c.id === active.id);
+      if (col) setActiveColumn(col);
+    } else {
+      const card = cards.find(c => c.id === active.id);
+      if (card) setActiveCard(card);
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
+
+    // Skip column-over-column (handled in dragEnd)
+    if (active.data.current?.type === "column") return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
@@ -409,11 +419,34 @@ export default function Planner() {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveCard(null);
+    setActiveColumn(null);
     const { active, over } = event;
     if (!over) return;
 
     suppressDataRealtime(3000);
 
+    // Column reorder
+    if (active.data.current?.type === "column") {
+      const activeId = active.id as string;
+      const overId = over.id as string;
+      if (activeId === overId) return;
+
+      const oldIdx = sortedColumns.findIndex(c => c.id === activeId);
+      const newIdx = sortedColumns.findIndex(c => c.id === overId);
+      if (oldIdx < 0 || newIdx < 0) return;
+
+      const reordered = arrayMove(sortedColumns, oldIdx, newIdx);
+      setColumns(reordered.map((c, i) => ({ ...c, sort_order: i })));
+
+      for (let i = 0; i < reordered.length; i++) {
+        await supabase.from("planner_columns")
+          .update({ sort_order: i })
+          .eq("id", reordered[i].id);
+      }
+      return;
+    }
+
+    // Card reorder / move
     const activeId = active.id as string;
     const overId = over.id as string;
 
@@ -542,33 +575,35 @@ export default function Planner() {
         >
           <div className="w-full overflow-x-auto kanban-scroll pb-2">
             <div className="flex gap-4 pb-4 min-h-[60vh]">
-              {sortedColumns.map((col) => {
-                  const colCards = filteredCards
-                    .filter(c => c.column_id === col.id)
-                    .sort((a, b) => a.sort_order - b.sort_order);
-                  return (
-                    <KanbanColumn
-                      key={col.id}
-                      column={col}
-                      cards={colCards}
-                      profileMap={profileMap}
-                      onAddCard={() => {
-                        setEditingCard(null);
-                        setDefaultColumnId(col.id);
-                        setCardDialogOpen(true);
-                      }}
-                      onEditColumn={() => {
-                        setEditingColumn(col);
-                        setColumnDialogOpen(true);
-                      }}
-                      onDeleteColumn={() => setConfirmDeleteColumn(col)}
-                      onCardClick={(card) => {
-                        setEditingCard(card);
-                        setCardDialogOpen(true);
-                      }}
-                    />
-                  );
-                })}
+              <SortableContext items={sortedColumns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                {sortedColumns.map((col) => {
+                    const colCards = filteredCards
+                      .filter(c => c.column_id === col.id)
+                      .sort((a, b) => a.sort_order - b.sort_order);
+                    return (
+                      <KanbanColumn
+                        key={col.id}
+                        column={col}
+                        cards={colCards}
+                        profileMap={profileMap}
+                        onAddCard={() => {
+                          setEditingCard(null);
+                          setDefaultColumnId(col.id);
+                          setCardDialogOpen(true);
+                        }}
+                        onEditColumn={() => {
+                          setEditingColumn(col);
+                          setColumnDialogOpen(true);
+                        }}
+                        onDeleteColumn={() => setConfirmDeleteColumn(col)}
+                        onCardClick={(card) => {
+                          setEditingCard(card);
+                          setCardDialogOpen(true);
+                        }}
+                      />
+                    );
+                  })}
+              </SortableContext>
 
               {/* Add column button */}
               <button
@@ -590,6 +625,18 @@ export default function Planner() {
                 card={activeCard}
                 assigneeName={activeCard.assignee_id ? profileMap[activeCard.assignee_id] : undefined}
                 onClick={() => {}}
+                overlay
+              />
+            )}
+            {activeColumn && (
+              <KanbanColumn
+                column={activeColumn}
+                cards={filteredCards.filter(c => c.column_id === activeColumn.id).sort((a, b) => a.sort_order - b.sort_order)}
+                profileMap={profileMap}
+                onAddCard={() => {}}
+                onEditColumn={() => {}}
+                onDeleteColumn={() => {}}
+                onCardClick={() => {}}
                 overlay
               />
             )}
