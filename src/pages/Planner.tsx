@@ -7,7 +7,7 @@ import {
   type DragStartEvent, type DragEndEvent, type DragOverEvent,
   PointerSensor, TouchSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import BoardSelector from "@/components/planner/BoardSelector";
 import KanbanColumn, { type PlannerColumn } from "@/components/planner/KanbanColumn";
 import KanbanCard, { type PlannerCard } from "@/components/planner/KanbanCard";
