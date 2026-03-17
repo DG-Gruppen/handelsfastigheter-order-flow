@@ -49,6 +49,9 @@ export default function ColumnDialog({ column, open, onClose, onSave }: Props) {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{column ? "Redigera kolumn" : "Ny kolumn"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {column ? "Ändra kolumnens inställningar" : "Skapa en ny kolumn på boarden"}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
