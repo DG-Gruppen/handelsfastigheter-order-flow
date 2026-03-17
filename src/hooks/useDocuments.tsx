@@ -31,7 +31,7 @@ export function useDocuments() {
   const [files, setFiles] = useState<DocFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasModuleEdit, setHasModuleEdit] = useState(false);
-  const isAdmin = roles.includes("admin");
+  const isAdmin = roles.includes("admin") || roles.includes("it");
 
   const fetchData = useCallback(async () => {
     const [foldersRes, filesRes] = await Promise.all([
