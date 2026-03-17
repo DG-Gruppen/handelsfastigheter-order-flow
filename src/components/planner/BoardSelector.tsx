@@ -74,32 +74,44 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-      {activeBoards.map(b => (
-        <div key={b.id} className="flex items-center shrink-0">
-          <button
-            onClick={() => onSelect(b.id)}
+      {activeBoards.map((b) => {
+        const isActive = b.id === activeBoardId;
+
+        return (
+          <div
+            key={b.id}
             className={cn(
-              "flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
-              b.id === activeBoardId
+              "flex items-center shrink-0 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+              isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary/60 text-secondary-foreground hover:bg-secondary"
+                : "bg-secondary/60 text-secondary-foreground hover:bg-secondary",
             )}
           >
-            <Kanban className="h-3.5 w-3.5" />
-            {b.name}
+            <button
+              type="button"
+              onClick={() => onSelect(b.id)}
+              className="flex items-center gap-2 pl-3 pr-1 py-1.5"
+            >
+              <Kanban className="h-3.5 w-3.5" />
+              {b.name}
+            </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span
-                  role="button"
-                  onClick={e => e.stopPropagation()}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   className={cn(
-                    "ml-1 p-0.5 rounded hover:bg-black/10 transition-colors",
-                    b.id === activeBoardId ? "hover:bg-white/20" : ""
+                    "h-6 w-6 mr-1",
+                    isActive
+                      ? "text-primary-foreground hover:bg-primary-foreground/20"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-3.5 w-3.5" />
-                </span>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => { setEditingBoard(b); setDialogOpen(true); }}>
@@ -113,9 +125,9 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </button>
-        </div>
-      ))}
+          </div>
+        );
+      })}
       <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditingBoard(null); setDialogOpen(true); }}>
         <Plus className="h-3.5 w-3.5" /> Ny board
       </Button>
