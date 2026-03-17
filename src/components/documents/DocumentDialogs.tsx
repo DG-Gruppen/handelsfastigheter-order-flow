@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FolderOpen } from "lucide-react";
+import { getModuleIcon } from "@/lib/moduleIcons";
 import type { DocFolder } from "@/hooks/useDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,23 +11,78 @@ import {
 } from "@/components/ui/dialog";
 import { ALL_ROLES } from "./documentHelpers";
 
+const FOLDER_ICON_OPTIONS = [
+  { value: "folder", label: "Mapp" },
+  { value: "shield", label: "Säkerhet" },
+  { value: "book-open", label: "Bok" },
+  { value: "target", label: "Mål" },
+  { value: "users", label: "Personal" },
+  { value: "building", label: "Byggnad" },
+  { value: "settings", label: "Inställningar" },
+  { value: "heart", label: "Hjärta" },
+  { value: "monitor", label: "Skärm" },
+  { value: "leaf", label: "Löv" },
+  { value: "calculator", label: "Kalkylator" },
+  { value: "palette", label: "Palett" },
+  { value: "bar-chart-3", label: "Statistik" },
+  { value: "kanban", label: "Kanban" },
+  { value: "newspaper", label: "Nyheter" },
+  { value: "headphones", label: "Support" },
+];
+
 export function NewFolderDialog({ open, parentId, onClose, onCreate }: {
   open: boolean; parentId: string | null; onClose: () => void;
-  onCreate: (name: string, parentId: string | null) => void;
+  onCreate: (name: string, parentId: string | null, icon?: string) => void;
 }) {
   const [name, setName] = useState("");
-  const handleSubmit = () => { if (name.trim()) { onCreate(name.trim(), parentId); setName(""); onClose(); } };
+  const [icon, setIcon] = useState("folder");
+  const isRoot = parentId === null;
+  const handleSubmit = () => {
+    if (name.trim()) {
+      onCreate(name.trim(), parentId, isRoot ? icon : undefined);
+      setName("");
+      setIcon("folder");
+      onClose();
+    }
+  };
   return (
-    <Dialog open={open} onOpenChange={() => { setName(""); onClose(); }}>
+    <Dialog open={open} onOpenChange={() => { setName(""); setIcon("folder"); onClose(); }}>
       <DialogContent>
         <DialogHeader><DialogTitle>Skapa ny mapp</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <Label>Mappnamn</Label>
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="T.ex. Personalhandbok"
-            onKeyDown={e => e.key === "Enter" && handleSubmit()} autoFocus />
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Mappnamn</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="T.ex. Personalhandbok"
+              onKeyDown={e => e.key === "Enter" && handleSubmit()} autoFocus />
+          </div>
+          {isRoot && (
+            <div className="space-y-2">
+              <Label>Ikon</Label>
+              <div className="grid grid-cols-8 gap-1.5">
+                {FOLDER_ICON_OPTIONS.map(opt => {
+                  const Icon = getModuleIcon(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      title={opt.label}
+                      onClick={() => setIcon(opt.value)}
+                      className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                        icon === opt.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { setName(""); onClose(); }}>Avbryt</Button>
+          <Button variant="outline" onClick={() => { setName(""); setIcon("folder"); onClose(); }}>Avbryt</Button>
           <Button onClick={handleSubmit} disabled={!name.trim()}>Skapa</Button>
         </DialogFooter>
       </DialogContent>
