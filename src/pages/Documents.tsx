@@ -54,6 +54,22 @@ export default function Documents() {
     return files.filter(f => f.folder_id === selectedFolderId);
   }, [files, selectedFolderId]);
 
+  const currentSubfolders = useMemo(() => {
+    if (!selectedFolderId) return [];
+    return folders.filter(f => f.parent_id === selectedFolderId).sort((a, b) => a.name.localeCompare(b.name, "sv-SE"));
+  }, [folders, selectedFolderId]);
+
+  const breadcrumbPath = useMemo(() => {
+    if (!selectedFolderId) return [];
+    const path: DocFolder[] = [];
+    let current = folders.find(f => f.id === selectedFolderId);
+    while (current) {
+      path.unshift(current);
+      current = current.parent_id ? folders.find(f => f.id === current!.parent_id) : undefined;
+    }
+    return path;
+  }, [folders, selectedFolderId]);
+
   const searchResults = useMemo(() => {
     if (!search) return null;
     const q = search.toLowerCase();
