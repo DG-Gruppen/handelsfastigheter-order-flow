@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
 import SystemsManager from "@/components/SystemsManager";
-import ModulesManager from "@/components/ModulesManager";
+
 import KbAdminPanel from "@/components/kb/KbAdminPanel";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import ImpersonateUserCard from "@/components/admin/ImpersonateUserCard";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2,
   Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2,
-  Palette, Wrench, LayoutGrid, BookOpen, ShoppingCart, Cog, Activity
+  Palette, Wrench, BookOpen, ShoppingCart, Cog, Activity
 } from "lucide-react";
 
 
@@ -35,7 +35,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules" | "knowledge" | "groups" | "permissions";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -130,12 +130,7 @@ const adminGroups: AdminGroup[] = [
     color: "text-muted-foreground",
     items: [
       {
-        id: "modules", label: "Moduler", description: "Hantera moduler och synlighet",
-        icon: LayoutGrid, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
-        bgColor: "bg-primary/10", textColor: "text-primary",
-      },
-      {
-        id: "permissions", label: "Modulrättigheter", description: "Styr åtkomst per modul",
+        id: "permissions", label: "Modulrättigheter", description: "Hantera moduler, åtkomst och rättigheter",
         icon: Shield, color: "from-accent to-accent", borderColor: "border-t-accent/40",
         bgColor: "bg-accent/10", textColor: "text-accent",
       },
@@ -353,7 +348,7 @@ export default function Admin() {
       case "users": return <UsersContent />;
       case "settings": return <SettingsContent />;
       case "it": return <ITContent />;
-      case "modules": return <ModulesManager onClose={() => setActiveSection("menu")} />;
+      
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
