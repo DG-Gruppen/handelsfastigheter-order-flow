@@ -72,6 +72,7 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
   };
 
   const activeBoards = boards.filter(b => !b.is_archived);
+  const archivedBoards = boards.filter(b => b.is_archived);
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
