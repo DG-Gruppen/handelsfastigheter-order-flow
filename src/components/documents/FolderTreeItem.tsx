@@ -21,6 +21,7 @@ interface Props {
   onRename: (id: string, name: string) => void;
   onMove: (id: string, name: string) => void;
   onAccess: (folder: DocFolder) => void;
+  onChangeIcon: (folder: DocFolder) => void;
   onDelete: (id: string, name: string) => void;
 }
 
