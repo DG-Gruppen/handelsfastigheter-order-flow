@@ -119,6 +119,7 @@ export default function KanbanColumn({
               assigneeName={card.assignee_id ? profileMap[card.assignee_id] : undefined}
               reporterName={profileMap[card.reporter_id]}
               onClick={() => onCardClick(card)}
+              checklistSummary={checklistSummaries?.[card.id]}
             />
           ))}
         </SortableContext>
