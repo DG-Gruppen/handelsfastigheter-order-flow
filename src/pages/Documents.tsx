@@ -25,7 +25,7 @@ import { getModuleIcon } from "@/lib/moduleIcons";
 export default function Documents() {
   const {
     folders, files, loading, isAdmin,
-    createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
+    createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess, updateFolderIcon,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile, canWriteFolder,
     refresh,
   } = useDocuments();
