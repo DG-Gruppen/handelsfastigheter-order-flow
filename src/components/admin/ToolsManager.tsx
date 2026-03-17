@@ -142,6 +142,13 @@ export default function ToolsManager() {
               </div>
               <p className="text-xs text-muted-foreground truncate">{tool.description}</p>
             </div>
+            <button
+              onClick={() => handleToggleStar(tool)}
+              className="shrink-0 p-1 rounded hover:bg-secondary transition-colors"
+              title={tool.is_starred ? "Ta bort från snabbåtkomst" : "Visa i snabbåtkomst"}
+            >
+              <Star className={`h-4 w-4 ${tool.is_starred ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
+            </button>
             <Switch
               checked={tool.is_active}
               onCheckedChange={() => handleToggleActive(tool)}
