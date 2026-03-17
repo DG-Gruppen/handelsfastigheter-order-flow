@@ -355,6 +355,9 @@ export default function Planner() {
         sort_order: colCards.length,
       });
       toast.success("Kort skapat");
+      if (user && activeBoardId) {
+        logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "created", entityType: "card", entityName: data.title });
+      }
     }
 
     fetchBoardData();
