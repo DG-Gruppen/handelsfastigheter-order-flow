@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Bell, FileText, BookOpen, Video, ShoppingCart, CheckCircle2,
-  XCircle, Package, Truck, Info,
+  XCircle, Package, Truck, Info, Archive, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
   Popover,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 interface Notification {
@@ -75,8 +76,11 @@ export default function NotificationBell() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unread = useMemo(() => notifications.filter((n) => !n.is_read), [notifications]);
+  const archived = useMemo(() => notifications.filter((n) => n.is_read), [notifications]);
+  const unreadCount = unread.length;
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -85,7 +89,7 @@ export default function NotificationBell() {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(50);
     setNotifications((data as Notification[]) ?? []);
   };
 
@@ -107,7 +111,7 @@ export default function NotificationBell() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 30));
+          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 50));
         }
       )
       .subscribe();
@@ -126,14 +130,14 @@ export default function NotificationBell() {
 
   const markAllRead = async () => {
     if (!user) return;
-    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
+    const unreadIds = unread.map((n) => n.id);
     if (unreadIds.length === 0) return;
     await supabase.from("notifications").update({ is_read: true } as any).in("id", unreadIds);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
   const handleClick = (notification: Notification) => {
-    markAsRead(notification.id);
+    if (!notification.is_read) markAsRead(notification.id);
     const config = typeConfig[notification.type] || defaultConfig;
     const route = config.route(notification.reference_id);
     if (route) {
@@ -156,8 +160,43 @@ export default function NotificationBell() {
     return date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
   };
 
+  const renderNotification = (n: Notification) => {
+    const config = typeConfig[n.type] || defaultConfig;
+    const TypeIcon = config.icon;
+    return (
+      <button
+        key={n.id}
+        onClick={() => handleClick(n)}
+        className={cn(
+          "w-full text-left px-4 py-3 hover:bg-secondary/40 transition-colors",
+          !n.is_read && "bg-primary/5"
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <div className={cn("mt-0.5 shrink-0", config.color)}>
+            <TypeIcon className="h-4.5 w-4.5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className={cn("text-sm text-foreground truncate", !n.is_read && "font-semibold")}>
+                {n.title}
+              </p>
+              {!n.is_read && (
+                <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+              )}
+            </div>
+            {n.message && (
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground/70 mt-1">{formatTime(n.created_at)}</p>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setShowArchive(false); }}>
       <PopoverTrigger asChild>
         <button className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-secondary/60 transition-colors">
           <Bell className="h-5 w-5 text-muted-foreground" />
@@ -177,49 +216,59 @@ export default function NotificationBell() {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-[400px]">
-          {notifications.length === 0 ? (
+
+        <ScrollArea className="max-h-[420px]">
+          {/* Unread notifications */}
+          {unread.length === 0 && archived.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
               <p className="text-sm text-muted-foreground">Inga notiser ännu</p>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
-              {notifications.map((n) => {
-                const config = typeConfig[n.type] || defaultConfig;
-                const TypeIcon = config.icon;
-                return (
-                  <button
-                    key={n.id}
-                    onClick={() => handleClick(n)}
-                    className={cn(
-                      "w-full text-left px-4 py-3 hover:bg-secondary/40 transition-colors",
-                      !n.is_read && "bg-primary/5"
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn("mt-0.5 shrink-0", config.color)}>
-                        <TypeIcon className="h-4.5 w-4.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className={cn("text-sm text-foreground truncate", !n.is_read && "font-semibold")}>
-                            {n.title}
-                          </p>
-                          {!n.is_read && (
-                            <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                          )}
-                        </div>
-                        {n.message && (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                        )}
-                        <p className="text-[10px] text-muted-foreground/70 mt-1">{formatTime(n.created_at)}</p>
-                      </div>
+            <>
+              {unread.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-xs text-muted-foreground">Inga nya notiser</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {unread.slice(0, 5).map(renderNotification)}
+                  {unread.length > 5 && (
+                    <div className="px-4 py-2 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        +{unread.length - 5} olästa till
+                      </p>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Archive section */}
+              {archived.length > 0 && (
+                <>
+                  <Separator />
+                  <button
+                    onClick={() => setShowArchive((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-secondary/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Archive className="h-3.5 w-3.5" />
+                      <span className="text-xs font-medium">Arkiv ({archived.length})</span>
+                    </div>
+                    {showArchive ? (
+                      <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                   </button>
-                );
-              })}
-            </div>
+                  {showArchive && (
+                    <div className="divide-y divide-border/50 bg-muted/20">
+                      {archived.map(renderNotification)}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </ScrollArea>
       </PopoverContent>
