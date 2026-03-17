@@ -31,7 +31,7 @@ interface Props {
 }
 
 export default function KanbanColumn({
-  column, cards, profileMap, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
+  column, cards, profileMap, checklistSummaries, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
 }: Props) {
   const {
     attributes,
