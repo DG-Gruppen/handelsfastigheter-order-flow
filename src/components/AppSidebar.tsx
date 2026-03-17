@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
