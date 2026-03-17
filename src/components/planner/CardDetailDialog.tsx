@@ -6,13 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
 import {
   Trash2, X, Plus, CreditCard, Users, Tag, CheckSquare, Calendar,
-  Paperclip, ArrowRight, Copy, Archive, FileText, Pencil,
+  Paperclip, ArrowRight, FileText, Pencil, AlignLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlannerCard } from "./KanbanCard";
@@ -36,6 +33,15 @@ interface Props {
   defaultColumnId?: string;
 }
 
+const labelColors = [
+  "bg-accent", "bg-warning", "bg-primary", "bg-destructive",
+  "bg-purple-500", "bg-sky-500", "bg-pink-500", "bg-amber-500",
+];
+const getLabelColor = (label: string) => {
+  const idx = Math.abs(label.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % labelColors.length;
+  return labelColors[idx];
+};
+
 export default function CardDetailDialog({
   card, columns, profiles, open, onClose, onSave, onDelete, defaultColumnId,
 }: Props) {
@@ -51,6 +57,12 @@ export default function CardDetailDialog({
   const [editingDescription, setEditingDescription] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
 
+  // Sidebar popover states
+  const [showMemberPicker, setShowMemberPicker] = useState(false);
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showMovePicker, setShowMovePicker] = useState(false);
+
   useEffect(() => {
     if (card) {
       setTitle(card.title);
@@ -62,40 +74,31 @@ export default function CardDetailDialog({
       setColumnId(card.column_id);
       setLabels(card.labels ?? []);
     } else {
-      setTitle("");
-      setDescription("");
-      setPriority("medium");
-      setAssigneeId("");
-      setDueDate("");
-      setDueDone(false);
-      setColumnId(defaultColumnId ?? "");
-      setLabels([]);
+      setTitle(""); setDescription(""); setPriority("medium");
+      setAssigneeId(""); setDueDate(""); setDueDone(false);
+      setColumnId(defaultColumnId ?? ""); setLabels([]);
     }
-    setEditingDescription(false);
-    setEditingTitle(false);
+    setEditingDescription(false); setEditingTitle(false);
+    setShowMemberPicker(false); setShowLabelPicker(false);
+    setShowDatePicker(false); setShowMovePicker(false);
   }, [card, open, defaultColumnId]);
 
   const handleSave = useCallback(() => {
     if (!title.trim()) return;
     onSave({
       ...(card ? { id: card.id } : {}),
-      title: title.trim(),
-      description,
+      title: title.trim(), description,
       priority: priority as PlannerCard["priority"],
       assignee_id: assigneeId || null,
       due_date: dueDate || null,
-      due_done: dueDone,
-      column_id: columnId,
-      labels,
+      due_done: dueDone, column_id: columnId, labels,
     });
     onClose();
   }, [card, title, description, priority, assigneeId, dueDate, dueDone, columnId, labels, onSave, onClose]);
 
   const addLabel = () => {
     const l = newLabel.trim();
-    if (l && !labels.includes(l)) {
-      setLabels(prev => [...prev, l]);
-    }
+    if (l && !labels.includes(l)) setLabels(prev => [...prev, l]);
     setNewLabel("");
   };
 
@@ -104,83 +107,73 @@ export default function CardDetailDialog({
   const isOverdue = dueDate && !dueDone && new Date(dueDate) < new Date();
   const isNewCard = !card;
 
-  const labelColors = [
-    "bg-emerald-500", "bg-yellow-500", "bg-orange-500", "bg-red-500",
-    "bg-purple-500", "bg-blue-500", "bg-sky-400", "bg-pink-500",
-  ];
-  const getLabelColor = (label: string) => {
-    const idx = Math.abs(label.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % labelColors.length;
-    return labelColors[idx];
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-[680px] max-h-[90vh] overflow-hidden p-0 gap-0">
         <DialogHeader className="sr-only">
           <DialogTitle>{card ? "Redigera kort" : "Nytt kort"}</DialogTitle>
-          <DialogDescription>
-            {card ? "Redigera kortets detaljer" : "Skapa ett nytt kort"}
-          </DialogDescription>
+          <DialogDescription>{card ? "Redigera kortets detaljer" : "Skapa ett nytt kort"}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col md:flex-row min-h-0">
-          {/* ─── LEFT COLUMN ─── */}
-          <div className="flex-1 p-5 space-y-5 min-w-0 overflow-y-auto">
+        {/* Cover bar */}
+        <div className="h-12 bg-primary rounded-t-lg shrink-0" />
+
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] overflow-hidden" style={{ maxHeight: "calc(90vh - 48px)" }}>
+
+          {/* ─── LEFT: Main content ─── */}
+          <div className="overflow-y-auto p-4 md:p-5 space-y-5 min-w-0">
+
             {/* Title */}
-            <div>
-              <div className="flex items-start gap-2">
-                <CreditCard className="h-5 w-5 mt-1 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  {editingTitle || isNewCard ? (
-                    <Input
-                      value={title}
-                      onChange={e => setTitle(e.target.value)}
-                      onBlur={() => setEditingTitle(false)}
-                      placeholder="Korttitel..."
-                      className="text-lg font-semibold border-none shadow-none px-0 h-auto focus-visible:ring-0"
-                      autoFocus={isNewCard || editingTitle}
-                    />
-                  ) : (
-                    <h2
-                      className="text-lg font-semibold text-foreground cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5"
-                      onClick={() => setEditingTitle(true)}
-                    >
-                      {title || "Utan titel"}
-                    </h2>
-                  )}
-                  {columnName && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      i listan <span className="font-medium underline decoration-dotted">{columnName}</span>
-                    </p>
-                  )}
-                </div>
+            <div className="flex gap-2.5 items-start">
+              <CreditCard className="h-4 w-4 mt-1.5 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                {editingTitle || isNewCard ? (
+                  <Input
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    onBlur={() => setEditingTitle(false)}
+                    onKeyDown={e => e.key === "Enter" && setEditingTitle(false)}
+                    placeholder="Korttitel..."
+                    className="text-[17px] font-medium border-none shadow-none px-0 h-auto focus-visible:ring-0 bg-transparent"
+                    autoFocus={isNewCard || editingTitle}
+                  />
+                ) : (
+                  <h2
+                    className="text-[17px] font-medium text-foreground leading-snug cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 py-0.5"
+                    onClick={() => setEditingTitle(true)}
+                  >
+                    {title || "Utan titel"}
+                  </h2>
+                )}
+                {columnName && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    i listan <span className="underline cursor-pointer">{columnName}</span>
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Metadata row */}
+            {/* Metadata row: Labels + Due date + Members */}
             {(labels.length > 0 || dueDate || assigneeId) && (
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Labels */}
+              <div className="flex flex-wrap gap-4 ml-7">
                 {labels.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Etiketter</p>
-                    <div className="flex flex-wrap gap-1">
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1">ETIKETTER</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {labels.map(l => (
-                        <span
-                          key={l}
-                          className={cn("text-[11px] text-white font-medium rounded px-2 py-0.5 cursor-default", getLabelColor(l))}
-                        >
+                        <span key={l} className={cn("text-xs text-white font-medium rounded px-2.5 py-0.5", getLabelColor(l))}>
                           {l}
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
-
-                {/* Due date */}
                 {dueDate && (
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Förfallodatum</p>
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1">FÖRFALLODATUM</p>
                     <div className="flex items-center gap-1.5">
                       <Checkbox
                         checked={dueDone}
@@ -188,7 +181,7 @@ export default function CardDetailDialog({
                         className="h-3.5 w-3.5"
                       />
                       <span className={cn(
-                        "text-xs font-medium rounded px-2 py-0.5",
+                        "text-xs font-medium rounded px-2.5 py-0.5",
                         dueDone
                           ? "bg-accent text-accent-foreground"
                           : isOverdue
@@ -200,190 +193,207 @@ export default function CardDetailDialog({
                     </div>
                   </div>
                 )}
-
-                {/* Assignee */}
                 {assigneeName && (
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tilldelad</p>
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1">MEDLEMMAR</p>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold">
-                        {assigneeName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                      <div className="h-[30px] w-[30px] rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-medium">
+                        {getInitials(assigneeName)}
                       </div>
-                      <span className="text-xs">{assigneeName}</span>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            <Separator />
-
             {/* Description */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold text-foreground">Beskrivning</span>
-                {!editingDescription && description && card && (
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setEditingDescription(true)}>
-                    <Pencil className="h-3 w-3 mr-1" /> Redigera
-                  </Button>
+            <div className="flex gap-2.5 items-start">
+              <AlignLeft className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[13px] font-medium text-foreground">Beskrivning</span>
+                  {!editingDescription && description && card && (
+                    <Button variant="secondary" size="sm" className="h-6 text-[11px] px-2" onClick={() => setEditingDescription(true)}>
+                      Redigera
+                    </Button>
+                  )}
+                </div>
+                {editingDescription || isNewCard || !description ? (
+                  <Textarea
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    placeholder="Lägg till en mer detaljerad beskrivning..."
+                    rows={4}
+                    className="resize-none text-[13px] bg-background border border-border"
+                    onBlur={() => { if (card) setEditingDescription(false); }}
+                    autoFocus={editingDescription}
+                  />
+                ) : (
+                  <div
+                    className="text-[13px] text-muted-foreground bg-background border border-border rounded-md p-3 cursor-pointer hover:bg-muted/30 transition-colors whitespace-pre-wrap leading-relaxed min-h-[60px]"
+                    onClick={() => setEditingDescription(true)}
+                  >
+                    {description}
+                  </div>
                 )}
               </div>
-              {editingDescription || isNewCard || !description ? (
-                <Textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="Lägg till en mer detaljerad beskrivning..."
-                  rows={4}
-                  className="resize-none text-sm"
-                  onBlur={() => { if (card) setEditingDescription(false); }}
-                  autoFocus={editingDescription}
-                />
-              ) : (
-                <div
-                  className="text-sm text-foreground/80 bg-muted/40 rounded-lg p-3 cursor-pointer hover:bg-muted/60 transition-colors whitespace-pre-wrap min-h-[60px]"
-                  onClick={() => setEditingDescription(true)}
-                >
-                  {description}
-                </div>
-              )}
             </div>
 
             {/* Checklists */}
             {card && (
-              <>
-                <Separator />
-                <CardChecklists cardId={card.id} />
-              </>
+              <div className="flex gap-2.5 items-start">
+                <CheckSquare className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <CardChecklists cardId={card.id} />
+                </div>
+              </div>
             )}
 
-            {/* Comments */}
+            {/* Activity / Comments */}
             {card && (
-              <>
-                <Separator />
-                <CardComments cardId={card.id} profiles={profiles} />
-              </>
+              <div className="flex gap-2.5 items-start">
+                <FileText className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <CardComments cardId={card.id} profiles={profiles} />
+                </div>
+              </div>
             )}
           </div>
 
-          {/* ─── RIGHT SIDEBAR ─── */}
-          <div className="md:w-48 border-t md:border-t-0 md:border-l border-border p-4 space-y-5 bg-muted/20 shrink-0">
-            {/* Add to card */}
-            <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Lägg till på kort</p>
-              <div className="space-y-1">
-                {/* Members */}
-                <SidebarSelect
-                  icon={Users}
-                  label="Tilldelad"
-                  value={assigneeId || "__none__"}
-                  onValueChange={v => setAssigneeId(v === "__none__" ? "" : v)}
-                  options={[
-                    { value: "__none__", label: "Ingen" },
-                    ...profiles.map(p => ({ value: p.user_id, label: p.full_name })),
-                  ]}
-                />
+          {/* ─── RIGHT: Sidebar ─── */}
+          <div className="border-t md:border-t-0 md:border-l border-border bg-background p-3 pt-12 overflow-y-auto space-y-1">
 
-                {/* Labels */}
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs text-foreground mb-1">
-                    <Tag className="h-3.5 w-3.5" />
-                    <span>Etiketter</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Input
-                      value={newLabel}
-                      onChange={e => setNewLabel(e.target.value)}
-                      placeholder="Ny..."
-                      className="h-7 text-xs flex-1"
-                      onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addLabel())}
-                    />
-                    <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={addLabel} disabled={!newLabel.trim()}>
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  {labels.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {labels.map(l => (
-                        <Badge key={l} variant="secondary" className="text-[10px] gap-0.5 pr-0.5 h-5">
-                          <span className={cn("h-2 w-2 rounded-full mr-0.5", getLabelColor(l))} />
-                          {l}
-                          <button onClick={() => setLabels(prev => prev.filter(x => x !== l))}
-                            className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5">
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
+            {/* ADD TO CARD */}
+            <p className="text-[11px] font-medium text-muted-foreground px-1 mb-1.5">LÄGG TILL KORT</p>
 
-                {/* Due date */}
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs text-foreground mb-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>Förfallodatum</span>
-                  </div>
-                  <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-7 text-xs" />
-                  {dueDate && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Switch
-                        checked={dueDone}
-                        onCheckedChange={setDueDone}
-                        id="due-done-sidebar"
-                        className="scale-75 origin-left"
-                      />
-                      <Label htmlFor="due-done-sidebar" className="text-[10px] cursor-pointer">Klar</Label>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Actions */}
-            <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Åtgärder</p>
-              <div className="space-y-1">
-                {/* Move (column + priority) */}
-                <SidebarSelect
-                  icon={ArrowRight}
-                  label="Flytta"
-                  value={columnId}
-                  onValueChange={setColumnId}
-                  options={columns.map(c => ({ value: c.id, label: c.name }))}
-                />
-
-                <SidebarSelect
-                  icon={ArrowRight}
-                  label="Prioritet"
-                  value={priority}
-                  onValueChange={setPriority}
-                  options={[
-                    { value: "low", label: "Låg" },
-                    { value: "medium", label: "Medium" },
-                    { value: "high", label: "Hög" },
-                    { value: "urgent", label: "Brådskande" },
-                  ]}
-                />
-
-                {card && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-destructive hover:bg-destructive/10 h-7 text-xs"
-                    onClick={() => { onDelete(card.id); onClose(); }}
+            <SidebarButton icon={Users} label="Medlemmar" active={showMemberPicker} onClick={() => setShowMemberPicker(v => !v)} />
+            {showMemberPicker && (
+              <div className="bg-muted/50 rounded-md p-2 space-y-1">
+                {profiles.map(p => (
+                  <button
+                    key={p.user_id}
+                    className={cn(
+                      "w-full text-left text-xs px-2 py-1.5 rounded flex items-center gap-2 hover:bg-muted transition-colors",
+                      assigneeId === p.user_id && "bg-primary/10 text-primary font-medium"
+                    )}
+                    onClick={() => { setAssigneeId(assigneeId === p.user_id ? "" : p.user_id); setShowMemberPicker(false); }}
                   >
-                    <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Ta bort
-                  </Button>
+                    <div className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-medium shrink-0">
+                      {getInitials(p.full_name)}
+                    </div>
+                    {p.full_name}
+                  </button>
+                ))}
+                {assigneeId && (
+                  <button className="w-full text-left text-xs px-2 py-1 text-muted-foreground hover:text-foreground" onClick={() => { setAssigneeId(""); setShowMemberPicker(false); }}>
+                    Ta bort tilldelning
+                  </button>
                 )}
               </div>
-            </div>
+            )}
+
+            <SidebarButton icon={Tag} label="Etiketter" active={showLabelPicker} onClick={() => setShowLabelPicker(v => !v)} />
+            {showLabelPicker && (
+              <div className="bg-muted/50 rounded-md p-2 space-y-2">
+                <div className="flex flex-wrap gap-1">
+                  {labels.map(l => (
+                    <Badge key={l} variant="secondary" className="text-[10px] gap-0.5 pr-0.5 h-5">
+                      <span className={cn("h-2 w-2 rounded-full mr-0.5", getLabelColor(l))} />
+                      {l}
+                      <button onClick={() => setLabels(prev => prev.filter(x => x !== l))} className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5">
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-1">
+                  <Input
+                    value={newLabel}
+                    onChange={e => setNewLabel(e.target.value)}
+                    placeholder="Ny etikett..."
+                    className="h-7 text-xs flex-1"
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addLabel())}
+                  />
+                  <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={addLabel} disabled={!newLabel.trim()}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <SidebarButton icon={CheckSquare} label="Checklista" onClick={() => {/* handled inside CardChecklists */}} />
+
+            <SidebarButton icon={Calendar} label="Förfallodatum" active={showDatePicker} onClick={() => setShowDatePicker(v => !v)} />
+            {showDatePicker && (
+              <div className="bg-muted/50 rounded-md p-2 space-y-2">
+                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-7 text-xs" />
+                {dueDate && (
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox checked={dueDone} onCheckedChange={v => setDueDone(!!v)} className="h-3.5 w-3.5" />
+                    Markera som klar
+                  </label>
+                )}
+                {dueDate && (
+                  <button className="text-xs text-destructive hover:underline" onClick={() => { setDueDate(""); setDueDone(false); }}>
+                    Ta bort datum
+                  </button>
+                )}
+              </div>
+            )}
+
+            <SidebarButton icon={Paperclip} label="Bilaga" onClick={() => {}} />
+
+            {/* ACTIONS */}
+            <p className="text-[11px] font-medium text-muted-foreground px-1 mt-4 mb-1.5">ÅTGÄRDER</p>
+
+            <SidebarButton icon={ArrowRight} label="Flytta" active={showMovePicker} onClick={() => setShowMovePicker(v => !v)} />
+            {showMovePicker && (
+              <div className="bg-muted/50 rounded-md p-2 space-y-1">
+                <p className="text-[10px] text-muted-foreground mb-1">Kolumn</p>
+                {columns.map(c => (
+                  <button
+                    key={c.id}
+                    className={cn(
+                      "w-full text-left text-xs px-2 py-1.5 rounded hover:bg-muted transition-colors",
+                      columnId === c.id && "bg-primary/10 text-primary font-medium"
+                    )}
+                    onClick={() => { setColumnId(c.id); setShowMovePicker(false); }}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+                <p className="text-[10px] text-muted-foreground mt-2 mb-1">Prioritet</p>
+                {([
+                  { value: "low", label: "Låg" },
+                  { value: "medium", label: "Medium" },
+                  { value: "high", label: "Hög" },
+                  { value: "urgent", label: "Brådskande" },
+                ] as const).map(p => (
+                  <button
+                    key={p.value}
+                    className={cn(
+                      "w-full text-left text-xs px-2 py-1.5 rounded hover:bg-muted transition-colors",
+                      priority === p.value && "bg-primary/10 text-primary font-medium"
+                    )}
+                    onClick={() => setPriority(p.value)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {card && (
+              <SidebarButton
+                icon={Trash2}
+                label="Arkivera"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => { onDelete(card.id); onClose(); }}
+              />
+            )}
 
             {/* Save / Cancel */}
-            <Separator />
-            <div className="space-y-1.5">
+            <div className="pt-3 space-y-1.5">
               <Button onClick={handleSave} disabled={!title.trim()} className="w-full h-8 text-xs">
                 {card ? "Spara" : "Skapa"}
               </Button>
@@ -398,30 +408,26 @@ export default function CardDetailDialog({
   );
 }
 
-/* ─── Sidebar Select Helper ─── */
-function SidebarSelect({ icon: Icon, label, value, onValueChange, options }: {
+/* ─── Flat Sidebar Button ─── */
+function SidebarButton({ icon: Icon, label, onClick, active, className }: {
   icon: React.ElementType;
   label: string;
-  value: string;
-  onValueChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  onClick: () => void;
+  active?: boolean;
+  className?: string;
 }) {
   return (
-    <div>
-      <div className="flex items-center gap-1.5 text-xs text-foreground mb-1">
-        <Icon className="h-3.5 w-3.5" />
-        <span>{label}</span>
-      </div>
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="h-7 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map(o => (
-            <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full text-left rounded-md px-2.5 py-[6px] text-[13px] flex items-center gap-2 transition-colors",
+        "bg-secondary hover:bg-secondary/80 text-foreground",
+        active && "ring-1 ring-primary/30",
+        className,
+      )}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      {label}
+    </button>
   );
 }
