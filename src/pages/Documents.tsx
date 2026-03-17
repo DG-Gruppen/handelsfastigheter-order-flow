@@ -490,7 +490,7 @@ export default function Documents() {
                 {previewFile.mime_type.startsWith("image/") && (
                   <img src={previewUrl} alt={previewFile.name} className="max-w-full h-auto mx-auto rounded" />
                 )}
-                {previewFile.mime_type === "application/pdf" && (
+                {(previewFile.mime_type === "application/pdf" || isOfficeMime(previewFile.mime_type)) && (
                   <iframe src={previewUrl} className="w-full h-[70vh] rounded border border-border" title={previewFile.name} />
                 )}
                 {previewFile.mime_type.startsWith("text/") && <TextPreview url={previewUrl} />}
