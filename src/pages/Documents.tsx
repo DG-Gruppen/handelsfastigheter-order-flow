@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import FileRow from "@/components/documents/FileRow";
 import { TextPreview, formatFileSize, canPreview, isOfficeMime, getFileIcon } from "@/components/documents/documentHelpers";
 import {
-  NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog,
+  NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog, ChangeIconDialog,
 } from "@/components/documents/DocumentDialogs";
 import { getModuleIcon } from "@/lib/moduleIcons";
 
