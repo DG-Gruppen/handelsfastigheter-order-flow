@@ -489,6 +489,24 @@ export default function Planner() {
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Planner</h1>
           <p className="text-sm text-muted-foreground">Kanban-board för projektplanering</p>
         </div>
+        {activeBoardId && (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <History className="h-3.5 w-3.5" /> Aktivitet
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Aktivitetslogg</SheetTitle>
+                <SheetDescription>Senaste ändringar på denna board</SheetDescription>
+              </SheetHeader>
+              <div className="mt-4">
+                <BoardActivityLog boardId={activeBoardId} profiles={profiles} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       {/* Board tabs */}
