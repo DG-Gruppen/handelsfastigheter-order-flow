@@ -8,7 +8,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Kanban, MoreVertical, Pencil, Trash2, Archive } from "lucide-react";
+import { Plus, Kanban, MoreVertical, Pencil, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
