@@ -255,6 +255,9 @@ export default function Planner() {
 
     fetchBoardData();
     toast.success("Board skapad");
+
+    // Log activity
+    logPlannerActivity({ boardId: newBoard.id, userId: user.id, action: "created", entityType: "column", entityName: "Standardkolumner" });
   };
 
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
