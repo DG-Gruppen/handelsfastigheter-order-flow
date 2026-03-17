@@ -1459,6 +1459,10 @@ export type Database = {
         Args: { _module_id: string; _permission: string; _user_id: string }
         Returns: boolean
       }
+      has_module_slug_permission: {
+        Args: { _permission: string; _slug: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
