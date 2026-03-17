@@ -47,6 +47,9 @@ export default function Planner() {
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<PlannerColumn | null>(null);
 
+  // Filters
+  const [filters, setFilters] = useState<PlannerFilterState>(EMPTY_FILTERS);
+
   // DnD
   const [activeCard, setActiveCard] = useState<PlannerCard | null>(null);
 
@@ -60,6 +63,31 @@ export default function Planner() {
     profiles.forEach(p => { m[p.user_id] = p.full_name; });
     return m;
   }, [profiles]);
+
+  // Available labels from all cards
+  const availableLabels = useMemo(() => {
+    const set = new Set<string>();
+    cards.forEach(c => c.labels?.forEach(l => set.add(l)));
+    return Array.from(set).sort();
+  }, [cards]);
+
+  // Filtered cards
+  const filteredCards = useMemo(() => {
+    return cards.filter(c => {
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        const matchTitle = c.title.toLowerCase().includes(q);
+        const matchDesc = c.description?.toLowerCase().includes(q);
+        const matchLabel = c.labels?.some(l => l.toLowerCase().includes(q));
+        if (!matchTitle && !matchDesc && !matchLabel) return false;
+      }
+      if (filters.priority && c.priority !== filters.priority) return false;
+      if (filters.assignee === "unassigned" && c.assignee_id) return false;
+      if (filters.assignee && filters.assignee !== "unassigned" && c.assignee_id !== filters.assignee) return false;
+      if (filters.label && !c.labels?.includes(filters.label)) return false;
+      return true;
+    });
+  }, [cards, filters]);
 
   // Fetch boards
   const fetchBoards = useCallback(async () => {
