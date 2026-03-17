@@ -126,6 +126,7 @@ export default function Admin() {
       case "groups": return <GroupsManager />;
       case "permissions": return <ModulePermissionsManager />;
       case "tools": return <ToolsManager />;
+      case "backup": return <DatabaseBackup />;
       default: return null;
     }
   };
