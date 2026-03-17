@@ -395,6 +395,9 @@ export default function Planner() {
     const { active, over } = event;
     if (!over) return;
 
+    // Skip column-over-column (handled in dragEnd)
+    if (active.data.current?.type === "column") return;
+
     const activeId = active.id as string;
     const overId = over.id as string;
 
