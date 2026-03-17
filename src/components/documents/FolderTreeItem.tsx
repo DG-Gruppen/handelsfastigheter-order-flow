@@ -78,6 +78,9 @@ function FolderTreeItemBase({
               <DropdownMenuItem onClick={() => onMove(folder.id, folder.name)}>
                 <FolderInput className="w-4 h-4 mr-2" /> Flytta
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangeIcon(folder)}>
+                <Palette className="w-4 h-4 mr-2" /> Byt ikon
+              </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem onClick={() => onAccess(folder)}>
                   <Shield className="w-4 h-4 mr-2" /> Behörighet
