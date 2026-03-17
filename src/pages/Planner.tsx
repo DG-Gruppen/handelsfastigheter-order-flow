@@ -419,11 +419,34 @@ export default function Planner() {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveCard(null);
+    setActiveColumn(null);
     const { active, over } = event;
     if (!over) return;
 
     suppressDataRealtime(3000);
 
+    // Column reorder
+    if (active.data.current?.type === "column") {
+      const activeId = active.id as string;
+      const overId = over.id as string;
+      if (activeId === overId) return;
+
+      const oldIdx = sortedColumns.findIndex(c => c.id === activeId);
+      const newIdx = sortedColumns.findIndex(c => c.id === overId);
+      if (oldIdx < 0 || newIdx < 0) return;
+
+      const reordered = arrayMove(sortedColumns, oldIdx, newIdx);
+      setColumns(reordered.map((c, i) => ({ ...c, sort_order: i })));
+
+      for (let i = 0; i < reordered.length; i++) {
+        await supabase.from("planner_columns")
+          .update({ sort_order: i })
+          .eq("id", reordered[i].id);
+      }
+      return;
+    }
+
+    // Card reorder / move
     const activeId = active.id as string;
     const overId = over.id as string;
 
