@@ -193,9 +193,9 @@ export default function Admin() {
         <p className="text-sm text-muted-foreground mt-0.5">Centralt administrationsgränssnitt för hela systemet</p>
       </div>
 
-      <div className="flex gap-6 min-h-[600px]">
+      <div className="flex gap-6 items-start min-h-[600px]">
         {/* Content area */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-visible">
           {activeSection === "menu" ? (
             <AdminDashboard onNavigate={(s) => setActiveSection(s as AdminSection)} />
           ) : (
@@ -203,8 +203,8 @@ export default function Admin() {
           )}
         </div>
 
-        {/* Sidebar navigation */}
-        <nav className="w-56 shrink-0 space-y-5">
+        {/* Sidebar navigation – sticky so it stays visible when content scrolls */}
+        <nav className="w-56 shrink-0 space-y-5 sticky top-8 self-start max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-hide">
           <button
             onClick={() => setActiveSection("menu")}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors text-left ${
