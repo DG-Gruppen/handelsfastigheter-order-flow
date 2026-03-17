@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { X, Globe, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Globe, ChevronDown, ChevronUp, Smartphone, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type BrowserType = "chrome" | "firefox" | "safari" | "edge" | "opera" | "other";
 
@@ -13,6 +14,17 @@ function detectBrowser(): BrowserType {
   if (ua.includes("safari") && !ua.includes("chrome") && !ua.includes("crios")) return "safari";
   if (ua.includes("chrome") || ua.includes("crios")) return "chrome";
   return "other";
+}
+
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function isInStandaloneMode() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as any).standalone === true
+  );
 }
 
 const BROWSER_LABELS: Record<BrowserType, string> = {
@@ -61,6 +73,18 @@ const BROWSER_STEPS: Record<BrowserType, string[]> = {
   ],
 };
 
+const IOS_PWA_STEPS = [
+  "Tryck på Dela-knappen (▫︎↑) längst ner i Safari",
+  "Scrolla ner och tryck \"Lägg till på hemskärmen\"",
+  "Ge appen ett namn (t.ex. \"SHF\") och tryck \"Lägg till\"",
+];
+
+const ANDROID_PWA_STEPS = [
+  "Tryck på menyn (⋮) uppe till höger i Chrome",
+  "Välj \"Lägg till på startskärmen\" eller \"Installera app\"",
+  "Bekräfta genom att trycka \"Lägg till\"",
+];
+
 const STORAGE_KEY = "shf-homepage-dismissed";
 
 export default function HomepageSuggestion() {
@@ -68,15 +92,37 @@ export default function HomepageSuggestion() {
   const [expanded, setExpanded] = useState(false);
   const [browser] = useState<BrowserType>(detectBrowser);
   const [copied, setCopied] = useState(false);
+  const isMobile = useIsMobile();
+  const deferredPromptRef = useRef<any>(null);
+  const [canInstallPwa, setCanInstallPwa] = useState(false);
+  const [showPwaTab, setShowPwaTab] = useState(false);
+
+  // Listen for the beforeinstallprompt event (Chrome/Edge/Android)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      deferredPromptRef.current = e;
+      setCanInstallPwa(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   useEffect(() => {
+    // Don't show if already installed as PWA
+    if (isInStandaloneMode()) return;
+
     const dismissed = localStorage.getItem(STORAGE_KEY);
     if (!dismissed) {
-      // Show after short delay so it doesn't compete with page load
       const t = setTimeout(() => setVisible(true), 2000);
       return () => clearTimeout(t);
     }
   }, []);
+
+  // Default to PWA tab on mobile
+  useEffect(() => {
+    if (isMobile) setShowPwaTab(true);
+  }, [isMobile]);
 
   const dismiss = () => {
     setVisible(false);
@@ -88,6 +134,20 @@ export default function HomepageSuggestion() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const handleInstallPwa = async () => {
+    if (deferredPromptRef.current) {
+      deferredPromptRef.current.prompt();
+      const { outcome } = await deferredPromptRef.current.userChoice;
+      if (outcome === "accepted") {
+        dismiss();
+      }
+      deferredPromptRef.current = null;
+      setCanInstallPwa(false);
+    }
+  };
+
+  const pwaSteps = isIos() ? IOS_PWA_STEPS : ANDROID_PWA_STEPS;
 
   return (
     <AnimatePresence>
@@ -102,14 +162,20 @@ export default function HomepageSuggestion() {
           {/* Header */}
           <div className="flex items-start gap-3 p-4 pb-2">
             <div className="rounded-lg bg-primary/10 p-2 shrink-0">
-              <Globe className="h-5 w-5 text-primary" />
+              {isMobile ? (
+                <Smartphone className="h-5 w-5 text-primary" />
+              ) : (
+                <Globe className="h-5 w-5 text-primary" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold leading-tight">
-                Gör SHF till din startsida
+                {isMobile ? "Installera SHF som app" : "Gör SHF till din startsida"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Få snabb åtkomst varje gång du öppnar {BROWSER_LABELS[browser]}
+                {isMobile
+                  ? "Lägg till SHF på din hemskärm för snabb åtkomst"
+                  : `Få snabb åtkomst varje gång du öppnar ${BROWSER_LABELS[browser]}`}
               </p>
             </div>
             <button
@@ -119,6 +185,19 @@ export default function HomepageSuggestion() {
               <X className="h-4 w-4" />
             </button>
           </div>
+
+          {/* Native install button (Chrome/Edge on Android) */}
+          {canInstallPwa && isMobile && (
+            <div className="px-4 pb-2">
+              <button
+                onClick={handleInstallPwa}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium transition-colors hover:bg-primary/90"
+              >
+                <Download className="h-4 w-4" />
+                Installera SHF
+              </button>
+            </div>
+          )}
 
           {/* Expand / collapse */}
           <button
@@ -139,12 +218,43 @@ export default function HomepageSuggestion() {
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 space-y-3">
+                  {/* Tab switcher (only if not purely mobile-only) */}
+                  <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
+                    <button
+                      onClick={() => setShowPwaTab(true)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                        showPwaTab
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Smartphone className="h-3 w-3" />
+                      Hemskärm
+                    </button>
+                    <button
+                      onClick={() => setShowPwaTab(false)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                        !showPwaTab
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Globe className="h-3 w-3" />
+                      Startsida
+                    </button>
+                  </div>
+
+                  {/* Instructions */}
                   <div className="rounded-lg bg-muted/50 p-3">
                     <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-2">
-                      {BROWSER_LABELS[browser]}
+                      {showPwaTab
+                        ? isIos() ? "iPhone / iPad" : "Android"
+                        : BROWSER_LABELS[browser]}
                     </p>
                     <ol className="space-y-1.5">
-                      {BROWSER_STEPS[browser].map((step, i) => (
+                      {(showPwaTab ? pwaSteps : BROWSER_STEPS[browser]).map((step, i) => (
                         <li key={i} className="flex gap-2 text-xs text-foreground/80">
                           <span className="shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
                             {i + 1}
@@ -155,18 +265,20 @@ export default function HomepageSuggestion() {
                     </ol>
                   </div>
 
-                  {/* Copy URL */}
-                  <button
-                    onClick={copyUrl}
-                    className={cn(
-                      "w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-                      copied
-                        ? "bg-primary/10 border-primary/30 text-primary"
-                        : "bg-muted/30 border-border hover:bg-muted text-foreground"
-                    )}
-                  >
-                    {copied ? "✓ Kopierad!" : `Kopiera URL: ${window.location.origin}`}
-                  </button>
+                  {/* Copy URL (only for startsida tab) */}
+                  {!showPwaTab && (
+                    <button
+                      onClick={copyUrl}
+                      className={cn(
+                        "w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                        copied
+                          ? "bg-primary/10 border-primary/30 text-primary"
+                          : "bg-muted/30 border-border hover:bg-muted text-foreground"
+                      )}
+                    >
+                      {copied ? "✓ Kopierad!" : `Kopiera URL: ${window.location.origin}`}
+                    </button>
+                  )}
 
                   <button
                     onClick={dismiss}
