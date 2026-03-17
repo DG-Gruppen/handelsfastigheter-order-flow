@@ -64,6 +64,7 @@ export default function Documents() {
   }, [search, files, folders]);
 
   const selectedFolder = folders.find(f => f.id === selectedFolderId);
+  const canCreateFolderInCurrentContext = isAdmin || (selectedFolderId ? canWriteFolder(selectedFolderId) : false);
 
   // ── Multi-select ──
   const toggleFileSelection = (fileId: string) => {
