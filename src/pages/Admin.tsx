@@ -340,7 +340,6 @@ export default function Admin() {
       case "systems": return <SystemsManager />;
       case "users": return <UsersContent />;
       case "settings": return <SettingsContent />;
-      case "it": return <ITContent />;
       
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
       case "groups": return <GroupsManager />;
