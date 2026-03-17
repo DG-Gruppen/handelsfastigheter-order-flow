@@ -47,7 +47,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user || !profile) return;
     fetchRecognitions();
-    supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).order("sort_order").then(({ data }) => {
+    supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).eq("is_starred", true).order("sort_order").then(({ data }) => {
       setQuickTools((data as any[]) ?? []);
     });
   }, [user, profile, fetchRecognitions]);
