@@ -79,9 +79,7 @@ const App = () => (
                       <Route path="/verktyg" element={<Tools />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
-                    </Route>
-                  </Routes>
-                </Suspense>
+                </Routes>
               </ModulesProvider>
             </NavSettingsProvider>
           </AuthProvider>
