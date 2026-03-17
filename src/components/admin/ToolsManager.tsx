@@ -23,6 +23,7 @@ interface Tool {
   url: string;
   sort_order: number;
   is_active: boolean;
+  is_starred: boolean;
 }
 
 export default function ToolsManager() {
