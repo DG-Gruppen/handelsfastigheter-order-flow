@@ -393,9 +393,17 @@ export default function CardDetailDialog({
               </div>
             )}
 
+            {card && onCopy && (
+              <SidebarButton
+                icon={Copy}
+                label="Kopiera"
+                onClick={() => { onCopy(card.id); onClose(); }}
+              />
+            )}
+
             {card && (
               <SidebarButton
-                icon={Trash2}
+                icon={Archive}
                 label="Arkivera"
                 className="text-destructive hover:bg-destructive/10"
                 onClick={() => { onDelete(card.id); onClose(); }}
