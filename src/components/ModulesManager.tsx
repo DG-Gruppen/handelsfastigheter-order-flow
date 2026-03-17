@@ -8,22 +8,6 @@ import { LayoutGrid, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getModuleIcon } from "@/lib/moduleIcons";
 
-const ALL_ROLES = ["admin", "manager", "employee", "staff", "it"] as const;
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  manager: "Chef",
-  employee: "Anställd",
-  staff: "Stab",
-  it: "IT",
-};
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-destructive/10 text-destructive",
-  manager: "bg-warning/10 text-warning",
-  employee: "bg-accent/10 text-accent",
-  staff: "bg-primary/10 text-primary",
-  it: "bg-primary/10 text-primary",
-};
-
 interface Module {
   id: string;
   name: string;
@@ -35,25 +19,13 @@ interface Module {
   description: string;
 }
 
-interface Access {
-  id?: string;
-  module_id: string;
-  role: string;
-  has_access: boolean;
-}
-
 export default function ModulesManager({ onClose }: { onClose?: () => void }) {
   const [modules, setModules] = useState<Module[]>([]);
-  const [access, setAccess] = useState<Access[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    const [modRes, accessRes] = await Promise.all([
-      supabase.from("modules").select("*").order("sort_order"),
-      supabase.from("module_role_access").select("*"),
-    ]);
-    setModules((modRes.data as Module[]) ?? []);
-    setAccess((accessRes.data as Access[]) ?? []);
+    const { data } = await supabase.from("modules").select("*").order("sort_order");
+    setModules((data as Module[]) ?? []);
     setLoading(false);
   };
 
@@ -65,28 +37,6 @@ export default function ModulesManager({ onClose }: { onClose?: () => void }) {
     fetchData();
   };
 
-  const toggleRoleAccess = async (moduleId: string, role: string) => {
-    const existing = access.find((a) => a.module_id === moduleId && a.role === role);
-    if (existing) {
-      await supabase
-        .from("module_role_access")
-        .update({ has_access: !existing.has_access } as any)
-        .eq("module_id", moduleId)
-        .eq("role", role as any);
-    } else {
-      await supabase.from("module_role_access").insert({
-        module_id: moduleId,
-        role: role as any,
-        has_access: true,
-      } as any);
-    }
-    fetchData();
-  };
-
-  const hasAccess = (moduleId: string, role: string): boolean => {
-    const rule = access.find((a) => a.module_id === moduleId && a.role === role);
-    return rule ? rule.has_access : false;
-  };
 
   if (loading) {
     return <p className="text-muted-foreground py-8 text-center">Laddar...</p>;
@@ -134,26 +84,6 @@ export default function ModulesManager({ onClose }: { onClose?: () => void }) {
                 </div>
               </div>
 
-              {mod.is_active && (
-                <div className="flex flex-wrap gap-2">
-                  {ALL_ROLES.map((role) => {
-                    const active = hasAccess(mod.id, role);
-                    return (
-                      <button
-                        key={role}
-                        onClick={() => toggleRoleAccess(mod.id, role)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                          active
-                            ? ROLE_COLORS[role] + " ring-1 ring-current/20"
-                            : "bg-muted text-muted-foreground opacity-50 hover:opacity-75"
-                        }`}
-                      >
-                        {ROLE_LABELS[role]}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
