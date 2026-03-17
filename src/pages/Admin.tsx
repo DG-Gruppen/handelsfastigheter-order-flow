@@ -9,6 +9,8 @@ import ModulesManager from "@/components/ModulesManager";
 import KbAdminPanel from "@/components/kb/KbAdminPanel";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import ImpersonateUserCard from "@/components/admin/ImpersonateUserCard";
+import GroupsManager from "@/components/admin/GroupsManager";
+import ModulePermissionsManager from "@/components/admin/ModulePermissionsManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,7 +35,7 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules" | "knowledge";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "modules" | "knowledge" | "groups" | "permissions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -115,6 +117,11 @@ const adminGroups: AdminGroup[] = [
         icon: Users, color: "from-warning to-warning", borderColor: "border-t-warning/40",
         bgColor: "bg-warning/10", textColor: "text-warning",
       },
+      {
+        id: "groups", label: "Grupper", description: "Skapa och hantera grupper",
+        icon: Users, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
+        bgColor: "bg-primary/10", textColor: "text-primary",
+      },
     ],
   },
   {
@@ -123,9 +130,14 @@ const adminGroups: AdminGroup[] = [
     color: "text-muted-foreground",
     items: [
       {
-        id: "modules", label: "Moduler", description: "Hantera moduler och behörigheter",
+        id: "modules", label: "Moduler", description: "Hantera moduler och synlighet",
         icon: LayoutGrid, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40",
         bgColor: "bg-primary/10", textColor: "text-primary",
+      },
+      {
+        id: "permissions", label: "Modulrättigheter", description: "Styr åtkomst per modul",
+        icon: Shield, color: "from-accent to-accent", borderColor: "border-t-accent/40",
+        bgColor: "bg-accent/10", textColor: "text-accent",
       },
       {
         id: "settings", label: "Inställningar", description: "Attestering och andra inställningar",
@@ -343,6 +355,8 @@ export default function Admin() {
       case "it": return <ITContent />;
       case "modules": return <ModulesManager onClose={() => setActiveSection("menu")} />;
       case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
+      case "groups": return <GroupsManager />;
+      case "permissions": return <ModulePermissionsManager />;
       default: return null;
     }
   };
