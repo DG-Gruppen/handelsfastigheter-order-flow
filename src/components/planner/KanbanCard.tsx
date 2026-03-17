@@ -60,7 +60,18 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
 
   const assigneeInitials = getInitials(assigneeName);
   const reporterInitials = getInitials(reporterName);
-  const isOverdue = card.due_date && !card.due_done && new Date(card.due_date) < new Date();
+  const getDueDateColor = () => {
+    if (!card.due_date || card.due_done) return card.due_done ? "done" : "neutral";
+    const now = new Date();
+    const due = new Date(card.due_date);
+    const diffMs = due.getTime() - now.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays < 0) return "overdue";
+    if (diffDays < 1) return "red";
+    if (diffDays < 2) return "orange";
+    return "green";
+  };
+  const dueDateColor = getDueDateColor();
   const hasDescription = !!card.description?.trim();
   const hasChecklist = checklistSummary && checklistSummary.total > 0;
   const hasAttachments = attachmentCount && attachmentCount > 0;
@@ -116,11 +127,12 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
               {card.due_date && (
                 <span className={cn(
                   "flex items-center gap-1 text-[11px] rounded-sm px-1.5 py-0.5 font-medium",
-                  card.due_done
-                    ? "bg-accent text-accent-foreground"
-                    : isOverdue
-                      ? "bg-destructive text-destructive-foreground"
-                      : "bg-muted text-muted-foreground"
+                  dueDateColor === "done" && "bg-accent text-accent-foreground",
+                  dueDateColor === "overdue" && "bg-destructive text-destructive-foreground",
+                  dueDateColor === "red" && "bg-destructive text-destructive-foreground",
+                  dueDateColor === "orange" && "bg-orange-500 text-white",
+                  dueDateColor === "green" && "bg-green-600 text-white",
+                  dueDateColor === "neutral" && "bg-muted text-muted-foreground"
                 )}>
                   <Calendar className="h-3 w-3" />
                   {new Date(card.due_date).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
