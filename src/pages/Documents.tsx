@@ -350,6 +350,7 @@ export default function Documents() {
                         onRename={() => setRenameDialog({ type: "folder", id: f.id, name: f.name })}
                         onMove={() => setMoveDialog({ type: "folder", id: f.id, name: f.name })}
                         onAccess={() => setAccessDialog(f)}
+                        onChangeIcon={() => setIconDialog(f)}
                         onDelete={() => setDeleteConfirm({ type: "folder", id: f.id, name: f.name })}
                       />
                     ))}
