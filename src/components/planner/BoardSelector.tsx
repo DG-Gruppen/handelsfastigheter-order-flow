@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -31,6 +35,10 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+
+  // Confirm dialogs
+  const [confirmDelete, setConfirmDelete] = useState<Board | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState<Board | null>(null);
 
   useEffect(() => {
     if (editingBoard) {
@@ -97,10 +105,10 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
                 <DropdownMenuItem onClick={() => { setEditingBoard(b); setDialogOpen(true); }}>
                   <Pencil className="h-3.5 w-3.5 mr-2" /> Redigera
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onArchive(b.id)}>
+                <DropdownMenuItem onClick={() => setConfirmArchive(b)}>
                   <Archive className="h-3.5 w-3.5 mr-2" /> Arkivera
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(b.id)} className="text-destructive">
+                <DropdownMenuItem onClick={() => setConfirmDelete(b)} className="text-destructive">
                   <Trash2 className="h-3.5 w-3.5 mr-2" /> Ta bort
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -112,10 +120,14 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
         <Plus className="h-3.5 w-3.5" /> Ny board
       </Button>
 
+      {/* Edit / Create dialog */}
       <Dialog open={dialogOpen} onOpenChange={v => !v && handleClose()}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{editingBoard ? "Redigera board" : "Ny board"}</DialogTitle>
+            <DialogDescription>
+              {editingBoard ? "Ändra namn och beskrivning för din board." : "Skapa en ny board för att organisera dina uppgifter."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -135,6 +147,47 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Archive confirm */}
+      <AlertDialog open={!!confirmArchive} onOpenChange={v => !v && setConfirmArchive(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arkivera board</AlertDialogTitle>
+            <AlertDialogDescription>
+              Är du säker på att du vill arkivera <span className="font-semibold">"{confirmArchive?.name}"</span>? Boarden och alla dess kort döljs men kan återställas senare.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (confirmArchive) onArchive(confirmArchive.id); setConfirmArchive(null); }}
+            >
+              <Archive className="h-4 w-4 mr-1.5" /> Arkivera
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={v => !v && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ta bort board</AlertDialogTitle>
+            <AlertDialogDescription>
+              Är du säker på att du vill ta bort <span className="font-semibold">"{confirmDelete?.name}"</span>? Alla kolumner och kort i boarden raderas permanent. Denna åtgärd går inte att ångra.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (confirmDelete) onDelete(confirmDelete.id); setConfirmDelete(null); }}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" /> Ta bort
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
