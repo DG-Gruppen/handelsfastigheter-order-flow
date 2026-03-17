@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   UserPlus, Shield, FolderOpen, Package, Users, ChevronLeft, X, Upload, Loader2,
   Phone, Building2, Briefcase, Search, ArrowUpDown, Settings, Monitor, Link2,
-  Palette, Wrench, BookOpen, ShoppingCart, Cog, Activity
+  Palette, BookOpen, ShoppingCart, Cog, Activity
 } from "lucide-react";
 
 
