@@ -11,7 +11,7 @@ import {
 
 import { kpis, okrs, weeklyWin, jubilees } from "@/data/dashboard";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
-import { newsPosts } from "@/data/news";
+import { newsPosts } from "@/data/news"; // fallback static data
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
