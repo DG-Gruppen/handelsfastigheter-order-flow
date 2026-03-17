@@ -283,7 +283,7 @@ export default function Planner() {
 
     if (data.id) {
       await supabase
-        .from("planner_columns" as any)
+        .from("planner_columns")
         .update({ name: data.name, color: data.color, wip_limit: data.wip_limit })
         .eq("id", data.id);
       toast.success("Kolumn uppdaterad");
