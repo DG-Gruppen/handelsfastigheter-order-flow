@@ -452,9 +452,9 @@ export default function Documents() {
                         title="Markera alla"
                       />
                     )}
-                    <h2 className="font-heading font-semibold text-lg">{selectedFolder.name}</h2>
+                    <h2 className="font-heading font-semibold text-base md:text-lg truncate">{selectedFolder.name}</h2>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {currentSubfolders.length > 0 && `${currentSubfolders.length} ${currentSubfolders.length === 1 ? "mapp" : "mappar"} · `}
                     {currentFiles.length} {currentFiles.length === 1 ? "fil" : "filer"}
                   </span>
