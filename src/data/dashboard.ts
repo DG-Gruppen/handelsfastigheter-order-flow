@@ -29,12 +29,12 @@ export const jubilees = [
 ];
 
 export const quickTools = [
-  { label: "Vitec", emoji: "🏠" },
-  { label: "Microsoft 365", emoji: "💼" },
-  { label: "Hogia", emoji: "📊" },
-  { label: "Power BI", emoji: "📈" },
-  { label: "Planon", emoji: "🔧" },
-  { label: "Fortnox", emoji: "🧾" },
-  { label: "DocuSign", emoji: "✍️" },
-  { label: "IT-portalen", emoji: "💻" },
+  { label: "Vitec", emoji: "🏠", url: "https://fsab-handelsfastigheter.vitec.net/" },
+  { label: "Vyer", emoji: "👁️", url: "https://app.vyer.com/sites" },
+  { label: "Zendesk", emoji: "🎧", url: "https://lsthsvenskahandelsfastigheter.zendesk.com/hc/sv" },
+  { label: "Rillion", emoji: "🧾", url: "https://p29254x03.rillionprime.com/" },
+  { label: "ViaEstate", emoji: "🏢", url: "https://viaestate.viametrics.com/login" },
+  { label: "Momentum", emoji: "🔧", url: "https://rc.momentum.se/" },
+  { label: "Metry", emoji: "⚡", url: "https://app.metry.io/" },
+  { label: "SHF Webb", emoji: "🌐", url: "https://handelsfastigheter.se/" },
 ];
