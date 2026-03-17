@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail, buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";

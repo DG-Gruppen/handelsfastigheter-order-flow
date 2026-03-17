@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
