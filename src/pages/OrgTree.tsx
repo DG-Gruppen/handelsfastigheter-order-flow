@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 
 import OrgChartCanvas from "@/components/OrgChart/OrgChartCanvas";
 import OrgCardMenu from "@/components/OrgChart/OrgCardMenu";
