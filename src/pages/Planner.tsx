@@ -184,8 +184,10 @@ export default function Planner() {
       });
       setAttachmentCounts(attCounts);
     } else {
+      setChecklistSummaries({});
       setAttachmentCounts({});
     }
+  }, [activeBoardId]);
 
   // Fetch profiles
   useEffect(() => {
