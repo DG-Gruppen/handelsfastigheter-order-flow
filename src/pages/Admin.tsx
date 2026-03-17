@@ -12,6 +12,7 @@ import ModulePermissionsManager from "@/components/admin/ModulePermissionsManage
 import UsersContent from "@/components/admin/UsersContent";
 import SettingsContent from "@/components/admin/SettingsContent";
 import ITContent from "@/components/admin/ITContent";
+import ToolsManager from "@/components/admin/ToolsManager";
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor,
