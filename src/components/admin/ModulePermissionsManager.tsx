@@ -57,6 +57,7 @@ interface ActivityLog {
 
 export default function ModulePermissionsManager() {
   const { user } = useAuth();
+  const { refresh: refreshSidebar } = useModules();
   const [modules, setModules] = useState<Module[]>([]);
   const [permissions, setPermissions] = useState<ModulePermission[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
