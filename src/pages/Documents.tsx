@@ -151,6 +151,7 @@ export default function Documents() {
     setSelectedFolderId(id);
     setSearch("");
     setSelectedFiles(new Set());
+    setFolderSheetOpen(false);
     let current = folders.find(f => f.id === id);
     const toExpand = new Set(expandedFolders);
     while (current?.parent_id) {
