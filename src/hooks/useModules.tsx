@@ -61,6 +61,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const [modules, setModules] = useState<Module[]>([]);
   const [allAccess, setAllAccess] = useState<ModuleAccess[]>([]);
   const [permissions, setPermissions] = useState<ModulePermission[]>([]);
+  const [fullPermissions, setFullPermissions] = useState<FullModulePermission[]>([]);
   const [userGroupIds, setUserGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
