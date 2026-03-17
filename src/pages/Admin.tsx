@@ -81,6 +81,7 @@ const adminGroups: AdminGroup[] = [
       { id: "permissions", label: "Modulrättigheter", description: "Hantera moduler, åtkomst och rättigheter", icon: Shield, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
       { id: "settings", label: "Inställningar", description: "Attestering och andra inställningar", icon: Settings, color: "from-muted-foreground to-muted-foreground", borderColor: "border-t-muted-foreground/30", bgColor: "bg-muted-foreground/10", textColor: "text-muted-foreground" },
       { id: "it", label: "IT", description: "Navigationslänkar och utseende", icon: Wrench, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary", roles: ["it", "admin"] },
+      { id: "backup", label: "Backup", description: "Exportera och säkerhetskopiera databasen", icon: Database, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
     ],
   },
 ];
