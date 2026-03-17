@@ -316,6 +316,9 @@ export default function Planner() {
         sort_order: columns.length,
       });
       toast.success("Kolumn skapad");
+      if (user && activeBoardId) {
+        logPlannerActivity({ boardId: activeBoardId, userId: user.id, action: "created", entityType: "column", entityName: data.name });
+      }
     }
 
     fetchBoardData();
