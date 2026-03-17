@@ -668,6 +668,7 @@ export default function Planner() {
                         cards={colCards}
                         profileMap={profileMap}
                         checklistSummaries={checklistSummaries}
+                        attachmentCounts={attachmentCounts}
                         onAddCard={() => {
                           setEditingCard(null);
                           setDefaultColumnId(col.id);
