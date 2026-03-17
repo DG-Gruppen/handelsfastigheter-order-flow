@@ -84,6 +84,7 @@ const adminGroups: AdminGroup[] = [
 
 export default function Admin() {
   const { roles } = useAuth();
+  const { canView: canViewAdmin } = useModulePermission("admin");
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
 
   // Responsive: detect compact mode
