@@ -28,7 +28,16 @@ const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const MySHF = lazy(() => import("./pages/MySHF"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,  // 5 min
+      gcTime: 10 * 60 * 1000,     // 10 min garbage collection
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const PageFallback = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
