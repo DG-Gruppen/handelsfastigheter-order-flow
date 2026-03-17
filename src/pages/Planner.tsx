@@ -386,7 +386,7 @@ export default function Planner() {
               {columns
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map(col => {
-                  const colCards = cards
+                  const colCards = filteredCards
                     .filter(c => c.column_id === col.id)
                     .sort((a, b) => a.sort_order - b.sort_order);
                   return (
