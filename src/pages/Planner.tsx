@@ -116,7 +116,7 @@ export default function Planner() {
       { name: "Klart", color: "#10b981", sort_order: 2 },
     ];
     await supabase
-      .from("planner_columns")
+      .from("planner_columns" as any)
       .insert(defaults.map(d => ({ ...d, board_id: newBoard.id })));
     fetchBoardData();
     toast.success("Board skapad");
