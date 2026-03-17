@@ -11,6 +11,7 @@ import {
 
 import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
 import RecognitionDialog from "@/components/RecognitionDialog";
+import HomepageSuggestion from "@/components/HomepageSuggestion";
 import { newsPosts } from "@/data/news";
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
@@ -58,6 +59,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 md:space-y-8">
+      <HomepageSuggestion />
       {/* ── Greeting ── */}
       <div>
         <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
