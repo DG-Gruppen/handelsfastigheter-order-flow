@@ -79,7 +79,7 @@ export default function CardDetailDialog({
     } else {
       setTitle(""); setDescription(""); setPriority("medium");
       setAssigneeId(""); setDueDate(""); setDueDone(false);
-      setColumnId(defaultColumnId ?? ""); setLabels([]);
+      setColumnId(defaultColumnId ?? ""); setLabels([]); setCoverColor(null);
     }
     setEditingDescription(false); setEditingTitle(false);
     setShowMemberPicker(false); setShowLabelPicker(false);
