@@ -1007,6 +1007,47 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_activity_log: {
+        Row: {
+          action: string
+          board_id: string
+          created_at: string
+          entity_name: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          board_id: string
+          created_at?: string
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          board_id?: string
+          created_at?: string
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_activity_log_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "planner_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planner_boards: {
         Row: {
           created_at: string
