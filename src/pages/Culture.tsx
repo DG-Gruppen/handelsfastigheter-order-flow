@@ -49,9 +49,7 @@ export default function Culture() {
             <PartyPopper className="w-5 h-5 text-primary" />
             <h2 className="font-heading text-xl font-semibold text-foreground">Klapp på axeln</h2>
           </div>
-          <button className="text-xs font-medium bg-primary text-primary-foreground px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors">
-            Ge ett erkännande +
-          </button>
+          <RecognitionDialog />
         </div>
         <div className="space-y-3">
           {recognitions.map((r, i) => (
