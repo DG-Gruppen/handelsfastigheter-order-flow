@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import {
   FolderOpen, FileText, Search, Upload, FolderPlus, FolderUp, X, Trash2,
-  FolderInput, Download, ChevronRight, Home, Shield, MoreHorizontal, Pencil,
+  FolderInput, Download, ChevronRight, Home, Shield, MoreHorizontal, Pencil, Palette,
 } from "lucide-react";
 import { useDocuments, type DocFolder, type DocFile } from "@/hooks/useDocuments";
 import { supabase } from "@/integrations/supabase/client";
