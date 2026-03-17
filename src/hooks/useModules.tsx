@@ -43,6 +43,8 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
 
   const fetchModules = async () => {
     if (!user) {
+      setModules([]);
+      setAllAccess([]);
       setLoading(false);
       return;
     }
@@ -59,7 +61,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchModules();
-  }, [user, roles.length]);
+  }, [user?.id]);
 
   // Memoize accessible modules to prevent unnecessary re-renders downstream
   const accessibleModules = useMemo(() => {
