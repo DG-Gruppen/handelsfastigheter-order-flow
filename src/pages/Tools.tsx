@@ -1,23 +1,40 @@
 import { ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const tools = [
-  { name: "Vitec", description: "Fastighetssystem", emoji: "🏠", url: "https://fsab-handelsfastigheter.vitec.net/" },
-  { name: "Vyer", description: "Fastighetsvisning", emoji: "👁️", url: "https://app.vyer.com/sites" },
-  { name: "Zendesk", description: "Ärendehantering & support", emoji: "🎧", url: "https://lsthsvenskahandelsfastigheter.zendesk.com/hc/sv" },
-  { name: "Rillion", description: "Fakturahantering", emoji: "🧾", url: "https://p29254x03.rillionprime.com/" },
-  { name: "ViaEstate", description: "Fastighetsdata & analys", emoji: "🏢", url: "https://viaestate.viametrics.com/login" },
-  { name: "Momentum", description: "Underhållssystem", emoji: "🔧", url: "https://rc.momentum.se/" },
-  { name: "Metry", description: "Energiuppföljning", emoji: "⚡", url: "https://app.metry.io/" },
-  { name: "SHF Webb", description: "handelsfastigheter.se", emoji: "🌐", url: "https://handelsfastigheter.se/" },
-  { name: "Microsoft 365", description: "Teams, Outlook, SharePoint", emoji: "💼", url: "https://office.com" },
-  { name: "Power BI", description: "Rapportering & Analys", emoji: "📈", url: "https://app.powerbi.com" },
-  { name: "DocuSign", description: "E-signering av avtal", emoji: "✍️", url: "https://docusign.com" },
-  { name: "IT-portalen", description: "it.handelsfastigheter.se", emoji: "💻", url: "https://it.handelsfastigheter.se" },
-  { name: "Cision News", description: "Pressmeddelanden", emoji: "📋", url: "https://news.cision.com/se/svenska-handelsfastigheter" },
-  { name: "Google Drive", description: "Delade dokument", emoji: "🗂️", url: "https://drive.google.com" },
-];
+interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  url: string;
+  sort_order: number;
+}
 
 export default function Tools() {
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("tools" as any)
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order")
+      .then(({ data }) => {
+        setTools(((data as unknown) as Tool[]) ?? []);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
@@ -28,7 +45,7 @@ export default function Tools() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => (
           <a
-            key={tool.name}
+            key={tool.id}
             href={tool.url}
             target="_blank"
             rel="noopener noreferrer"
