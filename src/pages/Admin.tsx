@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
 import SystemsManager from "@/components/SystemsManager";
-import ModulesManager from "@/components/ModulesManager";
+
 import KbAdminPanel from "@/components/kb/KbAdminPanel";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import ImpersonateUserCard from "@/components/admin/ImpersonateUserCard";
