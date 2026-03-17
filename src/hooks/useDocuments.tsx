@@ -228,7 +228,7 @@ export function useDocuments() {
 
   return {
     folders, files, loading, isAdmin, roles,
-    createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess,
+    createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess, updateFolderIcon,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile,
     canWriteFolder, refresh: fetchData,
   };
