@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -124,16 +124,30 @@ export default function Planner() {
   useEffect(() => { fetchBoards(); }, []);
   useEffect(() => { fetchBoardData(); }, [activeBoardId]);
 
+  // Debounced realtime to prevent flicker
+  const boardDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const dataDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const skipNextBoardFetchRef = useRef(false);
+  const skipNextDataFetchRef = useRef(false);
+
   // Realtime subscriptions
   useEffect(() => {
     const boardChannel = supabase
       .channel('planner-boards')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'planner_boards' }, () => {
-        fetchBoards();
+        if (skipNextBoardFetchRef.current) {
+          skipNextBoardFetchRef.current = false;
+          return;
+        }
+        clearTimeout(boardDebounceRef.current);
+        boardDebounceRef.current = setTimeout(() => fetchBoards(), 500);
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(boardChannel); };
+    return () => {
+      clearTimeout(boardDebounceRef.current);
+      supabase.removeChannel(boardChannel);
+    };
   }, []);
 
   useEffect(() => {
@@ -144,14 +158,25 @@ export default function Planner() {
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'planner_columns',
         filter: `board_id=eq.${activeBoardId}`,
-      }, () => { fetchBoardData(); })
+      }, () => {
+        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
+        clearTimeout(dataDebounceRef.current);
+        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+      })
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'planner_cards',
         filter: `board_id=eq.${activeBoardId}`,
-      }, () => { fetchBoardData(); })
+      }, () => {
+        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
+        clearTimeout(dataDebounceRef.current);
+        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      clearTimeout(dataDebounceRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [activeBoardId]);
 
   // Board operations
@@ -181,28 +206,31 @@ export default function Planner() {
   };
 
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
-    await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
+    skipNextBoardFetchRef.current = true;
     setBoards(prev => prev.map(b => b.id === id ? { ...b, name, description } : b));
+    await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
     toast.success("Board uppdaterad");
   };
 
   const handleDeleteBoard = async (id: string) => {
-    await supabase.from("planner_boards" as any).delete().eq("id", id);
+    skipNextBoardFetchRef.current = true;
     setBoards(prev => prev.filter(b => b.id !== id));
     if (activeBoardId === id) {
       const remaining = boards.filter(b => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
+    await supabase.from("planner_boards" as any).delete().eq("id", id);
     toast.success("Board borttagen");
   };
 
   const handleArchiveBoard = async (id: string) => {
-    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
+    skipNextBoardFetchRef.current = true;
     setBoards(prev => prev.map(b => b.id === id ? { ...b, is_archived: true } : b));
     if (activeBoardId === id) {
       const remaining = boards.filter(b => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
+    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
     toast.success("Board arkiverad");
   };
 
