@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,23 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Tool {
   id: string;
@@ -24,6 +41,77 @@ interface Tool {
   sort_order: number;
   is_active: boolean;
   is_starred: boolean;
+}
+
+/* ── Sortable tool row ── */
+function SortableToolRow({
+  tool,
+  onToggleStar,
+  onToggleActive,
+  onEdit,
+  onDelete,
+}: {
+  tool: Tool;
+  onToggleStar: (t: Tool) => void;
+  onToggleActive: (t: Tool) => void;
+  onEdit: (t: Tool) => void;
+  onDelete: (t: Tool) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tool.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card transition-opacity ${
+        !tool.is_active ? "opacity-50" : ""
+      } ${isDragging ? "shadow-lg" : ""}`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing shrink-0 touch-none"
+        aria-label="Dra för att sortera"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+      </button>
+      <span className="text-xl shrink-0">{tool.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium truncate">{tool.name}</p>
+          <a href={tool.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">{tool.description}</p>
+      </div>
+      <button
+        onClick={() => onToggleStar(tool)}
+        className="shrink-0 p-1 rounded hover:bg-secondary transition-colors"
+        title={tool.is_starred ? "Ta bort från snabbåtkomst" : "Visa i snabbåtkomst"}
+      >
+        <Star className={`h-4 w-4 ${tool.is_starred ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
+      </button>
+      <Switch
+        checked={tool.is_active}
+        onCheckedChange={() => onToggleActive(tool)}
+        aria-label="Aktiv"
+      />
+      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(tool)}>
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(tool)}>
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
 }
 
 export default function ToolsManager() {
@@ -38,6 +126,11 @@ export default function ToolsManager() {
   const [description, setDescription] = useState("");
   const [emoji, setEmoji] = useState("🔗");
   const [url, setUrl] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const fetchTools = async () => {
     const { data } = await supabase
@@ -103,6 +196,24 @@ export default function ToolsManager() {
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_starred: !t.is_starred } : t));
   };
 
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = tools.findIndex(t => t.id === active.id);
+    const newIndex = tools.findIndex(t => t.id === over.id);
+    const reordered = arrayMove(tools, oldIndex, newIndex);
+
+    // Optimistic update
+    setTools(reordered);
+
+    // Persist new sort_order for all affected items
+    const updates = reordered.map((t, i) => ({ id: t.id, sort_order: i }));
+    for (const u of updates) {
+      await supabase.from("tools" as any).update({ sort_order: u.sort_order }).eq("id", u.id);
+    }
+  }, [tools]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -116,53 +227,29 @@ export default function ToolsManager() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-heading text-lg font-bold text-foreground">Verktyg</h2>
-          <p className="text-sm text-muted-foreground">Hantera snabblänkar som visas på verktygssidan</p>
+          <p className="text-sm text-muted-foreground">Hantera snabblänkar som visas på verktygssidan. Dra för att ändra ordning.</p>
         </div>
         <Button onClick={openCreate} size="sm" className="gap-1.5">
           <Plus className="h-4 w-4" /> Lägg till
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-        {tools.map((tool) => (
-          <div
-            key={tool.id}
-            className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card transition-opacity ${
-              !tool.is_active ? "opacity-50" : ""
-            }`}
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-            <span className="text-xl shrink-0">{tool.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium truncate">{tool.name}</p>
-                <a href={tool.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-              <p className="text-xs text-muted-foreground truncate">{tool.description}</p>
-            </div>
-            <button
-              onClick={() => handleToggleStar(tool)}
-              className="shrink-0 p-1 rounded hover:bg-secondary transition-colors"
-              title={tool.is_starred ? "Ta bort från snabbåtkomst" : "Visa i snabbåtkomst"}
-            >
-              <Star className={`h-4 w-4 ${tool.is_starred ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
-            </button>
-            <Switch
-              checked={tool.is_active}
-              onCheckedChange={() => handleToggleActive(tool)}
-              aria-label="Aktiv"
-            />
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(tool)}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConfirmDelete(tool)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={tools.map(t => t.id)} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            {tools.map((tool) => (
+              <SortableToolRow
+                key={tool.id}
+                tool={tool}
+                onToggleStar={handleToggleStar}
+                onToggleActive={handleToggleActive}
+                onEdit={openEdit}
+                onDelete={setConfirmDelete}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={v => !v && setDialogOpen(false)}>
