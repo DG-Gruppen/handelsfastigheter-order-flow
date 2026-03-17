@@ -164,9 +164,13 @@ export function useDocuments() {
   };
 
   // ── File operations ──
+  const sanitizeFileName = (name: string) =>
+    name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_{2,}/g, "_");
+
   const uploadFile = async (folderId: string, file: File) => {
     if (!user) return;
-    const path = `${folderId}/${Date.now()}_${file.name}`;
+    const safeName = sanitizeFileName(file.name);
+    const path = `${folderId}/${Date.now()}_${safeName}`;
     const { error: uploadError } = await supabase.storage.from("documents").upload(path, file);
     if (uploadError) { toast({ title: "Uppladdningsfel", description: uploadError.message, variant: "destructive" }); return; }
     const { error } = await supabase.from("document_files").insert({
