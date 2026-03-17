@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 
 import OrgChartCanvas from "@/components/OrgChart/OrgChartCanvas";
 import OrgCardMenu from "@/components/OrgChart/OrgCardMenu";
@@ -169,7 +170,8 @@ function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: C
 export default function OrgTree() {
   const { roles } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = roles.includes("admin");
+  const { canEdit: canEditOrg } = useModulePermission("org");
+  const isAdmin = roles.includes("admin") || canEditOrg;
   const [profiles, setProfiles] = useState<OrgProfile[]>([]);
   const [roleMap, setRoleMap] = useState<RoleMap>({});
   const [colorSettings, setColorSettings] = useState<ColorSettings>(DEFAULT_COLORS);

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -20,12 +21,13 @@ interface FaqItem {
 export default function ITInfo() {
   const { settings, refresh } = useNavSettings();
   const { roles } = useAuth();
+  const { canEdit: canEditIT } = useModulePermission("it-support");
   const [faq, setFaq] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [managingFaq, setManagingFaq] = useState(false);
   const [editingContact, setEditingContact] = useState(false);
   const [editingRemoteHelp, setEditingRemoteHelp] = useState(false);
-  const isItOrAdmin = roles.includes("admin") || roles.includes("it");
+  const isItOrAdmin = canEditIT;
 
   // Local edit state for contact
   const [contactForm, setContactForm] = useState({ email: "", phone: "", hours: "" });

@@ -23,6 +23,8 @@ interface ModulesContextType {
   modules: Module[];
   accessibleModules: Module[];
   allAccess: ModuleAccess[];
+  allPermissions: FullModulePermission[];
+  userGroupIds: string[];
   loading: boolean;
   refresh: () => void;
 }
@@ -31,6 +33,8 @@ const ModulesContext = createContext<ModulesContextType>({
   modules: [],
   accessibleModules: [],
   allAccess: [],
+  allPermissions: [],
+  userGroupIds: [],
   loading: true,
   refresh: () => {},
 });
@@ -42,11 +46,22 @@ interface ModulePermission {
   can_view: boolean;
 }
 
+export interface FullModulePermission {
+  module_id: string;
+  grantee_type: string;
+  grantee_id: string;
+  can_view: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  is_owner: boolean;
+}
+
 export function ModulesProvider({ children }: { children: ReactNode }) {
   const { user, roles } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [allAccess, setAllAccess] = useState<ModuleAccess[]>([]);
   const [permissions, setPermissions] = useState<ModulePermission[]>([]);
+  const [fullPermissions, setFullPermissions] = useState<FullModulePermission[]>([]);
   const [userGroupIds, setUserGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,13 +78,14 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     const [modulesRes, accessRes, permRes, groupRes] = await Promise.all([
       supabase.from("modules").select("*").order("sort_order"),
       supabase.from("module_role_access").select("module_id, role, has_access"),
-      supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view"),
+      supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view, can_edit, can_delete, is_owner"),
       supabase.from("group_members").select("group_id").eq("user_id", user.id),
     ]);
 
     setModules((modulesRes.data as Module[]) ?? []);
     setAllAccess((accessRes.data as ModuleAccess[]) ?? []);
     setPermissions((permRes.data as ModulePermission[]) ?? []);
+    setFullPermissions((permRes.data as FullModulePermission[]) ?? []);
     setUserGroupIds((groupRes.data ?? []).map((g: any) => g.group_id));
     setLoading(false);
   };
@@ -127,7 +143,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   }, [modules, allAccess, permissions, userGroupIds, roles, user?.id]);
 
   return (
-    <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, loading, refresh: fetchModules }}>
+    <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, allPermissions: fullPermissions, userGroupIds, loading, refresh: fetchModules }}>
       {children}
     </ModulesContext.Provider>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
@@ -83,6 +84,7 @@ const adminGroups: AdminGroup[] = [
 
 export default function Admin() {
   const { roles } = useAuth();
+  const { canView: canViewAdmin } = useModulePermission("admin");
   const [activeSection, setActiveSection] = useState<AdminSection>("menu");
 
   // Responsive: detect compact mode
@@ -96,7 +98,7 @@ export default function Admin() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  if (!roles.includes("admin")) {
+  if (!canViewAdmin) {
     return (
       <div className="text-center py-20">
         <Shield className="h-10 w-10 mx-auto text-muted-foreground/40" />
@@ -105,9 +107,7 @@ export default function Admin() {
     );
   }
 
-  const visibleGroups = adminGroups
-    .map(g => ({ ...g, items: g.items.filter(item => !item.roles || item.roles.some(r => roles.includes(r))) }))
-    .filter(g => g.items.length > 0);
+  const visibleGroups = adminGroups.filter(g => g.items.length > 0);
 
   const renderSection = (sectionId: AdminSection) => {
     switch (sectionId) {

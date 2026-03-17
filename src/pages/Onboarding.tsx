@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
@@ -53,7 +54,8 @@ interface SystemOption {
 
 export default function Onboarding() {
   const { user, roles } = useAuth();
-  const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
+  const { canEdit: canEditOnboarding } = useModulePermission("onboarding");
+  const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin") || canEditOnboarding;
   const navigate = useNavigate();
 
   const [categories, setCategories] = useState<Category[]>([]);

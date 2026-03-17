@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail, buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
@@ -44,7 +45,8 @@ interface OrderSystem { id: string; system: { id: string; name: string; descript
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, roles } = useAuth();
-  const isAdmin = roles.includes("admin");
+  const { canEdit: canEditAdmin } = useModulePermission("admin");
+  const isAdmin = roles.includes("admin") || canEditAdmin;
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [orderSystems, setOrderSystems] = useState<OrderSystem[]>([]);

@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -34,6 +35,7 @@ const SLUG_NAME_OVERRIDES: Record<string, string> = {
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
   const { profile, roles, signOut } = useAuth();
+  const { canView: canViewAdmin } = useModulePermission("admin");
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -281,7 +283,7 @@ export default function AppSidebar() {
                   <User className="w-4 h-4" />
                   Min profil
                 </button>
-                {roles.includes("admin") && (
+                {canViewAdmin && (
                   <button
                     onClick={() => { setProfileOpen(false); navigate("/admin"); }}
                     className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -463,7 +465,7 @@ export default function AppSidebar() {
                           <LogOut className="h-5 w-5" />
                           <span className="text-[10px] font-medium text-center leading-tight">Logga ut</span>
                         </button>
-                        {(roles.includes("admin") || roles.includes("it")) && (
+                        {canViewAdmin && (
                           <button
                             onClick={() => handleMobileNav("/admin")}
                             className={cn(
