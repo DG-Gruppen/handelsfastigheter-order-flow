@@ -41,8 +41,8 @@ const queryClient = new QueryClient({
   },
 });
 
-const PageFallback = () => (
-  <div className="flex items-center justify-center min-h-[50vh]">
+const LoginFallback = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
     <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
   </div>
 );
@@ -57,9 +57,8 @@ const App = () => (
           <AuthProvider>
             <NavSettingsProvider>
               <ModulesProvider>
-                <Suspense fallback={<PageFallback />}>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
+                <Routes>
+                    <Route path="/login" element={<Suspense fallback={<LoginFallback />}><Login /></Suspense>} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
@@ -80,8 +79,7 @@ const App = () => (
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
-                  </Routes>
-                </Suspense>
+                </Routes>
               </ModulesProvider>
             </NavSettingsProvider>
           </AuthProvider>
