@@ -1,4 +1,5 @@
 import { Award, PartyPopper, Pen, BookOpen, ChevronRight } from "lucide-react";
+import RecognitionDialog from "@/components/RecognitionDialog";
 
 const veckansVinst = {
   title: "Region Syd knäcker alla förväntningar",
