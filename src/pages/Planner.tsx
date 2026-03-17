@@ -414,7 +414,7 @@ export default function Planner() {
     }));
 
     for (const u of updates) {
-      await supabase.from("planner_cards" as any)
+      await supabase.from("planner_cards")
         .update({ column_id: u.column_id, sort_order: u.sort_order })
         .eq("id", u.id);
     }
