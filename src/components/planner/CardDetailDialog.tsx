@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Trash2, X, Plus, CreditCard, Users, Tag, CheckSquare, Calendar,
-  Paperclip, ArrowRight, FileText, AlignLeft, Palette,
+  Paperclip, ArrowRight, FileText, AlignLeft, Palette, Copy, Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlannerCard } from "./KanbanCard";
