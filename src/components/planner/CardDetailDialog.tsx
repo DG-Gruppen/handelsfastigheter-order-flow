@@ -83,7 +83,7 @@ export default function CardDetailDialog({
     }
     setEditingDescription(false); setEditingTitle(false);
     setShowMemberPicker(false); setShowLabelPicker(false);
-    setShowDatePicker(false); setShowMovePicker(false);
+    setShowDatePicker(false); setShowMovePicker(false); setShowCoverPicker(false);
   }, [card, open, defaultColumnId]);
 
   const handleSave = useCallback(() => {
