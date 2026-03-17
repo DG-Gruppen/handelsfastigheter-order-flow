@@ -666,6 +666,7 @@ export default function Planner() {
                 reporterName={profileMap[activeCard.reporter_id]}
                 onClick={() => {}}
                 overlay
+                checklistSummary={checklistSummaries[activeCard.id]}
               />
             )}
             {activeColumn && (
