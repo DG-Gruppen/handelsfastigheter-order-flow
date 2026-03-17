@@ -81,8 +81,9 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="h-7 w-7 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
+        <Button variant="outline" size="sm" className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
           <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline ml-1">Ge ett erkännande</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
