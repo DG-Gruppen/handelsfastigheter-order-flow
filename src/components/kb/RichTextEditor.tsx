@@ -95,13 +95,41 @@ export default function RichTextEditor({ content, onChange }: Props) {
     }
   }, [editor]);
 
-  const addImage = useCallback(() => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const addImageFromUrl = useCallback(() => {
     if (!editor) return;
     const url = window.prompt("Ange bild-URL:");
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();
     }
   }, [editor]);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!editor) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Fel", description: "Filen måste vara en bild", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    const path = `${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from("kb-images").upload(path, file);
+    if (error) {
+      toast({ title: "Uppladdningsfel", description: error.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("kb-images").getPublicUrl(path);
+    editor.chain().focus().setImage({ src: urlData.publicUrl }).run();
+    setUploading(false);
+  }, [editor]);
+
+  const onFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageUpload(file);
+    e.target.value = "";
+  }, [handleImageUpload]);
 
   if (!editor) return null;
 
