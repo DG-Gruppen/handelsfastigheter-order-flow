@@ -465,7 +465,7 @@ export default function AppSidebar() {
                           <LogOut className="h-5 w-5" />
                           <span className="text-[10px] font-medium text-center leading-tight">Logga ut</span>
                         </button>
-                        {(roles.includes("admin") || roles.includes("it")) && (
+                        {canViewAdmin && (
                           <button
                             onClick={() => handleMobileNav("/admin")}
                             className={cn(
