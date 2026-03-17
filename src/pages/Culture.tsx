@@ -50,7 +50,7 @@ export default function Culture() {
             <PartyPopper className="w-5 h-5 text-primary" />
             <h2 className="font-heading text-xl font-semibold text-foreground">Klapp på axeln</h2>
           </div>
-          <RecognitionDialog />
+          <RecognitionDialog onCreated={() => {}} />
         </div>
         <div className="space-y-3">
           {recognitions.map((r, i) => (
