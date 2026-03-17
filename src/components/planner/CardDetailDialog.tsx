@@ -88,6 +88,9 @@ export default function CardDetailDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{card ? "Redigera kort" : "Nytt kort"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {card ? "Redigera kortets detaljer" : "Skapa ett nytt kort"}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>

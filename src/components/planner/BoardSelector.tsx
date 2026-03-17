@@ -73,7 +73,7 @@ export default function BoardSelector({ boards, activeBoardId, onSelect, onCreat
   const activeBoards = boards.filter(b => !b.is_archived);
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ overflowY: "visible" }}>
+    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
       {activeBoards.map(b => (
         <div key={b.id} className="flex items-center shrink-0">
           <button
