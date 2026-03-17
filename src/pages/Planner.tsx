@@ -216,41 +216,51 @@ export default function Planner() {
   // Board operations
   const handleCreateBoard = async (name: string, description: string) => {
     if (!user) return;
+    suppressBoardRealtime();
+
     const { data, error } = await supabase
       .from("planner_boards" as any)
       .insert({ name, description, created_by: user.id, sort_order: boards.length })
       .select()
       .single();
-    if (error) { toast.error("Kunde inte skapa board"); return; }
+
+    if (error) {
+      toast.error("Kunde inte skapa board");
+      return;
+    }
+
     const newBoard = (data as unknown) as Board;
-    setBoards(prev => [...prev, newBoard]);
+    setBoards((prev) => [...prev, newBoard]);
     setActiveBoardId(newBoard.id);
 
     // Create default columns
+    suppressDataRealtime(2500);
     const defaults = [
       { name: "Att göra", color: "#3b82f6", sort_order: 0 },
       { name: "Pågår", color: "#f59e0b", sort_order: 1 },
       { name: "Klart", color: "#10b981", sort_order: 2 },
     ];
+
     await supabase
       .from("planner_columns" as any)
-      .insert(defaults.map(d => ({ ...d, board_id: newBoard.id })));
+      .insert(defaults.map((d) => ({ ...d, board_id: newBoard.id })));
+
     fetchBoardData();
     toast.success("Board skapad");
   };
 
   const handleUpdateBoard = async (id: string, name: string, description: string) => {
-    skipNextBoardFetchRef.current = true;
-    setBoards(prev => prev.map(b => b.id === id ? { ...b, name, description } : b));
+    suppressBoardRealtime();
+    setBoards((prev) => prev.map((b) => (b.id === id ? { ...b, name, description } : b)));
     await supabase.from("planner_boards" as any).update({ name, description }).eq("id", id);
     toast.success("Board uppdaterad");
   };
 
   const handleDeleteBoard = async (id: string) => {
-    skipNextBoardFetchRef.current = true;
-    setBoards(prev => prev.filter(b => b.id !== id));
+    suppressBoardRealtime();
+    setBoards((prev) => prev.filter((b) => b.id !== id));
     if (activeBoardId === id) {
-      const remaining = boards.filter(b => b.id !== id && !b.is_archived);
+      const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
     await supabase.from("planner_boards" as any).delete().eq("id", id);
@@ -258,10 +268,10 @@ export default function Planner() {
   };
 
   const handleArchiveBoard = async (id: string) => {
-    skipNextBoardFetchRef.current = true;
-    setBoards(prev => prev.map(b => b.id === id ? { ...b, is_archived: true } : b));
+    suppressBoardRealtime();
+    setBoards((prev) => prev.map((b) => (b.id === id ? { ...b, is_archived: true } : b)));
     if (activeBoardId === id) {
-      const remaining = boards.filter(b => b.id !== id && !b.is_archived);
+      const remaining = boards.filter((b) => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
     await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
@@ -269,21 +279,31 @@ export default function Planner() {
   };
 
   const handleSaveColumn = async (data: { name: string; color: string | null; wip_limit: number | null; id?: string }) => {
+    suppressDataRealtime();
+
     if (data.id) {
-      await supabase.from("planner_columns" as any).update({ name: data.name, color: data.color, wip_limit: data.wip_limit }).eq("id", data.id);
+      await supabase
+        .from("planner_columns" as any)
+        .update({ name: data.name, color: data.color, wip_limit: data.wip_limit })
+        .eq("id", data.id);
       toast.success("Kolumn uppdaterad");
     } else {
       if (!activeBoardId) return;
       await supabase.from("planner_columns" as any).insert({
-        name: data.name, color: data.color, wip_limit: data.wip_limit,
-        board_id: activeBoardId, sort_order: columns.length,
+        name: data.name,
+        color: data.color,
+        wip_limit: data.wip_limit,
+        board_id: activeBoardId,
+        sort_order: columns.length,
       });
       toast.success("Kolumn skapad");
     }
+
     fetchBoardData();
   };
 
   const handleDeleteColumn = async (id: string) => {
+    suppressDataRealtime();
     await supabase.from("planner_columns" as any).delete().eq("id", id);
     toast.success("Kolumn borttagen");
     fetchBoardData();
@@ -291,13 +311,15 @@ export default function Planner() {
 
   // Card operations
   const handleSaveCard = async (data: Partial<PlannerCard> & { id?: string }) => {
+    suppressDataRealtime();
+
     if (data.id) {
       const { id, ...update } = data;
       await supabase.from("planner_cards" as any).update(update).eq("id", id);
       toast.success("Kort uppdaterat");
     } else {
       if (!user || !activeBoardId) return;
-      const colCards = cards.filter(c => c.column_id === data.column_id);
+      const colCards = cards.filter((c) => c.column_id === data.column_id);
       await supabase.from("planner_cards" as any).insert({
         ...data,
         board_id: activeBoardId,
@@ -306,10 +328,12 @@ export default function Planner() {
       });
       toast.success("Kort skapat");
     }
+
     fetchBoardData();
   };
 
   const handleDeleteCard = async (id: string) => {
+    suppressDataRealtime();
     await supabase.from("planner_cards" as any).delete().eq("id", id);
     toast.success("Kort borttaget");
     fetchBoardData();
