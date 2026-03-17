@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  UserPlus, Shield, X, Upload, Loader2,
+  Upload, Loader2,
   Phone, Building2, Briefcase, Search, ArrowUpDown, Users,
 } from "lucide-react";
 
@@ -37,10 +37,16 @@ interface ProfileWithRoles {
   manager_id: string | null;
 }
 
+interface GroupWithRole {
+  id: string;
+  name: string;
+  role_equivalent: string | null;
+}
+
 export default function UsersContent() {
   const [profiles, setProfiles] = useState<ProfileWithRoles[]>([]);
-  const [userRoles, setUserRoles] = useState<Record<string, string[]>>({});
-  const [selectedRole, setSelectedRole] = useState<Record<string, string>>({});
+  const [groups, setGroups] = useState<GroupWithRole[]>([]);
+  const [groupMembers, setGroupMembers] = useState<Record<string, string[]>>({}); // userId -> groupIds
   const [searchQuery, setSearchQuery] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
   const [filterDept, setFilterDept] = useState("all");
@@ -49,20 +55,48 @@ export default function UsersContent() {
   const [importing, setImporting] = useState(false);
 
   const fetchData = useCallback(async () => {
-    const [{ data: profilesData }, { data: rolesData }] = await Promise.all([
+    const [{ data: profilesData }, { data: groupsData }, { data: membersData }] = await Promise.all([
       supabase.from("profiles").select("*"),
-      supabase.rpc("get_all_user_roles"),
+      supabase.from("groups").select("id, name, role_equivalent"),
+      supabase.from("group_members").select("user_id, group_id"),
     ]);
     setProfiles(((profilesData as ProfileWithRoles[]) ?? []).filter(p => p.email !== "toni@kazarian.se"));
-    const roleMap: Record<string, string[]> = {};
-    (rolesData ?? []).forEach((r: any) => {
-      if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
-      roleMap[r.user_id].push(r.role);
+    setGroups((groupsData as GroupWithRole[]) ?? []);
+
+    const memberMap: Record<string, string[]> = {};
+    (membersData ?? []).forEach((m: any) => {
+      if (!memberMap[m.user_id]) memberMap[m.user_id] = [];
+      memberMap[m.user_id].push(m.group_id);
     });
-    setUserRoles(roleMap);
+    setGroupMembers(memberMap);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Derive effective roles from group memberships
+  const userRolesFromGroups = useMemo(() => {
+    const rolesMap: Record<string, string[]> = {};
+    for (const [userId, groupIds] of Object.entries(groupMembers)) {
+      const roles = new Set<string>();
+      for (const gid of groupIds) {
+        const group = groups.find(g => g.id === gid);
+        if (group?.role_equivalent) roles.add(group.role_equivalent);
+      }
+      rolesMap[userId] = [...roles];
+    }
+    return rolesMap;
+  }, [groupMembers, groups]);
+
+  // Map userId -> group names
+  const userGroupNames = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const [userId, groupIds] of Object.entries(groupMembers)) {
+      map[userId] = groupIds
+        .map(gid => groups.find(g => g.id === gid)?.name)
+        .filter(Boolean) as string[];
+    }
+    return map;
+  }, [groupMembers, groups]);
 
   const departments = useMemo(() => {
     const depts = new Set(profiles.map(p => p.department).filter(Boolean));
@@ -74,7 +108,8 @@ export default function UsersContent() {
     const filtered = profiles.filter(p => {
       const matchesSearch = p.full_name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q) || (p.department ?? "").toLowerCase().includes(q) || (p.title_override ?? "").toLowerCase().includes(q);
       const matchesDept = filterDept === "all" || p.department === filterDept;
-      const matchesRole = filterRole === "all" || (filterRole === "none" ? !(userRoles[p.user_id]?.length) : (userRoles[p.user_id] ?? []).includes(filterRole));
+      const effectiveRoles = userRolesFromGroups[p.user_id] ?? [];
+      const matchesRole = filterRole === "all" || (filterRole === "none" ? effectiveRoles.length === 0 : effectiveRoles.includes(filterRole));
       const matchesPhone = filterPhone === "all" || (filterPhone === "yes" ? !!p.phone : !p.phone);
       return matchesSearch && matchesDept && matchesRole && matchesPhone;
     });
@@ -82,30 +117,7 @@ export default function UsersContent() {
       const cmp = a.full_name.localeCompare(b.full_name, "sv");
       return sortAsc ? cmp : -cmp;
     });
-  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, userRoles]);
-
-  const handleAddRole = async (userId: string) => {
-    const role = selectedRole[userId];
-    if (!role) return;
-    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role } as any);
-    if (error) {
-      toast.error(error.code === "23505" ? "Användaren har redan den rollen" : "Kunde inte lägga till rollen");
-    } else {
-      toast.success("Roll tillagd");
-      setUserRoles(prev => ({ ...prev, [userId]: [...(prev[userId] ?? []), role] }));
-      setSelectedRole(prev => ({ ...prev, [userId]: "" }));
-    }
-  };
-
-  const handleRemoveRole = async (userId: string, role: string) => {
-    const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as any);
-    if (error) {
-      toast.error("Kunde inte ta bort rollen");
-    } else {
-      toast.success("Roll borttagen");
-      setUserRoles(prev => ({ ...prev, [userId]: (prev[userId] ?? []).filter(r => r !== role) }));
-    }
-  };
+  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, userRolesFromGroups]);
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -139,8 +151,8 @@ export default function UsersContent() {
             <Users className="h-4 w-4 md:h-5 md:w-5 text-warning" />
           </div>
           <div>
-            <CardTitle className="font-heading text-base md:text-lg text-warning">Användare & Roller</CardTitle>
-            <CardDescription className="text-xs">Tilldela roller till användare</CardDescription>
+            <CardTitle className="font-heading text-base md:text-lg text-warning">Användare</CardTitle>
+            <CardDescription className="text-xs">Roller tilldelas via grupper</CardDescription>
           </div>
         </div>
         <div className="pt-2">
@@ -181,7 +193,7 @@ export default function UsersContent() {
           </Select>
           <Select value={filterRole} onValueChange={setFilterRole}>
             <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
-              <Shield className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Roll" />
+              <Users className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Roll" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alla roller</SelectItem>
@@ -213,54 +225,45 @@ export default function UsersContent() {
         <p className="text-xs text-muted-foreground">{filteredProfiles.length} av {profiles.length} användare</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {filteredProfiles.map(p => {
-            const currentRoles = userRoles[p.user_id] ?? [];
+            const effectiveRoles = userRolesFromGroups[p.user_id] ?? [];
+            const groupNames = userGroupNames[p.user_id] ?? [];
             return (
-              <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-3">
+              <div key={p.id} className="rounded-2xl border border-border/50 bg-secondary/30 p-3.5 md:p-4 space-y-2">
                 <div className="space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-sm md:text-base text-foreground">{p.full_name || p.email}</p>
-                      {p.title_override && (
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Briefcase className="h-3 w-3 shrink-0" />{p.title_override}
-                        </p>
-                      )}
-                    </div>
+                  <div>
+                    <p className="font-medium text-sm md:text-base text-foreground">{p.full_name || p.email}</p>
+                    {p.title_override && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Briefcase className="h-3 w-3 shrink-0" />{p.title_override}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                     <span>{p.email}</span>
                     {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{p.phone}</span>}
                     {p.department && <span className="flex items-center gap-1"><Building2 className="h-3 w-3 shrink-0" />{p.department}</span>}
                   </div>
-                  <div className="flex gap-1.5 flex-wrap pt-0.5">
-                    {currentRoles.map(role => (
-                      <Badge key={role} variant="outline" className={`capitalize text-xs gap-1 pr-1 ${roleColors[role] ?? ""}`}>
-                        {roleLabels[role] ?? role}
-                        <button onClick={() => handleRemoveRole(p.user_id, role)}
-                          className="ml-0.5 rounded-full hover:bg-destructive/20 p-1.5 -mr-1 transition-colors min-h-[28px] min-w-[28px] flex items-center justify-center">
-                          <X className="h-3 w-3" />
-                        </button>
+                </div>
+                {/* Groups */}
+                {groupNames.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {groupNames.map(name => (
+                      <Badge key={name} variant="outline" className="text-[10px] bg-secondary/50 text-muted-foreground border-border/50">
+                        {name}
                       </Badge>
                     ))}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={selectedRole[p.user_id] ?? ""} onValueChange={v => setSelectedRole(prev => ({ ...prev, [p.user_id]: v }))}>
-                    <SelectTrigger className="flex-1 h-11 md:h-10 md:w-[160px] md:flex-none">
-                      <SelectValue placeholder="Välj roll..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {!currentRoles.includes("employee") && <SelectItem value="employee" className="py-3 md:py-2">Anställd</SelectItem>}
-                      {!currentRoles.includes("manager") && <SelectItem value="manager" className="py-3 md:py-2">Chef</SelectItem>}
-                      {!currentRoles.includes("staff") && <SelectItem value="staff" className="py-3 md:py-2">Stab</SelectItem>}
-                      {!currentRoles.includes("it") && <SelectItem value="it" className="py-3 md:py-2">IT</SelectItem>}
-                      {!currentRoles.includes("admin") && <SelectItem value="admin" className="py-3 md:py-2">Admin</SelectItem>}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" className="gap-1.5 h-11 md:h-10 shrink-0" onClick={() => handleAddRole(p.user_id)}>
-                    <UserPlus className="h-4 w-4" /><span className="hidden sm:inline">Lägg till</span>
-                  </Button>
-                </div>
+                )}
+                {/* Effective roles from groups */}
+                {effectiveRoles.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {effectiveRoles.map(role => (
+                      <Badge key={role} variant="outline" className={`capitalize text-xs ${roleColors[role] ?? ""}`}>
+                        {roleLabels[role] ?? role}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
