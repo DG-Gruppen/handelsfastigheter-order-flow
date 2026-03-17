@@ -105,7 +105,7 @@ export default function Planner() {
       .select()
       .single();
     if (error) { toast.error("Kunde inte skapa board"); return; }
-    const newBoard = data as Board;
+    const newBoard = (data as unknown) as Board;
     setBoards(prev => [...prev, newBoard]);
     setActiveBoardId(newBoard.id);
 
