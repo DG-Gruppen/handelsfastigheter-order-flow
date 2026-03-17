@@ -343,7 +343,7 @@ export default function Planner() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="w-full overflow-x-auto kanban-scroll pb-2" style={{ overflowY: "visible" }}>
+          <div className="w-full overflow-x-auto kanban-scroll pb-2">
             <div className="flex gap-4 pb-4 min-h-[60vh]">
               {columns
                 .sort((a, b) => a.sort_order - b.sort_order)
