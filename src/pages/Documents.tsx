@@ -13,7 +13,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import FolderTreeItem from "@/components/documents/FolderTreeItem";
 import FileRow from "@/components/documents/FileRow";
-import { TextPreview, formatFileSize, canPreview } from "@/components/documents/documentHelpers";
+import { TextPreview, formatFileSize, canPreview, isOfficeMime } from "@/components/documents/documentHelpers";
 import {
   NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog,
 } from "@/components/documents/DocumentDialogs";
