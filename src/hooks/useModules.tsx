@@ -85,6 +85,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     setModules((modulesRes.data as Module[]) ?? []);
     setAllAccess((accessRes.data as ModuleAccess[]) ?? []);
     setPermissions((permRes.data as ModulePermission[]) ?? []);
+    setFullPermissions((permRes.data as FullModulePermission[]) ?? []);
     setUserGroupIds((groupRes.data ?? []).map((g: any) => g.group_id));
     setLoading(false);
   };
