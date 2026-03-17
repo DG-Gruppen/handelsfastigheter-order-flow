@@ -85,7 +85,10 @@ export default function Culture() {
 
   const startEdit = () => {
     if (!ceoBlog) return;
-    setEditForm({ ...ceoBlog });
+    setEditForm({
+      ...ceoBlog,
+      author: profile?.full_name || ceoBlog.author,
+    });
     setEditing(true);
   };
 
