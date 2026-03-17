@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Trash2, X, Plus } from "lucide-react";
 import type { PlannerCard } from "./KanbanCard";
 import type { PlannerColumn } from "./KanbanColumn";
 import CardComments from "./CardComments";
+import CardChecklists from "./CardChecklists";
 
 interface Profile {
   user_id: string;
@@ -36,6 +38,7 @@ export default function CardDetailDialog({
   const [priority, setPriority] = useState<string>("medium");
   const [assigneeId, setAssigneeId] = useState<string>("");
   const [dueDate, setDueDate] = useState("");
+  const [dueDone, setDueDone] = useState(false);
   const [columnId, setColumnId] = useState("");
   const [labels, setLabels] = useState<string[]>([]);
   const [newLabel, setNewLabel] = useState("");
@@ -47,6 +50,7 @@ export default function CardDetailDialog({
       setPriority(card.priority);
       setAssigneeId(card.assignee_id ?? "");
       setDueDate(card.due_date ?? "");
+      setDueDone(card.due_done ?? false);
       setColumnId(card.column_id);
       setLabels(card.labels ?? []);
     } else {
@@ -55,6 +59,7 @@ export default function CardDetailDialog({
       setPriority("medium");
       setAssigneeId("");
       setDueDate("");
+      setDueDone(false);
       setColumnId(defaultColumnId ?? "");
       setLabels([]);
     }
@@ -69,6 +74,7 @@ export default function CardDetailDialog({
       priority: priority as PlannerCard["priority"],
       assignee_id: assigneeId || null,
       due_date: dueDate || null,
+      due_done: dueDone,
       column_id: columnId,
       labels,
     });
@@ -160,6 +166,20 @@ export default function CardDetailDialog({
             </div>
           </div>
 
+          {/* Due done toggle */}
+          {dueDate && (
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={dueDone}
+                onCheckedChange={setDueDone}
+                id="due-done"
+              />
+              <Label htmlFor="due-done" className="text-sm cursor-pointer">
+                Markera som klar
+              </Label>
+            </div>
+          )}
+
           {/* Labels */}
           <div>
             <Label>Etiketter</Label>
@@ -187,6 +207,14 @@ export default function CardDetailDialog({
               </Button>
             </div>
           </div>
+
+          {/* Checklists */}
+          {card && (
+            <>
+              <Separator />
+              <CardChecklists cardId={card.id} />
+            </>
+          )}
 
           {/* Comments */}
           {card && (
