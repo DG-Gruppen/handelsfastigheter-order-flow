@@ -299,6 +299,9 @@ export default function Planner() {
         activeBoardId={activeBoardId}
         onSelect={setActiveBoardId}
         onCreate={handleCreateBoard}
+        onUpdate={handleUpdateBoard}
+        onDelete={handleDeleteBoard}
+        onArchive={handleArchiveBoard}
       />
 
       {/* Kanban board */}
