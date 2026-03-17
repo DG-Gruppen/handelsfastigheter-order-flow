@@ -199,13 +199,13 @@ export default function ModulePermissionsManager() {
                         toast.success(!mod.is_active ? "Modul aktiverad" : "Modul inaktiverad");
                         fetchData();
                       }}
-                      className={`h-10 w-5 rounded-full p-0.5 transition-all ${
+                      className={`relative h-8 w-4 rounded-full p-[2px] transition-colors ${
                         mod.is_active ? "bg-emerald-500" : "bg-destructive"
                       }`}
                       title={mod.is_active ? "Aktiv – klicka för att inaktivera" : "Inaktiv – klicka för att aktivera"}
                     >
-                      <div className={`h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-all ${
-                        mod.is_active ? "translate-y-0" : "translate-y-[18px]"
+                      <div className={`absolute left-[2px] h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ${
+                        mod.is_active ? "top-[2px]" : "bottom-[2px]"
                       }`} />
                     </button>
                   </div>
