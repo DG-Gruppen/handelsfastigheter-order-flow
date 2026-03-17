@@ -213,22 +213,24 @@ export default function Planner() {
   };
 
   const handleDeleteBoard = async (id: string) => {
-    await supabase.from("planner_boards" as any).delete().eq("id", id);
+    skipNextBoardFetchRef.current = true;
     setBoards(prev => prev.filter(b => b.id !== id));
     if (activeBoardId === id) {
       const remaining = boards.filter(b => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
+    await supabase.from("planner_boards" as any).delete().eq("id", id);
     toast.success("Board borttagen");
   };
 
   const handleArchiveBoard = async (id: string) => {
-    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
+    skipNextBoardFetchRef.current = true;
     setBoards(prev => prev.map(b => b.id === id ? { ...b, is_archived: true } : b));
     if (activeBoardId === id) {
       const remaining = boards.filter(b => b.id !== id && !b.is_archived);
       setActiveBoardId(remaining.length > 0 ? remaining[0].id : null);
     }
+    await supabase.from("planner_boards" as any).update({ is_archived: true }).eq("id", id);
     toast.success("Board arkiverad");
   };
 
