@@ -423,11 +423,22 @@ export default function Documents() {
 
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
+                    {isMobile && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 md:hidden"
+                        onClick={() => setFolderSheetOpen(true)}
+                        title="Visa mappar"
+                      >
+                        <PanelLeft className="w-4 h-4" />
+                      </Button>
+                    )}
                     {selectedFolder.parent_id && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-10 w-10 md:h-8 md:w-8"
                         onClick={() => selectFolder(selectedFolder.parent_id!)}
                         title="Gå upp en nivå"
                       >
