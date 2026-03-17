@@ -57,6 +57,7 @@ const adminGroups: AdminGroup[] = [
     color: "text-primary",
     items: [
       { id: "knowledge", label: "Kunskapsbanken", description: "Artiklar, videor och kategorier", icon: BookOpen, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
+      { id: "tools", label: "Verktyg", description: "Hantera snabblänkar på verktygssidan", icon: Link2, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
     ],
   },
   {
