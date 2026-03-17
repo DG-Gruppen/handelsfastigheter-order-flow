@@ -100,7 +100,7 @@ export default function Planner() {
   const handleCreateBoard = async (name: string, description: string) => {
     if (!user) return;
     const { data, error } = await supabase
-      .from("planner_boards")
+      .from("planner_boards" as any)
       .insert({ name, description, created_by: user.id, sort_order: boards.length })
       .select()
       .single();
