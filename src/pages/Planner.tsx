@@ -95,21 +95,28 @@ export default function Planner() {
       .from("planner_boards" as any)
       .select("*")
       .order("sort_order");
+
     const b = ((data as unknown) as Board[]) ?? [];
     setBoards(b);
-    if (b.length > 0 && !activeBoardId) {
-      setActiveBoardId(b[0].id);
-    }
+    setActiveBoardId((current) => {
+      if (b.length === 0) return null;
+      if (current && b.some((board) => board.id === current && !board.is_archived)) {
+        return current;
+      }
+      return b.find((board) => !board.is_archived)?.id ?? null;
+    });
     setLoading(false);
-  }, [activeBoardId]);
+  }, []);
 
   // Fetch columns & cards for active board
   const fetchBoardData = useCallback(async () => {
     if (!activeBoardId) return;
+
     const [colRes, cardRes] = await Promise.all([
       supabase.from("planner_columns" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
       supabase.from("planner_cards" as any).select("*").eq("board_id", activeBoardId).order("sort_order"),
     ]);
+
     setColumns(((colRes.data as unknown) as PlannerColumn[]) ?? []);
     setCards(((cardRes.data as unknown) as PlannerCard[]) ?? []);
   }, [activeBoardId]);
@@ -121,24 +128,34 @@ export default function Planner() {
     });
   }, []);
 
-  useEffect(() => { fetchBoards(); }, []);
-  useEffect(() => { fetchBoardData(); }, [activeBoardId]);
+  useEffect(() => {
+    fetchBoards();
+  }, [fetchBoards]);
+
+  useEffect(() => {
+    fetchBoardData();
+  }, [fetchBoardData]);
 
   // Debounced realtime to prevent flicker
   const boardDebounceRef = useRef<ReturnType<typeof setTimeout>>();
   const dataDebounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const skipNextBoardFetchRef = useRef(false);
-  const skipNextDataFetchRef = useRef(false);
+  const suppressBoardRealtimeUntilRef = useRef(0);
+  const suppressDataRealtimeUntilRef = useRef(0);
+
+  const suppressBoardRealtime = useCallback((durationMs = 1500) => {
+    suppressBoardRealtimeUntilRef.current = Date.now() + durationMs;
+  }, []);
+
+  const suppressDataRealtime = useCallback((durationMs = 1500) => {
+    suppressDataRealtimeUntilRef.current = Date.now() + durationMs;
+  }, []);
 
   // Realtime subscriptions
   useEffect(() => {
     const boardChannel = supabase
-      .channel('planner-boards')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'planner_boards' }, () => {
-        if (skipNextBoardFetchRef.current) {
-          skipNextBoardFetchRef.current = false;
-          return;
-        }
+      .channel("planner-boards")
+      .on("postgres_changes", { event: "*", schema: "public", table: "planner_boards" }, () => {
+        if (Date.now() < suppressBoardRealtimeUntilRef.current) return;
         clearTimeout(boardDebounceRef.current);
         boardDebounceRef.current = setTimeout(() => fetchBoards(), 500);
       })
@@ -148,36 +165,48 @@ export default function Planner() {
       clearTimeout(boardDebounceRef.current);
       supabase.removeChannel(boardChannel);
     };
-  }, []);
+  }, [fetchBoards]);
 
   useEffect(() => {
     if (!activeBoardId) return;
 
     const channel = supabase
       .channel(`planner-board-${activeBoardId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'planner_columns',
-        filter: `board_id=eq.${activeBoardId}`,
-      }, () => {
-        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
-        clearTimeout(dataDebounceRef.current);
-        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
-      })
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'planner_cards',
-        filter: `board_id=eq.${activeBoardId}`,
-      }, () => {
-        if (skipNextDataFetchRef.current) { skipNextDataFetchRef.current = false; return; }
-        clearTimeout(dataDebounceRef.current);
-        dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "planner_columns",
+          filter: `board_id=eq.${activeBoardId}`,
+        },
+        () => {
+          if (Date.now() < suppressDataRealtimeUntilRef.current) return;
+          clearTimeout(dataDebounceRef.current);
+          dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "planner_cards",
+          filter: `board_id=eq.${activeBoardId}`,
+        },
+        () => {
+          if (Date.now() < suppressDataRealtimeUntilRef.current) return;
+          clearTimeout(dataDebounceRef.current);
+          dataDebounceRef.current = setTimeout(() => fetchBoardData(), 500);
+        },
+      )
       .subscribe();
 
     return () => {
       clearTimeout(dataDebounceRef.current);
       supabase.removeChannel(channel);
     };
-  }, [activeBoardId]);
+  }, [activeBoardId, fetchBoardData]);
 
   // Board operations
   const handleCreateBoard = async (name: string, description: string) => {
