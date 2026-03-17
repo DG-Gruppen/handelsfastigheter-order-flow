@@ -28,7 +28,7 @@ interface Props {
 function FolderTreeItemBase({
   folder, depth = 0, childrenOf, expandedFolders, selectedFolderId,
   isAdmin, canWriteFolder, onSelect, onToggleExpand,
-  onNewFolder, onRename, onMove, onAccess, onDelete,
+  onNewFolder, onRename, onMove, onAccess, onChangeIcon, onDelete,
 }: Props) {
   const children = childrenOf(folder.id);
   const isExpanded = expandedFolders.has(folder.id);
