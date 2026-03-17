@@ -122,8 +122,10 @@ export default function CardDetailDialog({
           <DialogDescription>{card ? "Redigera kortets detaljer" : "Skapa ett nytt kort"}</DialogDescription>
         </DialogHeader>
 
-        {/* Cover bar */}
-        <div className="h-12 bg-primary rounded-t-lg shrink-0" />
+        <div
+          className="h-12 rounded-t-lg shrink-0 transition-colors"
+          style={{ backgroundColor: coverColor || "hsl(var(--primary))" }}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] overflow-hidden" style={{ maxHeight: "calc(90vh - 48px)" }}>
 
