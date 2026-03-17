@@ -734,6 +734,7 @@ export default function Planner() {
         onClose={() => { setCardDialogOpen(false); setEditingCard(null); }}
         onSave={handleSaveCard}
         onDelete={handleDeleteCard}
+        onCopy={handleCopyCard}
         defaultColumnId={defaultColumnId}
       />
 
