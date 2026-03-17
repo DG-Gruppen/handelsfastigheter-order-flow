@@ -57,9 +57,9 @@ const App = () => (
           <AuthProvider>
             <NavSettingsProvider>
               <ModulesProvider>
-                <Suspense fallback={<PageFallback />}>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
+                <Routes>
+                    <Route path="/login" element={<Suspense fallback={<LoginFallback />}><Login /></Suspense>} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
