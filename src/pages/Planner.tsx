@@ -219,7 +219,7 @@ export default function Planner() {
     suppressBoardRealtime();
 
     const { data, error } = await supabase
-      .from("planner_boards" as any)
+      .from("planner_boards")
       .insert({ name, description, created_by: user.id, sort_order: boards.length })
       .select()
       .single();
