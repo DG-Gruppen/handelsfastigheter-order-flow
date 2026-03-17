@@ -73,12 +73,18 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
       {...attributes}
       {...listeners}
       className={cn(
-        "group rounded-xl border border-border/60 bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none touch-none",
+        "group rounded-xl border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none touch-none overflow-hidden",
         isDragging && "opacity-40 rotate-2 scale-105",
         overlay && "shadow-xl rotate-2 scale-105 ring-2 ring-primary/30"
       )}
       onClick={onClick}
     >
+      {/* Cover color strip */}
+      {card.cover_color && (
+        <div className="h-2 w-full" style={{ backgroundColor: card.cover_color }} />
+      )}
+
+      <div className="p-3">
       {/* Labels */}
       {card.labels && card.labels.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
