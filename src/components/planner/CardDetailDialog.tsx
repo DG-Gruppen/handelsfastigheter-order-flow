@@ -440,3 +440,49 @@ function SidebarButton({ icon: Icon, label, onClick, active, className }: {
     </button>
   );
 }
+
+/* ─── Cover Color Picker ─── */
+const COVER_COLORS = [
+  { value: "#2e4a62", label: "Himmel" },
+  { value: "#3d7a6a", label: "Land" },
+  { value: "#b34304", label: "Eld" },
+  { value: "#5b9bd5", label: "Ljusblå" },
+  { value: "#7c3aed", label: "Lila" },
+  { value: "#059669", label: "Grön" },
+  { value: "#d97706", label: "Amber" },
+  { value: "#dc2626", label: "Röd" },
+  { value: "#6b7280", label: "Grå" },
+];
+
+function CoverColorPicker({ value, onChange, onClose }: {
+  value: string | null;
+  onChange: (color: string | null) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="bg-muted/50 rounded-md p-2 space-y-2">
+      <div className="grid grid-cols-3 gap-1.5">
+        {COVER_COLORS.map(c => (
+          <button
+            key={c.value}
+            className={cn(
+              "h-6 rounded transition-all",
+              value === c.value && "ring-2 ring-offset-1 ring-primary"
+            )}
+            style={{ backgroundColor: c.value }}
+            onClick={() => { onChange(c.value); onClose(); }}
+            title={c.label}
+          />
+        ))}
+      </div>
+      {value && (
+        <button
+          className="text-xs text-destructive hover:underline"
+          onClick={() => { onChange(null); onClose(); }}
+        >
+          Ta bort omslag
+        </button>
+      )}
+    </div>
+  );
+}
