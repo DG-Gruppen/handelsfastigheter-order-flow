@@ -15,7 +15,7 @@ import CardDetailDialog from "@/components/planner/CardDetailDialog";
 import ColumnDialog from "@/components/planner/ColumnDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Kanban } from "lucide-react";
-
+import PlannerFilters, { EMPTY_FILTERS, type PlannerFilterState } from "@/components/planner/PlannerFilters";
 
 interface Board {
   id: string;
