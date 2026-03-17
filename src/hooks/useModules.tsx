@@ -46,6 +46,16 @@ interface ModulePermission {
   can_view: boolean;
 }
 
+export interface FullModulePermission {
+  module_id: string;
+  grantee_type: string;
+  grantee_id: string;
+  can_view: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  is_owner: boolean;
+}
+
 export function ModulesProvider({ children }: { children: ReactNode }) {
   const { user, roles } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
