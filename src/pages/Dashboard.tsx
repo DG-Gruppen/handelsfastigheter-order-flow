@@ -9,7 +9,7 @@ import {
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
-import { kpis, okrs, weeklyWin, jubilees, quickTools } from "@/data/dashboard";
+import { kpis, okrs, weeklyWin, jubilees } from "@/data/dashboard";
 import RecognitionDialog from "@/components/RecognitionDialog";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import { newsPosts } from "@/data/news";
