@@ -49,12 +49,22 @@ export default function KbVideoPlayer({ video, open, onClose }: Props) {
               allowFullScreen
               title={video.title}
             />
+          ) : isDirect ? (
+            <video
+              src={video.video_url}
+              className="w-full h-full"
+              controls
+              autoPlay
+              title={video.title}
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white text-sm">
-              <a href={video.video_url} target="_blank" rel="noopener noreferrer" className="underline">
-                Öppna video i nytt fönster
-              </a>
-            </div>
+            <iframe
+              src={video.video_url}
+              className="w-full h-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title={video.title}
+            />
           )}
         </div>
       </DialogContent>
