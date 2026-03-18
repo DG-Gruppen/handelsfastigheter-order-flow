@@ -20,6 +20,17 @@ function getEmbedUrl(url: string): string | null {
   // Vimeo
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
+  // Microsoft Stream (new share links)
+  const streamMatch = url.match(/microsoft\.com\/video\/([a-f0-9-]+)/i);
+  if (streamMatch) return `https://web.microsoftstream.com/embed/video/${streamMatch[1]}?autoplay=true`;
+  // Microsoft Stream / SharePoint embedded video
+  if (/sharepoint\.com.*\/:v:\//.test(url)) {
+    const spUrl = new URL(url);
+    return `${spUrl.origin}${spUrl.pathname}?embed=1`;
+  }
+  // Google Drive
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   return null;
 }
 
