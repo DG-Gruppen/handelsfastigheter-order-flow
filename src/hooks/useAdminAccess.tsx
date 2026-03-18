@@ -74,5 +74,5 @@ export function useAdminAccess() {
     );
 
     return { hasAnyEditAccess, canAccessSection };
-  }, [modules, allPermissions, userGroupIds, user?.id, isAdmin]);
+  }, [modules, allPermissions, userGroupIds, user?.id, isAdmin, isIT]);
 }
