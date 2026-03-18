@@ -135,6 +135,15 @@ export default function HomepageSuggestion() {
     }
   }, []);
 
+  // Auto-dismiss after 30 seconds of no interaction
+  useEffect(() => {
+    if (!visible) return;
+    const t = setTimeout(() => {
+      setVisible(false);
+    }, 30000);
+    return () => clearTimeout(t);
+  }, [visible, expanded]);
+
   // Default to PWA tab on mobile
   useEffect(() => {
     if (isMobile) setShowPwaTab(true);
