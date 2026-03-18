@@ -160,6 +160,14 @@ export default function News() {
       {/* ── Tabs — custom buttons like KB ── */}
       <div className="flex gap-1 bg-secondary rounded-lg p-1 w-fit">
         <button
+          onClick={() => setTab("all")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] ${
+            tab === "all" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
+          }`}
+        >
+          Alla
+        </button>
+        <button
           onClick={() => setTab("internal")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] ${
             tab === "internal" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
