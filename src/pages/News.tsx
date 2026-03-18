@@ -44,7 +44,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 export default function News() {
   const { canEdit } = useModulePermission("nyheter");
 
-  const [tab, setTab] = useState<"internal" | "cision" | "admin">("internal");
+  const [tab, setTab] = useState<"all" | "internal" | "cision" | "admin">("all");
   const [internalNews, setInternalNews] = useState<InternalNews[]>([]);
   const [cisionReleases, setCisionReleases] = useState<CisionRelease[]>([]);
   const [loading, setLoading] = useState(true);
