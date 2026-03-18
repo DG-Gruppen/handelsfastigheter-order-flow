@@ -295,7 +295,7 @@ export default function News() {
       )}
 
       {/* ── Cision Releases ── */}
-      {tab === "cision" && (
+      {(tab === "cision" || tab === "all") && (
         <div className="space-y-3">
           {cisionLoading ? (
             <div className="flex items-center justify-center py-12">
