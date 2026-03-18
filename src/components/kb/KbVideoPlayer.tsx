@@ -23,6 +23,10 @@ function getEmbedUrl(url: string): string | null {
   return null;
 }
 
+function isDirectVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
+
 export default function KbVideoPlayer({ video, open, onClose }: Props) {
   if (!video) return null;
   const embedUrl = getEmbedUrl(video.video_url);
