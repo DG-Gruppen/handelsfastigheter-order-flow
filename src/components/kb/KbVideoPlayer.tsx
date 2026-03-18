@@ -23,10 +23,14 @@ function getEmbedUrl(url: string): string | null {
   return null;
 }
 
+function isDirectVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
+
 export default function KbVideoPlayer({ video, open, onClose }: Props) {
   if (!video) return null;
   const embedUrl = getEmbedUrl(video.video_url);
-
+  const isDirect = !embedUrl && isDirectVideoUrl(video.video_url);
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden">
@@ -45,12 +49,22 @@ export default function KbVideoPlayer({ video, open, onClose }: Props) {
               allowFullScreen
               title={video.title}
             />
+          ) : isDirect ? (
+            <video
+              src={video.video_url}
+              className="w-full h-full"
+              controls
+              autoPlay
+              title={video.title}
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white text-sm">
-              <a href={video.video_url} target="_blank" rel="noopener noreferrer" className="underline">
-                Öppna video i nytt fönster
-              </a>
-            </div>
+            <iframe
+              src={video.video_url}
+              className="w-full h-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title={video.title}
+            />
           )}
         </div>
       </DialogContent>
