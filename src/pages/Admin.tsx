@@ -111,7 +111,12 @@ export default function Admin() {
     );
   }
 
-  const visibleGroups = adminGroups.filter(g => g.items.length > 0);
+  const visibleGroups = adminGroups
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item => canAccessSection(item.id)),
+    }))
+    .filter(g => g.items.length > 0);
 
   const renderSection = (sectionId: AdminSection) => {
     switch (sectionId) {
