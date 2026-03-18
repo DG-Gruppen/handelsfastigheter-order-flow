@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useModulePermission } from "@/hooks/useModulePermission";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 import OrderTypesManager from "@/components/OrderTypesManager";
 import CategoriesManager from "@/components/CategoriesManager";
