@@ -45,16 +45,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUserData = async (userId: string, userEmail: string) => {
       console.log("[Auth] Fetching profile for user_id:", userId, "email:", userEmail);
-      const [profileResult, rolesResult] = await Promise.all([
+      const [profileResult, rolesResult, groupRolesResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).single(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
+        // Derive roles from groups' role_equivalent via group membership
+        supabase
+          .from("group_members")
+          .select("group_id, groups!inner(role_equivalent)")
+          .eq("user_id", userId),
       ]);
       console.log("[Auth] Profile result:", profileResult.data ? "found" : "NOT FOUND", profileResult.error?.message ?? "no error");
       console.log("[Auth] Roles result:", rolesResult.data, rolesResult.error?.message ?? "no error");
+      console.log("[Auth] Group roles result:", groupRolesResult.data, groupRolesResult.error?.message ?? "no error");
 
       if (isMounted) {
         setProfile(profileResult.data as Profile | null);
-        setRoles(rolesResult.data?.map((r: any) => r.role) ?? []);
+        // Merge roles from user_roles table and group-derived role_equivalents
+        const directRoles = rolesResult.data?.map((r: any) => r.role) ?? [];
+        const groupDerivedRoles = (groupRolesResult.data ?? [])
+          .map((g: any) => (g.groups as any)?.role_equivalent)
+          .filter((r: string | null): r is string => !!r);
+        const mergedRoles = [...new Set([...directRoles, ...groupDerivedRoles])];
+        setRoles(mergedRoles);
         setLoading(false);
       }
     };

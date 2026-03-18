@@ -32,9 +32,11 @@ export function useAdminAccess() {
   const { modules, allPermissions, userGroupIds } = useModules();
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
+  const isIT = roles.includes("it");
 
   return useMemo(() => {
-    if (isAdmin) {
+    // Admin and IT roles get full access to all admin sections
+    if (isAdmin || isIT) {
       return {
         hasAnyEditAccess: true,
         canAccessSection: (_sectionId: string) => true,
