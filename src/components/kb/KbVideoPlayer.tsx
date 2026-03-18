@@ -30,7 +30,7 @@ function isDirectVideoUrl(url: string): boolean {
 export default function KbVideoPlayer({ video, open, onClose }: Props) {
   if (!video) return null;
   const embedUrl = getEmbedUrl(video.video_url);
-
+  const isDirect = !embedUrl && isDirectVideoUrl(video.video_url);
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden">
