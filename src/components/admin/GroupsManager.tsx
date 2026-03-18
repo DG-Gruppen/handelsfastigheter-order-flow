@@ -53,7 +53,9 @@ export default function GroupsManager() {
       supabase.from("group_members").select("*"),
       supabase.from("profiles").select("user_id, full_name, email, department"),
     ]);
-    setGroups((g.data as Group[]) ?? []);
+    // Hide the Superadmin group from the UI
+    const allGroups = (g.data as Group[]) ?? [];
+    setGroups(allGroups.filter(grp => grp.name !== "Superadmin"));
     setMembers((m.data as GroupMember[]) ?? []);
     setProfiles(((p.data as Profile[]) ?? []).filter(pr => pr.full_name && pr.email !== "toni@kazarian.se"));
   }, []);

@@ -76,7 +76,9 @@ export default function ModulePermissionsManager() {
     ]);
     setModules((m.data as Module[]) ?? []);
     setPermissions((p.data as ModulePermission[]) ?? []);
-    setGroups((g.data as Group[]) ?? []);
+    // Hide Superadmin group from the permissions UI
+    const allGroups = (g.data as Group[]) ?? [];
+    setGroups(allGroups.filter(grp => grp.name !== "Superadmin"));
     setProfiles(((pr.data as Profile[]) ?? []).filter(p => p.full_name && p.email !== "toni@kazarian.se"));
   }, []);
 
