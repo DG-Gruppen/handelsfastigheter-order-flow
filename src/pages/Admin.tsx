@@ -102,7 +102,7 @@ export default function Admin() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  if (!canViewAdmin) {
+  if (!hasAnyEditAccess) {
     return (
       <div className="text-center py-20">
         <Shield className="h-10 w-10 mx-auto text-muted-foreground/40" />
