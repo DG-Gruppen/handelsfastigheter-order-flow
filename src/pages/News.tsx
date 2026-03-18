@@ -243,7 +243,7 @@ export default function News() {
       )}
 
       {/* ── Internal News ── */}
-      {tab === "internal" && (
+      {(tab === "internal" || tab === "all") && (
         <div className="space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
