@@ -203,7 +203,7 @@ export default function News() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={tab === "internal" ? "Sök interna nyheter..." : "Sök pressmeddelanden..."}
+              placeholder={tab === "internal" ? "Sök interna nyheter..." : tab === "cision" ? "Sök pressmeddelanden..." : "Sök bland nyheter..."}
               className="pl-10 h-12 md:h-11"
             />
           </div>
