@@ -208,7 +208,7 @@ export default function News() {
             />
           </div>
 
-          {tab === "internal" && categories.length > 0 && (
+          {(tab === "internal" || tab === "all") && categories.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedCategory(null)}
