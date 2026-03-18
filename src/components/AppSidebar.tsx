@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
-import { useModulePermission } from "@/hooks/useModulePermission";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { getModuleIcon } from "@/lib/moduleIcons";
 import { ChevronLeft, ChevronRight, ChevronDown, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -35,7 +35,7 @@ const SLUG_NAME_OVERRIDES: Record<string, string> = {
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
   const { profile, roles, signOut } = useAuth();
-  const { canView: canViewAdmin } = useModulePermission("admin");
+  const { hasAnyEditAccess: canViewAdmin } = useAdminAccess();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
