@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
-  { label: "Information", slugs: ["home", "news", "strategy", "knowledge", "documents"] },
+  { label: "Information", slugs: ["home", "news", "strategy", "kunskapsbanken", "documents"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "culture", "pulse"] },
   { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools"] },
