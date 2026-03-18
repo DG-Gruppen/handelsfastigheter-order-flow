@@ -25,7 +25,7 @@ export default defineConfig(async () => {
       },
     },
     plugins: [
-      reactPlugin,
+      ...(reactPlugin ? [reactPlugin] : []),
       VitePWA({
         registerType: "autoUpdate",
         workbox: {
@@ -46,7 +46,7 @@ export default defineConfig(async () => {
           ],
         },
       }),
-    ].filter((plugin): plugin is PluginOption => Boolean(plugin)),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
