@@ -44,7 +44,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 export default function News() {
   const { canEdit } = useModulePermission("nyheter");
 
-  const [tab, setTab] = useState<"internal" | "cision" | "admin">("internal");
+  const [tab, setTab] = useState<"all" | "internal" | "cision" | "admin">("all");
   const [internalNews, setInternalNews] = useState<InternalNews[]>([]);
   const [cisionReleases, setCisionReleases] = useState<CisionRelease[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,6 +160,14 @@ export default function News() {
       {/* ── Tabs — custom buttons like KB ── */}
       <div className="flex gap-1 bg-secondary rounded-lg p-1 w-fit">
         <button
+          onClick={() => setTab("all")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] ${
+            tab === "all" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
+          }`}
+        >
+          Alla
+        </button>
+        <button
           onClick={() => setTab("internal")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] ${
             tab === "internal" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
@@ -188,7 +196,7 @@ export default function News() {
       </div>
 
       {/* ── Search + category filter ── */}
-      {tab !== "admin" && (
+      {(tab === "all" || tab === "internal" || tab === "cision") && (
         <div className="space-y-3">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -200,7 +208,7 @@ export default function News() {
             />
           </div>
 
-          {tab === "internal" && categories.length > 0 && (
+          {(tab === "internal" || tab === "all") && categories.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedCategory(null)}
@@ -235,7 +243,7 @@ export default function News() {
       )}
 
       {/* ── Internal News ── */}
-      {tab === "internal" && (
+      {(tab === "internal" || tab === "all") && (
         <div className="space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -287,7 +295,7 @@ export default function News() {
       )}
 
       {/* ── Cision Releases ── */}
-      {tab === "cision" && (
+      {(tab === "cision" || tab === "all") && (
         <div className="space-y-3">
           {cisionLoading ? (
             <div className="flex items-center justify-center py-12">
