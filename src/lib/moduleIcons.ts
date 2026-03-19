@@ -31,6 +31,7 @@ const moduleIconMap: Record<string, LucideIcon> = {
   leaf: Leaf,
   shield: Shield,
   kanban: Kanban,
+  "key-round": KeyRound,
 };
 
 export function getModuleIcon(name: string): LucideIcon {
