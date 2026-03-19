@@ -76,6 +76,9 @@ export default function KbVideoCard({ video, categoryName, categoryColor, onClic
             {formatDuration(video.duration_seconds)}
           </span>
         )}
+        <span className={`absolute bottom-2 left-2 text-[10px] font-semibold px-1.5 py-0.5 rounded backdrop-blur-sm ${source.color}`}>
+          {source.label}
+        </span>
         {categoryName && (
           <span className={`absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm ${
             categoryColor ? `${categoryColor.bg} ${categoryColor.text}` : "bg-primary/20 text-primary-foreground"
