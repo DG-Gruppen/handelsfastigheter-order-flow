@@ -79,6 +79,7 @@ const App = () => (
                       <Route path="/mitt-shf" element={<MySHF />} />
                       <Route path="/planner" element={<Planner />} />
                       <Route path="/verktyg" element={<Tools />} />
+                      <Route path="/losenord" element={<Passwords />} />
                       <Route path="/kulturen" element={<Culture />} />
                       <Route path="/nyheter" element={<News />} />
                       <Route path="/profile" element={<Profile />} />
