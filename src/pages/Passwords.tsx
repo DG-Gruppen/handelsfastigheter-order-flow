@@ -191,16 +191,6 @@ export default function Passwords() {
         pwId = (data as any).id;
       }
 
-      // Sync groups
-      if (pwId) {
-        await supabase.from("shared_password_groups").delete().eq("password_id", pwId);
-        if (selectedGroupIds.length > 0) {
-          await supabase.from("shared_password_groups").insert(
-            selectedGroupIds.map(gid => ({ password_id: pwId, group_id: gid })) as any
-          );
-        }
-      }
-
       toast.success(editingId ? "Lösenord uppdaterat" : "Lösenord skapat");
       setDialogOpen(false);
       fetchData();
