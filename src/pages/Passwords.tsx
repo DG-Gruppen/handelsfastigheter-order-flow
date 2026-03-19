@@ -115,14 +115,8 @@ export default function Passwords() {
   const [logLoading, setLogLoading] = useState(false);
 
   const fetchData = async () => {
-    const [pwRes, pgRes, grRes] = await Promise.all([
-      supabase.from("shared_passwords").select("*").order("service_name"),
-      supabase.from("shared_password_groups").select("password_id, group_id"),
-      supabase.from("groups").select("id, name, color").order("name"),
-    ]);
-    setPasswords((pwRes.data as SharedPassword[]) ?? []);
-    setPasswordGroups((pgRes.data as PasswordGroup[]) ?? []);
-    setGroups((grRes.data as Group[]) ?? []);
+    const { data } = await supabase.from("shared_passwords").select("*").order("service_name");
+    setPasswords((data as SharedPassword[]) ?? []);
     setLoading(false);
   };
 
