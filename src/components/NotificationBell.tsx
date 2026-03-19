@@ -68,6 +68,16 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; route: (ref
     color: "text-muted-foreground",
     route: () => null,
   },
+  planner_assigned: {
+    icon: UserCheck,
+    color: "text-indigo-500",
+    route: () => "/planner",
+  },
+  planner_comment: {
+    icon: MessageSquare,
+    color: "text-teal-500",
+    route: () => "/planner",
+  },
 };
 
 const defaultConfig = typeConfig.info;
