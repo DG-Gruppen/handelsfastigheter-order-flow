@@ -234,7 +234,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <Card className="glass-card h-full transition-all hover:shadow-md group-hover:border-violet-500/20">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
-                <BookOpen className="h-4.5 w-4.5 text-violet-500" />
+                <BookOpen className="h-4.5 w-4.5 text-accent" />
                 <h3 className="text-sm font-semibold text-foreground">Kunskapsbanken</h3>
               </div>
               <div className="flex gap-6">
