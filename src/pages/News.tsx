@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useModulePermission } from "@/hooks/useModulePermission";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone } from "lucide-react";
-import NewsAdminPanel from "@/components/news/NewsAdminPanel";
+
 
 /* ── Types ── */
 interface InternalNews {
@@ -42,9 +42,8 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 /* ── Component ── */
 export default function News() {
-  const { canEdit } = useModulePermission("nyheter");
 
-  const [tab, setTab] = useState<"all" | "internal" | "cision" | "admin">("all");
+  const [tab, setTab] = useState<"all" | "internal" | "cision">("all");
   const [internalNews, setInternalNews] = useState<InternalNews[]>([]);
   const [cisionReleases, setCisionReleases] = useState<CisionRelease[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,16 +182,6 @@ export default function News() {
         >
           <Globe className="w-4 h-4" /> Press
         </button>
-        {canEdit && (
-          <button
-            onClick={() => setTab("admin")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] ${
-              tab === "admin" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
-            }`}
-          >
-            Hantera
-          </button>
-        )}
       </div>
 
       {/* ── Search + category filter ── */}
@@ -353,10 +342,6 @@ export default function News() {
         </div>
       )}
 
-      {/* ── Admin Panel ── */}
-      {tab === "admin" && canEdit && (
-        <NewsAdminPanel onDataChange={fetchInternal} />
-      )}
 
       {/* ── Article Detail Dialog ── */}
       <Dialog open={!!selectedArticle} onOpenChange={(v) => !v && setSelectedArticle(null)}>
