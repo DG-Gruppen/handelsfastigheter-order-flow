@@ -64,7 +64,7 @@ export default function UsersContent() {
     setGroups(((groupsData as GroupWithRole[]) ?? []).filter(g => !(g as any).is_system));
 
     const memberMap: Record<string, string[]> = {};
-    (membersData ?? []).forEach((m: any) => {
+    (membersData ?? []).forEach((m: { user_id: string; group_id: string }) => {
       if (!memberMap[m.user_id]) memberMap[m.user_id] = [];
       memberMap[m.user_id].push(m.group_id);
     });
