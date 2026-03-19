@@ -460,8 +460,11 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
 
         {/* Cart */}
         {cart.length > 0 && !isExpired && (
-          <div className="space-y-3 pt-2 border-t border-border">
-            <h4 className="text-sm font-semibold text-foreground">Din varukorg</h4>
+          <div className="space-y-3 pt-4 border-t-2 border-accent/30">
+            <h4 className="text-sm font-bold text-accent flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              Din varukorg ({cart.length})
+            </h4>
             {cart.map((item, i) => (
               <div key={`${item.productId}-${item.color}-${item.size}`} className="flex items-center gap-3 text-sm">
                 <div className="flex-1 min-w-0">
