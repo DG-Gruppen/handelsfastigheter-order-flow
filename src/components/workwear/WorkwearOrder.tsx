@@ -254,26 +254,30 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
   if (loadingSeason) return null;
 
   return (
-    <Card className="glass-card">
-      <CardHeader className="pb-2 px-4 md:px-6">
+    <Card className="glass-card border-primary/15 shadow-lg">
+      <CardHeader className="pb-3 px-4 md:px-6 border-b border-border/50 bg-gradient-to-r from-primary/[0.03] to-transparent">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="font-heading text-base flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-primary" />
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <ShoppingBag className="w-4 h-4 text-primary" />
+            </span>
             Beställ profilkläder
-            <Badge variant="secondary" className="ml-1 text-xs font-normal">
+            <Badge className="ml-1 text-xs font-normal bg-accent text-accent-foreground border-0">
               {SEASON_LABELS[activeSeason]}
             </Badge>
           </CardTitle>
 
           {deadline && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <CalendarClock className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 text-xs">
+              <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
               {isExpired ? (
-                <span className="text-destructive font-medium">Beställningsperioden avslutad</span>
+                <Badge variant="destructive" className="text-xs font-medium">
+                  Beställningsperioden avslutad
+                </Badge>
               ) : (
-                <span>
+                <span className="text-muted-foreground">
                   Sista dag:{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="font-semibold text-primary">
                     {format(parseISO(deadline), "d MMMM yyyy", { locale: sv })}
                   </span>
                 </span>
@@ -347,9 +351,9 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
           </div>
         ) : (
           <Tabs defaultValue="herr">
-            <TabsList className="w-full">
-              <TabsTrigger value="herr" className="flex-1">Herr</TabsTrigger>
-              <TabsTrigger value="dam" className="flex-1">Dam</TabsTrigger>
+            <TabsList className="w-full bg-primary/5 border border-primary/10">
+              <TabsTrigger value="herr" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Herr</TabsTrigger>
+              <TabsTrigger value="dam" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Dam</TabsTrigger>
             </TabsList>
             {(["herr", "dam"] as const).map((gender) => (
               <TabsContent key={gender} value={gender} className="mt-3">
@@ -359,10 +363,10 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                     return (
                       <div
                         key={product.id}
-                        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-secondary/50"
+                        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{product.name}</p>
+                          <p className="text-sm font-semibold text-foreground">{product.name}</p>
                           <div className="flex items-center gap-1 mt-1">
                             {product.variants.map((v) => (
                               <a
@@ -456,8 +460,11 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
 
         {/* Cart */}
         {cart.length > 0 && !isExpired && (
-          <div className="space-y-3 pt-2 border-t border-border">
-            <h4 className="text-sm font-semibold text-foreground">Din varukorg</h4>
+          <div className="space-y-3 pt-4 border-t-2 border-accent/30">
+            <h4 className="text-sm font-bold text-accent flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              Din varukorg ({cart.length})
+            </h4>
             {cart.map((item, i) => (
               <div key={`${item.productId}-${item.color}-${item.size}`} className="flex items-center gap-3 text-sm">
                 <div className="flex-1 min-w-0">
@@ -491,7 +498,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
               rows={2}
             />
 
-            <Button onClick={handleSubmit} disabled={submitting} className="w-full">
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-md">
               <Send className="w-4 h-4 mr-2" />
               {submitting ? "Skickar..." : "Skicka beställning"}
             </Button>
