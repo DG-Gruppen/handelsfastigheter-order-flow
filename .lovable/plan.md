@@ -1,50 +1,85 @@
 
 
-## Optimering av Admin-sidan
+## Förbättringar: Säkerhet, Typsäkerhet, Robusthet & Kodkvalitet
 
 ### Sammanfattning
-Tre fokusområden: (1) lazy-loada alla admin-sektioner for bättre prestanda, (2) flytta felplacerade komponenter till rätt mapp, (3) ersätta hårdkodade färger i Dashboard med semantiska tokens.
+Sex åtgärder: ta bort console.log-läckor, ersätt any-casts, lägg till try-catch, ersätt hårdkodad e-postfiltrering med databaskolumn, skapa constants.ts, och uppdatera imports.
 
 ---
 
-### 1. Lazy-loada alla admin-sektioner
-**Problem:** Idag laddas 12 av 13 sektioner direkt vid sidladdning trots att bara en visas åt gången. Bara `WorkwearAdminPanel` är lazy-loadad.
+### 1. Säkerhet – Ta bort console.log i useAuth.tsx
+**Problem:** 4 st `console.log` läcker user_id, e-post och rolldata till webbläsarkonsolen.
 
-**Åtgärd i `src/pages/Admin.tsx`:**
-- Ersätt alla direktimporter av sektionskomponenter med `lazy()`:
-  - `CategoriesManager`, `OrderTypesManager`, `SystemsManager`
-  - `KbAdminPanel`, `NewsAdminPanel`, `ToolsManager`
-  - `UsersContent`, `GroupsManager`, `ModulePermissionsManager`
-  - `SettingsContent`, `ITContent`, `DatabaseBackup`
-- Wrappa `renderSection()` med en gemensam `<Suspense>` med spinner-fallback
-- Behåll `AdminDashboard` som eager import (visas som startsida)
-- Behåll `adminGroups`-konfigurationen och ikoner som eager (liten storlek)
-
-### 2. Flytta komponenter till rätt mapp
-**Problem:** `CategoriesManager`, `OrderTypesManager`, `SystemsManager` ligger i `src/components/` istället för `src/components/admin/`.
-
-**Åtgärd:**
-- Flytta dessa tre filer till `src/components/admin/`
-- Uppdatera importvägar i `Admin.tsx` (de nya lazy-importerna)
-
-### 3. Semantiska färger i AdminDashboard
-**Problem:** `AdminDashboard.tsx` använder hårdkodade färger som `text-sky-500`, `bg-amber-500/10`, `text-violet-500` istället för projektets design-tokens.
-
-**Åtgärd i `src/components/admin/AdminDashboard.tsx`:**
-- Ersätt med semantiska tokens: `text-primary`, `text-warning`, `text-accent`, `text-destructive` etc.
-- Matcha färgschemat som redan används i admin-sidebaren
+**Åtgärd:** Ta bort rad 47, 57–59, 77 och 96 i `src/hooks/useAuth.tsx`.
 
 ---
 
-### Tekniska detaljer
+### 2. Typsäkerhet – Ersätt any-casts
 
-**Filer som ändras:**
-- `src/pages/Admin.tsx` — alla sektionsimporter blir `lazy()`
-- `src/components/admin/AdminDashboard.tsx` — färgbyte
-- `src/components/admin/CategoriesManager.tsx` — flyttad fil
-- `src/components/admin/OrderTypesManager.tsx` — flyttad fil  
-- `src/components/admin/SystemsManager.tsx` — flyttad fil
+**useAuth.tsx:**
+- Ersätt `(r: any) => r.role` med `{ role: string }` interface
+- Ersätt `(g: any) => (g.groups as any)?.role_equivalent` med typat interface `{ groups: { role_equivalent: string | null } }`
 
-**Ej i scope (låg risk/nytta):**
-- Att bryta ner `KbAdminPanel` (504 rader) och `OrderTypesManager` (500 rader) i delkomponenter — dessa fungerar bra som de är och lazy-loading löser prestandaproblemet
+**useModules.tsx (rad 89):**
+- Ersätt `(g: any) => g.group_id` med `(g: { group_id: string })`
+
+**UsersContent.tsx (rad 68, 133–136):**
+- Ersätt `(m: any)` med `{ user_id: string; group_id: string }`
+- Ersätt `(r: any)` i importresultat med `{ status: string }`
+
+---
+
+### 3. Robusthet – try-catch runt JSON.parse i AppSidebar.tsx
+**Problem:** Om localStorage-data är korrupt kraschar hela sidebar-komponenten.
+
+**Åtgärd (rad 52–53 och 58–59):** Wrappa `JSON.parse` i try-catch med fallback till defaultvärde.
+
+---
+
+### 4. Databasdriven dold-flagga istället för hårdkodad e-post
+**Problem:** `toni@kazarian.se` filtreras bort med hårdkodad string i 4 filer. Odokumenterat och fragilt.
+
+**Bättre lösning:** Lägg till `is_hidden boolean DEFAULT false` på `profiles`-tabellen. Sätt `is_hidden = true` på kontot. Filtrera på `is_hidden` i koden istället för e-postadress.
+
+**Databasändring (migration):**
+```sql
+ALTER TABLE public.profiles ADD COLUMN is_hidden boolean NOT NULL DEFAULT false;
+UPDATE public.profiles SET is_hidden = true WHERE email = 'toni@kazarian.se';
+```
+
+**Kodändringar i 4 filer:**
+- `UsersContent.tsx`: `.filter(p => !p.is_hidden)` istället för e-postcheck
+- `GroupsManager.tsx`: `.filter(p => !p.is_hidden)` 
+- `ITContent.tsx`: `.filter(p => !p.is_hidden)`
+- `ModulePermissionsManager.tsx`: `.filter(p => !p.is_hidden)`
+
+Gruppen "Superadmin" filtreras redan via `g.name !== "Superadmin"` — detta kan förbättras genom att använda det befintliga `is_system`-fältet på `groups`-tabellen: `.filter(g => !g.is_system)` istället. Kräver att Superadmin-gruppen har `is_system = true` (verifieras/sätts i migrationen).
+
+---
+
+### 5. Ny fil src/lib/constants.ts
+Centralisera magic strings som används på flera ställen:
+
+```ts
+export const ROLES = { ADMIN: "admin", MANAGER: "manager", EMPLOYEE: "employee", STAFF: "staff", IT: "it" } as const;
+export const STORAGE_KEYS = { SIDEBAR_COLLAPSED: "shf-sidebar-collapsed", SIDEBAR_ORDER: "shf-sidebar-order" } as const;
+```
+
+Uppdatera `AppSidebar.tsx` att använda `STORAGE_KEYS`.
+
+---
+
+### 6. Sammanfattning av filändringar
+
+| Fil | Åtgärd |
+|---|---|
+| `src/hooks/useAuth.tsx` | Ta bort console.log, typa any-casts |
+| `src/hooks/useModules.tsx` | Typa any-cast (rad 89) |
+| `src/components/admin/UsersContent.tsx` | Typa any-casts, is_hidden-filter |
+| `src/components/admin/GroupsManager.tsx` | is_hidden + is_system-filter |
+| `src/components/admin/ITContent.tsx` | is_hidden-filter |
+| `src/components/admin/ModulePermissionsManager.tsx` | is_hidden + is_system-filter |
+| `src/components/AppSidebar.tsx` | try-catch, STORAGE_KEYS |
+| `src/lib/constants.ts` | Ny fil |
+| **Migration** | `is_hidden`-kolumn + uppdatera Superadmin `is_system` |
 
