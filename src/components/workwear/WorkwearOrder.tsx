@@ -5,11 +5,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingBag, Minus, Plus, Trash2, Send, ExternalLink, Settings2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ShoppingBag, Minus, Plus, Trash2, Send, ExternalLink, Settings2, CalendarClock, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { toast } from "sonner";
+import { format, isPast, parseISO } from "date-fns";
+import { sv } from "date-fns/locale";
 import {
   type WorkwearProduct,
   type Season,
@@ -35,45 +39,76 @@ export default function WorkwearOrder() {
   const canManageSeason = canEdit || isOwner;
 
   const [activeSeason, setActiveSeason] = useState<Season>("sommar");
+  const [deadline, setDeadline] = useState<string>("");
+  const [newSeason, setNewSeason] = useState<Season>("sommar");
+  const [newDeadline, setNewDeadline] = useState<string>("");
   const [loadingSeason, setLoadingSeason] = useState(true);
+  const [activating, setActivating] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [selections, setSelections] = useState<Record<string, { color: string; size: string; qty: number }>>({});
 
-  // Fetch active season
+  // Fetch active season + deadline
   useEffect(() => {
-    supabase
-      .from("org_chart_settings")
-      .select("setting_value")
-      .eq("setting_key", "workwear_season")
-      .single()
-      .then(({ data }) => {
-        if (data?.setting_value && ALL_SEASONS.includes(data.setting_value as Season)) {
-          setActiveSeason(data.setting_value as Season);
-        }
-        setLoadingSeason(false);
-      });
+    Promise.all([
+      supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "workwear_season").single(),
+      supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "workwear_deadline").single(),
+    ]).then(([seasonRes, deadlineRes]) => {
+      const s = seasonRes.data?.setting_value;
+      if (s && ALL_SEASONS.includes(s as Season)) {
+        setActiveSeason(s as Season);
+        setNewSeason(s as Season);
+      }
+      if (deadlineRes.data?.setting_value) {
+        setDeadline(deadlineRes.data.setting_value);
+      }
+      setLoadingSeason(false);
+    });
   }, []);
 
   const products = PRODUCTS_BY_SEASON[activeSeason] || [];
+  const isExpired = deadline ? isPast(parseISO(deadline)) : false;
 
-  const handleSeasonChange = async (season: Season) => {
-    setActiveSeason(season);
-    setCart([]);
-    setSelections({});
+  const upsertSetting = async (key: string, value: string) => {
     const { error } = await supabase
       .from("org_chart_settings")
-      .update({ setting_value: season })
-      .eq("setting_key", "workwear_season");
+      .update({ setting_value: value })
+      .eq("setting_key", key);
     if (error) {
-      // Try insert if row doesn't exist
-      await supabase.from("org_chart_settings").insert({
-        setting_key: "workwear_season",
-        setting_value: season,
-      });
+      await supabase.from("org_chart_settings").insert({ setting_key: key, setting_value: value });
     }
-    toast.success(`Säsong ändrad till ${SEASON_LABELS[season]}`);
+  };
+
+  const handleActivateSeason = async () => {
+    if (!newDeadline) {
+      toast.error("Ange ett slutdatum för beställningsrundan");
+      return;
+    }
+    setActivating(true);
+    try {
+      await upsertSetting("workwear_season", newSeason);
+      await upsertSetting("workwear_deadline", newDeadline);
+
+      // Send notifications to all users
+      await supabase.functions.invoke("notify-workwear-season", {
+        body: {
+          season_label: SEASON_LABELS[newSeason],
+          deadline: newDeadline,
+        },
+      });
+
+      setActiveSeason(newSeason);
+      setDeadline(newDeadline);
+      setCart([]);
+      setSelections({});
+      toast.success(`${SEASON_LABELS[newSeason]} är nu aktiv – notiser skickade till alla medarbetare!`);
+    } catch (err) {
+      console.error("Activate season error:", err);
+      toast.error("Kunde inte aktivera säsongen");
+    } finally {
+      setActivating(false);
+    }
   };
 
   const updateSelection = (productId: string, field: "color" | "size" | "qty", value: string | number) => {
@@ -84,6 +119,10 @@ export default function WorkwearOrder() {
   };
 
   const addToCart = (product: WorkwearProduct) => {
+    if (isExpired) {
+      toast.error("Beställningsperioden har gått ut");
+      return;
+    }
     const sel = selections[product.id] || { color: "", size: "", qty: 1 };
     const color = product.variants.length === 1 ? product.variants[0].color : sel.color;
     if (!color || !sel.size) {
@@ -132,6 +171,10 @@ export default function WorkwearOrder() {
 
   const handleSubmit = async () => {
     if (!user || cart.length === 0) return;
+    if (isExpired) {
+      toast.error("Beställningsperioden har gått ut");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -213,7 +256,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
   return (
     <Card className="glass-card">
       <CardHeader className="pb-2 px-4 md:px-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="font-heading text-base flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-primary" />
             Beställ profilkläder
@@ -222,27 +265,81 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
             </Badge>
           </CardTitle>
 
-          {canManageSeason && (
-            <div className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-muted-foreground" />
-              <Select value={activeSeason} onValueChange={(v) => handleSeasonChange(v as Season)}>
-                <SelectTrigger className="w-[130px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALL_SEASONS.map((s) => (
-                    <SelectItem key={s} value={s} className="text-xs">
-                      {SEASON_LABELS[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {deadline && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CalendarClock className="w-3.5 h-3.5" />
+              {isExpired ? (
+                <span className="text-destructive font-medium">Beställningsperioden avslutad</span>
+              ) : (
+                <span>
+                  Sista dag:{" "}
+                  <span className="font-medium text-foreground">
+                    {format(parseISO(deadline), "d MMMM yyyy", { locale: sv })}
+                  </span>
+                </span>
+              )}
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
-        {products.length === 0 ? (
+        {/* Admin: activate season */}
+        {canManageSeason && (
+          <div className="p-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Settings2 className="w-4 h-4" />
+              Starta ny beställningsrunda
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Säsong</Label>
+                <Select value={newSeason} onValueChange={(v) => setNewSeason(v as Season)}>
+                  <SelectTrigger className="w-[140px] h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_SEASONS.map((s) => (
+                      <SelectItem key={s} value={s} className="text-xs">
+                        {SEASON_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Sista beställningsdag</Label>
+                <Input
+                  type="date"
+                  value={newDeadline}
+                  onChange={(e) => setNewDeadline(e.target.value)}
+                  className="w-[170px] h-9 text-xs"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  size="sm"
+                  className="h-9 text-xs"
+                  onClick={handleActivateSeason}
+                  disabled={activating}
+                >
+                  <Rocket className="w-3.5 h-3.5 mr-1.5" />
+                  {activating ? "Aktiverar..." : "Aktivera & notifiera"}
+                </Button>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Alla medarbetare får en notis om att beställningsrundan öppnat.
+            </p>
+          </div>
+        )}
+
+        {isExpired && !canManageSeason ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <CalendarClock className="w-10 h-10 mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-medium">Beställningsperioden har avslutats</p>
+            <p className="text-xs mt-1">Nästa beställningsrunda öppnar snart.</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <ShoppingBag className="w-10 h-10 mx-auto mb-3 opacity-40" />
             <p className="text-sm font-medium">Inga plagg tillgängliga för {SEASON_LABELS[activeSeason]}</p>
@@ -342,6 +439,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                             variant="outline"
                             className="h-9 text-xs"
                             onClick={() => addToCart(product)}
+                            disabled={isExpired}
                           >
                             <Plus className="w-3.5 h-3.5 mr-1" />
                             Lägg till
@@ -357,7 +455,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
         )}
 
         {/* Cart */}
-        {cart.length > 0 && (
+        {cart.length > 0 && !isExpired && (
           <div className="space-y-3 pt-2 border-t border-border">
             <h4 className="text-sm font-semibold text-foreground">Din varukorg</h4>
             {cart.map((item, i) => (
