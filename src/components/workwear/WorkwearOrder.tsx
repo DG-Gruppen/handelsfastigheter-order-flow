@@ -114,18 +114,17 @@ export default function WorkwearOrder() {
   const [submitting, setSubmitting] = useState(false);
 
   // Per-product selection state
-  const [selections, setSelections] = useState<Record<string, { color: string; size: string }>>({});
+  const [selections, setSelections] = useState<Record<string, { color: string; size: string; qty: number }>>({});
 
-  const updateSelection = (productId: string, field: "color" | "size", value: string) => {
+  const updateSelection = (productId: string, field: "color" | "size" | "qty", value: string | number) => {
     setSelections((prev) => ({
       ...prev,
-      [productId]: { ...prev[productId], [field]: value },
+      [productId]: { color: "", size: "", qty: 1, ...prev[productId], [field]: value },
     }));
   };
 
   const addToCart = (product: WorkwearProduct) => {
-    const sel = selections[product.id] || { color: "", size: "" };
-    // Auto-select color for single-variant products
+    const sel = selections[product.id] || { color: "", size: "", qty: 1 };
     const color = product.variants.length === 1 ? product.variants[0].color : sel.color;
     if (!color || !sel.size) {
       toast.error("Välj storlek först");
@@ -133,13 +132,14 @@ export default function WorkwearOrder() {
     }
     const variant = product.variants.find((v) => v.color === color);
     if (!variant) return;
+    const qty = sel.qty || 1;
 
     const existing = cart.findIndex(
       (c) => c.productId === product.id && c.color === color && c.size === sel.size
     );
     if (existing >= 0) {
       setCart((prev) =>
-        prev.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + 1 } : c))
+        prev.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + qty } : c))
       );
     } else {
       setCart((prev) => [
@@ -150,12 +150,12 @@ export default function WorkwearOrder() {
           color,
           colorLabel: variant.colorLabel,
           size: sel.size,
-          quantity: 1,
+          quantity: qty,
           url: variant.url,
         },
       ]);
     }
-    toast.success(`${product.name} tillagd`);
+    toast.success(`${product.name} × ${qty} tillagd`);
   };
 
   const updateQty = (index: number, delta: number) => {
@@ -269,7 +269,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
             <TabsContent key={gender} value={gender} className="mt-3">
               <div className="grid gap-3">
                 {PRODUCTS.filter((p) => p.gender === gender).map((product) => {
-                  const sel = selections[product.id] || { color: "", size: "" };
+                  const sel = selections[product.id] || { color: "", size: "", qty: 1 };
                   return (
                     <div
                       key={product.id}
@@ -335,6 +335,18 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                             ))}
                           </SelectContent>
                         </Select>
+
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateSelection(product.id, "qty", Math.max(1, (sel.qty || 1) - 1))}>
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <Badge variant="secondary" className="min-w-[24px] justify-center text-xs">
+                            {sel.qty || 1}
+                          </Badge>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateSelection(product.id, "qty", (sel.qty || 1) + 1)}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
 
                         <Button
                           size="sm"
