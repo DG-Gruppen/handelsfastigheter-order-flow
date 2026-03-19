@@ -71,13 +71,9 @@ export default function WorkwearOrder() {
   const isExpired = deadline ? isPast(parseISO(deadline)) : false;
 
   const upsertSetting = async (key: string, value: string) => {
-    const { error } = await supabase
+    await supabase
       .from("org_chart_settings")
-      .update({ setting_value: value })
-      .eq("setting_key", key);
-    if (error) {
-      await supabase.from("org_chart_settings").insert({ setting_key: key, setting_value: value });
-    }
+      .upsert({ setting_key: key, setting_value: value }, { onConflict: "setting_key" });
   };
 
   const handleActivateSeason = async () => {
@@ -125,8 +121,16 @@ export default function WorkwearOrder() {
     }
     const sel = selections[product.id] || { color: "", size: "", qty: 1 };
     const color = product.variants.length === 1 ? product.variants[0].color : sel.color;
-    if (!color || !sel.size) {
-      toast.error("Välj storlek först");
+    if (!color && !sel.size) {
+      toast.error("Välj färg och storlek");
+      return;
+    }
+    if (!color) {
+      toast.error("Välj färg");
+      return;
+    }
+    if (!sel.size) {
+      toast.error("Välj storlek");
       return;
     }
     const variant = product.variants.find((v) => v.color === color);
@@ -182,6 +186,7 @@ export default function WorkwearOrder() {
         user_id: user.id,
         items: cart,
         notes,
+        season: activeSeason,
       } as any);
       if (dbError) throw dbError;
 
