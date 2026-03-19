@@ -104,4 +104,6 @@ export const COLOR_DOT: Record<string, string> = {
   navy: "bg-indigo-900",
   khaki: "bg-amber-700",
   ivory: "bg-amber-50 border border-border",
+  "dk-beige": "bg-amber-100 border border-border",
+  burgundy: "bg-rose-900",
 };
