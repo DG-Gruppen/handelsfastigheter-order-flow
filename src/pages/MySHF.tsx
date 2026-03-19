@@ -130,8 +130,6 @@ export default function MySHF() {
         </CardContent>
       </Card>
 
-      {/* Workwear ordering */}
-      <WorkwearOrder />
 
       {/* Onboarding */}
       <Card className="glass-card">

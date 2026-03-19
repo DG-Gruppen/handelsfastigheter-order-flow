@@ -83,6 +83,7 @@ const App = () => (
                       <Route path="/losenord" element={<Passwords />} />
                       <Route path="/kulturen" element={<Culture />} />
                       <Route path="/nyheter" element={<News />} />
+                      <Route path="/arbetsklader" element={<Workwear />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
