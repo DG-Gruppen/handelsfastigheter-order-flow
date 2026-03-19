@@ -294,7 +294,7 @@ export default function Passwords() {
           <p className="text-muted-foreground">{passwords.length === 0 ? "Inga lösenord tillagda ännu" : "Inga träffar"}</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filtered.map(pw => {
             const isVisible = visibleIds.has(pw.id);
             return (
