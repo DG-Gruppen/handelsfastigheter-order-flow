@@ -4,14 +4,15 @@ import { toast } from "sonner";
 import { X, Plus, Trash2 } from "lucide-react";
 
 const AVAILABLE_COLORS = [
-  { key: "primary", label: "Cyan", preview: "hsl(192, 91%, 36%)" },
-  { key: "accent", label: "Violet", preview: "hsl(271, 91%, 65%)" },
-  { key: "blue", label: "Blå", preview: "hsl(230, 75%, 55%)" },
-  { key: "green", label: "Grön", preview: "hsl(165, 55%, 42%)" },
-  { key: "amber", label: "Amber", preview: "hsl(38, 92%, 50%)" },
-  { key: "muted", label: "Grå", preview: "hsl(230, 22%, 16%)" },
-  { key: "rose", label: "Rosa", preview: "hsl(350, 75%, 55%)" },
-  { key: "teal", label: "Teal", preview: "hsl(180, 55%, 42%)" },
+  { key: "primary", label: "Blågrå", preview: "hsl(208, 40%, 27%)" },
+  { key: "accent", label: "Grön", preview: "hsl(162, 31%, 31%)" },
+  { key: "blue", label: "Blå", preview: "hsl(206, 28%, 37%)" },
+  { key: "green", label: "Ljusgrön", preview: "hsl(162, 32%, 40%)" },
+  { key: "amber", label: "Amber", preview: "hsl(19, 70%, 38%)" },
+  { key: "purple", label: "Lila", preview: "hsl(280, 30%, 30%)" },
+  { key: "muted", label: "Grå", preview: "hsl(60, 6%, 30%)" },
+  { key: "rose", label: "Rosa", preview: "hsl(350, 60%, 38%)" },
+  { key: "teal", label: "Teal", preview: "hsl(180, 50%, 30%)" },
 ];
 
 interface OrgSettingsModalProps {
@@ -68,14 +69,16 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
   };
 
   const updateParent = async (deptId: string, parentId: string | null) => {
-    await supabase.from("departments").update({ parent_id: parentId } as any).eq("id", deptId);
+    const { error } = await supabase.from("departments").update({ parent_id: parentId } as any).eq("id", deptId);
+    if (error) { toast.error("Kunde inte uppdatera avdelning"); return; }
     toast.success("Överordnad avdelning uppdaterad");
     fetchData();
     onUpdated();
   };
 
   const removeDepartment = async (id: string) => {
-    await supabase.from("departments").delete().eq("id", id);
+    const { error } = await supabase.from("departments").delete().eq("id", id);
+    if (error) { toast.error("Kunde inte ta bort avdelning"); return; }
     toast.success("Avdelning borttagen");
     fetchData();
   };
@@ -93,7 +96,8 @@ export default function OrgSettingsModal({ onClose, onUpdated }: OrgSettingsModa
   ];
 
   const updateDeptColor = async (deptId: string, color: string | null) => {
-    await supabase.from("departments").update({ color } as any).eq("id", deptId);
+    const { error } = await supabase.from("departments").update({ color } as any).eq("id", deptId);
+    if (error) { toast.error("Kunde inte uppdatera färg"); return; }
     setDepartments(prev => prev.map(d => d.id === deptId ? { ...d, color } : d));
     onUpdated();
     toast.success("Färg uppdaterad");

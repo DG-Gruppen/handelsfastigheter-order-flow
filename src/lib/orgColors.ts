@@ -68,6 +68,22 @@ export const ORG_COLOR_MAP: Record<string, OrgColorSet> = {
     text: "hsl(60, 4%, 92%)",
     accent: "hsl(60, 5%, 55%)",
   },
+  // Rosa
+  rose: {
+    bg: "hsl(350, 60%, 38%)",
+    border: "hsl(350, 60%, 48%)",
+    borderLight: "hsl(350, 55%, 65%)",
+    text: "hsl(0, 0%, 100%)",
+    accent: "hsl(350, 55%, 55%)",
+  },
+  // Teal
+  teal: {
+    bg: "hsl(180, 50%, 30%)",
+    border: "hsl(180, 50%, 40%)",
+    borderLight: "hsl(180, 45%, 60%)",
+    text: "hsl(0, 0%, 100%)",
+    accent: "hsl(180, 45%, 50%)",
+  },
 };
 
 /**
