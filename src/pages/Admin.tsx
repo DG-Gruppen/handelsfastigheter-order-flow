@@ -2,20 +2,20 @@ import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 
-import OrderTypesManager from "@/components/OrderTypesManager";
-import CategoriesManager from "@/components/CategoriesManager";
-import SystemsManager from "@/components/SystemsManager";
-
-import KbAdminPanel from "@/components/kb/KbAdminPanel";
 import AdminDashboard from "@/components/admin/AdminDashboard";
-import GroupsManager from "@/components/admin/GroupsManager";
-import ModulePermissionsManager from "@/components/admin/ModulePermissionsManager";
-import UsersContent from "@/components/admin/UsersContent";
-import SettingsContent from "@/components/admin/SettingsContent";
-import ITContent from "@/components/admin/ITContent";
-import ToolsManager from "@/components/admin/ToolsManager";
-import NewsAdminPanel from "@/components/news/NewsAdminPanel";
-import DatabaseBackup from "@/components/admin/DatabaseBackup";
+
+const CategoriesManager = lazy(() => import("@/components/admin/CategoriesManager"));
+const OrderTypesManager = lazy(() => import("@/components/admin/OrderTypesManager"));
+const SystemsManager = lazy(() => import("@/components/admin/SystemsManager"));
+const KbAdminPanel = lazy(() => import("@/components/kb/KbAdminPanel"));
+const NewsAdminPanel = lazy(() => import("@/components/news/NewsAdminPanel"));
+const ToolsManager = lazy(() => import("@/components/admin/ToolsManager"));
+const UsersContent = lazy(() => import("@/components/admin/UsersContent"));
+const GroupsManager = lazy(() => import("@/components/admin/GroupsManager"));
+const ModulePermissionsManager = lazy(() => import("@/components/admin/ModulePermissionsManager"));
+const SettingsContent = lazy(() => import("@/components/admin/SettingsContent"));
+const ITContent = lazy(() => import("@/components/admin/ITContent"));
+const DatabaseBackup = lazy(() => import("@/components/admin/DatabaseBackup"));
 const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
 import {
   Shield, Users, ChevronLeft,
@@ -120,23 +120,30 @@ export default function Admin() {
     }))
     .filter(g => g.items.length > 0);
 
+  const lazyFallback = (
+    <div className="flex justify-center py-12">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+
   const renderSection = (sectionId: AdminSection) => {
+    let content: React.ReactNode = null;
     switch (sectionId) {
-      case "categories": return <CategoriesManager />;
-      case "equipment": return <OrderTypesManager />;
-      case "systems": return <SystemsManager />;
-      case "users": return <UsersContent />;
-      case "settings": return <SettingsContent />;
-      case "it": return <ITContent />;
-      case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
-      case "news": return <NewsAdminPanel onDataChange={() => {}} />;
-      case "groups": return <GroupsManager />;
-      case "permissions": return <ModulePermissionsManager />;
-      case "tools": return <ToolsManager />;
-      case "backup": return <DatabaseBackup />;
-      case "workwear": return <Suspense fallback={<div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><WorkwearAdminPanel /></Suspense>;
-      default: return null;
+      case "categories": content = <CategoriesManager />; break;
+      case "equipment": content = <OrderTypesManager />; break;
+      case "systems": content = <SystemsManager />; break;
+      case "users": content = <UsersContent />; break;
+      case "settings": content = <SettingsContent />; break;
+      case "it": content = <ITContent />; break;
+      case "knowledge": content = <KbAdminPanel onDataChange={() => {}} />; break;
+      case "news": content = <NewsAdminPanel onDataChange={() => {}} />; break;
+      case "groups": content = <GroupsManager />; break;
+      case "permissions": content = <ModulePermissionsManager />; break;
+      case "tools": content = <ToolsManager />; break;
+      case "backup": content = <DatabaseBackup />; break;
+      case "workwear": content = <WorkwearAdminPanel />; break;
     }
+    return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
 
 

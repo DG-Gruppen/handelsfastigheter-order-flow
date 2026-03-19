@@ -91,8 +91,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       value: stats.totalUsers,
       sub: `${stats.departments} avdelningar`,
       icon: Users,
-      color: "text-sky-500",
-      bg: "bg-sky-500/10",
+      color: "text-primary",
+      bg: "bg-primary/10",
       section: "users",
     },
     {
@@ -100,8 +100,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       value: stats.ordersTotal,
       sub: `${stats.ordersPending} väntar`,
       icon: ShoppingCart,
-      color: "text-amber-500",
-      bg: "bg-amber-500/10",
+      color: "text-warning",
+      bg: "bg-warning/10",
       section: "categories",
     },
     {
@@ -109,8 +109,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       value: stats.kbArticles,
       sub: `${stats.kbArticlesPublished} publicerade`,
       icon: BookOpen,
-      color: "text-violet-500",
-      bg: "bg-violet-500/10",
+      color: "text-accent",
+      bg: "bg-accent/10",
       section: "knowledge",
     },
     {
@@ -118,8 +118,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       value: stats.kbVideos,
       sub: `${stats.kbVideosPublished} publicerade`,
       icon: Video,
-      color: "text-rose-500",
-      bg: "bg-rose-500/10",
+      color: "text-destructive",
+      bg: "bg-destructive/10",
       section: "knowledge",
     },
     {
@@ -127,15 +127,15 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       value: stats.documents,
       sub: `${stats.folders} mappar`,
       icon: FileText,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
+      color: "text-accent",
+      bg: "bg-accent/10",
       section: null,
     },
   ];
 
   const orderBreakdown = [
-    { label: "Väntar", value: stats.ordersPending, icon: Clock, color: "text-amber-500" },
-    { label: "Godkända", value: stats.ordersApproved, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Väntar", value: stats.ordersPending, icon: Clock, color: "text-warning" },
+    { label: "Godkända", value: stats.ordersApproved, icon: CheckCircle2, color: "text-accent" },
     { label: "Levererade", value: stats.ordersDelivered, icon: Package, color: "text-primary" },
     { label: "Avslagna", value: stats.ordersRejected, icon: XCircle, color: "text-destructive" },
   ];
@@ -174,7 +174,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       <Card className="glass-card">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <ShoppingCart className="h-4.5 w-4.5 text-amber-500" />
+            <ShoppingCart className="h-4.5 w-4.5 text-warning" />
             <h3 className="text-sm font-semibold text-foreground">Beställningsstatus</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -197,21 +197,21 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <div className="mt-4 flex h-2.5 rounded-full overflow-hidden bg-secondary">
               {stats.ordersDelivered > 0 && (
                 <div
-                  className="bg-primary transition-all"
+                  className="bg-primary transition-all rounded-l-full"
                   style={{ width: `${(stats.ordersDelivered / stats.ordersTotal) * 100}%` }}
                   title={`Levererade: ${stats.ordersDelivered}`}
                 />
               )}
               {stats.ordersApproved > 0 && (
                 <div
-                  className="bg-emerald-500 transition-all"
+                  className="bg-accent transition-all"
                   style={{ width: `${(stats.ordersApproved / stats.ordersTotal) * 100}%` }}
                   title={`Godkända: ${stats.ordersApproved}`}
                 />
               )}
               {stats.ordersPending > 0 && (
                 <div
-                  className="bg-amber-500 transition-all"
+                  className="bg-warning transition-all"
                   style={{ width: `${(stats.ordersPending / stats.ordersTotal) * 100}%` }}
                   title={`Väntar: ${stats.ordersPending}`}
                 />
@@ -231,10 +231,10 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* KB overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button onClick={() => onNavigate("knowledge")} className="text-left group">
-          <Card className="glass-card h-full transition-all hover:shadow-md group-hover:border-violet-500/20">
+          <Card className="glass-card h-full transition-all hover:shadow-md group-hover:border-accent/20">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
-                <BookOpen className="h-4.5 w-4.5 text-violet-500" />
+                <BookOpen className="h-4.5 w-4.5 text-accent" />
                 <h3 className="text-sm font-semibold text-foreground">Kunskapsbanken</h3>
               </div>
               <div className="flex gap-6">
@@ -258,7 +258,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         <Card className="glass-card">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
-              <FolderOpen className="h-4.5 w-4.5 text-emerald-500" />
+              <FolderOpen className="h-4.5 w-4.5 text-accent" />
               <h3 className="text-sm font-semibold text-foreground">Dokumentarkiv</h3>
             </div>
             <div className="flex gap-6">
