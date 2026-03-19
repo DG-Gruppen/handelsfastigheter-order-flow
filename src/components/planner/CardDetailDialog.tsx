@@ -63,6 +63,7 @@ export default function CardDetailDialog({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showMovePicker, setShowMovePicker] = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const addChecklistRef = useRef<(() => void) | undefined>();
 
   useEffect(() => {
     if (card) {
