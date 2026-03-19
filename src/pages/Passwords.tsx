@@ -437,7 +437,19 @@ export default function Passwords() {
               </div>
               <div>
                 <Label>Lösenord</Label>
-                <Input value={form.password_value} onChange={e => setForm(f => ({ ...f, password_value: e.target.value }))} placeholder="••••••••" />
+                <div className="flex gap-1.5">
+                  <Input value={form.password_value} onChange={e => setForm(f => ({ ...f, password_value: e.target.value }))} placeholder="••••••••" className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    title="Generera lösenord"
+                    onClick={() => setForm(f => ({ ...f, password_value: generatePassword() }))}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
             <div>
