@@ -19,6 +19,7 @@ const SECTION_SLUG_MAP: Record<string, string | null> = {
   settings: null,       // admin-only
   it: "it-support",
   backup: null,         // admin-only
+  workwear: "workwear",
 };
 
 /**
