@@ -34,7 +34,7 @@ export default function ITContent() {
       supabase.from("profiles").select("user_id, full_name, email, department"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
-    setProfiles(((profs as SimpleProfile[]) ?? []).filter(p => p.email !== "toni@kazarian.se"));
+    setProfiles(((profs as SimpleProfile[]) ?? []).filter(p => !(p as any).is_hidden));
     const map: Record<string, string> = {};
     for (const s of (settings as any[]) ?? []) map[s.setting_key] = s.setting_value;
     setAllSettings(map);

@@ -49,14 +49,22 @@ export default function AppSidebar() {
 
   // Collapsible groups state – persisted in localStorage
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem("shf-sidebar-collapsed");
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem("shf-sidebar-collapsed");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
   // Group order state – persisted in localStorage
   const [groupOrder, setGroupOrder] = useState<string[]>(() => {
-    const saved = localStorage.getItem("shf-sidebar-order");
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem("shf-sidebar-order");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore corrupt data
+    }
     return GROUP_CONFIG.map((g) => g.label || "__home__");
   });
 
