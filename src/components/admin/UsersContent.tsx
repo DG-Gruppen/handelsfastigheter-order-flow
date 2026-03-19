@@ -128,11 +128,11 @@ export default function UsersContent() {
       const json = JSON.parse(text);
       const { data, error } = await supabase.functions.invoke("import-google-workspace", { body: json });
       if (error) throw error;
-      const results = data?.results ?? [];
-      const updated = results.filter((r: any) => r.status === "updated");
-      const noMatch = results.filter((r: any) => r.status === "no_match");
-      const noChanges = results.filter((r: any) => r.status === "no_changes");
-      const errors = results.filter((r: any) => r.status === "error");
+      const results: { status: string }[] = data?.results ?? [];
+      const updated = results.filter((r) => r.status === "updated");
+      const noMatch = results.filter((r) => r.status === "no_match");
+      const noChanges = results.filter((r) => r.status === "no_changes");
+      const errors = results.filter((r) => r.status === "error");
       toast.success(`Import klar: ${updated.length} uppdaterade, ${noChanges.length} redan aktuella, ${noMatch.length} utan matchning${errors.length ? `, ${errors.length} fel` : ""}`);
       fetchData();
     } catch (err: any) {
