@@ -75,6 +75,10 @@ export default function CardChecklists({ cardId, onRegisterAdd }: Props) {
     fetchChecklists();
   }, [fetchChecklists]);
 
+  useEffect(() => {
+    onRegisterAdd?.(() => addChecklist());
+  }, [onRegisterAdd, addChecklist]);
+
   const addChecklist = async () => {
     const { error } = await supabase.from("planner_checklists").insert({
       card_id: cardId,
