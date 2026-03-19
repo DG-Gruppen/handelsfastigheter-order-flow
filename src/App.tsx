@@ -31,6 +31,7 @@ const Tools = lazy(() => import("./pages/Tools"));
 const Passwords = lazy(() => import("./pages/Passwords"));
 const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
+const Workwear = lazy(() => import("./pages/Workwear"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -82,6 +83,7 @@ const App = () => (
                       <Route path="/losenord" element={<Passwords />} />
                       <Route path="/kulturen" element={<Culture />} />
                       <Route path="/nyheter" element={<News />} />
+                      <Route path="/arbetsklader" element={<Workwear />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
                     </Route>
