@@ -34,6 +34,8 @@ function getEmbedUrl(url: string): string | null {
   // Google Drive
   const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  // Happydemo
+  if (/happydemo\.se/i.test(url)) return url;
   return null;
 }
 
