@@ -410,27 +410,6 @@ export default function Passwords() {
               <Label>Anteckningar</Label>
               <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="Extra info..." />
             </div>
-            <div>
-              <Label className="mb-2 block">Synlig för grupper</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                {groups.map(g => (
-                  <label key={g.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={selectedGroupIds.includes(g.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedGroupIds(prev =>
-                          checked ? [...prev, g.id] : prev.filter(id => id !== g.id)
-                        );
-                      }}
-                    />
-                    {g.name}
-                  </label>
-                ))}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Om inga grupper väljs ser bara admin/IT lösenordet
-              </p>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
