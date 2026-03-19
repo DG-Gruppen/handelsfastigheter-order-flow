@@ -159,7 +159,6 @@ export default function Passwords() {
       url: pw.url,
       notes: pw.notes,
     });
-    setSelectedGroupIds(passwordGroups.filter(pg => pg.password_id === pw.id).map(pg => pg.group_id));
     setDialogOpen(true);
   };
 
