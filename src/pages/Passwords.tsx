@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -17,7 +18,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   KeyRound, Plus, Pencil, Trash2, Eye, EyeOff, Copy, ExternalLink, Search,
+  ClipboardList,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { sv } from "date-fns/locale";
+
+// --- Types ---
 
 interface SharedPassword {
   id: string;
@@ -41,12 +47,31 @@ interface Group {
   color: string | null;
 }
 
+interface AccessLogEntry {
+  id: string;
+  password_id: string;
+  user_id: string;
+  action: string;
+  created_at: string;
+}
+
+interface Profile {
+  user_id: string;
+  full_name: string;
+}
+
 const EMPTY_FORM = {
   service_name: "",
   username: "",
   password_value: "",
   url: "",
   notes: "",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  viewed: "visade lösenord",
+  copied_password: "kopierade lösenord",
+  copied_username: "kopierade användarnamn",
 };
 
 export default function Passwords() {
@@ -71,6 +96,13 @@ export default function Passwords() {
 
   // Visibility state
   const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
+
+  // Access log state (admin/IT only)
+  const [logDialogOpen, setLogDialogOpen] = useState(false);
+  const [logPasswordId, setLogPasswordId] = useState<string | null>(null);
+  const [logEntries, setLogEntries] = useState<AccessLogEntry[]>([]);
+  const [logProfiles, setLogProfiles] = useState<Profile[]>([]);
+  const [logLoading, setLogLoading] = useState(false);
 
   const fetchData = async () => {
     const [pwRes, pgRes, grRes] = await Promise.all([
@@ -100,6 +132,16 @@ export default function Passwords() {
 
   const getGroupsForPassword = (pwId: string) =>
     passwordGroups.filter(pg => pg.password_id === pwId).map(pg => groupMap.get(pg.group_id)).filter(Boolean) as Group[];
+
+  // --- Access logging ---
+  const logAccess = async (passwordId: string, action: string) => {
+    if (!user) return;
+    await supabase.from("password_access_log" as any).insert({
+      password_id: passwordId,
+      user_id: user.id,
+      action,
+    } as any);
+  };
 
   // Open dialog
   const openCreate = () => {
@@ -182,15 +224,45 @@ export default function Passwords() {
   const toggleVisible = (id: string) => {
     setVisibleIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        logAccess(id, "viewed");
+      }
       return next;
     });
   };
 
-  const copyToClipboard = (text: string, label: string) => {
+  const copyToClipboard = (passwordId: string, text: string, label: string, action: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} kopierat`);
+    logAccess(passwordId, action);
   };
+
+  // --- Access log viewer ---
+  const openAccessLog = async (passwordId: string) => {
+    setLogPasswordId(passwordId);
+    setLogDialogOpen(true);
+    setLogLoading(true);
+
+    const [logRes, profilesRes] = await Promise.all([
+      supabase
+        .from("password_access_log" as any)
+        .select("*")
+        .eq("password_id", passwordId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase.from("profiles").select("user_id, full_name"),
+    ]);
+
+    setLogEntries((logRes.data as AccessLogEntry[]) ?? []);
+    setLogProfiles((profilesRes.data as Profile[]) ?? []);
+    setLogLoading(false);
+  };
+
+  const logProfileMap = useMemo(() => new Map(logProfiles.map(p => [p.user_id, p.full_name])), [logProfiles]);
+  const logPasswordName = passwords.find(p => p.id === logPasswordId)?.service_name ?? "";
 
   if (loading) {
     return (
@@ -264,6 +336,10 @@ export default function Passwords() {
                   </div>
                   {isEditor && (
                     <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Åtkomstlogg"
+                              onClick={() => openAccessLog(pw.id)}>
+                        <ClipboardList className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(pw)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -280,7 +356,7 @@ export default function Passwords() {
                       <span className="text-muted-foreground text-xs">Användarnamn</span>
                       <div className="flex items-center gap-2 mt-0.5">
                         <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">{pw.username}</code>
-                        <button onClick={() => copyToClipboard(pw.username, "Användarnamn")}
+                        <button onClick={() => copyToClipboard(pw.id, pw.username, "Användarnamn", "copied_username")}
                                 className="text-muted-foreground hover:text-foreground">
                           <Copy className="h-3.5 w-3.5" />
                         </button>
@@ -298,7 +374,7 @@ export default function Passwords() {
                                 className="text-muted-foreground hover:text-foreground">
                           {isVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
-                        <button onClick={() => copyToClipboard(pw.password_value, "Lösenord")}
+                        <button onClick={() => copyToClipboard(pw.id, pw.password_value, "Lösenord", "copied_password")}
                                 className="text-muted-foreground hover:text-foreground">
                           <Copy className="h-3.5 w-3.5" />
                         </button>
@@ -393,6 +469,48 @@ export default function Passwords() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Access log dialog (admin/IT only) */}
+      <Dialog open={logDialogOpen} onOpenChange={setLogDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Åtkomstlogg – {logPasswordName}
+            </DialogTitle>
+          </DialogHeader>
+
+          {logLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : logEntries.length === 0 ? (
+            <div className="text-center py-8">
+              <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">Ingen aktivitet registrerad</p>
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[400px] pr-2">
+              <div className="space-y-2">
+                {logEntries.map(entry => (
+                  <div key={entry.id} className="flex items-start gap-3 rounded-lg bg-muted/40 p-3 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <p>
+                        <span className="font-medium">{logProfileMap.get(entry.user_id) ?? "Okänd"}</span>
+                        {" "}
+                        <span className="text-muted-foreground">{ACTION_LABELS[entry.action] ?? entry.action}</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                        {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true, locale: sv })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
