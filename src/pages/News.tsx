@@ -42,7 +42,6 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 /* ── Component ── */
 export default function News() {
-  const { canEdit } = useModulePermission("nyheter");
 
   const [tab, setTab] = useState<"all" | "internal" | "cision">("all");
   const [internalNews, setInternalNews] = useState<InternalNews[]>([]);
