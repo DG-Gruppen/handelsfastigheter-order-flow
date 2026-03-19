@@ -204,7 +204,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               )}
               {stats.ordersApproved > 0 && (
                 <div
-                  className="bg-emerald-500 transition-all"
+                  className="bg-accent transition-all"
                   style={{ width: `${(stats.ordersApproved / stats.ordersTotal) * 100}%` }}
                   title={`Godkända: ${stats.ordersApproved}`}
                 />
