@@ -34,7 +34,7 @@ export interface ChecklistSummary {
   checked: number;
 }
 
-export default function CardChecklists({ cardId }: Props) {
+export default function CardChecklists({ cardId, onRegisterAdd }: Props) {
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({});
