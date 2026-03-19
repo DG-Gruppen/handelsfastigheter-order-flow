@@ -36,16 +36,6 @@ interface SharedPassword {
   created_at: string;
 }
 
-interface PasswordGroup {
-  password_id: string;
-  group_id: string;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  color: string | null;
-}
 
 interface AccessLogEntry {
   id: string;
