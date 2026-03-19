@@ -135,7 +135,7 @@ export default function WorkwearOrder() {
     if (!variant) return;
 
     const existing = cart.findIndex(
-      (c) => c.productId === product.id && c.color === sel.color && c.size === sel.size
+      (c) => c.productId === product.id && c.color === color && c.size === sel.size
     );
     if (existing >= 0) {
       setCart((prev) =>
@@ -147,7 +147,7 @@ export default function WorkwearOrder() {
         {
           productId: product.id,
           productName: product.name,
-          color: sel.color,
+          color,
           colorLabel: variant.colorLabel,
           size: sel.size,
           quantity: 1,
