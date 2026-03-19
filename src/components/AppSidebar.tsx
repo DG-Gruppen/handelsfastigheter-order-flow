@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
-  { label: "Information", slugs: ["home", "nyheter", "strategy", "kunskapsbanken", "documents"] },
+  { label: "Information", slugs: ["nyheter", "strategy", "kunskapsbanken", "documents"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "kulturen", "pulse"] },
   { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools", "losenord"] },
@@ -190,6 +190,32 @@ export default function AppSidebar() {
 
         {/* Scrollable nav with hidden scrollbar */}
         <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto scrollbar-hide py-1">
+          {/* Min dashboard – standalone top link */}
+          {(() => {
+            const dashMod = accessibleModules.find((m) => m.slug === "home");
+            if (!dashMod) return null;
+            const Icon = getModuleIcon(dashMod.icon);
+            const isActive = location.pathname === dashMod.route;
+            return (
+              <>
+                <Link
+                  to={dashMod.route}
+                  title={collapsed ? "Min dashboard" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground/90 hover:bg-sidebar-accent/50 hover:text-sidebar-primary-foreground",
+                    collapsed && "justify-center px-2"
+                  )}
+                >
+                  <Icon className="w-[18px] h-[18px] shrink-0" />
+                  {!collapsed && <span className="truncate">Min dashboard</span>}
+                </Link>
+                <div className="h-px bg-sidebar-border mx-1 my-1" />
+              </>
+            );
+          })()}
           {sortedGroups.map((group, gi) => {
             const isOpen = !collapsedGroups[group.key];
 
