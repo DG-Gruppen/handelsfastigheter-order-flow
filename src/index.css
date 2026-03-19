@@ -107,6 +107,13 @@
     overflow-y: scroll;
     scrollbar-gutter: stable;
   }
+  /* Prevent Radix RemoveScroll from hiding overflow and shifting layout */
+  html[data-scroll-locked],
+  body[data-scroll-locked] {
+    overflow: auto !important;
+    padding-right: 0px !important;
+    margin-right: 0px !important;
+  }
   /* Hide scrollbars on mobile */
   @media (max-width: 767px) {
     html,
