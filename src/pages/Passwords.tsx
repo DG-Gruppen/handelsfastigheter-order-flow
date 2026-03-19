@@ -297,7 +297,6 @@ export default function Passwords() {
         <div className="grid gap-4">
           {filtered.map(pw => {
             const isVisible = visibleIds.has(pw.id);
-            const pwGroups = getGroupsForPassword(pw.id);
             return (
               <div key={pw.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -311,16 +310,6 @@ export default function Passwords() {
                         </a>
                       )}
                     </div>
-                    {pwGroups.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {pwGroups.map(g => (
-                          <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0"
-                                 style={g.color ? { backgroundColor: g.color + "22", color: g.color, borderColor: g.color + "44" } : {}}>
-                            {g.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   {isEditor && (
                     <div className="flex items-center gap-1 shrink-0">
