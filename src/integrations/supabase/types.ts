@@ -1082,6 +1082,38 @@ export type Database = {
         }
         Relationships: []
       }
+      password_access_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          password_id: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          id?: string
+          password_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          password_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_access_log_password_id_fkey"
+            columns: ["password_id"]
+            isOneToOne: false
+            referencedRelation: "shared_passwords"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planner_activity_log: {
         Row: {
           action: string
