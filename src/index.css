@@ -105,6 +105,7 @@
   }
   html {
     overflow-y: scroll;
+    scrollbar-gutter: stable;
   }
   /* Hide scrollbars on mobile */
   @media (max-width: 767px) {
