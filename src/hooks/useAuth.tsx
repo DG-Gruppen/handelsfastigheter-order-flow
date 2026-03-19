@@ -49,9 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
+    // Track the current fetch so we can abort stale ones (e.g. rapid token refreshes)
+    let currentFetchId = 0;
 
     const fetchUserData = async (userId: string) => {
+      const fetchId = ++currentFetchId;
+
       const [profileResult, rolesResult, groupRolesResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).single(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
@@ -61,16 +64,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq("user_id", userId),
       ]);
 
-      if (isMounted) {
-        setProfile(profileResult.data as Profile | null);
-        const directRoles = (rolesResult.data as UserRoleRow[] | null)?.map((r) => r.role) ?? [];
-        const groupDerivedRoles = ((groupRolesResult.data as GroupMemberRow[] | null) ?? [])
-          .map((g) => g.groups?.role_equivalent)
-          .filter((r): r is string => !!r);
-        const mergedRoles = [...new Set([...directRoles, ...groupDerivedRoles])];
-        setRoles(mergedRoles);
-        setLoading(false);
-      }
+      // Discard result if a newer fetch has started (e.g. another auth state change)
+      if (fetchId !== currentFetchId) return;
+
+      setProfile(profileResult.data as Profile | null);
+      const directRoles = (rolesResult.data as UserRoleRow[] | null)?.map((r) => r.role) ?? [];
+      const groupDerivedRoles = ((groupRolesResult.data as GroupMemberRow[] | null) ?? [])
+        .map((g) => g.groups?.role_equivalent)
+        .filter((r): r is string => !!r);
+      const mergedRoles = [...new Set([...directRoles, ...groupDerivedRoles])];
+      setRoles(mergedRoles);
+      setLoading(false);
     };
 
     // Set up listener FIRST
@@ -80,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Use setTimeout to avoid Supabase auth deadlock
+          // Defer to avoid Supabase internal deadlock on auth state change
           setTimeout(() => {
             fetchUserData(session.user.id);
           }, 0);
@@ -95,13 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Then check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
       // If session exists, onAuthStateChange will handle it
     });
 
     return () => {
-      isMounted = false;
+      // Invalidate any in-flight fetch so its result is discarded
+      currentFetchId++;
       subscription.unsubscribe();
     };
   }, []);

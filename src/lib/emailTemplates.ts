@@ -1,4 +1,15 @@
 import { getAppBaseUrl } from "@/lib/utils";
+import { APP_BASE_URL } from "@/lib/constants";
+
+/** Escape HTML special characters to prevent XSS in email templates */
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 /**
  * SHF Email Template System
@@ -22,9 +33,10 @@ const BRAND = {
   textBody: "#3a4553",
   textMuted: "#6b7685",
   border: "#dde1e6",
-  fontStack: "'Roboto', 'Segoe UI', Arial, sans-serif",
-  fontHeading: "'Roboto Slab', 'Georgia', serif",
-  logoUrl: "https://intra.handelsfastigheter.se/favicon.png",
+  // Use system-ui stack – Google Fonts <link> tags are ignored by most email clients
+  fontStack: "'Segoe UI', system-ui, Arial, sans-serif",
+  fontHeading: "Georgia, 'Times New Roman', serif",
+  logoUrl: `${APP_BASE_URL}/favicon.png`,
 };
 
 /** Full email wrapper with SHF branding */
@@ -34,7 +46,6 @@ export function emailLayout(title: string, emoji: string, body: string): string 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:${BRAND.bgLight};font-family:${BRAND.fontStack};-webkit-font-smoothing:antialiased;">
   <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
@@ -62,7 +73,7 @@ export function emailLayout(title: string, emoji: string, body: string): string 
         SHF Intra
       </p>
       <p style="margin:0;font-size:11px;color:${BRAND.textMuted};">
-        Svensk Handelsfastigheter · <a href="${getAppBaseUrl()}" style="color:${BRAND.primary};text-decoration:none;">intra.handelsfastigheter.se</a>
+        Svensk Handelsfastigheter · <a href="${APP_BASE_URL}" style="color:${BRAND.primary};text-decoration:none;">intra.handelsfastigheter.se</a>
       </p>
     </div>
   </div>
@@ -73,7 +84,7 @@ export function emailLayout(title: string, emoji: string, body: string): string 
 /** Greeting paragraph */
 export function emailGreeting(name: string): string {
   return `<p style="margin:0 0 20px;font-size:15px;color:${BRAND.textBody};line-height:1.6;">
-    Hej <strong style="color:${BRAND.textDark};">${name}</strong>,
+    Hej <strong style="color:${BRAND.textDark};">${escapeHtml(name)}</strong>,
   </p>`;
 }
 
@@ -91,10 +102,10 @@ export function emailHeading(text: string): string {
 export function emailItemsList(items: { name: string; quantity?: number; description?: string | null }[]): string {
   const rows = items.map((i) => {
     const qty = (i.quantity ?? 1) > 1 ? ` <span style="color:${BRAND.textMuted};">×${i.quantity}</span>` : "";
-    const desc = i.description ? `<br><span style="font-size:12px;color:${BRAND.textMuted};">${i.description}</span>` : "";
+    const desc = i.description ? `<br><span style="font-size:12px;color:${BRAND.textMuted};">${escapeHtml(i.description)}</span>` : "";
     return `<tr>
       <td style="padding:8px 12px;border-bottom:1px solid ${BRAND.border};font-size:14px;color:${BRAND.textDark};">
-        <strong>${i.name}</strong>${qty}${desc}
+        <strong>${escapeHtml(i.name)}</strong>${qty}${desc}
       </td>
     </tr>`;
   }).join("");
@@ -107,8 +118,8 @@ export function emailItemsList(items: { name: string; quantity?: number; descrip
 export function emailSystemsList(systems: { name: string; description?: string | null }[]): string {
   if (systems.length === 0) return "";
   const rows = systems.map((s) => {
-    const desc = s.description ? ` <span style="color:${BRAND.textMuted};">– ${s.description}</span>` : "";
-    return `<li style="padding:4px 0;font-size:14px;color:${BRAND.textDark};">${s.name}${desc}</li>`;
+    const desc = s.description ? ` <span style="color:${BRAND.textMuted};">– ${escapeHtml(s.description)}</span>` : "";
+    return `<li style="padding:4px 0;font-size:14px;color:${BRAND.textDark};">${escapeHtml(s.name)}${desc}</li>`;
   }).join("");
   return `${emailHeading("System & Licenser")}<ul style="margin:0;padding-left:20px;">${rows}</ul>`;
 }
@@ -133,8 +144,8 @@ export function emailCallout(content: string): string {
 /** Warning/rejection callout box */
 export function emailWarningCallout(label: string, content: string): string {
   return `<div style="margin:16px 0;padding:14px 18px;background:${BRAND.destructiveLight};border-left:4px solid ${BRAND.destructive};border-radius:0 8px 8px 0;">
-    <p style="margin:0 0 4px;font-size:11px;color:${BRAND.textMuted};font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">${label}</p>
-    <p style="margin:0;font-size:14px;color:${BRAND.textDark};line-height:1.5;">${content}</p>
+    <p style="margin:0 0 4px;font-size:11px;color:${BRAND.textMuted};font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">${escapeHtml(label)}</p>
+    <p style="margin:0;font-size:14px;color:${BRAND.textDark};line-height:1.5;">${escapeHtml(content)}</p>
   </div>`;
 }
 
@@ -146,9 +157,9 @@ export function emailRecipientInfo(params: {
   dateLabel?: string;
 }): string {
   const rows = [
-    `<tr><td style="padding:6px 16px 6px 0;font-size:13px;color:${BRAND.textMuted};white-space:nowrap;">Namn:</td><td style="padding:6px 0;font-size:14px;color:${BRAND.textDark};font-weight:500;">${params.name}</td></tr>`,
-    params.department ? `<tr><td style="padding:6px 16px 6px 0;font-size:13px;color:${BRAND.textMuted};white-space:nowrap;">Avdelning:</td><td style="padding:6px 0;font-size:14px;color:${BRAND.textDark};">${params.department}</td></tr>` : "",
-    params.date ? `<tr><td style="padding:6px 16px 6px 0;font-size:13px;color:${BRAND.textMuted};white-space:nowrap;">${params.dateLabel || "Datum"}:</td><td style="padding:6px 0;font-size:14px;color:${BRAND.textDark};">${new Date(params.date).toLocaleDateString("sv-SE")}</td></tr>` : "",
+    `<tr><td style="padding:6px 16px 6px 0;font-size:13px;color:${BRAND.textMuted};white-space:nowrap;">Namn:</td><td style="padding:6px 0;font-size:14px;color:${BRAND.textDark};font-weight:500;">${escapeHtml(params.name)}</td></tr>`,
+    params.department ? `<tr><td style="padding:6px 16px 6px 0;font-size:13px;color:${BRAND.textMuted};white-space:nowrap;">Avdelning:</td><td style="padding:6px 0;font-size:14px;color:${BRAND.textDark};">${escapeHtml(params.department)}</td></tr>` : "",
+    params.date ? `<tr><td style="padding:6px 16px 6px 0;font-size:13px;color:${BRAND.textMuted};white-space:nowrap;">${escapeHtml(params.dateLabel || "Datum")}:</td><td style="padding:6px 0;font-size:14px;color:${BRAND.textDark};">${new Date(params.date).toLocaleDateString("sv-SE")}</td></tr>` : "",
   ].filter(Boolean).join("");
   return `${emailHeading("Mottagare")}<table cellpadding="0" cellspacing="0" border="0">${rows}</table>`;
 }

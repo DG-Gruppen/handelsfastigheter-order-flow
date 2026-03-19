@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
+import { encrypt, decrypt, isEncrypted } from "@/lib/passwordCrypto";
 
 // --- Types ---
 
@@ -34,7 +35,6 @@ interface SharedPassword {
   created_by: string;
   created_at: string;
 }
-
 
 interface AccessLogEntry {
   id: string;
@@ -92,6 +92,8 @@ export default function Passwords() {
   const isEditor = roles.includes("admin") || roles.includes("it") || canEdit;
 
   const [passwords, setPasswords] = useState<SharedPassword[]>([]);
+  const [decryptedPasswords, setDecryptedPasswords] = useState<Record<string, string>>({});
+  const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -104,7 +106,7 @@ export default function Passwords() {
   // Delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Visibility state
+  // Visibility state – cleared when dialog closes
   const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
 
   // Access log state (admin/IT only)
@@ -114,13 +116,57 @@ export default function Passwords() {
   const [logProfiles, setLogProfiles] = useState<Profile[]>([]);
   const [logLoading, setLogLoading] = useState(false);
 
-  const fetchData = async () => {
+  // Fetch the encryption key once on mount (JWT-protected Edge Function)
+  useEffect(() => {
+    supabase.functions.invoke("get-passwords-key")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to fetch encryption key:", error);
+        } else if (data?.key) {
+          setEncryptionKey(data.key as string);
+        }
+      });
+  }, []);
+
+  const fetchData = useCallback(async () => {
     const { data } = await supabase.from("shared_passwords").select("*").order("service_name");
     setPasswords((data as SharedPassword[]) ?? []);
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Decrypt visible passwords when key is available
+  useEffect(() => {
+    if (!encryptionKey || visibleIds.size === 0) return;
+    const decrypt_ = async () => {
+      const updates: Record<string, string> = {};
+      for (const id of visibleIds) {
+        if (decryptedPasswords[id]) continue;
+        const pw = passwords.find((p) => p.id === id);
+        if (!pw?.password_value) continue;
+        try {
+          const plain = isEncrypted(pw.password_value)
+            ? await decrypt(pw.password_value, encryptionKey)
+            : pw.password_value; // legacy plaintext fallback
+          updates[id] = plain;
+        } catch {
+          updates[id] = "[Dekrypteringsfel]";
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        setDecryptedPasswords((prev) => ({ ...prev, ...updates }));
+      }
+    };
+    decrypt_();
+  }, [visibleIds, encryptionKey, passwords]);
+
+  // Clear visibility when navigating away
+  useEffect(() => {
+    return () => setVisibleIds(new Set());
+  }, []);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return passwords;
@@ -132,16 +178,15 @@ export default function Passwords() {
     );
   }, [passwords, search]);
 
-
   // --- Access logging ---
-  const logAccess = async (passwordId: string, action: string) => {
+  const logAccess = useCallback(async (passwordId: string, action: string) => {
     if (!user) return;
     await supabase.from("password_access_log" as any).insert({
       password_id: passwordId,
       user_id: user.id,
       action,
     } as any);
-  };
+  }, [user]);
 
   // Open dialog
   const openCreate = () => {
@@ -155,7 +200,7 @@ export default function Passwords() {
     setForm({
       service_name: pw.service_name,
       username: pw.username,
-      password_value: pw.password_value,
+      password_value: decryptedPasswords[pw.id] ?? pw.password_value,
       url: pw.url,
       notes: pw.notes,
     });
@@ -167,34 +212,43 @@ export default function Passwords() {
     setSaving(true);
 
     try {
-      let pwId = editingId;
+      // Encrypt password before storing
+      const encryptedValue = encryptionKey && form.password_value
+        ? await encrypt(form.password_value, encryptionKey)
+        : form.password_value;
 
       if (editingId) {
         const { error } = await supabase.from("shared_passwords").update({
           service_name: form.service_name.trim(),
           username: form.username.trim(),
-          password_value: form.password_value,
+          password_value: encryptedValue,
           url: form.url.trim(),
           notes: form.notes.trim(),
         } as any).eq("id", editingId);
         if (error) throw error;
+        // Invalidate cached decrypted value so it re-decrypts on next view
+        setDecryptedPasswords((prev) => {
+          const next = { ...prev };
+          delete next[editingId];
+          return next;
+        });
       } else {
-        const { data, error } = await supabase.from("shared_passwords").insert({
+        const { error } = await supabase.from("shared_passwords").insert({
           service_name: form.service_name.trim(),
           username: form.username.trim(),
-          password_value: form.password_value,
+          password_value: encryptedValue,
           url: form.url.trim(),
           notes: form.notes.trim(),
           created_by: user!.id,
-        } as any).select("id").single();
+        } as any);
         if (error) throw error;
-        pwId = (data as any).id;
       }
 
       toast.success(editingId ? "Lösenord uppdaterat" : "Lösenord skapat");
       setDialogOpen(false);
       fetchData();
-    } catch {
+    } catch (err) {
+      console.error("Failed to save password:", err);
       toast.error("Kunde inte spara");
     } finally {
       setSaving(false);
@@ -203,8 +257,18 @@ export default function Passwords() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await supabase.from("shared_passwords").delete().eq("id", deleteId);
-    toast.success("Lösenord borttaget");
+    const { error } = await supabase.from("shared_passwords").delete().eq("id", deleteId);
+    if (error) {
+      console.error("Failed to delete password:", error);
+      toast.error("Kunde inte ta bort lösenordet");
+    } else {
+      toast.success("Lösenord borttaget");
+      setDecryptedPasswords((prev) => {
+        const next = { ...prev };
+        delete next[deleteId];
+        return next;
+      });
+    }
     setDeleteId(null);
     fetchData();
   };
@@ -222,8 +286,18 @@ export default function Passwords() {
     });
   };
 
-  const copyToClipboard = (passwordId: string, text: string, label: string, action: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (passwordId: string, text: string, label: string, action: string, isPassword = false) => {
+    // If this is a password field, decrypt first
+    let value = text;
+    if (isPassword && encryptionKey && isEncrypted(text)) {
+      try {
+        value = await decrypt(text, encryptionKey);
+      } catch {
+        toast.error("Kunde inte dekryptera lösenordet");
+        return;
+      }
+    }
+    navigator.clipboard.writeText(value);
     toast.success(`${label} kopierat`);
     logAccess(passwordId, action);
   };
@@ -297,6 +371,7 @@ export default function Passwords() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filtered.map(pw => {
             const isVisible = visibleIds.has(pw.id);
+            const decryptedValue = decryptedPasswords[pw.id];
             return (
               <div key={pw.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -345,13 +420,13 @@ export default function Passwords() {
                       <span className="text-muted-foreground text-xs">Lösenord</span>
                       <div className="flex items-center gap-2 mt-0.5">
                         <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                          {isVisible ? pw.password_value : "••••••••••"}
+                          {isVisible ? (decryptedValue ?? "Dekrypterar...") : "••••••••••"}
                         </code>
                         <button onClick={() => toggleVisible(pw.id)}
                                 className="text-muted-foreground hover:text-foreground">
                           {isVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
-                        <button onClick={() => copyToClipboard(pw.id, pw.password_value, "Lösenord", "copied_password")}
+                        <button onClick={() => copyToClipboard(pw.id, pw.password_value, "Lösenord", "copied_password", true)}
                                 className="text-muted-foreground hover:text-foreground">
                           <Copy className="h-3.5 w-3.5" />
                         </button>
@@ -388,7 +463,13 @@ export default function Passwords() {
               <div>
                 <Label>Lösenord</Label>
                 <div className="flex gap-1.5">
-                  <Input value={form.password_value} onChange={e => setForm(f => ({ ...f, password_value: e.target.value }))} placeholder="••••••••" className="flex-1" />
+                  <Input
+                    type="password"
+                    value={form.password_value}
+                    onChange={e => setForm(f => ({ ...f, password_value: e.target.value }))}
+                    placeholder="••••••••"
+                    className="flex-1"
+                  />
                   <Button
                     type="button"
                     variant="outline"

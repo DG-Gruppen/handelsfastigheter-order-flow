@@ -4,19 +4,22 @@ project_id = "zafzwayqhlnxpsumfjps"
 verify_jwt = true
 
 [functions.send-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sync-content-index]
-verify_jwt = false
+verify_jwt = true
 
 [functions.scrape-website]
-verify_jwt = false
+verify_jwt = true
 
 [functions.fetch-cision-feed]
-verify_jwt = false
+verify_jwt = true
 
 [functions.database-backup]
-verify_jwt = false
+verify_jwt = true
+
+[functions.get-passwords-key]
+verify_jwt = true

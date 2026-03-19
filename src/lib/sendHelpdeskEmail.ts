@@ -3,7 +3,7 @@ import { getItContactEmail } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
 import {
   emailLayout, emailText, emailHeading,
-  emailItemsList, emailSystemsList, emailRecipientInfo, emailButton,
+  emailItemsList, emailSystemsList, emailRecipientInfo, emailButton, escapeHtml,
 } from "@/lib/emailTemplates";
 
 interface HelpdeskEmailParams {
@@ -43,13 +43,13 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
       })
     : "";
 
-  const html = emailLayout(`${typeLabel}: ${title}`, "🎫", `
-    ${emailText(`En ny godkänd beställning har inkommit från <strong>${requesterName}</strong>.`)}
+  const html = emailLayout(`${escapeHtml(typeLabel)}: ${escapeHtml(title)}`, "🎫", `
+    ${emailText(`En ny godkänd beställning har inkommit från <strong>${escapeHtml(requesterName)}</strong>.`)}
     ${recipientHtml}
     ${emailHeading("Utrustning")}
     ${emailItemsList(items)}
     ${emailSystemsList(systems)}
-    ${description ? `${emailHeading("Kommentar")}${emailText(description)}` : ""}
+    ${description ? `${emailHeading("Kommentar")}${emailText(escapeHtml(description))}` : ""}
     ${emailButton(orderUrl, "Visa beställning i systemet")}
   `);
 

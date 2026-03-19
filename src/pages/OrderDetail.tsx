@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, Truck,
+  ArrowLeft, Zap, LogOut, UserPlus, Truck,
 } from "lucide-react";
 
 import {
@@ -20,15 +20,7 @@ import {
 } from "@/components/orders/OrderDetailCards";
 import { RejectDialog, DeliverDialog } from "@/components/orders/OrderActionDialogs";
 
-const statusConfig: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }
-> = {
-  pending: { label: "Väntar på attestering", variant: "secondary", icon: Clock },
-  approved: { label: "Godkänd", variant: "default", icon: CheckCircle2 },
-  rejected: { label: "Avslagen", variant: "destructive", icon: XCircle },
-  delivered: { label: "Levererad", variant: "outline", icon: Package },
-};
+import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 
 interface Order {
   id: string; title: string; description: string | null; status: string; category: string;
@@ -190,22 +182,27 @@ export default function OrderDetail() {
   const handleReject = async () => {
     if (!order) return;
     const { error } = await supabase.from("orders").update({ status: "rejected", rejection_reason: rejectionReason.trim() || null }).eq("id", order.id);
-    if (error) { toast.error("Kunde inte avslå beställningen"); }
-    else {
-      setOrder({ ...order, status: "rejected", rejection_reason: rejectionReason.trim() || null });
-      toast.success("Beställningen har avslagits");
-      setRejectDialogOpen(false);
-      setRejectionReason("");
-      if (user && order.requester_id !== user.id) {
-        const approverName = approverProfile?.full_name || "Attestanten";
-        await supabase.rpc("create_notification", {
-          _user_id: order.requester_id, _title: "Beställning avslagen",
-          _message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
-          _type: "order_rejected", _reference_id: order.id,
-        });
+    if (error) {
+      console.error("Failed to reject order:", error);
+      toast.error("Kunde inte avslå beställningen");
+      return;
+    }
 
-        // Send rejection email to requester
-        if (requesterProfile?.email) {
+    setOrder({ ...order, status: "rejected", rejection_reason: rejectionReason.trim() || null });
+    toast.success("Beställningen har avslagits");
+    setRejectDialogOpen(false);
+    setRejectionReason("");
+
+    if (user && order.requester_id !== user.id) {
+      const approverName = approverProfile?.full_name || "Attestanten";
+      await supabase.rpc("create_notification", {
+        _user_id: order.requester_id, _title: "Beställning avslagen",
+        _message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
+        _type: "order_rejected", _reference_id: order.id,
+      });
+
+      if (requesterProfile?.email) {
+        try {
           await sendRejectionEmail({
             orderId: order.id,
             title: order.title,
@@ -214,6 +211,8 @@ export default function OrderDetail() {
             approverName,
             rejectionReason: rejectionReason.trim() || null,
           });
+        } catch (err) {
+          console.error("Failed to send rejection email:", err);
         }
       }
     }
@@ -230,7 +229,7 @@ export default function OrderDetail() {
     );
   }
 
-  const sc = statusConfig[order.status] ?? statusConfig.pending;
+  const sc = ORDER_STATUS_CONFIG[order.status] ?? ORDER_STATUS_CONFIG.pending;
   const StatusIcon = sc.icon;
   const autoApproved = order.status === "approved" && order.requester_id === order.approver_id;
   const timeline = buildTimeline(order);
