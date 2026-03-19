@@ -99,7 +99,6 @@ export default function Passwords() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Delete state
