@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   Bell, FileText, BookOpen, Video, ShoppingCart, CheckCircle2,
   XCircle, Package, Truck, Info, Archive, ChevronDown, ChevronUp,
+  UserCheck, MessageSquare,
 } from "lucide-react";
 import {
   Popover,
@@ -66,6 +67,16 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; route: (ref
     icon: Info,
     color: "text-muted-foreground",
     route: () => null,
+  },
+  planner_assigned: {
+    icon: UserCheck,
+    color: "text-indigo-500",
+    route: () => "/planner",
+  },
+  planner_comment: {
+    icon: MessageSquare,
+    color: "text-teal-500",
+    route: () => "/planner",
   },
 };
 
