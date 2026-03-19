@@ -216,6 +216,7 @@ export default function AppSidebar() {
               </>
             );
           })()}
+          {sortedGroups.map((group, gi) => {
             const isOpen = !collapsedGroups[group.key];
 
             return (
