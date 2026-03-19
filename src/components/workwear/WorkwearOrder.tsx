@@ -21,6 +21,7 @@ interface WorkwearProduct {
   variants: WorkwearVariant[];
   sizes: string[];
   image?: string;
+  gender: "herr" | "dam";
 }
 
 interface CartItem {
@@ -33,46 +34,73 @@ interface CartItem {
   url: string;
 }
 
+const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+
 const PRODUCTS: WorkwearProduct[] = [
-  {
-    id: "jeansskjorta",
-    name: "Jeansskjorta Dallas",
-    variants: [
-      { color: "blue-used", colorLabel: "Blue Used", url: "https://www.157work.com/p/jeansskjorta-dallas/blue-used/" },
-    ],
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-  },
-  {
-    id: "vast-lindas",
-    name: "Väst Lindås",
-    variants: [
-      { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/lindas-vest/black/" },
-      { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/lindas-vest/navy/" },
-    ],
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-  },
-  {
-    id: "pilejacka-valla",
-    name: "Piléjacka Valla",
-    variants: [
-      { color: "ivory", colorLabel: "Vit", url: "https://www.157work.com/p/pilejacka-valla/ivory/" },
-      { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/pilejacka-valla/black/" },
-    ],
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-  },
-  {
-    id: "hybridjacka",
-    name: "Hybridjacka WS",
-    variants: [
-      { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/hybridjacka-ws-hybrid-jacket/black/" },
-      { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/hybridjacka-ws-hybrid-jacket/navy/" },
-    ],
-    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-  },
+  // ── HERR ──
+  { id: "h-tshirt-william", gender: "herr", name: "T-shirt William", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/heavy-t-shirt-william/white/" },
+  ], sizes: SIZES },
+  { id: "h-pike-alan", gender: "herr", name: "Pikétröja Alan", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/pik-alan/white/" },
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/pik-alan/navy-5/" },
+  ], sizes: SIZES },
+  { id: "h-skjorta-lucas", gender: "herr", name: "Skjorta Lucas", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/linneskjorta-lucas/white/" },
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/linneskjorta-lucas/navy-5/" },
+  ], sizes: SIZES },
+  { id: "h-jeansskjorta-dakota", gender: "herr", name: "Jeansskjorta Dakota", variants: [
+    { color: "denim-blue", colorLabel: "Denim Blue", url: "https://www.157work.com/p/jeansskjorta-dakota/denim-blue/" },
+  ], sizes: SIZES },
+  { id: "h-worker-mechanic", gender: "herr", name: "Kortärmad Worker Skjorta", variants: [
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/skjorta-mechanic-shirt/navy/" },
+  ], sizes: SIZES },
+  { id: "h-vast-liared", gender: "herr", name: "Väst Liared", variants: [
+    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/liared-vest/black/" },
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/liared-vest/navy/" },
+  ], sizes: SIZES },
+  { id: "h-pilejacka-vallen", gender: "herr", name: "Piléjacka Vallen 2.0", variants: [
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/pilejacka-vallen-2-0/navy/" },
+  ], sizes: SIZES },
+  { id: "h-hybridjacka-ms", gender: "herr", name: "Hybridjacka MS", variants: [
+    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/hybridjacka-ms-hybrid-jacket/black/" },
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/hybridjacka-ms-hybrid-jacket/navy/" },
+  ], sizes: SIZES },
+
+  // ── DAM ──
+  { id: "d-tshirt-bea", gender: "dam", name: "T-shirt Bea (rak)", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/basic-t-shirt-bea/white/" },
+  ], sizes: SIZES },
+  { id: "d-tshirt-filippa", gender: "dam", name: "T-shirt Filippa (figurnära)", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/t-shirt-filippa/white/" },
+  ], sizes: SIZES },
+  { id: "d-skjorta-cristin", gender: "dam", name: "Skjorta Cristin (figursydd)", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/cristin-shirt/white/" },
+  ], sizes: SIZES },
+  { id: "d-skjorta-stephanie", gender: "dam", name: "Skjorta Stephanie (rak)", variants: [
+    { color: "white", colorLabel: "Vit", url: "https://www.157work.com/p/skjorta-stephanie/white/" },
+  ], sizes: SIZES },
+  { id: "d-jeansskjorta-dallas", gender: "dam", name: "Jeansskjorta Dallas", variants: [
+    { color: "blue-used", colorLabel: "Blue Used", url: "https://www.157work.com/p/jeansskjorta-dallas/blue-used/" },
+  ], sizes: SIZES },
+  { id: "d-vast-lindas", gender: "dam", name: "Väst Lindås", variants: [
+    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/lindas-vest/black/" },
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/lindas-vest/navy/" },
+  ], sizes: SIZES },
+  { id: "d-pilejacka-valla", gender: "dam", name: "Piléjacka Valla", variants: [
+    { color: "ivory", colorLabel: "Vit", url: "https://www.157work.com/p/pilejacka-valla/ivory/" },
+    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/pilejacka-valla/black/" },
+  ], sizes: SIZES },
+  { id: "d-hybridjacka-ws", gender: "dam", name: "Hybridjacka WS", variants: [
+    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/hybridjacka-ws-hybrid-jacket/black/" },
+    { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/hybridjacka-ws-hybrid-jacket/navy/" },
+  ], sizes: SIZES },
 ];
 
 const COLOR_DOT: Record<string, string> = {
+  white: "bg-white border border-border",
   "blue-used": "bg-blue-500",
+  "denim-blue": "bg-blue-600",
   black: "bg-zinc-900",
   navy: "bg-indigo-900",
   ivory: "bg-amber-50 border border-border",
