@@ -256,7 +256,7 @@ export default function Passwords() {
       supabase.from("profiles").select("user_id, full_name"),
     ]);
 
-    setLogEntries((logRes.data as AccessLogEntry[]) ?? []);
+    setLogEntries(((logRes.data as unknown) as AccessLogEntry[]) ?? []);
     setLogProfiles((profilesRes.data as Profile[]) ?? []);
     setLogLoading(false);
   };
