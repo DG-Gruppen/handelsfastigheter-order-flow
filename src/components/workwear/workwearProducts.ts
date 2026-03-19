@@ -79,6 +79,8 @@ export const PRODUCTS_BY_SEASON: Record<Season, WorkwearProduct[]> = {
     { id: "d-pilejacka-valla", gender: "dam", name: "Piléjacka Valla", variants: [
       { color: "ivory", colorLabel: "Ivory", url: "https://www.157work.com/p/pilejacka-valla/ivory/" },
       { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/pilejacka-valla/black/" },
+      { color: "dk-beige", colorLabel: "DK Beige (brodyr svart)", url: "https://www.157work.com/p/pilejacka-valla/dk-beige/" },
+      { color: "burgundy", colorLabel: "Burgundy (brodyr vit)", url: "https://www.157work.com/p/pilejacka-valla/burgundy/" },
     ], sizes: ["XS", "S", "M", "L", "XL"] },
     { id: "d-hybridjacka-ws", gender: "dam", name: "Hybridjacka WS", variants: [
       { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/hybridjacka-ws-hybrid-jacket/black/" },
@@ -102,4 +104,6 @@ export const COLOR_DOT: Record<string, string> = {
   navy: "bg-indigo-900",
   khaki: "bg-amber-700",
   ivory: "bg-amber-50 border border-border",
+  "dk-beige": "bg-amber-100 border border-border",
+  burgundy: "bg-rose-900",
 };
