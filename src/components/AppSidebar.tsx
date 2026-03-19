@@ -106,9 +106,14 @@ export default function AppSidebar() {
   const groups = GROUP_CONFIG.map((g) => ({
     key: g.label || "__home__",
     label: g.label,
-    modules: g.slugs
+    modules: (g.slugs
       .map((slug) => accessibleModules.find((m) => m.slug === slug))
-      .filter(Boolean) as typeof accessibleModules,
+      .filter(Boolean) as typeof accessibleModules)
+      .sort((a, b) => {
+        const nameA = SLUG_NAME_OVERRIDES[a.slug] || a.name;
+        const nameB = SLUG_NAME_OVERRIDES[b.slug] || b.name;
+        return nameA.localeCompare(nameB, "sv");
+      }),
   })).filter((g) => g.modules.length > 0);
 
   // Sync new groups into order
