@@ -1486,6 +1486,75 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_password_groups: {
+        Row: {
+          group_id: string
+          id: string
+          password_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          password_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          password_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_password_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_password_groups_password_id_fkey"
+            columns: ["password_id"]
+            isOneToOne: false
+            referencedRelation: "shared_passwords"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_passwords: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          notes: string
+          password_value: string
+          service_name: string
+          updated_at: string
+          url: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string
+          password_value?: string
+          service_name: string
+          updated_at?: string
+          url?: string
+          username?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string
+          password_value?: string
+          service_name?: string
+          updated_at?: string
+          url?: string
+          username?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -1657,6 +1726,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_shared_password_access: {
+        Args: { _password_id: string; _user_id: string }
         Returns: boolean
       }
       move_to_dlq: {
