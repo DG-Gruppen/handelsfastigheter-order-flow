@@ -203,7 +203,7 @@ export default function WorkwearOrder() {
 </div>
 <div style="background:#fff;padding:32px;border:1px solid #dde1e6;border-top:none;border-radius:0 0 12px 12px;">
 <p style="margin:0 0 16px;font-size:15px;color:#3a4553;">
-<strong>${profile?.full_name || "Anställd"}</strong> har beställt arbetskläder:
+<strong>${profile?.full_name || "Anställd"}</strong> har beställt profilkläder:
 </p>
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:16px 0;border:1px solid #dde1e6;border-radius:8px;overflow:hidden;">
 <tr style="background:#f4f5f7;">
