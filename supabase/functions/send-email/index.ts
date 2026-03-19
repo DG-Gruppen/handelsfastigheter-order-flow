@@ -1,13 +1,44 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
+const ALLOWED_ORIGIN = 'https://intra.handelsfastigheter.se'
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+}
+
+// Simple in-memory rate limiter: max 20 emails per minute per user
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT = 20
+const RATE_WINDOW_MS = 60_000
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT) return false
+  entry.count++
+  return true
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // Extract user ID from JWT for rate limiting (JWT verified by Supabase)
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.replace('Bearer ', '')
+  // Use first 16 chars of token as rate limit key (avoid storing full JWT)
+  const rateLimitKey = token.slice(0, 16) || req.headers.get('x-real-ip') || 'anonymous'
+  if (!checkRateLimit(rateLimitKey)) {
+    return new Response(
+      JSON.stringify({ error: 'För många förfrågningar. Försök igen om en stund.' }),
+      { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 
   const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')

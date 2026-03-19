@@ -94,19 +94,31 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     fetchModules();
   }, [user?.id]);
 
-  // Realtime: refresh when module_permissions change
+  // Realtime: refresh only when permissions affecting THIS user change.
+  // Filtering by grantee_id for user-level permissions; group_members is
+  // filtered by user_id so we only react to changes for this user.
   useEffect(() => {
     if (!user) return;
     const channel = supabase
       .channel("module-permissions-realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "module_permissions" },
+        {
+          event: "*",
+          schema: "public",
+          table: "module_permissions",
+          filter: `grantee_id=eq.${user.id}`,
+        },
         () => fetchModules()
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "group_members" },
+        {
+          event: "*",
+          schema: "public",
+          table: "group_members",
+          filter: `user_id=eq.${user.id}`,
+        },
         () => fetchModules()
       )
       .subscribe();

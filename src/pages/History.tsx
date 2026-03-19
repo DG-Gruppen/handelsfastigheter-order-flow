@@ -6,16 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageSquare } from "lucide-react";
 import { Clock, CheckCircle2, XCircle, Package, Zap, LogOut, UserPlus, Search, History as HistoryIcon } from "lucide-react";
+import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
-  pending: { label: "Väntar", variant: "secondary", icon: Clock },
-  approved: { label: "Godkänd", variant: "default", icon: CheckCircle2 },
-  rejected: { label: "Avslagen", variant: "destructive", icon: XCircle },
-  delivered: { label: "Levererad", variant: "outline", icon: Package },
-};
+const PAGE_SIZE = 50;
 
 interface HistoryOrder {
   id: string;
@@ -36,6 +33,9 @@ export default function History() {
   const { user, roles, profile } = useAuth();
   const [orders, setOrders] = useState<HistoryOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -44,46 +44,74 @@ export default function History() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (pageIndex: number, append: boolean) => {
     if (!user || !profile) return;
 
+    const from = pageIndex * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let data: HistoryOrder[] = [];
+
     if (isAdmin) {
-      // VD/Admin: alla beställningar
-      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-      const requesterIds = [...new Set((data ?? []).map(o => o.requester_id))];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", requesterIds);
-      const nameMap = new Map((profiles ?? []).map(p => [p.user_id, p.full_name]));
-      setOrders((data ?? []).map(o => ({ ...o, requester_name: nameMap.get(o.requester_id) || "Okänd" })));
+      // Admin: alla beställningar med JOIN på profil (eliminerar N+1)
+      const { data: rows } = await supabase
+        .from("orders")
+        .select("*, requester:profiles!requester_id(full_name)")
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      data = (rows ?? []).map((o: any) => ({
+        ...o,
+        requester_name: o.requester?.full_name ?? "Okänd",
+      }));
     } else if (isManager) {
-      // Chef: egna + alla underställda rekursivt nedåt i hierarkin
-      const { data: subRows } = await supabase.rpc("get_subordinate_user_ids", { _manager_profile_id: profile.id });
+      // Chef: egna + underställdas via RPC, sedan JOIN
+      const { data: subRows } = await supabase.rpc("get_subordinate_user_ids", {
+        _manager_profile_id: profile.id,
+      });
       const subordinateIds = (subRows ?? []).map((r: { user_id: string }) => r.user_id);
       const allUserIds = [...new Set([user.id, ...subordinateIds])];
 
-      const { data } = await supabase.from("orders").select("*").in("requester_id", allUserIds).order("created_at", { ascending: false });
+      const { data: rows } = await supabase
+        .from("orders")
+        .select("*, requester:profiles!requester_id(full_name)")
+        .in("requester_id", allUserIds)
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
-      const { data: allProfiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", allUserIds);
-      const nameMap = new Map((allProfiles ?? []).map(p => [p.user_id, p.full_name] as [string, string]));
-      setOrders((data ?? []).map(o => ({ ...o, requester_name: nameMap.get(o.requester_id) || "Okänd" })));
+      data = (rows ?? []).map((o: any) => ({
+        ...o,
+        requester_name: o.requester?.full_name ?? "Okänd",
+      }));
     } else {
       // Anställd: bara egna
-      const { data } = await supabase.from("orders").select("*").eq("requester_id", user.id).order("created_at", { ascending: false });
-      setOrders((data ?? []).map(o => ({ ...o, requester_name: profile.full_name })));
+      const { data: rows } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("requester_id", user.id)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      data = (rows ?? []).map((o) => ({ ...o, requester_name: profile.full_name }));
     }
 
+    setHasMore(data.length === PAGE_SIZE);
+    setOrders((prev) => (append ? [...prev, ...data] : data));
     setLoading(false);
+    setLoadingMore(false);
   }, [user, profile, isAdmin, isManager]);
 
   useEffect(() => {
     if (!user || !profile) return;
     setLoading(true);
-    fetchHistory();
+    setPage(0);
+    fetchHistory(0, false);
 
     const channel = supabase
       .channel("history-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => fetchHistory(), 500);
+        debounceRef.current = setTimeout(() => fetchHistory(0, false), 500);
       })
       .subscribe();
 
@@ -92,6 +120,13 @@ export default function History() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [user, profile, isAdmin, isManager, fetchHistory]);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    setLoadingMore(true);
+    fetchHistory(nextPage, true);
+  };
 
   const filtered = useMemo(() => orders.filter(o => {
     if (statusFilter !== "all" && o.status !== statusFilter) return false;
@@ -173,61 +208,70 @@ export default function History() {
                 <p className="text-sm text-muted-foreground">Ingen historik att visa</p>
               </div>
             ) : (
-              <div className="divide-y divide-border/50 -mx-4 md:mx-0">
-                {filtered.map((order) => {
-                  const sc = statusConfig[order.status] ?? statusConfig.pending;
-                  const Icon = sc.icon;
-                  const autoApproved = order.status === "approved" && order.requester_id === order.approver_id;
-                  const tag = getOrderTag(order);
-                  return (
-                    <Link
-                      key={order.id}
-                      to={`/orders/${order.id}`}
-                      className="flex items-center justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group hover:bg-secondary/20"
-                    >
-                      <div className="space-y-1 min-w-0 flex-1 mr-3">
-                        <p className="font-medium text-sm md:text-base text-foreground truncate">
-                          {order.title}
-                        </p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString("sv-SE")}
+              <>
+                <div className="divide-y divide-border/50 -mx-4 md:mx-0">
+                  {filtered.map((order) => {
+                    const sc = ORDER_STATUS_CONFIG[order.status] ?? ORDER_STATUS_CONFIG.pending;
+                    const Icon = sc.icon;
+                    const autoApproved = order.status === "approved" && order.requester_id === order.approver_id;
+                    const tag = getOrderTag(order);
+                    return (
+                      <Link
+                        key={order.id}
+                        to={`/orders/${order.id}`}
+                        className="flex items-center justify-between px-4 md:px-0 py-3.5 md:py-4 active:bg-secondary/30 transition-colors group hover:bg-secondary/20"
+                      >
+                        <div className="space-y-1 min-w-0 flex-1 mr-3">
+                          <p className="font-medium text-sm md:text-base text-foreground truncate">
+                            {order.title}
                           </p>
-                          {showRequester && order.requester_name && (
-                            <span className="text-xs text-muted-foreground">
-                              · {order.requester_name}
-                            </span>
-                          )}
-                          {tag && (
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${tag.className}`}>
-                              <tag.icon className="h-2.5 w-2.5" />
-                              {tag.label}
-                            </span>
-                          )}
-                          {order.status === "delivered" && order.delivery_comment && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-info/10 text-info border-info/20" title={order.delivery_comment}>
-                              <MessageSquare className="h-2.5 w-2.5" />
-                              Kommentar
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(order.created_at).toLocaleDateString("sv-SE")}
+                            </p>
+                            {showRequester && order.requester_name && (
+                              <span className="text-xs text-muted-foreground">
+                                · {order.requester_name}
+                              </span>
+                            )}
+                            {tag && (
+                              <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${tag.className}`}>
+                                <tag.icon className="h-2.5 w-2.5" />
+                                {tag.label}
+                              </span>
+                            )}
+                            {order.status === "delivered" && order.delivery_comment && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-info/10 text-info border-info/20" title={order.delivery_comment}>
+                                <MessageSquare className="h-2.5 w-2.5" />
+                                Kommentar
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {autoApproved && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-md">
-                            <Zap className="h-2.5 w-2.5" />
-                            Auto
-                          </span>
-                        )}
-                        <Badge variant={sc.variant} className="gap-1 text-xs">
-                          <Icon className="h-3 w-3" />
-                          {sc.label}
-                        </Badge>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {autoApproved && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-md">
+                              <Zap className="h-2.5 w-2.5" />
+                              Auto
+                            </span>
+                          )}
+                          <Badge variant={sc.variant} className="gap-1 text-xs">
+                            <Icon className="h-3 w-3" />
+                            {sc.label}
+                          </Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+                {hasMore && !search && statusFilter === "all" && (
+                  <div className="pt-4 text-center">
+                    <Button variant="outline" size="sm" onClick={handleLoadMore} disabled={loadingMore}>
+                      {loadingMore ? "Laddar..." : "Ladda fler"}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
