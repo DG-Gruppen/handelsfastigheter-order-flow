@@ -254,26 +254,30 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
   if (loadingSeason) return null;
 
   return (
-    <Card className="glass-card">
-      <CardHeader className="pb-2 px-4 md:px-6">
+    <Card className="glass-card border-primary/15 shadow-lg">
+      <CardHeader className="pb-3 px-4 md:px-6 border-b border-border/50 bg-gradient-to-r from-primary/[0.03] to-transparent">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="font-heading text-base flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-primary" />
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <ShoppingBag className="w-4 h-4 text-primary" />
+            </span>
             Beställ profilkläder
-            <Badge variant="secondary" className="ml-1 text-xs font-normal">
+            <Badge className="ml-1 text-xs font-normal bg-accent text-accent-foreground border-0">
               {SEASON_LABELS[activeSeason]}
             </Badge>
           </CardTitle>
 
           {deadline && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <CalendarClock className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 text-xs">
+              <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
               {isExpired ? (
-                <span className="text-destructive font-medium">Beställningsperioden avslutad</span>
+                <Badge variant="destructive" className="text-xs font-medium">
+                  Beställningsperioden avslutad
+                </Badge>
               ) : (
-                <span>
+                <span className="text-muted-foreground">
                   Sista dag:{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="font-semibold text-primary">
                     {format(parseISO(deadline), "d MMMM yyyy", { locale: sv })}
                   </span>
                 </span>
