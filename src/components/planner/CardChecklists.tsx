@@ -26,6 +26,7 @@ interface Checklist {
 
 interface Props {
   cardId: string;
+  onRegisterAdd?: (fn: () => void) => void;
 }
 
 export interface ChecklistSummary {
@@ -33,7 +34,7 @@ export interface ChecklistSummary {
   checked: number;
 }
 
-export default function CardChecklists({ cardId }: Props) {
+export default function CardChecklists({ cardId, onRegisterAdd }: Props) {
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({});
@@ -70,11 +71,7 @@ export default function CardChecklists({ cardId }: Props) {
     setLoading(false);
   }, [cardId]);
 
-  useEffect(() => {
-    fetchChecklists();
-  }, [fetchChecklists]);
-
-  const addChecklist = async () => {
+  const addChecklist = useCallback(async () => {
     const { error } = await supabase.from("planner_checklists").insert({
       card_id: cardId,
       title: "Checklista",
@@ -82,7 +79,15 @@ export default function CardChecklists({ cardId }: Props) {
     });
     if (error) { toast.error("Kunde inte skapa checklista"); return; }
     fetchChecklists();
-  };
+  }, [cardId, checklists.length, fetchChecklists]);
+
+  useEffect(() => {
+    fetchChecklists();
+  }, [fetchChecklists]);
+
+  useEffect(() => {
+    onRegisterAdd?.(() => addChecklist());
+  }, [onRegisterAdd, addChecklist]);
 
   const deleteChecklist = async (id: string) => {
     await supabase.from("planner_checklists").delete().eq("id", id);
@@ -247,10 +252,6 @@ export default function CardChecklists({ cardId }: Props) {
         );
       })}
 
-      <Button variant="outline" size="sm" onClick={addChecklist} className="w-full">
-        <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
-        Lägg till checklista
-      </Button>
     </div>
   );
 }

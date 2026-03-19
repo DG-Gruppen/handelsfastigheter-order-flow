@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,7 @@ export default function CardDetailDialog({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showMovePicker, setShowMovePicker] = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const addChecklistRef = useRef<(() => void) | undefined>();
 
   useEffect(() => {
     if (card) {
@@ -249,7 +250,7 @@ export default function CardDetailDialog({
               <div className="flex gap-2.5 items-start">
                 <CheckSquare className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <CardChecklists cardId={card.id} />
+                  <CardChecklists cardId={card.id} onRegisterAdd={fn => { addChecklistRef.current = fn; }} />
                 </div>
               </div>
             )}
@@ -331,7 +332,7 @@ export default function CardDetailDialog({
               </div>
             )}
 
-            <SidebarButton icon={CheckSquare} label="Checklista" onClick={() => {/* handled inside CardChecklists */}} />
+            <SidebarButton icon={CheckSquare} label="Checklista" onClick={() => addChecklistRef.current?.()} />
 
             <SidebarButton icon={Calendar} label="Förfallodatum" active={showDatePicker} onClick={() => setShowDatePicker(v => !v)} />
             {showDatePicker && (
