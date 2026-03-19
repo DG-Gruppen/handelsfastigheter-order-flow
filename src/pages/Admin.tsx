@@ -16,6 +16,7 @@ import ITContent from "@/components/admin/ITContent";
 import ToolsManager from "@/components/admin/ToolsManager";
 import NewsAdminPanel from "@/components/news/NewsAdminPanel";
 import DatabaseBackup from "@/components/admin/DatabaseBackup";
+const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
