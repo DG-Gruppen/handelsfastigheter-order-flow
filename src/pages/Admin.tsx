@@ -134,6 +134,7 @@ export default function Admin() {
       case "permissions": return <ModulePermissionsManager />;
       case "tools": return <ToolsManager />;
       case "backup": return <DatabaseBackup />;
+      case "workwear": return <Suspense fallback={<div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><WorkwearAdminPanel /></Suspense>;
       default: return null;
     }
   };
