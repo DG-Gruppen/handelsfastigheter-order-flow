@@ -134,8 +134,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   ];
 
   const orderBreakdown = [
-    { label: "Väntar", value: stats.ordersPending, icon: Clock, color: "text-amber-500" },
-    { label: "Godkända", value: stats.ordersApproved, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Väntar", value: stats.ordersPending, icon: Clock, color: "text-warning" },
+    { label: "Godkända", value: stats.ordersApproved, icon: CheckCircle2, color: "text-accent" },
     { label: "Levererade", value: stats.ordersDelivered, icon: Package, color: "text-primary" },
     { label: "Avslagna", value: stats.ordersRejected, icon: XCircle, color: "text-destructive" },
   ];
