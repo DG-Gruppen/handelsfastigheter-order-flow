@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -14,7 +13,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   KeyRound, Plus, Pencil, Trash2, Eye, EyeOff, Copy, ExternalLink, Search,
@@ -36,16 +34,6 @@ interface SharedPassword {
   created_at: string;
 }
 
-interface PasswordGroup {
-  password_id: string;
-  group_id: string;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  color: string | null;
-}
 
 interface AccessLogEntry {
   id: string;
@@ -102,8 +90,6 @@ export default function Passwords() {
   const isEditor = roles.includes("admin") || roles.includes("it");
 
   const [passwords, setPasswords] = useState<SharedPassword[]>([]);
-  const [passwordGroups, setPasswordGroups] = useState<PasswordGroup[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -111,7 +97,6 @@ export default function Passwords() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Delete state
@@ -128,14 +113,8 @@ export default function Passwords() {
   const [logLoading, setLogLoading] = useState(false);
 
   const fetchData = async () => {
-    const [pwRes, pgRes, grRes] = await Promise.all([
-      supabase.from("shared_passwords").select("*").order("service_name"),
-      supabase.from("shared_password_groups").select("password_id, group_id"),
-      supabase.from("groups").select("id, name, color").order("name"),
-    ]);
-    setPasswords((pwRes.data as SharedPassword[]) ?? []);
-    setPasswordGroups((pgRes.data as PasswordGroup[]) ?? []);
-    setGroups((grRes.data as Group[]) ?? []);
+    const { data } = await supabase.from("shared_passwords").select("*").order("service_name");
+    setPasswords((data as SharedPassword[]) ?? []);
     setLoading(false);
   };
 
@@ -151,10 +130,6 @@ export default function Passwords() {
     );
   }, [passwords, search]);
 
-  const groupMap = useMemo(() => new Map(groups.map(g => [g.id, g])), [groups]);
-
-  const getGroupsForPassword = (pwId: string) =>
-    passwordGroups.filter(pg => pg.password_id === pwId).map(pg => groupMap.get(pg.group_id)).filter(Boolean) as Group[];
 
   // --- Access logging ---
   const logAccess = async (passwordId: string, action: string) => {
@@ -170,7 +145,6 @@ export default function Passwords() {
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
-    setSelectedGroupIds([]);
     setDialogOpen(true);
   };
 
@@ -183,7 +157,6 @@ export default function Passwords() {
       url: pw.url,
       notes: pw.notes,
     });
-    setSelectedGroupIds(passwordGroups.filter(pg => pg.password_id === pw.id).map(pg => pg.group_id));
     setDialogOpen(true);
   };
 
@@ -214,16 +187,6 @@ export default function Passwords() {
         } as any).select("id").single();
         if (error) throw error;
         pwId = (data as any).id;
-      }
-
-      // Sync groups
-      if (pwId) {
-        await supabase.from("shared_password_groups").delete().eq("password_id", pwId);
-        if (selectedGroupIds.length > 0) {
-          await supabase.from("shared_password_groups").insert(
-            selectedGroupIds.map(gid => ({ password_id: pwId, group_id: gid })) as any
-          );
-        }
       }
 
       toast.success(editingId ? "Lösenord uppdaterat" : "Lösenord skapat");
@@ -332,7 +295,6 @@ export default function Passwords() {
         <div className="grid gap-4">
           {filtered.map(pw => {
             const isVisible = visibleIds.has(pw.id);
-            const pwGroups = getGroupsForPassword(pw.id);
             return (
               <div key={pw.id} className="bg-card rounded-xl border border-border p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -346,16 +308,6 @@ export default function Passwords() {
                         </a>
                       )}
                     </div>
-                    {pwGroups.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {pwGroups.map(g => (
-                          <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0"
-                                 style={g.color ? { backgroundColor: g.color + "22", color: g.color, borderColor: g.color + "44" } : {}}>
-                            {g.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   {isEditor && (
                     <div className="flex items-center gap-1 shrink-0">
@@ -455,27 +407,6 @@ export default function Passwords() {
             <div>
               <Label>Anteckningar</Label>
               <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="Extra info..." />
-            </div>
-            <div>
-              <Label className="mb-2 block">Synlig för grupper</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                {groups.map(g => (
-                  <label key={g.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={selectedGroupIds.includes(g.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedGroupIds(prev =>
-                          checked ? [...prev, g.id] : prev.filter(id => id !== g.id)
-                        );
-                      }}
-                    />
-                    {g.name}
-                  </label>
-                ))}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Om inga grupper väljs ser bara admin/IT lösenordet
-              </p>
             </div>
           </div>
           <DialogFooter>
