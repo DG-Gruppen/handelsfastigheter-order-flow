@@ -343,10 +343,6 @@ export default function News() {
         </div>
       )}
 
-      {/* ── Admin Panel ── */}
-      {tab === "admin" && canEdit && (
-        <NewsAdminPanel onDataChange={fetchInternal} />
-      )}
 
       {/* ── Article Detail Dialog ── */}
       <Dialog open={!!selectedArticle} onOpenChange={(v) => !v && setSelectedArticle(null)}>
