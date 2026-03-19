@@ -60,7 +60,7 @@ export default function UsersContent() {
       supabase.from("groups").select("id, name, role_equivalent"),
       supabase.from("group_members").select("user_id, group_id"),
     ]);
-    setProfiles(((profilesData as ProfileWithRoles[]) ?? []).filter(p => p.email !== "toni@kazarian.se"));
+    setProfiles(((profilesData as ProfileWithRoles[]) ?? []).filter(p => !(p as any).is_hidden));
     // Hide Superadmin group from the UI
     setGroups(((groupsData as GroupWithRole[]) ?? []).filter(g => g.name !== "Superadmin"));
 
