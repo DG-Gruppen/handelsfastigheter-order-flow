@@ -183,16 +183,6 @@ export default function News() {
         >
           <Globe className="w-4 h-4" /> Press
         </button>
-        {canEdit && (
-          <button
-            onClick={() => setTab("admin")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] ${
-              tab === "admin" ? "bg-card shadow-sm text-primary font-semibold" : "text-muted-foreground hover:bg-card/50"
-            }`}
-          >
-            Hantera
-          </button>
-        )}
       </div>
 
       {/* ── Search + category filter ── */}
