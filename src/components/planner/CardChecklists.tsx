@@ -26,6 +26,7 @@ interface Checklist {
 
 interface Props {
   cardId: string;
+  onRegisterAdd?: (fn: () => void) => void;
 }
 
 export interface ChecklistSummary {
