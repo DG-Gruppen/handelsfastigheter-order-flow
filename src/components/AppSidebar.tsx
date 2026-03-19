@@ -140,13 +140,18 @@ export default function AppSidebar() {
   // Close "Mer" sheet on route change
   useEffect(() => { setMoreOpen(false); }, [location.pathname]);
 
-  // Mobile: "Information" group in bottom nav, rest in Meny modal
+  // Mobile: dashboard + "Information" group in bottom nav, rest in Meny modal
   const infoSlugs = GROUP_CONFIG.find((g) => g.label === "Information")?.slugs || [];
-  const mobileBarModules = infoSlugs
-    .map((slug) => accessibleModules.find((m) => m.slug === slug))
-    .filter(Boolean) as typeof accessibleModules;
+  const dashMobile = accessibleModules.find((m) => m.slug === "home");
+  const mobileBarModules = [
+    ...(dashMobile ? [dashMobile] : []),
+    ...infoSlugs
+      .map((slug) => accessibleModules.find((m) => m.slug === slug))
+      .filter(Boolean) as typeof accessibleModules,
+  ];
+  const mobileBottomSlugs = new Set(["home", ...infoSlugs]);
   const mobileOverflowModules = accessibleModules.filter(
-    (m) => !infoSlugs.includes(m.slug)
+    (m) => !mobileBottomSlugs.has(m.slug)
   );
   const isOverflowActive = mobileOverflowModules.some((m) => location.pathname === m.route);
 
