@@ -68,8 +68,6 @@ const EMPTY_FORM = {
   notes: "",
 };
 
-const ACTION_LABELS: Record<string, string> = {
-
 function generatePassword(length = 20): string {
   const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   const lower = "abcdefghjkmnpqrstuvwxyz";
@@ -78,7 +76,6 @@ function generatePassword(length = 20): string {
   const all = upper + lower + digits + symbols;
   const arr = new Uint32Array(length);
   crypto.getRandomValues(arr);
-  // Ensure at least one of each type
   const required = [
     upper[arr[0] % upper.length],
     lower[arr[1] % lower.length],
@@ -86,7 +83,6 @@ function generatePassword(length = 20): string {
     symbols[arr[3] % symbols.length],
   ];
   const rest = Array.from({ length: length - 4 }, (_, i) => all[arr[i + 4] % all.length]);
-  // Shuffle
   const result = [...required, ...rest];
   for (let i = result.length - 1; i > 0; i--) {
     const j = arr[i] % (i + 1);
