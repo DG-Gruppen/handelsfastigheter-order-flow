@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone } from "lucide-react";
-import NewsAdminPanel from "@/components/news/NewsAdminPanel";
+
 
 /* ── Types ── */
 interface InternalNews {
