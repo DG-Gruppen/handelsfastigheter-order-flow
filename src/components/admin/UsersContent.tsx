@@ -60,12 +60,12 @@ export default function UsersContent() {
       supabase.from("groups").select("id, name, role_equivalent"),
       supabase.from("group_members").select("user_id, group_id"),
     ]);
-    setProfiles(((profilesData as ProfileWithRoles[]) ?? []).filter(p => p.email !== "toni@kazarian.se"));
+    setProfiles((profilesData as ProfileWithRoles[]) ?? []);
     // Hide Superadmin group from the UI
     setGroups(((groupsData as GroupWithRole[]) ?? []).filter(g => g.name !== "Superadmin"));
 
     const memberMap: Record<string, string[]> = {};
-    (membersData ?? []).forEach((m: any) => {
+    (membersData as { user_id: string; group_id: string }[] | null ?? []).forEach((m) => {
       if (!memberMap[m.user_id]) memberMap[m.user_id] = [];
       memberMap[m.user_id].push(m.group_id);
     });
@@ -129,11 +129,11 @@ export default function UsersContent() {
       const json = JSON.parse(text);
       const { data, error } = await supabase.functions.invoke("import-google-workspace", { body: json });
       if (error) throw error;
-      const results = data?.results ?? [];
-      const updated = results.filter((r: any) => r.status === "updated");
-      const noMatch = results.filter((r: any) => r.status === "no_match");
-      const noChanges = results.filter((r: any) => r.status === "no_changes");
-      const errors = results.filter((r: any) => r.status === "error");
+      const results: { status: string }[] = data?.results ?? [];
+      const updated = results.filter((r) => r.status === "updated");
+      const noMatch = results.filter((r) => r.status === "no_match");
+      const noChanges = results.filter((r) => r.status === "no_changes");
+      const errors = results.filter((r) => r.status === "error");
       toast.success(`Import klar: ${updated.length} uppdaterade, ${noChanges.length} redan aktuella, ${noMatch.length} utan matchning${errors.length ? `, ${errors.length} fel` : ""}`);
       fetchData();
     } catch (err: any) {

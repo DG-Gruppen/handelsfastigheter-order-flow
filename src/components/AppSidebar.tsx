@@ -17,6 +17,7 @@ import shfLogo from "@/assets/shf-logo.png";
 import NotificationBell from "@/components/NotificationBell";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
+import { STORAGE_KEYS } from "@/lib/constants";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
   { label: "Information", slugs: ["nyheter", "strategy", "kunskapsbanken", "documents"] },
@@ -49,14 +50,22 @@ export default function AppSidebar() {
 
   // Collapsible groups state – persisted in localStorage
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem("shf-sidebar-collapsed");
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
   // Group order state – persisted in localStorage
   const [groupOrder, setGroupOrder] = useState<string[]>(() => {
-    const saved = localStorage.getItem("shf-sidebar-order");
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SIDEBAR_ORDER);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // Ignore corrupted data and fall through to default
+    }
     return GROUP_CONFIG.map((g) => g.label || "__home__");
   });
 
@@ -64,11 +73,11 @@ export default function AppSidebar() {
   const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem("shf-sidebar-collapsed", JSON.stringify(collapsedGroups));
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_COLLAPSED, JSON.stringify(collapsedGroups));
   }, [collapsedGroups]);
 
   useEffect(() => {
-    localStorage.setItem("shf-sidebar-order", JSON.stringify(groupOrder));
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_ORDER, JSON.stringify(groupOrder));
   }, [groupOrder]);
 
   const toggleGroup = (label: string) => {

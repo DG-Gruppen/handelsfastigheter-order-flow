@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
+import { APPROVAL_SETTINGS } from "@/lib/constants";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,8 +65,8 @@ export default function NewOrder() {
   const isStaff = myProfile?.is_staff === true;
   const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
   const needsCeoApprovalCheck = isManagerOrAdmin && reportsDirectlyToCeo && (
-    (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
-    (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+    (isManager && approvalSettings[APPROVAL_SETTINGS.MANAGERS_TO_CEO] === "true") ||
+    (isStaff && approvalSettings[APPROVAL_SETTINGS.STAFF_TO_CEO] === "true")
   );
   const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
 
@@ -80,7 +81,7 @@ export default function NewOrder() {
         supabase.from("profiles").select("id, department, is_staff, manager_id").eq("user_id", user?.id ?? "").single(),
         supabase.from("category_departments").select("category_id, department_id"),
         supabase.from("order_type_departments").select("order_type_id, department_id"),
-        supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
+        supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", [APPROVAL_SETTINGS.MANAGERS_TO_CEO, APPROVAL_SETTINGS.STAFF_TO_CEO]),
       ]);
 
       const allCats = (catsRes.data as Category[]) ?? [];
