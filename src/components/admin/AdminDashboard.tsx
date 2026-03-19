@@ -197,7 +197,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <div className="mt-4 flex h-2.5 rounded-full overflow-hidden bg-secondary">
               {stats.ordersDelivered > 0 && (
                 <div
-                  className="bg-primary transition-all"
+                  className="bg-primary transition-all rounded-l-full"
                   style={{ width: `${(stats.ordersDelivered / stats.ordersTotal) * 100}%` }}
                   title={`Levererade: ${stats.ordersDelivered}`}
                 />
