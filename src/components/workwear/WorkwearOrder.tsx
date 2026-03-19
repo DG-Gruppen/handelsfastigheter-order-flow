@@ -124,12 +124,14 @@ export default function WorkwearOrder() {
   };
 
   const addToCart = (product: WorkwearProduct) => {
-    const sel = selections[product.id];
-    if (!sel?.color || !sel?.size) {
-      toast.error("Välj färg och storlek först");
+    const sel = selections[product.id] || { color: "", size: "" };
+    // Auto-select color for single-variant products
+    const color = product.variants.length === 1 ? product.variants[0].color : sel.color;
+    if (!color || !sel.size) {
+      toast.error("Välj storlek först");
       return;
     }
-    const variant = product.variants.find((v) => v.color === sel.color);
+    const variant = product.variants.find((v) => v.color === color);
     if (!variant) return;
 
     const existing = cart.findIndex(
