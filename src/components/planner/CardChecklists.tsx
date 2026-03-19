@@ -252,10 +252,6 @@ export default function CardChecklists({ cardId, onRegisterAdd }: Props) {
         );
       })}
 
-      <Button variant="outline" size="sm" onClick={addChecklist} className="w-full">
-        <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
-        Lägg till checklista
-      </Button>
     </div>
   );
 }
