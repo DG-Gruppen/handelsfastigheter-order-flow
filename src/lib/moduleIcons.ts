@@ -2,7 +2,7 @@ import {
   Home, Plus, UserPlus, History, Headphones, Building2, Settings,
   Target, Newspaper, Building, Users, FolderOpen, BookOpen,
   Heart, BarChart3, User, LayoutGrid, Monitor, Package,
-  Palette, Calculator, Leaf, Shield, Kanban,
+  Palette, Calculator, Leaf, Shield, Kanban, KeyRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -31,6 +31,7 @@ const moduleIconMap: Record<string, LucideIcon> = {
   leaf: Leaf,
   shield: Shield,
   kanban: Kanban,
+  "key-round": KeyRound,
 };
 
 export function getModuleIcon(name: string): LucideIcon {

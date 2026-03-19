@@ -28,6 +28,7 @@ const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const MySHF = lazy(() => import("./pages/MySHF"));
 const Planner = lazy(() => import("./pages/Planner"));
 const Tools = lazy(() => import("./pages/Tools"));
+const Passwords = lazy(() => import("./pages/Passwords"));
 const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -78,6 +79,7 @@ const App = () => (
                       <Route path="/mitt-shf" element={<MySHF />} />
                       <Route path="/planner" element={<Planner />} />
                       <Route path="/verktyg" element={<Tools />} />
+                      <Route path="/losenord" element={<Passwords />} />
                       <Route path="/kulturen" element={<Culture />} />
                       <Route path="/nyheter" element={<News />} />
                       <Route path="/profile" element={<Profile />} />
