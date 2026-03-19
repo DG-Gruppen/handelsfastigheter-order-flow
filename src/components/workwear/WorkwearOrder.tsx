@@ -236,7 +236,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
       await supabase.functions.invoke("send-email", {
         body: {
           to: recipientEmail,
-          subject: `[SHF] Beställning arbetskläder – ${profile?.full_name || "Anställd"}`,
+          subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
           html,
           reply_to: profile?.email || user.email,
         },
