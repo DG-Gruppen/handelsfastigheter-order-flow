@@ -331,7 +331,7 @@ export default function CardDetailDialog({
               </div>
             )}
 
-            <SidebarButton icon={CheckSquare} label="Checklista" onClick={() => {/* handled inside CardChecklists */}} />
+            <SidebarButton icon={CheckSquare} label="Checklista" onClick={() => addChecklistRef.current?.()} />
 
             <SidebarButton icon={Calendar} label="Förfallodatum" active={showDatePicker} onClick={() => setShowDatePicker(v => !v)} />
             {showDatePicker && (

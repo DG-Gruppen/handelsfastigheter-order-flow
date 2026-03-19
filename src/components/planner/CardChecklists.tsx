@@ -71,14 +71,6 @@ export default function CardChecklists({ cardId, onRegisterAdd }: Props) {
     setLoading(false);
   }, [cardId]);
 
-  useEffect(() => {
-    fetchChecklists();
-  }, [fetchChecklists]);
-
-  useEffect(() => {
-    onRegisterAdd?.(() => addChecklist());
-  }, [onRegisterAdd, addChecklist]);
-
   const addChecklist = useCallback(async () => {
     const { error } = await supabase.from("planner_checklists").insert({
       card_id: cardId,
@@ -88,6 +80,14 @@ export default function CardChecklists({ cardId, onRegisterAdd }: Props) {
     if (error) { toast.error("Kunde inte skapa checklista"); return; }
     fetchChecklists();
   }, [cardId, checklists.length, fetchChecklists]);
+
+  useEffect(() => {
+    fetchChecklists();
+  }, [fetchChecklists]);
+
+  useEffect(() => {
+    onRegisterAdd?.(() => addChecklist());
+  }, [onRegisterAdd, addChecklist]);
 
   const deleteChecklist = async (id: string) => {
     await supabase.from("planner_checklists").delete().eq("id", id);
