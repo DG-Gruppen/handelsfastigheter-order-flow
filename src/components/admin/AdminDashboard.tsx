@@ -231,7 +231,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* KB overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button onClick={() => onNavigate("knowledge")} className="text-left group">
-          <Card className="glass-card h-full transition-all hover:shadow-md group-hover:border-violet-500/20">
+          <Card className="glass-card h-full transition-all hover:shadow-md group-hover:border-accent/20">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <BookOpen className="h-4.5 w-4.5 text-accent" />
