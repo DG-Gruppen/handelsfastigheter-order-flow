@@ -1,5 +1,15 @@
 import { Play, Clock, Eye } from "lucide-react";
 
+function detectVideoSource(url: string): { label: string; color: string } {
+  if (/youtu\.?be/i.test(url)) return { label: "YouTube", color: "bg-destructive/90 text-destructive-foreground" };
+  if (/vimeo\.com/i.test(url)) return { label: "Vimeo", color: "bg-accent/90 text-accent-foreground" };
+  if (/microsoft\.com|microsoftstream\.com/i.test(url)) return { label: "Stream", color: "bg-primary/90 text-primary-foreground" };
+  if (/sharepoint\.com/i.test(url)) return { label: "SharePoint", color: "bg-primary/90 text-primary-foreground" };
+  if (/drive\.google\.com/i.test(url)) return { label: "Drive", color: "bg-secondary text-secondary-foreground" };
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return { label: "Video", color: "bg-muted text-muted-foreground" };
+  return { label: "Länk", color: "bg-muted text-muted-foreground" };
+}
+
 interface KbVideo {
   id: string;
   title: string;
@@ -42,6 +52,7 @@ export default function KbVideoCard({ video, categoryName, categoryColor, onClic
   const ytId = extractYouTubeId(video.video_url);
   const thumb = video.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null);
   const durationMin = video.duration_seconds ? Math.ceil(video.duration_seconds / 60) : null;
+  const source = detectVideoSource(video.video_url);
 
   return (
     <div
@@ -65,6 +76,9 @@ export default function KbVideoCard({ video, categoryName, categoryColor, onClic
             {formatDuration(video.duration_seconds)}
           </span>
         )}
+        <span className={`absolute bottom-2 left-2 text-[10px] font-semibold px-1.5 py-0.5 rounded backdrop-blur-sm ${source.color}`}>
+          {source.label}
+        </span>
         {categoryName && (
           <span className={`absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm ${
             categoryColor ? `${categoryColor.bg} ${categoryColor.text}` : "bg-primary/20 text-primary-foreground"
