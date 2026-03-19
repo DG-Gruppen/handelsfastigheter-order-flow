@@ -199,7 +199,7 @@ export default function WorkwearOrder() {
 <body style="margin:0;padding:0;background:#f4f5f7;font-family:'Roboto','Segoe UI',Arial,sans-serif;">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
 <div style="background:linear-gradient(135deg,#2e4a62 0%,#3a5f7c 100%);padding:28px 32px;border-radius:12px 12px 0 0;">
-<h1 style="margin:0;font-size:20px;font-weight:600;color:#fff;">👔 Beställning av arbetskläder</h1>
+<h1 style="margin:0;font-size:20px;font-weight:600;color:#fff;">👔 Beställning av profilkläder</h1>
 </div>
 <div style="background:#fff;padding:32px;border:1px solid #dde1e6;border-top:none;border-radius:0 0 12px 12px;">
 <p style="margin:0 0 16px;font-size:15px;color:#3a4553;">
