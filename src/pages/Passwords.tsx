@@ -132,10 +132,6 @@ export default function Passwords() {
     );
   }, [passwords, search]);
 
-  const groupMap = useMemo(() => new Map(groups.map(g => [g.id, g])), [groups]);
-
-  const getGroupsForPassword = (pwId: string) =>
-    passwordGroups.filter(pg => pg.password_id === pwId).map(pg => groupMap.get(pg.group_id)).filter(Boolean) as Group[];
 
   // --- Access logging ---
   const logAccess = async (passwordId: string, action: string) => {
