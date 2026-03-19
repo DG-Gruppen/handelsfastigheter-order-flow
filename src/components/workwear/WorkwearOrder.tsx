@@ -336,6 +336,18 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                           </SelectContent>
                         </Select>
 
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateSelection(product.id, "qty", Math.max(1, (sel.qty || 1) - 1))}>
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <Badge variant="secondary" className="min-w-[24px] justify-center text-xs">
+                            {sel.qty || 1}
+                          </Badge>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateSelection(product.id, "qty", (sel.qty || 1) + 1)}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+
                         <Button
                           size="sm"
                           variant="outline"
