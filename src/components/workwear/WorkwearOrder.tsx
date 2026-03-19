@@ -498,7 +498,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
               rows={2}
             />
 
-            <Button onClick={handleSubmit} disabled={submitting} className="w-full">
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-md">
               <Send className="w-4 h-4 mr-2" />
               {submitting ? "Skickar..." : "Skicka beställning"}
             </Button>
