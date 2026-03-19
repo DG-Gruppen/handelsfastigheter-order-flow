@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   KeyRound, Plus, Pencil, Trash2, Eye, EyeOff, Copy, ExternalLink, Search,
-  ClipboardList,
+  ClipboardList, RefreshCw,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -67,6 +67,29 @@ const EMPTY_FORM = {
   url: "",
   notes: "",
 };
+
+function generatePassword(length = 20): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghjkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*?";
+  const all = upper + lower + digits + symbols;
+  const arr = new Uint32Array(length);
+  crypto.getRandomValues(arr);
+  const required = [
+    upper[arr[0] % upper.length],
+    lower[arr[1] % lower.length],
+    digits[arr[2] % digits.length],
+    symbols[arr[3] % symbols.length],
+  ];
+  const rest = Array.from({ length: length - 4 }, (_, i) => all[arr[i + 4] % all.length]);
+  const result = [...required, ...rest];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = arr[i] % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result.join("");
+}
 
 const ACTION_LABELS: Record<string, string> = {
   viewed: "visade lösenord",
@@ -410,7 +433,19 @@ export default function Passwords() {
               </div>
               <div>
                 <Label>Lösenord</Label>
-                <Input value={form.password_value} onChange={e => setForm(f => ({ ...f, password_value: e.target.value }))} placeholder="••••••••" />
+                <div className="flex gap-1.5">
+                  <Input value={form.password_value} onChange={e => setForm(f => ({ ...f, password_value: e.target.value }))} placeholder="••••••••" className="flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    title="Generera lösenord"
+                    onClick={() => setForm(f => ({ ...f, password_value: generatePassword() }))}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
             <div>
