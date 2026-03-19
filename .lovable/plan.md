@@ -1,42 +1,50 @@
 
 
-## Profilkläder Admin – Beställningslista & Plocklista
+## Optimering av Admin-sidan
 
 ### Sammanfattning
-Uppgradera admin-panelen med Excel-liknande sortering på alla tabeller, en ny "Beställningslista" (underlag till leverantör) och en ny "Plocklista" (för utleverans per region/person). Båda ska kunna exporteras.
+Tre fokusområden: (1) lazy-loada alla admin-sektioner for bättre prestanda, (2) flytta felplacerade komponenter till rätt mapp, (3) ersätta hårdkodade färger i Dashboard med semantiska tokens.
 
-### Vad som byggs
+---
 
-**1. Klickbar sortering på alla kolumner (alla flikar)**
-Varje kolumnrubrik blir klickbar med sorteringspil (▲/▼). Klick växlar asc → desc → ingen sortering. Gäller alla fem flikar (befintliga + nya).
+### 1. Lazy-loada alla admin-sektioner
+**Problem:** Idag laddas 12 av 13 sektioner direkt vid sidladdning trots att bara en visas åt gången. Bara `WorkwearAdminPanel` är lazy-loadad.
 
-**2. Ny flik: "Beställningslista" (leverantörsunderlag)**
-Tabell med kolumnerna:
-- Plagg | Färg | Storlek | Antal | Logga (brodyr/tryck, svart/vit)
+**Åtgärd i `src/pages/Admin.tsx`:**
+- Ersätt alla direktimporter av sektionskomponenter med `lazy()`:
+  - `CategoriesManager`, `OrderTypesManager`, `SystemsManager`
+  - `KbAdminPanel`, `NewsAdminPanel`, `ToolsManager`
+  - `UsersContent`, `GroupsManager`, `ModulePermissionsManager`
+  - `SettingsContent`, `ITContent`, `DatabaseBackup`
+- Wrappa `renderSection()` med en gemensam `<Suspense>` med spinner-fallback
+- Behåll `AdminDashboard` som eager import (visas som startsida)
+- Behåll `adminGroups`-konfigurationen och ikoner som eager (liten storlek)
 
-Logga-info extraheras ur befintlig `colorLabel` (texten inom parentes, t.ex. "tryck svart", "brodyr vit").
+### 2. Flytta komponenter till rätt mapp
+**Problem:** `CategoriesManager`, `OrderTypesManager`, `SystemsManager` ligger i `src/components/` istället för `src/components/admin/`.
 
-Subtotalrader per plagg (totalt antal oavsett färg/storlek). Möjlighet att sortera på valfri kolumn, inklusive logga-kolumnen (så man kan gruppera alla "brodyr svart" etc).
+**Åtgärd:**
+- Flytta dessa tre filer till `src/components/admin/`
+- Uppdatera importvägar i `Admin.tsx` (de nya lazy-importerna)
 
-**3. Ny flik: "Plocklista" (leveransunderlag)**
-Tabell med kolumnerna:
-- Kontor (region) | Namn | Plagg | Färg | Storlek | Antal
+### 3. Semantiska färger i AdminDashboard
+**Problem:** `AdminDashboard.tsx` använder hårdkodade färger som `text-sky-500`, `bg-amber-500/10`, `text-violet-500` istället för projektets design-tokens.
 
-En rad per unik kombination (anställd + plagg + storlek). Sorterbar på alla kolumner. Regionfiltret som redan finns gäller även här.
+**Åtgärd i `src/components/admin/AdminDashboard.tsx`:**
+- Ersätt med semantiska tokens: `text-primary`, `text-warning`, `text-accent`, `text-destructive` etc.
+- Matcha färgschemat som redan används i admin-sidebaren
 
-**4. Export-knappar**
-Varje flik får en "Exportera CSV"-knapp som laddar ner den aktuella (filtrerade + sorterade) vyn som CSV-fil. Detta ger ett underlag man kan skicka till leverantören eller skriva ut som plocklista.
+---
 
 ### Tekniska detaljer
 
-**Fil som ändras:** `src/components/workwear/WorkwearAdminPanel.tsx`
+**Filer som ändras:**
+- `src/pages/Admin.tsx` — alla sektionsimporter blir `lazy()`
+- `src/components/admin/AdminDashboard.tsx` — färgbyte
+- `src/components/admin/CategoriesManager.tsx` — flyttad fil
+- `src/components/admin/OrderTypesManager.tsx` — flyttad fil  
+- `src/components/admin/SystemsManager.tsx` — flyttad fil
 
-- Ny `SortableHeader`-hjälpkomponent (inline) som renderar `<TableHead>` med klick-handler och sorteringspil.
-- Sorteringsstate per flik: `{ key: string, dir: 'asc' | 'desc' } | null`.
-- `parseLogoInfo(colorLabel)` – extraherar text inom parentes ur colorLabel.
-- Beställningslistan: Utökar befintlig `itemStats` med `logo`-fält.
-- Plocklistan: Ny `useMemo` som plattar ut orders till rader per person+plagg+storlek.
-- CSV-export: En `downloadCsv(rows, headers, filename)` hjälpfunktion som genererar och laddar ner CSV.
-
-Inga databasändringar behövs – all data finns redan i `workwear_orders.items`.
+**Ej i scope (låg risk/nytta):**
+- Att bryta ner `KbAdminPanel` (504 rader) och `OrderTypesManager` (500 rader) i delkomponenter — dessa fungerar bra som de är och lazy-loading löser prestandaproblemet
 
