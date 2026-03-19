@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download } from "lucide-react";
+import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download, StickyNote } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { SEASON_LABELS, ALL_SEASONS, type Season } from "./workwearProducts";
@@ -27,6 +27,7 @@ interface OrderRow {
   notes: string | null;
   status: string;
   created_at: string;
+  season: string | null;
 }
 
 interface ProfileRow {
@@ -37,12 +38,14 @@ interface ProfileRow {
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Väntande",
+  submitted: "Inlämnad",
   confirmed: "Bekräftad",
   delivered: "Levererad",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   pending: "secondary",
+  submitted: "secondary",
   confirmed: "default",
   delivered: "outline",
 };
@@ -53,6 +56,7 @@ export default function WorkwearAdminPanel() {
   const [activeSeason, setActiveSeason] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
   const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterSeason, setFilterSeason] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
   // Sort states per tab
@@ -72,12 +76,24 @@ export default function WorkwearAdminPanel() {
       ]);
       setOrders((ordersRes.data as any) || []);
       setProfiles(profilesRes.data || []);
-      setActiveSeason(seasonRes.data?.setting_value || "");
+      const season = seasonRes.data?.setting_value || "";
+      setActiveSeason(season);
+      if (season) setFilterSeason(season);
       setDeadline(deadlineRes.data?.setting_value || "");
       setLoading(false);
     };
     load();
   }, []);
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("workwear_orders" as any)
+      .update({ status: newStatus } as any)
+      .eq("id", orderId);
+    if (!error) {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+    }
+  };
 
   const profileMap = useMemo(() => {
     const m = new Map<string, ProfileRow>();
@@ -92,9 +108,19 @@ export default function WorkwearAdminPanel() {
   }, [profiles]);
 
   const filteredOrders = useMemo(() => {
-    if (filterDept === "all") return orders;
-    return orders.filter((o) => profileMap.get(o.user_id)?.department === filterDept);
-  }, [orders, filterDept, profileMap]);
+    let result = orders;
+    if (filterSeason !== "all") {
+      result = result.filter((o) => {
+        const orderSeason = (o as any).season;
+        // Null-season orders (before season tracking) count toward the active season
+        return orderSeason === filterSeason || (!orderSeason && filterSeason === activeSeason);
+      });
+    }
+    if (filterDept !== "all") {
+      result = result.filter((o) => profileMap.get(o.user_id)?.department === filterDept);
+    }
+    return result;
+  }, [orders, filterSeason, filterDept, profileMap, activeSeason]);
 
   // ── Item stats (Sammanställning + Beställningslista) ──
   const itemStats = useMemo(() => {
@@ -118,13 +144,12 @@ export default function WorkwearAdminPanel() {
         }
       });
     });
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name) || a.color.localeCompare(b.color) || a.size.localeCompare(b.size));
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "sv") || a.color.localeCompare(b.color, "sv") || a.size.localeCompare(b.size, "sv"));
   }, [filteredOrders]);
 
   // Supplier list with subtotals
   const supplierRows = useMemo(() => {
     const sorted = applySortString(itemStats, sortSupplier);
-    // Group by product name for subtotals
     const groups = new Map<string, typeof itemStats>();
     sorted.forEach((item) => {
       const arr = groups.get(item.name) || [];
@@ -136,7 +161,7 @@ export default function WorkwearAdminPanel() {
 
   // ── Pick list ──
   const pickRows = useMemo(() => {
-    const map = new Map<string, { dept: string; name: string; product: string; color: string; size: string; qty: number }>();
+    const map = new Map<string, { user_id: string; dept: string; name: string; product: string; color: string; size: string; qty: number }>();
     filteredOrders.forEach((o) => {
       const p = profileMap.get(o.user_id);
       const items = Array.isArray(o.items) ? o.items : [];
@@ -148,6 +173,7 @@ export default function WorkwearAdminPanel() {
           existing.qty += item.quantity || 1;
         } else {
           map.set(key, {
+            user_id: o.user_id,
             dept: p?.department || "Okänd",
             name: p?.full_name || "Okänd",
             product: item.productName || item.productId,
@@ -158,13 +184,36 @@ export default function WorkwearAdminPanel() {
         }
       });
     });
-    return applySortString(Array.from(map.values()), sortPick);
+    const rows = Array.from(map.values());
+    if (sortPick) return applySortString(rows, sortPick);
+    // Default: sort by dept, then name, then product
+    return rows.sort((a, b) => {
+      const d = a.dept.localeCompare(b.dept, "sv");
+      if (d !== 0) return d;
+      const n = a.name.localeCompare(b.name, "sv");
+      if (n !== 0) return n;
+      return a.product.localeCompare(b.product, "sv");
+    });
   }, [filteredOrders, profileMap, sortPick]);
+
+  // ── Notes per person (for plocklista) ──
+  const personNotes = useMemo(() => {
+    const map = new Map<string, string[]>();
+    filteredOrders.forEach((o) => {
+      const note = o.notes?.trim();
+      if (note) {
+        const existing = map.get(o.user_id) || [];
+        existing.push(note);
+        map.set(o.user_id, existing);
+      }
+    });
+    return map;
+  }, [filteredOrders]);
 
   // ── Per-department breakdown ──
   const deptStats = useMemo(() => {
     const map = new Map<string, { dept: string; count: number; items: number }>();
-    orders.forEach((o) => {
+    filteredOrders.forEach((o) => {
       const dept = profileMap.get(o.user_id)?.department || "Okänd";
       const existing = map.get(dept) || { dept, count: 0, items: 0 };
       existing.count += 1;
@@ -173,7 +222,7 @@ export default function WorkwearAdminPanel() {
       map.set(dept, existing);
     });
     return applySortString(Array.from(map.values()), sortRegions);
-  }, [orders, profileMap, sortRegions]);
+  }, [filteredOrders, profileMap, sortRegions]);
 
   const totalItems = useMemo(() => itemStats.reduce((s, i) => s + i.qty, 0), [itemStats]);
 
@@ -183,12 +232,22 @@ export default function WorkwearAdminPanel() {
       const p = profileMap.get(order.user_id);
       const items = Array.isArray(order.items) ? order.items : [];
       const totalQty = items.reduce((s: number, i: any) => s + (i.quantity || 1), 0);
-      return { ...order, fullName: p?.full_name || "Okänd", dept: p?.department || "–", totalQty, itemNames: items.map((i: any) => i.productName).join(", ") };
+      return {
+        ...order,
+        fullName: p?.full_name || "Okänd",
+        dept: p?.department || "–",
+        totalQty,
+        itemNames: items.map((i: any) => i.productName).join(", "),
+      };
     });
     return applySortString(rows, sortOrders);
   }, [filteredOrders, profileMap, sortOrders]);
 
   const sortedItemStats = useMemo(() => applySortString(itemStats, sortItems), [itemStats, sortItems]);
+
+  // KPI derived from filteredOrders
+  const uniqueOrderers = useMemo(() => new Set(filteredOrders.map((o) => o.user_id)).size, [filteredOrders]);
+  const uniqueDepts = useMemo(() => new Set(filteredOrders.map((o) => profileMap.get(o.user_id)?.department).filter(Boolean)).size, [filteredOrders, profileMap]);
 
   if (loading) {
     return (
@@ -221,10 +280,10 @@ export default function WorkwearAdminPanel() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Beställningar", value: orders.length, icon: TrendingUp, color: "text-primary" },
-          { label: "Beställare", value: new Set(orders.map((o) => o.user_id)).size, icon: Users, color: "text-accent" },
+          { label: "Beställningar", value: filteredOrders.length, icon: TrendingUp, color: "text-primary" },
+          { label: "Beställare", value: uniqueOrderers, icon: Users, color: "text-accent" },
           { label: "Totalt plagg", value: totalItems, icon: Package, color: "text-warning" },
-          { label: "Regioner", value: departments.length, icon: MapPin, color: "text-primary" },
+          { label: "Regioner", value: uniqueDepts, icon: MapPin, color: "text-primary" },
         ].map((kpi) => (
           <Card key={kpi.label} className="glass-card">
             <CardContent className="p-4 flex items-center gap-3">
@@ -240,20 +299,36 @@ export default function WorkwearAdminPanel() {
         ))}
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Filtrera region:</span>
-        <Select value={filterDept} onValueChange={setFilterDept}>
-          <SelectTrigger className="w-[200px] h-9 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">Alla regioner</SelectItem>
-            {departments.map((d) => (
-              <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Säsong:</span>
+          <Select value={filterSeason} onValueChange={setFilterSeason}>
+            <SelectTrigger className="w-[160px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">Alla säsonger</SelectItem>
+              {ALL_SEASONS.map((s) => (
+                <SelectItem key={s} value={s} className="text-xs">{SEASON_LABELS[s as Season]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Region:</span>
+          <Select value={filterDept} onValueChange={setFilterDept}>
+            <SelectTrigger className="w-[200px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">Alla regioner</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Tabs defaultValue="items">
@@ -320,7 +395,7 @@ export default function WorkwearAdminPanel() {
               <CardTitle className="text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
               <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
                 ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
-                itemStats.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
+                supplierRows.sorted.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
                 "beställningslista.csv"
               )}>
                 <Download className="w-3.5 h-3.5" /> CSV
@@ -399,12 +474,28 @@ export default function WorkwearAdminPanel() {
         <TabsContent value="pick" className="mt-4">
           <Card className="glass-card">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Plocklista – Leveransunderlag ({pickRows.length} rader)</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
-                ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
-                pickRows.map((r) => [r.dept, r.name, r.product, r.color, r.size, String(r.qty)]),
-                "plocklista.csv"
-              )}>
+              <CardTitle className="text-sm font-medium">
+                Plocklista – Leveransunderlag ({new Set(pickRows.map((r) => r.user_id)).size} personer · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
+              </CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => {
+                const csvRows: string[][] = [];
+                let currentUserId = "";
+                pickRows.forEach((r) => {
+                  if (r.user_id !== currentUserId) {
+                    currentUserId = r.user_id;
+                    const notes = personNotes.get(r.user_id);
+                    if (notes?.length) {
+                      csvRows.push([r.dept, r.name, "📝 " + notes.join("; "), "", "", ""]);
+                    }
+                  }
+                  csvRows.push([r.dept, r.name, r.product, r.color, r.size, String(r.qty)]);
+                });
+                downloadCsv(
+                  ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
+                  csvRows,
+                  "plocklista.csv"
+                );
+              }}>
                 <Download className="w-3.5 h-3.5" /> CSV
               </Button>
             </CardHeader>
@@ -425,16 +516,67 @@ export default function WorkwearAdminPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pickRows.map((row, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="text-sm">{row.dept}</TableCell>
-                          <TableCell className="font-medium text-sm">{row.name}</TableCell>
-                          <TableCell className="text-sm">{row.product}</TableCell>
-                          <TableCell className="text-sm">{row.color}</TableCell>
-                          <TableCell className="text-sm">{row.size}</TableCell>
-                          <TableCell className="text-right font-semibold text-sm">{row.qty}</TableCell>
-                        </TableRow>
-                      ))}
+                      {(() => {
+                        const rows: React.ReactNode[] = [];
+                        let currentUserId = "";
+                        let personQty = 0;
+
+                        const flushPerson = (userId: string) => {
+                          if (userId) {
+                            rows.push(
+                              <TableRow key={`person-total-${userId}`} className="bg-primary/5">
+                                <TableCell colSpan={5} className="text-xs font-semibold text-muted-foreground italic pl-4">
+                                  Totalt
+                                </TableCell>
+                                <TableCell className="text-right text-xs font-bold text-primary">{personQty} plagg</TableCell>
+                              </TableRow>
+                            );
+                          }
+                        };
+
+                        pickRows.forEach((row, i) => {
+                          if (row.user_id !== currentUserId) {
+                            flushPerson(currentUserId);
+                            currentUserId = row.user_id;
+                            personQty = 0;
+
+                            // Person header row
+                            const notes = personNotes.get(row.user_id);
+                            rows.push(
+                              <TableRow key={`person-header-${row.user_id}`} className="bg-secondary/60 border-t-2 border-border">
+                                <TableCell className="py-2 text-xs text-muted-foreground font-medium">{row.dept}</TableCell>
+                                <TableCell colSpan={4} className="py-2">
+                                  <span className="font-semibold text-sm text-foreground">{row.name}</span>
+                                  {notes?.length ? (
+                                    <span className="ml-3 text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                      <StickyNote className="w-3 h-3 inline" />
+                                      {notes.join(" · ")}
+                                    </span>
+                                  ) : null}
+                                </TableCell>
+                                <TableCell />
+                              </TableRow>
+                            );
+                          }
+
+                          personQty += row.qty;
+
+                          rows.push(
+                            <TableRow key={i} className="hover:bg-muted/30">
+                              <TableCell className="text-xs text-muted-foreground pl-4" />
+                              <TableCell className="text-xs text-muted-foreground pl-4" />
+                              <TableCell className="font-medium text-sm">{row.product}</TableCell>
+                              <TableCell className="text-sm">{row.color}</TableCell>
+                              <TableCell className="text-sm">{row.size}</TableCell>
+                              <TableCell className="text-right font-semibold text-sm">{row.qty}</TableCell>
+                            </TableRow>
+                          );
+                        });
+
+                        flushPerson(currentUserId);
+
+                        return rows;
+                      })()}
                     </TableBody>
                   </Table>
                 </div>
@@ -489,8 +631,16 @@ export default function WorkwearAdminPanel() {
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Alla beställningar ({filteredOrders.length})</CardTitle>
               <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
-                ["Namn", "Region", "Plagg", "Antal", "Datum", "Status"],
-                sortedOrders.map((o) => [o.fullName, o.dept, o.itemNames, String(o.totalQty), format(parseISO(o.created_at), "yyyy-MM-dd"), STATUS_LABEL[o.status] || o.status]),
+                ["Namn", "Region", "Plagg", "Antal", "Anteckning", "Datum", "Status"],
+                sortedOrders.map((o) => [
+                  o.fullName,
+                  o.dept,
+                  o.itemNames,
+                  String(o.totalQty),
+                  o.notes || "",
+                  format(parseISO(o.created_at), "yyyy-MM-dd"),
+                  STATUS_LABEL[o.status] || o.status,
+                ]),
                 "beställningar.csv"
               )}>
                 <Download className="w-3.5 h-3.5" /> CSV
@@ -508,13 +658,20 @@ export default function WorkwearAdminPanel() {
                         <SortableHeader label="Region" sortKey="dept" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <SortableHeader label="Plagg" sortKey="totalQty" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <SortableHeader label="Datum" sortKey="created_at" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
-                        <SortableHeader label="Status" sortKey="status" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <TableHead className="min-w-[140px]">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sortedOrders.map((order) => (
                         <TableRow key={order.id}>
-                          <TableCell className="font-medium text-sm">{order.fullName}</TableCell>
+                          <TableCell className="font-medium text-sm">
+                            {order.fullName}
+                            {order.notes && (
+                              <span className="block text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <StickyNote className="w-3 h-3 inline" /> {order.notes}
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{order.dept}</TableCell>
                           <TableCell className="text-sm">
                             {order.totalQty} plagg
@@ -524,9 +681,20 @@ export default function WorkwearAdminPanel() {
                             {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
-                              {STATUS_LABEL[order.status] || order.status}
-                            </Badge>
+                            <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
+                              <SelectTrigger className="h-7 text-xs w-[130px]">
+                                <SelectValue>
+                                  <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
+                                    {STATUS_LABEL[order.status] || order.status}
+                                  </Badge>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending" className="text-xs">Väntande</SelectItem>
+                                <SelectItem value="confirmed" className="text-xs">Bekräftad</SelectItem>
+                                <SelectItem value="delivered" className="text-xs">Levererad</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                         </TableRow>
                       ))}
