@@ -363,10 +363,10 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                     return (
                       <div
                         key={product.id}
-                        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-secondary/50"
+                        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-card border border-border/60 shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{product.name}</p>
+                          <p className="text-sm font-semibold text-foreground">{product.name}</p>
                           <div className="flex items-center gap-1 mt-1">
                             {product.variants.map((v) => (
                               <a
