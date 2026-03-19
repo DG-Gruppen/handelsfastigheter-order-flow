@@ -199,11 +199,11 @@ export default function WorkwearOrder() {
 <body style="margin:0;padding:0;background:#f4f5f7;font-family:'Roboto','Segoe UI',Arial,sans-serif;">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
 <div style="background:linear-gradient(135deg,#2e4a62 0%,#3a5f7c 100%);padding:28px 32px;border-radius:12px 12px 0 0;">
-<h1 style="margin:0;font-size:20px;font-weight:600;color:#fff;">👔 Beställning av arbetskläder</h1>
+<h1 style="margin:0;font-size:20px;font-weight:600;color:#fff;">👔 Beställning av profilkläder</h1>
 </div>
 <div style="background:#fff;padding:32px;border:1px solid #dde1e6;border-top:none;border-radius:0 0 12px 12px;">
 <p style="margin:0 0 16px;font-size:15px;color:#3a4553;">
-<strong>${profile?.full_name || "Anställd"}</strong> har beställt arbetskläder:
+<strong>${profile?.full_name || "Anställd"}</strong> har beställt profilkläder:
 </p>
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:16px 0;border:1px solid #dde1e6;border-radius:8px;overflow:hidden;">
 <tr style="background:#f4f5f7;">
@@ -236,7 +236,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
       await supabase.functions.invoke("send-email", {
         body: {
           to: recipientEmail,
-          subject: `[SHF] Beställning arbetskläder – ${profile?.full_name || "Anställd"}`,
+          subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
           html,
           reply_to: profile?.email || user.email,
         },
@@ -259,7 +259,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
       <CardHeader className="pb-2 px-4 md:px-6">
         <CardTitle className="font-heading text-base flex items-center gap-2">
           <ShoppingBag className="w-5 h-5 text-primary" />
-          Beställ arbetskläder
+          Beställ profilkläder
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">

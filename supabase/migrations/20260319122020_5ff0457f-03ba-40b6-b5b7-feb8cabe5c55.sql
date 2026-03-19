@@ -1,0 +1,1 @@
+UPDATE modules SET name = 'Profilkläder' WHERE slug = 'workwear';
