@@ -55,7 +55,7 @@ const LoginFallback = () => (
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
     <QueryClientProvider client={queryClient}>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-right" />}
       <TooltipProvider>
         <Toaster />
         <Sonner />
