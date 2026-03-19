@@ -23,7 +23,7 @@ import {
   Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear";
 
 interface AdminGroup {
   label: string;
