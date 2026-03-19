@@ -61,8 +61,7 @@ export default function UsersContent() {
       supabase.from("group_members").select("user_id, group_id"),
     ]);
     setProfiles(((profilesData as ProfileWithRoles[]) ?? []).filter(p => !(p as any).is_hidden));
-    // Hide Superadmin group from the UI
-    setGroups(((groupsData as GroupWithRole[]) ?? []).filter(g => g.name !== "Superadmin"));
+    setGroups(((groupsData as GroupWithRole[]) ?? []).filter(g => !(g as any).is_system));
 
     const memberMap: Record<string, string[]> = {};
     (membersData ?? []).forEach((m: any) => {
