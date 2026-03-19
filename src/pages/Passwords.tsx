@@ -88,7 +88,8 @@ const ACTION_LABELS: Record<string, string> = {
 
 export default function Passwords() {
   const { user, roles } = useAuth();
-  const isEditor = roles.includes("admin") || roles.includes("it");
+  const { canEdit } = useModulePermission("losenord");
+  const isEditor = roles.includes("admin") || roles.includes("it") || canEdit;
 
   const [passwords, setPasswords] = useState<SharedPassword[]>([]);
   const [loading, setLoading] = useState(true);
