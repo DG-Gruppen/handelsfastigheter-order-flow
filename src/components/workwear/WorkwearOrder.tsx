@@ -351,9 +351,9 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
           </div>
         ) : (
           <Tabs defaultValue="herr">
-            <TabsList className="w-full">
-              <TabsTrigger value="herr" className="flex-1">Herr</TabsTrigger>
-              <TabsTrigger value="dam" className="flex-1">Dam</TabsTrigger>
+            <TabsList className="w-full bg-primary/5 border border-primary/10">
+              <TabsTrigger value="herr" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Herr</TabsTrigger>
+              <TabsTrigger value="dam" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Dam</TabsTrigger>
             </TabsList>
             {(["herr", "dam"] as const).map((gender) => (
               <TabsContent key={gender} value={gender} className="mt-3">
