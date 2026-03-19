@@ -147,7 +147,6 @@ export default function Passwords() {
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
-    setSelectedGroupIds([]);
     setDialogOpen(true);
   };
 
