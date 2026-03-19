@@ -1,5 +1,15 @@
 import { Play, Clock, Eye } from "lucide-react";
 
+function detectVideoSource(url: string): { label: string; color: string } {
+  if (/youtu\.?be/i.test(url)) return { label: "YouTube", color: "bg-destructive/90 text-destructive-foreground" };
+  if (/vimeo\.com/i.test(url)) return { label: "Vimeo", color: "bg-accent/90 text-accent-foreground" };
+  if (/microsoft\.com|microsoftstream\.com/i.test(url)) return { label: "Stream", color: "bg-primary/90 text-primary-foreground" };
+  if (/sharepoint\.com/i.test(url)) return { label: "SharePoint", color: "bg-primary/90 text-primary-foreground" };
+  if (/drive\.google\.com/i.test(url)) return { label: "Drive", color: "bg-secondary text-secondary-foreground" };
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return { label: "Video", color: "bg-muted text-muted-foreground" };
+  return { label: "Länk", color: "bg-muted text-muted-foreground" };
+}
+
 interface KbVideo {
   id: string;
   title: string;
