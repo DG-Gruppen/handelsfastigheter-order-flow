@@ -211,7 +211,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               )}
               {stats.ordersPending > 0 && (
                 <div
-                  className="bg-amber-500 transition-all"
+                  className="bg-warning transition-all"
                   style={{ width: `${(stats.ordersPending / stats.ordersTotal) * 100}%` }}
                   title={`Väntar: ${stats.ordersPending}`}
                 />
