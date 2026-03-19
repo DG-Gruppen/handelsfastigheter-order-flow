@@ -120,23 +120,30 @@ export default function Admin() {
     }))
     .filter(g => g.items.length > 0);
 
+  const lazyFallback = (
+    <div className="flex justify-center py-12">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+
   const renderSection = (sectionId: AdminSection) => {
+    let content: React.ReactNode = null;
     switch (sectionId) {
-      case "categories": return <CategoriesManager />;
-      case "equipment": return <OrderTypesManager />;
-      case "systems": return <SystemsManager />;
-      case "users": return <UsersContent />;
-      case "settings": return <SettingsContent />;
-      case "it": return <ITContent />;
-      case "knowledge": return <KbAdminPanel onDataChange={() => {}} />;
-      case "news": return <NewsAdminPanel onDataChange={() => {}} />;
-      case "groups": return <GroupsManager />;
-      case "permissions": return <ModulePermissionsManager />;
-      case "tools": return <ToolsManager />;
-      case "backup": return <DatabaseBackup />;
-      case "workwear": return <Suspense fallback={<div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><WorkwearAdminPanel /></Suspense>;
-      default: return null;
+      case "categories": content = <CategoriesManager />; break;
+      case "equipment": content = <OrderTypesManager />; break;
+      case "systems": content = <SystemsManager />; break;
+      case "users": content = <UsersContent />; break;
+      case "settings": content = <SettingsContent />; break;
+      case "it": content = <ITContent />; break;
+      case "knowledge": content = <KbAdminPanel onDataChange={() => {}} />; break;
+      case "news": content = <NewsAdminPanel onDataChange={() => {}} />; break;
+      case "groups": content = <GroupsManager />; break;
+      case "permissions": content = <ModulePermissionsManager />; break;
+      case "tools": content = <ToolsManager />; break;
+      case "backup": content = <DatabaseBackup />; break;
+      case "workwear": content = <WorkwearAdminPanel />; break;
     }
+    return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
 
 

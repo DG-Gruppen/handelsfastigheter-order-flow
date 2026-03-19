@@ -258,7 +258,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         <Card className="glass-card">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
-              <FolderOpen className="h-4.5 w-4.5 text-emerald-500" />
+              <FolderOpen className="h-4.5 w-4.5 text-accent" />
               <h3 className="text-sm font-semibold text-foreground">Dokumentarkiv</h3>
             </div>
             <div className="flex gap-6">
