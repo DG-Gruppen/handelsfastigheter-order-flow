@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   Bell, FileText, BookOpen, Video, ShoppingCart, CheckCircle2,
   XCircle, Package, Truck, Info, Archive, ChevronDown, ChevronUp,
+  UserCheck, MessageSquare,
 } from "lucide-react";
 import {
   Popover,
