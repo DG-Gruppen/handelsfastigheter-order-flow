@@ -269,7 +269,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
             <TabsContent key={gender} value={gender} className="mt-3">
               <div className="grid gap-3">
                 {PRODUCTS.filter((p) => p.gender === gender).map((product) => {
-                  const sel = selections[product.id] || { color: "", size: "" };
+                  const sel = selections[product.id] || { color: "", size: "", qty: 1 };
                   return (
                     <div
                       key={product.id}
