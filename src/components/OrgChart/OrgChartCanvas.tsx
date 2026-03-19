@@ -7,13 +7,13 @@
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand, Settings } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Minimize2, Expand, Settings, ArrowDown, ArrowUpDown, ArrowUp, ArrowRight, ArrowUpFromLine } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ORG_COLOR_MAP } from "@/lib/orgColors";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export type NodeType = "root" | "staff" | "line";
-export type DropAction = "move_under" | "swap" | "place_above" | "place_beside" | "reorder_before" | "reorder_before";
+export type DropAction = "move_under" | "swap" | "place_above" | "place_beside" | "reorder_before";
 export interface OrgNode {
   id: string;
   userId?: string;
@@ -645,8 +645,6 @@ function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabCli
 }
 
 // ─── DROP ACTION MENU ────────────────────────────────────────────────────────
-import { ArrowDown, ArrowUpDown, ArrowUp, ArrowRight, ArrowUpFromLine } from "lucide-react";
-
 function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   menu: DropMenuState;
   tree: OrgNode;
@@ -881,7 +879,8 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
     const go = (n: OrgNode) => { if (n.children.length) { s.add(n.id); n.children.forEach(go); } };
     go(tree);
     setCollapsed(s);
-  }, [tree]);
+    persistCollapsed(s);
+  }, [tree, persistCollapsed]);
 
   // ── Zoom ──
   const applyZoom = useCallback((newZ: number, focalX?: number, focalY?: number) => {

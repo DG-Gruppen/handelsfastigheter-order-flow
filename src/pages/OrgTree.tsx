@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -57,12 +57,13 @@ interface BuildResult {
 function buildOrgTree(profiles: OrgProfile[], roleMap: RoleMap, colorSettings: ColorSettings, deptList: DeptInfo[]): BuildResult {
   if (!profiles.length) return { tree: null, unassigned: [] };
 
-  // Build dept name → info map
+  // Build dept name → info map and dept id → info map for O(1) parent lookup
   const deptByName = new Map(deptList.map(d => [d.name, d]));
+  const deptById = new Map(deptList.map(d => [d.id, d]));
   const deptDisplayName = (deptName: string): string => {
     const dept = deptByName.get(deptName);
     if (dept?.parent_id) {
-      const parent = deptList.find(d => d.id === dept.parent_id);
+      const parent = deptById.get(dept.parent_id);
       if (parent) return `${parent.name} › ${deptName}`;
     }
     return deptName;
@@ -305,7 +306,10 @@ export default function OrgTree() {
     setCardMenu({ profileId: nodeId, x: screenX, y: screenY });
   }, []);
 
-  const { tree, unassigned } = buildOrgTree(profiles, roleMap, colorSettings, deptList);
+  const { tree, unassigned } = useMemo(
+    () => buildOrgTree(profiles, roleMap, colorSettings, deptList),
+    [profiles, roleMap, colorSettings, deptList]
+  );
   const menuProfile = cardMenu ? profiles.find(p => p.id === cardMenu.profileId) : null;
 
   if (loading) {
