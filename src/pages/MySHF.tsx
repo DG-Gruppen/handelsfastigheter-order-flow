@@ -1,6 +1,5 @@
 import { Target, BookOpen, CheckCircle2, Circle, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import WorkwearOrder from "@/components/workwear/WorkwearOrder";
 import { Button } from "@/components/ui/button";
 
 const personalOkrs = [
