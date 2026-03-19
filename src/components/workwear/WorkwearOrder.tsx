@@ -259,7 +259,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
       <CardHeader className="pb-2 px-4 md:px-6">
         <CardTitle className="font-heading text-base flex items-center gap-2">
           <ShoppingBag className="w-5 h-5 text-primary" />
-          Beställ arbetskläder
+          Beställ profilkläder
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
