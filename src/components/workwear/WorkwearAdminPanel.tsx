@@ -1,14 +1,24 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock } from "lucide-react";
+import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { SEASON_LABELS, ALL_SEASONS, type Season } from "./workwearProducts";
+import {
+  SortableHeader,
+  SortConfig,
+  toggleSort,
+  applySortString,
+  parseLogoInfo,
+  parseColor,
+  downloadCsv,
+} from "./workwearAdminHelpers";
 
 interface OrderRow {
   id: string;
@@ -45,6 +55,13 @@ export default function WorkwearAdminPanel() {
   const [filterDept, setFilterDept] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
+  // Sort states per tab
+  const [sortItems, setSortItems] = useState<SortConfig | null>(null);
+  const [sortRegions, setSortRegions] = useState<SortConfig | null>(null);
+  const [sortOrders, setSortOrders] = useState<SortConfig | null>(null);
+  const [sortSupplier, setSortSupplier] = useState<SortConfig | null>(null);
+  const [sortPick, setSortPick] = useState<SortConfig | null>(null);
+
   useEffect(() => {
     const load = async () => {
       const [ordersRes, profilesRes, seasonRes, deadlineRes] = await Promise.all([
@@ -79,22 +96,24 @@ export default function WorkwearAdminPanel() {
     return orders.filter((o) => profileMap.get(o.user_id)?.department === filterDept);
   }, [orders, filterDept, profileMap]);
 
-  // Aggregate items across all filtered orders
+  // ── Item stats (Sammanställning + Beställningslista) ──
   const itemStats = useMemo(() => {
-    const map = new Map<string, { name: string; color: string; size: string; qty: number }>();
+    const map = new Map<string, { name: string; color: string; size: string; qty: number; logo: string }>();
     filteredOrders.forEach((o) => {
       const items = Array.isArray(o.items) ? o.items : [];
       items.forEach((item: any) => {
-        const key = `${item.productName}||${item.colorLabel}||${item.size}`;
+        const colorLabel = item.colorLabel || item.color || "";
+        const key = `${item.productName}||${colorLabel}||${item.size}`;
         const existing = map.get(key);
         if (existing) {
           existing.qty += item.quantity || 1;
         } else {
           map.set(key, {
             name: item.productName || item.productId,
-            color: item.colorLabel || item.color || "",
+            color: parseColor(colorLabel),
             size: item.size || "",
             qty: item.quantity || 1,
+            logo: parseLogoInfo(colorLabel),
           });
         }
       });
@@ -102,23 +121,74 @@ export default function WorkwearAdminPanel() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name) || a.color.localeCompare(b.color) || a.size.localeCompare(b.size));
   }, [filteredOrders]);
 
-  // Per-department breakdown
+  // Supplier list with subtotals
+  const supplierRows = useMemo(() => {
+    const sorted = applySortString(itemStats, sortSupplier);
+    // Group by product name for subtotals
+    const groups = new Map<string, typeof itemStats>();
+    sorted.forEach((item) => {
+      const arr = groups.get(item.name) || [];
+      arr.push(item);
+      groups.set(item.name, arr);
+    });
+    return { groups, sorted };
+  }, [itemStats, sortSupplier]);
+
+  // ── Pick list ──
+  const pickRows = useMemo(() => {
+    const map = new Map<string, { dept: string; name: string; product: string; color: string; size: string; qty: number }>();
+    filteredOrders.forEach((o) => {
+      const p = profileMap.get(o.user_id);
+      const items = Array.isArray(o.items) ? o.items : [];
+      items.forEach((item: any) => {
+        const colorLabel = item.colorLabel || item.color || "";
+        const key = `${o.user_id}||${item.productName}||${colorLabel}||${item.size}`;
+        const existing = map.get(key);
+        if (existing) {
+          existing.qty += item.quantity || 1;
+        } else {
+          map.set(key, {
+            dept: p?.department || "Okänd",
+            name: p?.full_name || "Okänd",
+            product: item.productName || item.productId,
+            color: parseColor(colorLabel),
+            size: item.size || "",
+            qty: item.quantity || 1,
+          });
+        }
+      });
+    });
+    return applySortString(Array.from(map.values()), sortPick);
+  }, [filteredOrders, profileMap, sortPick]);
+
+  // ── Per-department breakdown ──
   const deptStats = useMemo(() => {
-    const map = new Map<string, { count: number; items: number }>();
+    const map = new Map<string, { dept: string; count: number; items: number }>();
     orders.forEach((o) => {
       const dept = profileMap.get(o.user_id)?.department || "Okänd";
-      const existing = map.get(dept) || { count: 0, items: 0 };
+      const existing = map.get(dept) || { dept, count: 0, items: 0 };
       existing.count += 1;
       const items = Array.isArray(o.items) ? o.items : [];
       existing.items += items.reduce((s: number, i: any) => s + (i.quantity || 1), 0);
       map.set(dept, existing);
     });
-    return Array.from(map.entries()).sort((a, b) => b[1].items - a[1].items);
-  }, [orders, profileMap]);
+    return applySortString(Array.from(map.values()), sortRegions);
+  }, [orders, profileMap, sortRegions]);
 
-  const totalItems = useMemo(() =>
-    itemStats.reduce((s, i) => s + i.qty, 0),
-  [itemStats]);
+  const totalItems = useMemo(() => itemStats.reduce((s, i) => s + i.qty, 0), [itemStats]);
+
+  // ── Orders table sorted ──
+  const sortedOrders = useMemo(() => {
+    const rows = filteredOrders.map((order) => {
+      const p = profileMap.get(order.user_id);
+      const items = Array.isArray(order.items) ? order.items : [];
+      const totalQty = items.reduce((s: number, i: any) => s + (i.quantity || 1), 0);
+      return { ...order, fullName: p?.full_name || "Okänd", dept: p?.department || "–", totalQty, itemNames: items.map((i: any) => i.productName).join(", ") };
+    });
+    return applySortString(rows, sortOrders);
+  }, [filteredOrders, profileMap, sortOrders]);
+
+  const sortedItemStats = useMemo(() => applySortString(itemStats, sortItems), [itemStats, sortItems]);
 
   if (loading) {
     return (
@@ -187,34 +257,43 @@ export default function WorkwearAdminPanel() {
       </div>
 
       <Tabs defaultValue="items">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="items">Sammanställning</TabsTrigger>
+          <TabsTrigger value="supplier">Beställningslista</TabsTrigger>
+          <TabsTrigger value="pick">Plocklista</TabsTrigger>
           <TabsTrigger value="regions">Per region</TabsTrigger>
           <TabsTrigger value="orders">Beställningar</TabsTrigger>
         </TabsList>
 
-        {/* Items summary */}
+        {/* ── Sammanställning ── */}
         <TabsContent value="items" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+                ["Plagg", "Färg", "Storlek", "Antal"],
+                sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty)]),
+                "sammanstallning.csv"
+              )}>
+                <Download className="w-3.5 h-3.5" /> CSV
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
-              {itemStats.length === 0 ? (
+              {sortedItemStats.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Inga beställningar ännu</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Plagg</TableHead>
-                        <TableHead>Färg</TableHead>
-                        <TableHead>Storlek</TableHead>
-                        <TableHead className="text-right">Antal</TableHead>
+                        <SortableHeader label="Plagg" sortKey="name" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
+                        <SortableHeader label="Färg" sortKey="color" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
+                        <SortableHeader label="Storlek" sortKey="size" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
+                        <SortableHeader label="Antal" sortKey="qty" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} className="text-right" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {itemStats.map((item, i) => (
+                      {sortedItemStats.map((item, i) => (
                         <TableRow key={i}>
                           <TableCell className="font-medium text-sm">{item.name}</TableCell>
                           <TableCell className="text-sm">{item.color}</TableCell>
@@ -234,11 +313,148 @@ export default function WorkwearAdminPanel() {
           </Card>
         </TabsContent>
 
-        {/* Per region */}
+        {/* ── Beställningslista (leverantörsunderlag) ── */}
+        <TabsContent value="supplier" className="mt-4">
+          <Card className="glass-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+                ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
+                itemStats.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
+                "beställningslista.csv"
+              )}>
+                <Download className="w-3.5 h-3.5" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {itemStats.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Inga beställningar ännu</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <SortableHeader label="Plagg" sortKey="name" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
+                        <SortableHeader label="Färg" sortKey="color" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
+                        <SortableHeader label="Storlek" sortKey="size" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
+                        <SortableHeader label="Antal" sortKey="qty" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} className="text-right" />
+                        <SortableHeader label="Logga" sortKey="logo" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        const sorted = supplierRows.sorted;
+                        const rows: React.ReactNode[] = [];
+                        let currentProduct = "";
+                        let productQty = 0;
+                        const flush = () => {
+                          if (currentProduct) {
+                            rows.push(
+                              <TableRow key={`sub-${currentProduct}`} className="bg-secondary/30">
+                                <TableCell colSpan={3} className="text-xs font-semibold text-muted-foreground italic">
+                                  Subtotal {currentProduct}
+                                </TableCell>
+                                <TableCell className="text-right text-xs font-bold text-muted-foreground">{productQty}</TableCell>
+                                <TableCell />
+                              </TableRow>
+                            );
+                          }
+                        };
+                        sorted.forEach((item, i) => {
+                          if (item.name !== currentProduct) {
+                            flush();
+                            currentProduct = item.name;
+                            productQty = 0;
+                          }
+                          productQty += item.qty;
+                          rows.push(
+                            <TableRow key={i}>
+                              <TableCell className="font-medium text-sm">{item.name}</TableCell>
+                              <TableCell className="text-sm">{item.color}</TableCell>
+                              <TableCell className="text-sm">{item.size}</TableCell>
+                              <TableCell className="text-right font-semibold text-sm">{item.qty}</TableCell>
+                              <TableCell className="text-sm">{item.logo}</TableCell>
+                            </TableRow>
+                          );
+                        });
+                        flush();
+                        rows.push(
+                          <TableRow key="total" className="bg-secondary/50 font-bold">
+                            <TableCell colSpan={3} className="text-sm">Totalt</TableCell>
+                            <TableCell className="text-right text-sm">{totalItems}</TableCell>
+                            <TableCell />
+                          </TableRow>
+                        );
+                        return rows;
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Plocklista ── */}
+        <TabsContent value="pick" className="mt-4">
+          <Card className="glass-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium">Plocklista – Leveransunderlag ({pickRows.length} rader)</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+                ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
+                pickRows.map((r) => [r.dept, r.name, r.product, r.color, r.size, String(r.qty)]),
+                "plocklista.csv"
+              )}>
+                <Download className="w-3.5 h-3.5" /> CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {pickRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Inga beställningar ännu</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <SortableHeader label="Kontor" sortKey="dept" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
+                        <SortableHeader label="Namn" sortKey="name" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
+                        <SortableHeader label="Plagg" sortKey="product" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
+                        <SortableHeader label="Färg" sortKey="color" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
+                        <SortableHeader label="Storlek" sortKey="size" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
+                        <SortableHeader label="Antal" sortKey="qty" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} className="text-right" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pickRows.map((row, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-sm">{row.dept}</TableCell>
+                          <TableCell className="font-medium text-sm">{row.name}</TableCell>
+                          <TableCell className="text-sm">{row.product}</TableCell>
+                          <TableCell className="text-sm">{row.color}</TableCell>
+                          <TableCell className="text-sm">{row.size}</TableCell>
+                          <TableCell className="text-right font-semibold text-sm">{row.qty}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Per region ── */}
         <TabsContent value="regions" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Beställningar per region</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+                ["Region", "Beställningar", "Antal plagg"],
+                deptStats.map((d) => [d.dept, String(d.count), String(d.items)]),
+                "per-region.csv"
+              )}>
+                <Download className="w-3.5 h-3.5" /> CSV
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               {deptStats.length === 0 ? (
@@ -247,15 +463,15 @@ export default function WorkwearAdminPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Region / Avdelning</TableHead>
-                      <TableHead className="text-right">Beställningar</TableHead>
-                      <TableHead className="text-right">Antal plagg</TableHead>
+                      <SortableHeader label="Region / Avdelning" sortKey="dept" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} />
+                      <SortableHeader label="Beställningar" sortKey="count" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} className="text-right" />
+                      <SortableHeader label="Antal plagg" sortKey="items" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} className="text-right" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {deptStats.map(([dept, data]) => (
-                      <TableRow key={dept}>
-                        <TableCell className="font-medium text-sm">{dept}</TableCell>
+                    {deptStats.map((data) => (
+                      <TableRow key={data.dept}>
+                        <TableCell className="font-medium text-sm">{data.dept}</TableCell>
                         <TableCell className="text-right text-sm">{data.count}</TableCell>
                         <TableCell className="text-right font-semibold text-sm">{data.items}</TableCell>
                       </TableRow>
@@ -267,53 +483,53 @@ export default function WorkwearAdminPanel() {
           </Card>
         </TabsContent>
 
-        {/* Individual orders */}
+        {/* ── Individual orders ── */}
         <TabsContent value="orders" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Alla beställningar ({filteredOrders.length})</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+                ["Namn", "Region", "Plagg", "Antal", "Datum", "Status"],
+                sortedOrders.map((o) => [o.fullName, o.dept, o.itemNames, String(o.totalQty), format(parseISO(o.created_at), "yyyy-MM-dd"), STATUS_LABEL[o.status] || o.status]),
+                "beställningar.csv"
+              )}>
+                <Download className="w-3.5 h-3.5" /> CSV
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
-              {filteredOrders.length === 0 ? (
+              {sortedOrders.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Inga beställningar ännu</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Namn</TableHead>
-                        <TableHead>Region</TableHead>
-                        <TableHead>Plagg</TableHead>
-                        <TableHead>Datum</TableHead>
-                        <TableHead>Status</TableHead>
+                        <SortableHeader label="Namn" sortKey="fullName" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Region" sortKey="dept" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Plagg" sortKey="totalQty" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Datum" sortKey="created_at" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Status" sortKey="status" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredOrders.map((order) => {
-                        const p = profileMap.get(order.user_id);
-                        const items = Array.isArray(order.items) ? order.items : [];
-                        const totalQty = items.reduce((s: number, i: any) => s + (i.quantity || 1), 0);
-                        return (
-                          <TableRow key={order.id}>
-                            <TableCell className="font-medium text-sm">{p?.full_name || "Okänd"}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{p?.department || "–"}</TableCell>
-                            <TableCell className="text-sm">
-                              {totalQty} plagg
-                              <span className="text-muted-foreground ml-1 text-xs">
-                                ({items.map((i: any) => i.productName).join(", ")})
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
-                                {STATUS_LABEL[order.status] || order.status}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                      {sortedOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium text-sm">{order.fullName}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{order.dept}</TableCell>
+                          <TableCell className="text-sm">
+                            {order.totalQty} plagg
+                            <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
+                              {STATUS_LABEL[order.status] || order.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
