@@ -114,12 +114,12 @@ export default function WorkwearOrder() {
   const [submitting, setSubmitting] = useState(false);
 
   // Per-product selection state
-  const [selections, setSelections] = useState<Record<string, { color: string; size: string }>>({});
+  const [selections, setSelections] = useState<Record<string, { color: string; size: string; qty: number }>>({});
 
-  const updateSelection = (productId: string, field: "color" | "size", value: string) => {
+  const updateSelection = (productId: string, field: "color" | "size" | "qty", value: string | number) => {
     setSelections((prev) => ({
       ...prev,
-      [productId]: { ...prev[productId], [field]: value },
+      [productId]: { color: "", size: "", qty: 1, ...prev[productId], [field]: value },
     }));
   };
 
