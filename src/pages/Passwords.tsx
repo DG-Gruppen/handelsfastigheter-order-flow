@@ -92,8 +92,6 @@ export default function Passwords() {
   const isEditor = roles.includes("admin") || roles.includes("it");
 
   const [passwords, setPasswords] = useState<SharedPassword[]>([]);
-  const [passwordGroups, setPasswordGroups] = useState<PasswordGroup[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
