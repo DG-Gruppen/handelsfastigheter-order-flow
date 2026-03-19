@@ -52,6 +52,7 @@ export default function KbVideoCard({ video, categoryName, categoryColor, onClic
   const ytId = extractYouTubeId(video.video_url);
   const thumb = video.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null);
   const durationMin = video.duration_seconds ? Math.ceil(video.duration_seconds / 60) : null;
+  const source = detectVideoSource(video.video_url);
 
   return (
     <div
