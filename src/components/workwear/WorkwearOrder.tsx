@@ -50,14 +50,9 @@ const PRODUCTS: WorkwearProduct[] = [
   ], sizes: ["S", "M", "L", "XL", "XXL"] },
   { id: "h-jeansskjorta-dakota", gender: "herr", name: "Jeansskjorta Dakota", variants: [
     { color: "denim-blue", colorLabel: "Denim Blue", url: "https://www.157work.com/p/jeansskjorta-dakota/denim-blue/" },
-    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/jeansskjorta-dakota/black/" },
-    { color: "off-white", colorLabel: "Off-white", url: "https://www.157work.com/p/jeansskjorta-dakota/off-white/" },
-    { color: "mid-wash", colorLabel: "Mid Wash", url: "https://www.157work.com/p/jeansskjorta-dakota/mid-wash/" },
   ], sizes: ["S", "M", "L", "XL", "XXL"] },
   { id: "h-worker-mechanic", gender: "herr", name: "Kortärmad Skjorta Mechanic", variants: [
     { color: "navy", colorLabel: "Navy", url: "https://www.157work.com/p/skjorta-mechanic-shirt/navy/" },
-    { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/skjorta-mechanic-shirt/black/" },
-    { color: "khaki", colorLabel: "Khaki", url: "https://www.157work.com/p/skjorta-mechanic-shirt/khaki/" },
   ], sizes: ["S", "M", "L", "XL", "XXL"] },
   { id: "h-vast-liared", gender: "herr", name: "Väst Liared", variants: [
     { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/liared-vest/black/" },
@@ -86,9 +81,6 @@ const PRODUCTS: WorkwearProduct[] = [
   ], sizes: ["XS", "S", "M", "L", "XL"] },
   { id: "d-jeansskjorta-dallas", gender: "dam", name: "Jeansskjorta Dallas", variants: [
     { color: "blue-used", colorLabel: "Blue Used", url: "https://www.157work.com/p/jeansskjorta-dallas/blue-used/" },
-    { color: "black-used", colorLabel: "Black Used", url: "https://www.157work.com/p/jeansskjorta-dallas/black-used/" },
-    { color: "rinse", colorLabel: "Rinse", url: "https://www.157work.com/p/jeansskjorta-dallas/rinse/" },
-    { color: "mid-wash", colorLabel: "Mid Wash", url: "https://www.157work.com/p/jeansskjorta-dallas/mid-wash/" },
   ], sizes: ["XS", "S", "M", "L", "XL"] },
   { id: "d-vast-lindas", gender: "dam", name: "Väst Lindås", variants: [
     { color: "black", colorLabel: "Svart", url: "https://www.157work.com/p/lindas-vest/black/" },
