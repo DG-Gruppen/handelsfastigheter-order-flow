@@ -174,7 +174,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       <Card className="glass-card">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <ShoppingCart className="h-4.5 w-4.5 text-amber-500" />
+            <ShoppingCart className="h-4.5 w-4.5 text-warning" />
             <h3 className="text-sm font-semibold text-foreground">Beställningsstatus</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
