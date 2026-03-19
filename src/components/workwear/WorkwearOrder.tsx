@@ -258,85 +258,99 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 md:px-6 space-y-4">
-        {/* Product list */}
-        <div className="grid gap-3">
-          {PRODUCTS.map((product) => {
-            const sel = selections[product.id] || { color: "", size: "" };
-            return (
-              <div
-                key={product.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-secondary/50"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{product.name}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    {product.variants.map((v) => (
-                      <a
-                        key={v.color}
-                        href={v.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-muted-foreground hover:text-primary inline-flex items-center gap-0.5"
-                      >
-                        <ExternalLink className="w-2.5 h-2.5" />
-                        {v.colorLabel}
-                      </a>
-                    ))}
-                  </div>
-                </div>
+        <Tabs defaultValue="herr">
+          <TabsList className="w-full">
+            <TabsTrigger value="herr" className="flex-1">Herr</TabsTrigger>
+            <TabsTrigger value="dam" className="flex-1">Dam</TabsTrigger>
+          </TabsList>
+          {(["herr", "dam"] as const).map((gender) => (
+            <TabsContent key={gender} value={gender} className="mt-3">
+              <div className="grid gap-3">
+                {PRODUCTS.filter((p) => p.gender === gender).map((product) => {
+                  const sel = selections[product.id] || { color: "", size: "" };
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-secondary/50"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{product.name}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          {product.variants.map((v) => (
+                            <a
+                              key={v.color}
+                              href={v.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-muted-foreground hover:text-primary inline-flex items-center gap-0.5"
+                            >
+                              <ExternalLink className="w-2.5 h-2.5" />
+                              {v.colorLabel}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Color select */}
-                  <Select
-                    value={sel.color}
-                    onValueChange={(v) => updateSelection(product.id, "color", v)}
-                  >
-                    <SelectTrigger className="w-[110px] h-9 text-xs">
-                      <SelectValue placeholder="Färg" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {product.variants.map((v) => (
-                        <SelectItem key={v.color} value={v.color} className="text-xs">
-                          <span className="flex items-center gap-1.5">
-                            <span className={`w-2.5 h-2.5 rounded-full ${COLOR_DOT[v.color] || "bg-muted"}`} />
-                            {v.colorLabel}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {product.variants.length > 1 ? (
+                          <Select
+                            value={sel.color}
+                            onValueChange={(v) => updateSelection(product.id, "color", v)}
+                          >
+                            <SelectTrigger className="w-[110px] h-9 text-xs">
+                              <SelectValue placeholder="Färg" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {product.variants.map((v) => (
+                                <SelectItem key={v.color} value={v.color} className="text-xs">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className={`w-2.5 h-2.5 rounded-full ${COLOR_DOT[v.color] || "bg-muted"}`} />
+                                    {v.colorLabel}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline" className="h-9 px-3 text-xs font-normal flex items-center gap-1.5">
+                            <span className={`w-2.5 h-2.5 rounded-full ${COLOR_DOT[product.variants[0].color] || "bg-muted"}`} />
+                            {product.variants[0].colorLabel}
+                          </Badge>
+                        )}
 
-                  {/* Size select */}
-                  <Select
-                    value={sel.size}
-                    onValueChange={(v) => updateSelection(product.id, "size", v)}
-                  >
-                    <SelectTrigger className="w-[80px] h-9 text-xs">
-                      <SelectValue placeholder="Stl" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {product.sizes.map((s) => (
-                        <SelectItem key={s} value={s} className="text-xs">
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        <Select
+                          value={sel.size}
+                          onValueChange={(v) => updateSelection(product.id, "size", v)}
+                        >
+                          <SelectTrigger className="w-[80px] h-9 text-xs">
+                            <SelectValue placeholder="Stl" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {product.sizes.map((s) => (
+                              <SelectItem key={s} value={s} className="text-xs">
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 text-xs"
-                    onClick={() => addToCart(product)}
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    Lägg till
-                  </Button>
-                </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 text-xs"
+                          onClick={() => addToCart(product)}
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          Lägg till
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </TabsContent>
+          ))}
+        </Tabs>
 
         {/* Cart */}
         {cart.length > 0 && (
