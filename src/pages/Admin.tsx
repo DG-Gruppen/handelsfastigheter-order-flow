@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 
@@ -16,13 +16,14 @@ import ITContent from "@/components/admin/ITContent";
 import ToolsManager from "@/components/admin/ToolsManager";
 import NewsAdminPanel from "@/components/news/NewsAdminPanel";
 import DatabaseBackup from "@/components/admin/DatabaseBackup";
+const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear";
 
 interface AdminGroup {
   label: string;
@@ -62,6 +63,7 @@ const adminGroups: AdminGroup[] = [
       { id: "knowledge", label: "Kunskapsbanken", description: "Artiklar, videor och kategorier", icon: BookOpen, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
       { id: "news", label: "Nyheter", description: "Skapa, redigera och publicera nyheter", icon: Newspaper, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
       { id: "tools", label: "Verktyg", description: "Hantera snabblänkar på verktygssidan", icon: Link2, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
+      { id: "workwear", label: "Profilkläder", description: "Statistik och beställningsöversikt", icon: Shirt, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
     ],
   },
   {
@@ -132,6 +134,7 @@ export default function Admin() {
       case "permissions": return <ModulePermissionsManager />;
       case "tools": return <ToolsManager />;
       case "backup": return <DatabaseBackup />;
+      case "workwear": return <Suspense fallback={<div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><WorkwearAdminPanel /></Suspense>;
       default: return null;
     }
   };
