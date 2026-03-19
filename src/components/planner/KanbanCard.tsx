@@ -42,6 +42,13 @@ const LABEL_COLORS = [
   "hsl(280 60% 50%)", "hsl(330 70% 50%)",
 ];
 
+const PRIORITY_BORDER: Record<PlannerCard["priority"], string> = {
+  low:    "border-l-[3px] border-l-muted-foreground/30",
+  medium: "border-l-[3px] border-l-blue-500",
+  high:   "border-l-[3px] border-l-amber-500",
+  urgent: "border-l-[3px] border-l-destructive",
+};
+
 function getInitials(name?: string) {
   if (!name) return null;
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -86,6 +93,7 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
       {...listeners}
       className={cn(
         "group rounded-lg border border-border/60 bg-card shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none touch-none overflow-hidden",
+        PRIORITY_BORDER[card.priority],
         isDragging && "opacity-40 rotate-2 scale-105",
         overlay && "shadow-xl rotate-2 scale-105 ring-2 ring-primary/30"
       )}

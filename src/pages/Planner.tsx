@@ -519,11 +519,11 @@ export default function Planner() {
       const reordered = arrayMove(sortedColumns, oldIdx, newIdx);
       setColumns(reordered.map((c, i) => ({ ...c, sort_order: i })));
 
-      for (let i = 0; i < reordered.length; i++) {
-        await supabase.from("planner_columns")
-          .update({ sort_order: i })
-          .eq("id", reordered[i].id);
-      }
+      await Promise.all(
+        reordered.map((col, i) =>
+          supabase.from("planner_columns").update({ sort_order: i }).eq("id", col.id)
+        )
+      );
       return;
     }
 
@@ -565,11 +565,13 @@ export default function Planner() {
       reporter_id: c.reporter_id,
     }));
 
-    for (const u of updates) {
-      await supabase.from("planner_cards")
-        .update({ column_id: u.column_id, sort_order: u.sort_order })
-        .eq("id", u.id);
-    }
+    await Promise.all(
+      updates.map(u =>
+        supabase.from("planner_cards")
+          .update({ column_id: u.column_id, sort_order: u.sort_order })
+          .eq("id", u.id)
+      )
+    );
 
     // Log move if column changed
     const originalColumn = columns.find(c => c.id === activeCardData.column_id);
@@ -666,10 +668,15 @@ export default function Planner() {
                         key={col.id}
                         column={col}
                         cards={colCards}
+                        totalCardCount={cards.filter(c => c.column_id === col.id).length}
                         profileMap={profileMap}
                         checklistSummaries={checklistSummaries}
                         attachmentCounts={attachmentCounts}
                         onAddCard={() => {
+                          const actualCount = cards.filter(c => c.column_id === col.id).length;
+                          if (col.wip_limit !== null && actualCount >= col.wip_limit) {
+                            toast.warning(`WIP-gräns nådd för "${col.name}" (${col.wip_limit} kort)`);
+                          }
                           setEditingCard(null);
                           setDefaultColumnId(col.id);
                           setCardDialogOpen(true);
