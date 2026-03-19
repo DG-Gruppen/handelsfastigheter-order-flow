@@ -385,24 +385,18 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
 
                         <div className="flex items-center gap-2 flex-wrap">
                           {product.variants.length > 1 ? (
-                            <Select
+                            <select
                               value={sel.color}
-                              onValueChange={(v) => updateSelection(product.id, "color", v)}
+                              onChange={(e) => updateSelection(product.id, "color", e.target.value)}
+                              className="w-[110px] h-9 text-xs rounded-md border border-input bg-background px-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             >
-                              <SelectTrigger className="w-[110px] h-9 text-xs">
-                                <SelectValue placeholder="Färg" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {product.variants.map((v) => (
-                                  <SelectItem key={v.color} value={v.color} className="text-xs">
-                                    <span className="flex items-center gap-1.5">
-                                      <span className={`w-2.5 h-2.5 rounded-full ${COLOR_DOT[v.color] || "bg-muted"}`} />
-                                      {v.colorLabel}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              <option value="">Färg</option>
+                              {product.variants.map((v) => (
+                                <option key={v.color} value={v.color}>
+                                  {v.colorLabel}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <Badge variant="outline" className="h-9 px-3 text-xs font-normal flex items-center gap-1.5">
                               <span className={`w-2.5 h-2.5 rounded-full ${COLOR_DOT[product.variants[0].color] || "bg-muted"}`} />
@@ -410,21 +404,18 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                             </Badge>
                           )}
 
-                          <Select
+                          <select
                             value={sel.size}
-                            onValueChange={(v) => updateSelection(product.id, "size", v)}
+                            onChange={(e) => updateSelection(product.id, "size", e.target.value)}
+                            className="w-[80px] h-9 text-xs rounded-md border border-input bg-background px-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                           >
-                            <SelectTrigger className="w-[80px] h-9 text-xs">
-                              <SelectValue placeholder="Stl" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {product.sizes.map((s) => (
-                                <SelectItem key={s} value={s} className="text-xs">
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <option value="">Stl</option>
+                            {product.sizes.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
 
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateSelection(product.id, "qty", Math.max(1, (sel.qty || 1) - 1))}>
