@@ -387,6 +387,7 @@ export default function Onboarding() {
           full_name: recipientName.trim(),
           email: suggestedEmail,
           department: recipientDepartment.trim() || null,
+          start_date: recipientStartDate || null,
         } as any);
       }
     }
