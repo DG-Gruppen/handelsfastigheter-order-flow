@@ -14,7 +14,7 @@ const KEY_LENGTH = 256;
 /** Import a raw hex key string as a CryptoKey */
 async function importKey(hexKey: string): Promise<CryptoKey> {
   const raw = hexToBytes(hexKey);
-  return crypto.subtle.importKey("raw", raw, { name: ALGO, length: KEY_LENGTH }, false, [
+  return crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, { name: ALGO, length: KEY_LENGTH }, false, [
     "encrypt",
     "decrypt",
   ]);
