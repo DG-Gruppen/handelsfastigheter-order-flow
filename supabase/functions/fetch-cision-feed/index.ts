@@ -1,70 +1,88 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://intra.handelsfastigheter.se",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Cision newsroom feed URL for Svenska Handelsfastigheter
-const CISION_FEED_URL =
-  "https://publish.ne.cision.com/papi/NewsFeed/GetLatestReleases?pageSize=20&pageIndex=1&format=json&organizationName=svenska-handelsfastigheter";
+// Primary: RSS feed
+const CISION_RSS_URL =
+  "https://news.cision.com/se/svenska-handelsfastigheter/ListItems?format=rss";
 
-// Fallback: try RSS
-const CISION_RSS_URL = "https://news.cision.com/se/svenska-handelsfastigheter/rss";
+// Fallback: XML feed
+const CISION_XML_URL =
+  "https://publish.ne.cision.com/Release/ListReleasesSortedByPublishDate/?feedUniqueIdentifier=2108847f44";
 
-interface CisionRelease {
-  Id: string;
-  Title: string;
-  PublishDate: string;
-  Header?: string;
-  Body?: string;
-  Intro?: string;
-  Url?: string;
-  Images?: Array<{ DownloadUrl?: string; FileName?: string }>;
-  Categories?: string[];
-}
-
-function parseRssItem(xml: string): Array<{
+interface Release {
   id: string;
   title: string;
   excerpt: string;
   url: string;
   published_at: string;
   image_url?: string;
-}> {
-  const items: Array<{
-    id: string;
-    title: string;
-    excerpt: string;
-    url: string;
-    published_at: string;
-    image_url?: string;
-  }> = [];
+}
 
+function getTag(xml: string, tag: string): string {
+  const m = xml.match(
+    new RegExp(
+      `<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`
+    )
+  );
+  return (m?.[1] || m?.[2] || "").trim();
+}
+
+function parseRss(xml: string): Release[] {
+  const items: Release[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
   while ((match = itemRegex.exec(xml)) !== null) {
-    const itemXml = match[1];
-    const getTag = (tag: string) => {
-      const m = itemXml.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
-      return (m?.[1] || m?.[2] || "").trim();
-    };
-    const guid = getTag("guid") || getTag("link") || crypto.randomUUID();
-    const title = getTag("title");
-    const description = getTag("description").replace(/<[^>]*>/g, "").slice(0, 300);
-    const link = getTag("link");
-    const pubDate = getTag("pubDate");
+    const block = match[1];
+    const title = getTag(block, "title");
+    if (!title) continue;
+    const guid = getTag(block, "guid") || getTag(block, "link") || crypto.randomUUID();
+    const description = getTag(block, "description").replace(/<[^>]*>/g, "").slice(0, 300);
+    const link = getTag(block, "link");
+    const pubDate = getTag(block, "pubDate");
+    const encUrl = block.match(/<enclosure[^>]+url="([^"]+)"/)?.[1];
+    items.push({
+      id: guid,
+      title,
+      excerpt: description,
+      url: link,
+      published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+      image_url: encUrl,
+    });
+  }
+  return items;
+}
 
-    if (title) {
-      items.push({
-        id: guid,
-        title,
-        excerpt: description,
-        url: link,
-        published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-      });
-    }
+function parseXmlFeed(xml: string): Release[] {
+  const items: Release[] = [];
+  // Cision XML uses <Release> elements
+  const releaseRegex = /<Release>([\s\S]*?)<\/Release>/gi;
+  let match;
+  while ((match = releaseRegex.exec(xml)) !== null) {
+    const block = match[1];
+    const title = getTag(block, "Title");
+    if (!title) continue;
+    const id = getTag(block, "Id") || getTag(block, "ReleaseId") || crypto.randomUUID();
+    const intro = getTag(block, "Intro") || getTag(block, "Header") || "";
+    const url = getTag(block, "Url") || getTag(block, "DetailUrl") || "";
+    const pubDate = getTag(block, "PublishDate") || getTag(block, "Published") || "";
+    const imgMatch = block.match(/<DownloadUrl[^>]*>([^<]+)<\/DownloadUrl>/i);
+    items.push({
+      id,
+      title,
+      excerpt: intro.replace(/<[^>]*>/g, "").slice(0, 300),
+      url,
+      published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+      image_url: imgMatch?.[1]?.trim(),
+    });
+  }
+  // Fallback: try <item> tags (some Cision XML feeds use RSS-like structure)
+  if (items.length === 0) {
+    return parseRss(xml);
   }
   return items;
 }
@@ -75,48 +93,33 @@ serve(async (req) => {
   }
 
   try {
-    // Try JSON feed first
-    let releases: Array<{
-      id: string;
-      title: string;
-      excerpt: string;
-      url: string;
-      published_at: string;
-      image_url?: string;
-    }> = [];
+    let releases: Release[] = [];
 
+    // Primary: RSS
     try {
-      console.log("Trying Cision JSON feed...");
-      const jsonResp = await fetch(CISION_FEED_URL, {
-        headers: { Accept: "application/json" },
-      });
-      if (jsonResp.ok) {
-        const data = await jsonResp.json();
-        const rawReleases: CisionRelease[] = data.Releases || data.releases || data || [];
-        if (Array.isArray(rawReleases) && rawReleases.length > 0) {
-          releases = rawReleases.map((r) => ({
-            id: r.Id || crypto.randomUUID(),
-            title: r.Title || "",
-            excerpt: (r.Intro || r.Header || "").replace(/<[^>]*>/g, "").slice(0, 300),
-            url: r.Url || "",
-            published_at: r.PublishDate || new Date().toISOString(),
-            image_url: r.Images?.[0]?.DownloadUrl,
-          }));
-          console.log(`Got ${releases.length} releases from JSON feed`);
-        }
+      console.log("Trying Cision RSS feed (primary)...");
+      const resp = await fetch(CISION_RSS_URL);
+      if (resp.ok) {
+        const xml = await resp.text();
+        releases = parseRss(xml);
+        console.log(`Got ${releases.length} releases from RSS feed`);
       }
     } catch (e) {
-      console.log("JSON feed failed, trying RSS...", e);
+      console.log("RSS feed failed, trying XML fallback...", e);
     }
 
-    // Fallback to RSS
+    // Fallback: XML
     if (releases.length === 0) {
-      console.log("Trying Cision RSS feed...");
-      const rssResp = await fetch(CISION_RSS_URL);
-      if (rssResp.ok) {
-        const xml = await rssResp.text();
-        releases = parseRssItem(xml);
-        console.log(`Got ${releases.length} releases from RSS feed`);
+      try {
+        console.log("Trying Cision XML feed (fallback)...");
+        const resp = await fetch(CISION_XML_URL);
+        if (resp.ok) {
+          const xml = await resp.text();
+          releases = parseXmlFeed(xml);
+          console.log(`Got ${releases.length} releases from XML feed`);
+        }
+      } catch (e) {
+        console.log("XML feed also failed", e);
       }
     }
 
