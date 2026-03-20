@@ -47,11 +47,7 @@ Deno.serve(async (req) => {
   const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data: roleCheck } = await adminClient
-    .from("user_roles")
-    .select("id")
-    .eq("user_id", callerUser.id)
-    .eq("role", "it")
-    .maybeSingle();
+    .rpc("has_role", { _user_id: callerUser.id, _role: "it" });
 
   if (!roleCheck) {
     return new Response(JSON.stringify({ error: "Forbidden: requires IT role" }), {
