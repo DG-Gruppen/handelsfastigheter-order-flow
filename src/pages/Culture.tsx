@@ -130,6 +130,9 @@ export default function Culture() {
         <p className="text-sm text-muted-foreground mt-1">Det som gör SHF till SHF</p>
       </div>
 
+      {/* Veckans jubilarer */}
+      <WeeklyCelebrations />
+
       {/* Veckans vinst – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
       {isIT && (
       <div className="glass-card rounded-2xl border-2 border-warning/40 p-6 md:p-8">
