@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
   const callerToken = authHeader.slice("Bearer ".length).trim();
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-  // Create client with caller's token to get their identity
   const callerClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${callerToken}` } },
   });
@@ -43,7 +42,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Verify caller has 'it' role using service client
+  // Verify caller has 'it' role
   const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data: roleCheck } = await adminClient
@@ -56,7 +55,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Get target user
   const { target_user_id } = await req.json();
   if (!target_user_id) {
     return new Response(JSON.stringify({ error: "Missing target_user_id" }), {
@@ -79,7 +77,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Generate a magic link for the target user (without sending email)
+  // Generate magic link and verify it server-side to get session tokens
   const { data: linkData, error: linkError } =
     await adminClient.auth.admin.generateLink({
       type: "magiclink",
@@ -87,23 +85,42 @@ Deno.serve(async (req) => {
     });
 
   if (linkError || !linkData) {
-    console.error("Failed to generate impersonation link:", linkError);
+    console.error("Failed to generate link:", linkError);
     return new Response(
       JSON.stringify({ error: "Failed to generate session" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  // Extract the token hash from the generated link
-  const props = linkData.properties;
+  // Verify the OTP server-side immediately to get session tokens
+  const tokenHash = linkData.properties.hashed_token;
+  const verifyResponse = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": anonKey,
+    },
+    body: JSON.stringify({
+      token_hash: tokenHash,
+      type: "magiclink",
+    }),
+  });
+
+  if (!verifyResponse.ok) {
+    const errBody = await verifyResponse.text();
+    console.error("Verify failed:", verifyResponse.status, errBody);
+    return new Response(
+      JSON.stringify({ error: "Failed to create session" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const session = await verifyResponse.json();
 
   return new Response(
     JSON.stringify({
-      token_hash: props.hashed_token,
-      email: targetProfile.email,
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
       full_name: targetProfile.full_name,
     }),
     {

@@ -67,23 +67,23 @@ export default function ImpersonateUserCard({ profiles }: ImpersonateUserCardPro
         );
       }
 
-      // Call edge function to get magic link token
+      // Call edge function to get session tokens
       const { data, error } = await supabase.functions.invoke("impersonate-user", {
         body: { target_user_id: targetUserId },
       });
 
-      if (error || !data?.token_hash) {
+      if (error || !data?.access_token) {
         throw new Error(error?.message || "Kunde inte generera session");
       }
 
-      // Use the token hash to establish a session
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: data.token_hash,
-        type: "magiclink",
+      // Set the impersonated session directly
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
       });
 
-      if (verifyError) {
-        throw verifyError;
+      if (sessionError) {
+        throw sessionError;
       }
 
       toast.success(`Inloggad som ${target.full_name}`);
