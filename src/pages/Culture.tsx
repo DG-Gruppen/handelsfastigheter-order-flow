@@ -37,6 +37,7 @@ interface CeoBlog {
 export default function Culture() {
   const { roles, profile } = useAuth();
   const isAdmin = roles.includes("admin");
+  const isIT = roles.includes("it");
 
   const [recognitions, setRecognitions] = useState<Recognition[]>([]);
   const [ceoBlog, setCeoBlog] = useState<CeoBlog | null>(null);
@@ -128,7 +129,8 @@ export default function Culture() {
         <p className="text-sm text-muted-foreground mt-1">Det som gör SHF till SHF</p>
       </div>
 
-      {/* Veckans vinst */}
+      {/* Veckans vinst – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
+      {isIT && (
       <div className="glass-card rounded-2xl border-2 border-warning/40 p-6 md:p-8">
         <div className="flex items-center gap-2 mb-4">
           <Award className="w-6 h-6 text-warning" />
@@ -139,6 +141,7 @@ export default function Culture() {
         <p className="text-sm text-muted-foreground leading-relaxed">{veckansVinst.body}</p>
         <p className="text-xs text-warning font-medium mt-4">Publicerad av {veckansVinst.author}</p>
       </div>
+      )}
 
       {/* Klapp på axeln */}
       <div>
@@ -239,7 +242,8 @@ export default function Culture() {
         </div>
       )}
 
-      {/* Karriärvägar */}
+      {/* Karriärvägar – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
+      {isIT && (
       <div className="rounded-2xl p-6 bg-accent/10">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-5 h-5 text-accent" />
@@ -259,6 +263,7 @@ export default function Culture() {
           </p>
         </div>
       </div>
+      )}
     </div>
   );
 }
