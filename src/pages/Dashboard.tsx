@@ -9,8 +9,9 @@ import {
   ArrowUpRight, Award, PartyPopper, Cake,
 } from "lucide-react";
 
-import { kpis, okrs, weeklyWin, jubilees } from "@/data/dashboard";
+import { kpis, okrs, weeklyWin } from "@/data/dashboard";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
+import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { newsPosts } from "@/data/news"; // fallback static data
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
