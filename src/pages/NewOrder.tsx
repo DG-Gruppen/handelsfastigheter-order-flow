@@ -102,6 +102,8 @@ function resolveApprovalRouting(params: {
 export default function NewOrder() {
   const { user, roles } = useAuth();
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
+  const isIT = roles.includes("it");
+  const isPrivileged = isManagerOrAdmin || isIT;
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
