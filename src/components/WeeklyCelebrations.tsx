@@ -62,6 +62,8 @@ function getAnniversaryYears(startDate: string): number {
 export default function WeeklyCelebrations({ compact = false }: { compact?: boolean }) {
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const fetchCelebrations = useCallback(async () => {
     const { data: profiles } = await supabase
