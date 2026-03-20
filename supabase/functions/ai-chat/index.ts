@@ -41,7 +41,12 @@ Du kan hjälpa med:
 - **Fastigheter & projekt**: Information om koncernens fastigheter, projekt och bolag.
 - **Processer & rutiner**: Interna arbetsflöden, beställningar, godkännanden.
 - **Bolagsinformation**: Nyckeltal, styrelseuppgifter och ekonomisk data från Allabolag.se.
-- **Allmänt**: Kontaktuppgifter, organisationsstruktur, kultur och värderingar.
+- **Nyheter**: Interna nyheter och uppdateringar publicerade i intranätet.
+- **VD-bloggen**: Inlägg och uppdateringar från VD.
+- **Verktyg**: Information om interna verktyg, system och deras användning.
+- **Dokument**: Information om dokument och filer i dokumentbiblioteket.
+- **Organisation**: Avdelningar, organisationsstruktur, roller.
+- **Allmänt**: Kontaktuppgifter, kultur och värderingar.
 
 ## Svarsformat
 - Använd **markdown** för att strukturera svar: rubriker, punktlistor, fetstil för nyckelbegrepp.
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
 
       const { data: results } = await supabase.rpc("search_content", {
         query_text: lastUserMsg.content,
-        match_limit: 5,
+        match_limit: 8,
       });
 
       if (results && results.length > 0) {
@@ -93,6 +98,12 @@ Deno.serve(async (req) => {
           kb_videos: "Kunskapsbanken (video)",
           website: "Webbplatsen (handelsfastigheter.se)",
           allabolag: "Allabolag.se (bolagsinfo)",
+          news: "Nyheter (internt)",
+          ceo_blog: "VD-bloggen",
+          tools: "Verktyg & system",
+          departments: "Avdelningar",
+          document_folders: "Dokumentbiblioteket (mapp)",
+          document_files: "Dokumentbiblioteket (fil)",
         };
 
         contextBlock = "\n\n--- INTERN KUNSKAPSBAS (kontext) ---\n" +

@@ -89,6 +89,153 @@ serve(async (req) => {
       }
     }
 
+    // Index all published news
+    const { data: newsItems } = await supabase
+      .from("news")
+      .select("id, title, excerpt, body, category, emoji, published_at")
+      .eq("is_published", true);
+
+    if (newsItems) {
+      for (const n of newsItems) {
+        await supabase.from("content_index").upsert(
+          {
+            source_table: "news",
+            source_id: n.id,
+            title: n.title,
+            content: `${n.excerpt}\n${n.body}`,
+            metadata: { category: n.category, emoji: n.emoji, published_at: n.published_at },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "source_table,source_id" }
+        );
+        indexed++;
+      }
+    }
+
+    // Index CEO blog posts
+    const { data: blogPosts } = await supabase
+      .from("ceo_blog")
+      .select("id, title, excerpt, author, period");
+
+    if (blogPosts) {
+      for (const b of blogPosts) {
+        await supabase.from("content_index").upsert(
+          {
+            source_table: "ceo_blog",
+            source_id: b.id,
+            title: b.title,
+            content: b.excerpt,
+            metadata: { author: b.author, period: b.period },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "source_table,source_id" }
+        );
+        indexed++;
+      }
+    }
+
+    // Index active tools
+    const { data: tools } = await supabase
+      .from("tools")
+      .select("id, name, description, url, emoji")
+      .eq("is_active", true);
+
+    if (tools) {
+      for (const t of tools) {
+        await supabase.from("content_index").upsert(
+          {
+            source_table: "tools",
+            source_id: t.id,
+            title: t.name,
+            content: t.description,
+            metadata: { url: t.url, emoji: t.emoji },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "source_table,source_id" }
+        );
+        indexed++;
+      }
+    }
+
+    // Index departments
+    const { data: departments } = await supabase
+      .from("departments")
+      .select("id, name, color, parent_id");
+
+    if (departments) {
+      for (const d of departments) {
+        const parentName = d.parent_id
+          ? departments.find((p: any) => p.id === d.parent_id)?.name
+          : null;
+        const content = parentName
+          ? `Avdelning: ${d.name}, tillhör ${parentName}`
+          : `Avdelning: ${d.name}`;
+        await supabase.from("content_index").upsert(
+          {
+            source_table: "departments",
+            source_id: d.id,
+            title: d.name,
+            content,
+            metadata: { color: d.color, parent_id: d.parent_id },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "source_table,source_id" }
+        );
+        indexed++;
+      }
+    }
+
+    // Index document folders (metadata only — file contents are binary)
+    const { data: folders } = await supabase
+      .from("document_folders")
+      .select("id, name, icon, parent_id");
+
+    if (folders) {
+      for (const f of folders) {
+        const parentName = f.parent_id
+          ? folders.find((p: any) => p.id === f.parent_id)?.name
+          : null;
+        const content = parentName
+          ? `Dokumentmapp: ${f.name} i mappen ${parentName}`
+          : `Dokumentmapp: ${f.name}`;
+        await supabase.from("content_index").upsert(
+          {
+            source_table: "document_folders",
+            source_id: f.id,
+            title: f.name,
+            content,
+            metadata: { icon: f.icon, parent_id: f.parent_id },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "source_table,source_id" }
+        );
+        indexed++;
+      }
+    }
+
+    // Index document file metadata
+    const { data: files } = await supabase
+      .from("document_files")
+      .select("id, name, mime_type, folder_id");
+
+    if (files && folders) {
+      for (const file of files) {
+        const folderName = folders.find((f: any) => f.id === file.folder_id)?.name || "okänd mapp";
+        await supabase.from("content_index").upsert(
+          {
+            source_table: "document_files",
+            source_id: file.id,
+            title: file.name,
+            content: `Dokument "${file.name}" i mappen "${folderName}" (typ: ${file.mime_type})`,
+            metadata: { folder_id: file.folder_id, mime_type: file.mime_type },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "source_table,source_id" }
+        );
+        indexed++;
+      }
+    }
+
     console.log(`Indexed ${indexed} items`);
     return new Response(
       JSON.stringify({ success: true, indexed }),
