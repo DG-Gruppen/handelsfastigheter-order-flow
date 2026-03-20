@@ -121,7 +121,8 @@ export default function Dashboard() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
-        {/* ── Veckans vinst ── */}
+        {/* ── Veckans vinst (IT only) ── */}
+        {isIT && (
         <Card className="glass-card border-l-4 border-l-accent">
           <CardHeader className="pb-2">
             <CardTitle className="font-heading text-base flex items-center gap-2">
@@ -134,6 +135,7 @@ export default function Dashboard() {
             <p className="text-xs font-medium text-accent mt-3">Publicerad av {weeklyWin.author} · {weeklyWin.week}</p>
           </CardContent>
         </Card>
+        )}
 
         {/* ── Erkännanden ── */}
         <Card className="glass-card">
