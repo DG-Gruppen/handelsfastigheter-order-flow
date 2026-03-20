@@ -56,7 +56,7 @@ export default function Dashboard() {
       .eq("user_id", user.id)
       .eq("tools.is_active", true)
       .order("sort_order")
-      .limit(6)
+      .limit(8)
       .then(({ data: favData }) => {
         const personalFavs = ((favData as any[]) ?? []).map((f: any) => f.tools);
         if (personalFavs.length > 0) {
