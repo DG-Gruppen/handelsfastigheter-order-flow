@@ -277,7 +277,7 @@ export default function NewOrder() {
     });
 
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
-    const existingRecipientName = isManagerOrAdmin && selectedExistingRecipient !== "self"
+    const existingRecipientName = isPrivileged && selectedExistingRecipient !== "self"
       ? allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? null
       : null;
 
