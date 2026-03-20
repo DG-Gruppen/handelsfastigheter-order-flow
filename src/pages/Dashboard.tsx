@@ -95,7 +95,8 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* ── OKR Snapshot ── */}
+      {/* ── OKR Snapshot (IT only) ── */}
+      {isIT && (
       <Card className="glass-card">
         <CardHeader className="pb-2 px-4 md:px-6">
           <div className="flex items-center justify-between">
@@ -117,6 +118,7 @@ export default function Dashboard() {
           ))}
         </CardContent>
       </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
         {/* ── Veckans vinst ── */}
