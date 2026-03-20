@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Search, Phone, Mail, Users } from "lucide-react";
+import { Search, Phone, Mail, Users, Cake } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ORG_COLOR_MAP, getRoleColorKey } from "@/lib/orgColors";
 
@@ -11,6 +11,7 @@ interface PersonnelProfile {
   department: string | null;
   phone: string | null;
   title_override: string | null;
+  birthday: string | null;
 }
 
 function getInitials(name: string): string {
@@ -21,6 +22,15 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+const MONTH_NAMES = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+
+function formatBirthday(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
 }
 
 export default function Personnel() {
@@ -36,7 +46,7 @@ export default function Personnel() {
   const fetchData = useCallback(async () => {
     const [rolesRes, profilesRes, settingsRes] = await Promise.all([
       supabase.rpc("get_all_user_roles"),
-      supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override").order("full_name"),
+      supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override, birthday").order("full_name"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
 
@@ -184,6 +194,12 @@ export default function Personnel() {
                 <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                   {emp.department || "Ingen avdelning"}
                 </p>
+                {emp.birthday && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 flex items-center gap-1">
+                    <Cake className="w-3 h-3" />
+                    {formatBirthday(emp.birthday)}
+                  </p>
+                )}
 
                 {/* Contact */}
                 <div className="flex items-center gap-1 mt-3">
