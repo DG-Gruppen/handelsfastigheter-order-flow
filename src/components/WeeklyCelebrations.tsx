@@ -223,7 +223,10 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
                 </div>
                 <CelebrationComments
                   weekKey={c.weekKey}
+                  celebrationName={c.name}
+                  celebrationEmoji={c.emoji}
                   open={!!openComments[c.weekKey]}
+                  onOpenChange={(v) => setOpenComments(prev => ({ ...prev, [c.weekKey]: v }))}
                   onCountChange={(n) => setCommentCounts(prev => ({ ...prev, [c.weekKey]: n }))}
                 />
               </div>
