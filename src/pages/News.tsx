@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone } from "lucide-react";
+import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 
 /* ── Types ── */
@@ -51,6 +52,8 @@ export default function News() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<InternalNews | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 8;
 
   const fetchInternal = useCallback(async () => {
     const { data } = await supabase
@@ -125,6 +128,18 @@ export default function News() {
       return b.date - a.date;
     });
   }, [tab, filteredInternal, filteredCision]);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [tab, search, selectedCategory]);
+
+  // Paginated slices
+  const paginatedMerged = useMemo(() => mergedItems.slice(0, page * PAGE_SIZE), [mergedItems, page]);
+  const paginatedInternal = useMemo(() => filteredInternal.slice(0, page * PAGE_SIZE), [filteredInternal, page]);
+  const paginatedCision = useMemo(() => filteredCision.slice(0, page * PAGE_SIZE), [filteredCision, page]);
+
+  const totalForTab = tab === "all" ? mergedItems.length : tab === "internal" ? filteredInternal.length : filteredCision.length;
+  const shownCount = tab === "all" ? paginatedMerged.length : tab === "internal" ? paginatedInternal.length : paginatedCision.length;
+  const hasMore = shownCount < totalForTab;
 
   if (loading && cisionLoading) {
     return (
@@ -261,7 +276,7 @@ export default function News() {
               <p className="text-sm">{search || selectedCategory ? "Inga nyheter matchar din sökning" : "Inga nyheter ännu"}</p>
             </div>
           ) : (
-            mergedItems.map((item) => {
+            paginatedMerged.map((item) => {
               if (item.type === "internal") {
                 const news = item.data as InternalNews;
                 const colors = CATEGORY_COLORS[news.category] ?? { bg: "bg-secondary", text: "text-secondary-foreground" };
@@ -330,6 +345,16 @@ export default function News() {
               }
             })
           )}
+          {hasMore && tab === "all" && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} className="gap-2">
+                Visa fler <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {!hasMore && shownCount > PAGE_SIZE && tab === "all" && (
+            <p className="text-center text-xs text-muted-foreground pt-2">Visar alla {totalForTab} nyheter</p>
+          )}
         </div>
       )}
 
@@ -346,7 +371,7 @@ export default function News() {
               <p className="text-sm">{search || selectedCategory ? "Inga nyheter matchar din sökning" : "Inga publicerade nyheter ännu"}</p>
             </div>
           ) : (
-            filteredInternal.map((news) => {
+            paginatedInternal.map((news) => {
               const colors = CATEGORY_COLORS[news.category] ?? { bg: "bg-secondary", text: "text-secondary-foreground" };
               return (
                 <Card
@@ -382,6 +407,16 @@ export default function News() {
               );
             })
           )}
+          {hasMore && tab === "internal" && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} className="gap-2">
+                Visa fler <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {!hasMore && shownCount > PAGE_SIZE && tab === "internal" && (
+            <p className="text-center text-xs text-muted-foreground pt-2">Visar alla {totalForTab} nyheter</p>
+          )}
         </div>
       )}
 
@@ -398,7 +433,7 @@ export default function News() {
               <p className="text-sm">{search ? "Inga pressmeddelanden matchar din sökning" : "Inga pressmeddelanden hittades"}</p>
             </div>
           ) : (
-            filteredCision.map((release) => (
+            paginatedCision.map((release) => (
               <Card key={release.id} className="hover:shadow-md active:scale-[0.99] transition-all">
                 <CardContent className="p-4 md:p-5">
                   <div className="flex gap-3 md:gap-4">
@@ -426,6 +461,16 @@ export default function News() {
                 </CardContent>
               </Card>
             ))
+          )}
+          {hasMore && tab === "cision" && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} className="gap-2">
+                Visa fler <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {!hasMore && shownCount > PAGE_SIZE && tab === "cision" && (
+            <p className="text-center text-xs text-muted-foreground pt-2">Visar alla {totalForTab} pressmeddelanden</p>
           )}
         </div>
       )}
