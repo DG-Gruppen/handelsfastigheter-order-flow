@@ -371,7 +371,7 @@ export default function News() {
               <p className="text-sm">{search || selectedCategory ? "Inga nyheter matchar din sökning" : "Inga publicerade nyheter ännu"}</p>
             </div>
           ) : (
-            filteredInternal.map((news) => {
+            paginatedInternal.map((news) => {
               const colors = CATEGORY_COLORS[news.category] ?? { bg: "bg-secondary", text: "text-secondary-foreground" };
               return (
                 <Card
