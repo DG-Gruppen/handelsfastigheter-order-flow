@@ -62,6 +62,7 @@ function resolveApprovalRouting(params: {
   isManagerOrAdmin: boolean;
   isManager: boolean;
   isStaff: boolean;
+  isIT: boolean;
   reportsDirectlyToCeo: boolean;
   approvalSettings: Record<string, string>;
   ceoProfileId: string | null;
@@ -69,13 +70,22 @@ function resolveApprovalRouting(params: {
   currentUserId: string;
 }): ApprovalRouting {
   const {
-    isCeo, isManagerOrAdmin, isManager, isStaff,
+    isCeo, isManagerOrAdmin, isManager, isStaff, isIT,
     reportsDirectlyToCeo, approvalSettings,
     ceoProfileId, myManagerProfile, currentUserId,
   } = params;
 
+  // VD always auto-approves
+  if (isCeo) {
+    return { autoApprove: true, needsCeoApproval: false, needsManagerApproval: false, resolvedApproverId: currentUserId };
+  }
+
+  // IT and STAB without a manager → auto-approve
+  if ((isIT || isStaff) && !myManagerProfile) {
+    return { autoApprove: true, needsCeoApproval: false, needsManagerApproval: false, resolvedApproverId: currentUserId };
+  }
+
   const needsCeoApproval =
-    !isCeo &&
     isManagerOrAdmin &&
     reportsDirectlyToCeo &&
     (
@@ -84,9 +94,9 @@ function resolveApprovalRouting(params: {
     );
 
   const needsManagerApproval =
-    !isCeo && isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+    isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
 
-  const autoApprove = isCeo || (isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval);
+  const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval;
 
   const resolvedApproverId = needsCeoApproval && ceoProfileId
     ? ceoProfileId
@@ -96,7 +106,7 @@ function resolveApprovalRouting(params: {
         ? currentUserId
         : (myManagerProfile?.user_id ?? null);
 
-  return { autoApprove, needsCeoApproval, needsManagerApproval: needsManagerApproval, resolvedApproverId };
+  return { autoApprove, needsCeoApproval, needsManagerApproval, resolvedApproverId };
 }
 
 export default function NewOrder() {
