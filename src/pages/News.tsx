@@ -129,6 +129,18 @@ export default function News() {
     });
   }, [tab, filteredInternal, filteredCision]);
 
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [tab, search, selectedCategory]);
+
+  // Paginated slices
+  const paginatedMerged = useMemo(() => mergedItems.slice(0, page * PAGE_SIZE), [mergedItems, page]);
+  const paginatedInternal = useMemo(() => filteredInternal.slice(0, page * PAGE_SIZE), [filteredInternal, page]);
+  const paginatedCision = useMemo(() => filteredCision.slice(0, page * PAGE_SIZE), [filteredCision, page]);
+
+  const totalForTab = tab === "all" ? mergedItems.length : tab === "internal" ? filteredInternal.length : filteredCision.length;
+  const shownCount = tab === "all" ? paginatedMerged.length : tab === "internal" ? paginatedInternal.length : paginatedCision.length;
+  const hasMore = shownCount < totalForTab;
+
   if (loading && cisionLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
