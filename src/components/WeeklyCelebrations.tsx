@@ -13,7 +13,15 @@ interface Celebration {
   weekKey: string;
 }
 
-function getWeekRange(): { start: Date; end: Date } {
+function getISOWeek(d: Date): string {
+  const year = d.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  const days = Math.floor((d.getTime() - jan1.getTime()) / 86400000);
+  const week = Math.ceil((days + jan1.getDay() + 1) / 7);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+function getWeekRange(): { start: Date; end: Date; isoWeek: string } {
   const now = new Date();
   const day = now.getDay(); // 0=Sun
   const monday = new Date(now);
@@ -22,7 +30,7 @@ function getWeekRange(): { start: Date; end: Date } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
-  return { start: monday, end: sunday };
+  return { start: monday, end: sunday, isoWeek: getISOWeek(monday) };
 }
 
 function isDateInWeek(dateStr: string, weekStart: Date, weekEnd: Date): boolean {
