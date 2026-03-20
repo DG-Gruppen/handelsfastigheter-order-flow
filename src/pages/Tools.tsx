@@ -13,7 +13,7 @@ interface Tool {
   sort_order: number;
 }
 
-const MAX_FAVORITES = 6;
+const MAX_FAVORITES = 8;
 
 export default function Tools() {
   const { user } = useAuth();

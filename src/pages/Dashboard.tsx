@@ -56,14 +56,14 @@ export default function Dashboard() {
       .eq("user_id", user.id)
       .eq("tools.is_active", true)
       .order("sort_order")
-      .limit(6)
+      .limit(8)
       .then(({ data: favData }) => {
         const personalFavs = ((favData as any[]) ?? []).map((f: any) => f.tools);
         if (personalFavs.length > 0) {
           setQuickTools(personalFavs);
         } else {
           // No personal favorites — use admin defaults
-          supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).eq("is_starred", true).order("sort_order").limit(6).then(({ data }) => {
+          supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).eq("is_starred", true).order("sort_order").limit(8).then(({ data }) => {
             setQuickTools((data as any[]) ?? []);
           });
         }

@@ -191,7 +191,7 @@ export default function ToolsManager() {
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_active: !t.is_active } : t));
   };
 
-  const MAX_STARRED = 6;
+  const MAX_STARRED = 8;
   const starredCount = tools.filter(t => t.is_starred).length;
 
   const handleToggleStar = async (tool: Tool) => {
