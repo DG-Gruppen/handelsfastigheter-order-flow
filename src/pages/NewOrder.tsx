@@ -299,7 +299,7 @@ export default function NewOrder() {
         title,
         description: description.trim(),
         recipient_type: "existing",
-        recipient_name: isManagerOrAdmin
+        recipient_name: isPrivileged
           ? (selectedExistingRecipient === "self"
             ? ""
             : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
