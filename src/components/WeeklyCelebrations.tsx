@@ -190,7 +190,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
               >
                 <div className="flex items-center gap-4">
                   <span className="text-3xl shrink-0">{c.emoji}</span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-foreground">{c.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                       {c.type === "birthday" ? (
@@ -201,8 +201,17 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
                       {c.label}
                     </div>
                   </div>
+                  <CelebrationCommentToggle
+                    count={commentCounts[c.weekKey] || 0}
+                    open={!!openComments[c.weekKey]}
+                    onToggle={() => setOpenComments(prev => ({ ...prev, [c.weekKey]: !prev[c.weekKey] }))}
+                  />
                 </div>
-                <CelebrationComments weekKey={c.weekKey} />
+                <CelebrationComments
+                  weekKey={c.weekKey}
+                  open={!!openComments[c.weekKey]}
+                  onCountChange={(n) => setCommentCounts(prev => ({ ...prev, [c.weekKey]: n }))}
+                />
               </div>
             ))}
           </div>
