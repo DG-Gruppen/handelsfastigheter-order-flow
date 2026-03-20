@@ -9,7 +9,8 @@ interface Celebration {
   type: "birthday" | "anniversary";
   label: string;
   emoji: string;
-  date: string; // ISO date of the event this week
+  date: string;
+  weekKey: string;
 }
 
 function getWeekRange(): { start: Date; end: Date } {
