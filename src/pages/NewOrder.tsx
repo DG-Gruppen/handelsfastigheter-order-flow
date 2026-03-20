@@ -569,7 +569,7 @@ export default function NewOrder() {
                 </p>
               </div>
             )}
-            {!isManagerOrAdmin && myManagerProfile && (
+            {!isPrivileged && myManagerProfile && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <p className="text-sm text-foreground">
                   <span className="font-medium">Attesteras av:</span>{" "}
@@ -577,7 +577,7 @@ export default function NewOrder() {
                 </p>
               </div>
             )}
-            {!isManagerOrAdmin && !myManagerProfile && (
+            {!isPrivileged && !myManagerProfile && (
               <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
                 <p className="text-sm text-destructive">
                   Du har ingen chef kopplad till din profil. Kontakta din administratör.
