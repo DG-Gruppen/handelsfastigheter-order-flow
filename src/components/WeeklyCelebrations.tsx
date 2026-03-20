@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Cake, Briefcase, PartyPopper } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import CelebrationComments from "@/components/CelebrationComments";
+import CelebrationComments, { CelebrationCommentToggle } from "@/components/CelebrationComments";
 
 interface Celebration {
   name: string;
