@@ -135,10 +135,10 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
   }
 
   if (compact) {
-    // Dashboard version – simpler layout
+    // Dashboard version – compact with comments
     return (
       <Card className="glass-card">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-1">
           <CardTitle className="font-heading text-base flex items-center gap-2">
             <Cake className="w-5 h-5 text-accent" />
             Veckans jubilarer
@@ -148,14 +148,26 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
           {celebrations.length === 0 ? (
             <p className="text-sm text-muted-foreground">Inga jubilarer denna vecka</p>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {celebrations.map((c, i) => (
-                <div key={i} className="flex items-center gap-3 bg-accent/10 rounded-lg px-4 py-3">
-                  <span className="text-2xl">{c.emoji}</span>
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{c.name}</div>
-                    <div className="text-xs text-muted-foreground">{c.label}</div>
+                <div key={i} className="bg-accent/10 rounded-lg px-3 py-2 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg leading-none">{c.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-foreground leading-tight">{c.name}</div>
+                      <div className="text-[11px] text-muted-foreground leading-tight">{c.label}</div>
+                    </div>
+                    <CelebrationCommentToggle
+                      count={commentCounts[c.weekKey] || 0}
+                      open={!!openComments[c.weekKey]}
+                      onToggle={() => setOpenComments(prev => ({ ...prev, [c.weekKey]: !prev[c.weekKey] }))}
+                    />
                   </div>
+                  <CelebrationComments
+                    weekKey={c.weekKey}
+                    open={!!openComments[c.weekKey]}
+                    onCountChange={(n) => setCommentCounts(prev => ({ ...prev, [c.weekKey]: n }))}
+                  />
                 </div>
               ))}
             </div>
