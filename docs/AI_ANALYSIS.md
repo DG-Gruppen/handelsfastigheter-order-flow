@@ -142,16 +142,17 @@ Check for:
 - Stale fetch results after token refresh
 - Duplicate auth event handling
 - Missing error handling on profile or role fetches
-- Role precedence ambiguity when direct and group roles conflict
+- Role precedence ambiguity when direct and group roles conflict — direct roles must take precedence over group-derived roles; verify that the `new Set()` merge does not flatten this distinction for consuming code
 
 ### `useModules.tsx` + `useModulePermission.tsx` + `useAdminAccess.tsx` + `ProtectedRoute.tsx`
-Together these form the access model.
+Together these form the access model. `useModules.tsx` maintains a Realtime channel on `module_permissions` — module access state depends on this channel being alive and current.
 
 Check for:
 - Explicit permission precedence bugs
 - Overly permissive defaults when a permission is absent
 - Route visibility that does not match actual data access
 - Admin section slug mappings drifting from actual module slugs in the database
+- Silent Realtime channel failure leaving the UI on a stale permission snapshot — there must be a reconnect or fallback reload strategy
 
 ### `useNavSettings.tsx`
 Can disable routes through database settings.
@@ -209,6 +210,9 @@ If you see any of the following, flag them regardless of where they appear:
 - Permission logic duplicated across route guards, admin guards, and per-module hooks without a shared invariant
 - Role-to-module mappings hardcoded in more than one file
 - Missing error handling on auth-critical or permission-critical reads
+- `new Set()` used to merge direct and group-derived roles without subsequent priority resolution — consuming code must apply role precedence explicitly, or the effective role may be wrong
+- Local state updates in `OrderDetail.tsx` applied before backend confirmation — optimistic updates that are not rolled back on failure mask write errors from the user
+- `supabase.functions.invoke("send-email")` called directly from a component without error handling or retry — a network failure at this point produces a silently incomplete order action (approved/rejected/delivered with no email sent); every such call site is a **Critical Risk** for missed notifications
 
 ---
 

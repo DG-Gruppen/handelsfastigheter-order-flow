@@ -60,8 +60,15 @@ Responsibilities:
 
 Data sources for roles are combined in the hook. This means the effective role set is an aggregate computed in the browser from multiple async fetches. If any fetch is stale, errors, or returns before the session is fully established, the role set can be temporarily incorrect.
 
+### Role merge behavior
+
+Direct roles (`user_roles`) and group-derived roles (`group_members`) are merged using `new Set()` — a union with no documented conflict resolution. The intended precedence rule is: **direct roles take precedence over group-derived roles** (see `DOMAIN_RULES.md` Section 2). However, if the merge implementation does not enforce this — for example, if a group grants `user` and a direct role is `admin`, and the consuming code iterates the set without priority logic — the effective role may be incorrect.
+
+**This must be verified in `useAuth.tsx`.** If `new Set()` is the only merge mechanism and callers do not apply priority logic themselves, this is a bug, not just a documentation gap.
+
 **Active risks:**
 - Multiple async sources for roles create a window where the computed role set is incomplete or stale after login, token refresh, or tab resume.
+- Role merge via `new Set()` does not guarantee priority ordering — consuming code must apply precedence explicitly or risk using the wrong effective role.
 - Auth events (`onAuthStateChange`) may trigger redundant profile/role fetches if not properly debounced or deduplicated.
 - Missing error handling on profile or role fetches can leave the user in a partially-resolved auth state with no visible indication.
 
@@ -170,8 +177,11 @@ Admin sections are lazy-loaded and conditionally rendered based on the result of
 
 Supabase Realtime channels are used to push updates to the UI when order state changes. Reloads are debounced to reduce redundant fetches.
 
+`useModules.tsx` uses a dedicated Postgres channel to listen for changes to `module_permissions`. This means module access state in the UI is kept in sync with the database without requiring a full page reload. **Realtime updates are a structural dependency of the permission model** — if the channel drops or the debounce gap is too wide, users may operate under a stale permission set until the next reload or reconnect.
+
 **Active risks:**
-- A debounce gap means the UI can be briefly stale after a database change.
+- A debounce gap means the UI can be briefly stale after a database change, including permission changes.
+- A dropped Realtime channel is not equivalent to "no changes" — it is an unknown state. Silent channel failure must be treated as a potential stale-permission condition.
 - Auth state changes (token refresh, re-login) may trigger realtime reconnection events that cause duplicate data fetches alongside existing TanStack Query invalidations.
 
 ---

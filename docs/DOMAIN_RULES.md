@@ -67,6 +67,8 @@ This is currently frontend-only. **This is a known risk.** See Section 10.
 | Staff / IT | No manager resolvable | Auto-approve |
 | Staff / IT | Manager exists | Route to manager |
 
+> **Important:** This matrix represents the intended behavior as defined in `resolveApprovalRouting(...)` in `NewOrder.tsx`. The function is the current source of truth for routing logic. Any refactoring of that function must preserve all rows of this matrix exactly. If the code diverges from this matrix, the code is wrong.
+
 ### Edge cases that must be handled
 
 - **Staff with a manager in the system:** Route to that manager. Do not auto-approve.
@@ -115,6 +117,17 @@ An order is only valid if it has:
 **Steps 1 and 2 must be treated as a single atomic operation.** An `orders` row without corresponding `order_items` is an inconsistent state.
 
 **Steps 3 and 4 are side effects.** Their failure should not silently mark the order as successfully created from the user's perspective. Partial failure (order created, email not sent) must be surfaced or retried.
+
+### Recipient rules
+
+An order can be placed for the requester themselves or for another user (`recipient_type: "existing"`). The following rules apply:
+
+| Recipient type | Permitted for |
+|----------------|--------------|
+| Self (default) | Any authenticated user |
+| `existing` (another user) | Users with `isPrivileged` status — currently manager and admin roles |
+
+Ordering on behalf of another user without `isPrivileged` is not permitted. This rule currently lives only in `NewOrder.tsx` and is not enforced server-side.
 
 ### Current gap
 
