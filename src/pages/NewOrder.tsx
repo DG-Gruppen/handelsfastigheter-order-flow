@@ -62,6 +62,7 @@ function resolveApprovalRouting(params: {
   isManagerOrAdmin: boolean;
   isManager: boolean;
   isStaff: boolean;
+  isIT: boolean;
   reportsDirectlyToCeo: boolean;
   approvalSettings: Record<string, string>;
   ceoProfileId: string | null;
@@ -69,13 +70,22 @@ function resolveApprovalRouting(params: {
   currentUserId: string;
 }): ApprovalRouting {
   const {
-    isCeo, isManagerOrAdmin, isManager, isStaff,
+    isCeo, isManagerOrAdmin, isManager, isStaff, isIT,
     reportsDirectlyToCeo, approvalSettings,
     ceoProfileId, myManagerProfile, currentUserId,
   } = params;
 
+  // VD always auto-approves
+  if (isCeo) {
+    return { autoApprove: true, needsCeoApproval: false, needsManagerApproval: false, resolvedApproverId: currentUserId };
+  }
+
+  // IT and STAB without a manager → auto-approve
+  if ((isIT || isStaff) && !myManagerProfile) {
+    return { autoApprove: true, needsCeoApproval: false, needsManagerApproval: false, resolvedApproverId: currentUserId };
+  }
+
   const needsCeoApproval =
-    !isCeo &&
     isManagerOrAdmin &&
     reportsDirectlyToCeo &&
     (
@@ -84,9 +94,9 @@ function resolveApprovalRouting(params: {
     );
 
   const needsManagerApproval =
-    !isCeo && isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+    isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
 
-  const autoApprove = isCeo || (isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval);
+  const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval;
 
   const resolvedApproverId = needsCeoApproval && ceoProfileId
     ? ceoProfileId
@@ -96,12 +106,14 @@ function resolveApprovalRouting(params: {
         ? currentUserId
         : (myManagerProfile?.user_id ?? null);
 
-  return { autoApprove, needsCeoApproval, needsManagerApproval: needsManagerApproval, resolvedApproverId };
+  return { autoApprove, needsCeoApproval, needsManagerApproval, resolvedApproverId };
 }
 
 export default function NewOrder() {
   const { user, roles } = useAuth();
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin");
+  const isIT = roles.includes("it");
+  const isPrivileged = isManagerOrAdmin || isIT;
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
@@ -126,6 +138,7 @@ export default function NewOrder() {
     isManagerOrAdmin,
     isManager,
     isStaff,
+    isIT,
     reportsDirectlyToCeo,
     approvalSettings,
     ceoProfileId: ceoProfile?.user_id ?? null,
@@ -238,8 +251,8 @@ export default function NewOrder() {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
 
-    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !myManagerProfile)) {
-      toast.error(!myManagerProfile && !isManagerOrAdmin
+    if (!user || validItems.length === 0 || (!isPrivileged && !myManagerProfile)) {
+      toast.error(!myManagerProfile && !isPrivileged
         ? "Du har ingen chef kopplad till din profil. Kontakta din administratör."
         : "Lägg till minst en utrustning");
       return;
@@ -255,6 +268,7 @@ export default function NewOrder() {
       isManagerOrAdmin,
       isManager: roles.includes("manager"),
       isStaff: myProfile?.is_staff === true,
+      isIT,
       reportsDirectlyToCeo: rdtc,
       approvalSettings,
       ceoProfileId: ceoProfile?.user_id ?? null,
@@ -263,7 +277,7 @@ export default function NewOrder() {
     });
 
     const firstType = orderTypes.find((t) => t.id === validItems[0].typeId);
-    const existingRecipientName = isManagerOrAdmin && selectedExistingRecipient !== "self"
+    const existingRecipientName = isPrivileged && selectedExistingRecipient !== "self"
       ? allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? null
       : null;
 
@@ -285,7 +299,7 @@ export default function NewOrder() {
         title,
         description: description.trim(),
         recipient_type: "existing",
-        recipient_name: isManagerOrAdmin
+        recipient_name: isPrivileged
           ? (selectedExistingRecipient === "self"
             ? ""
             : (allProfiles.find(p => p.user_id === selectedExistingRecipient)?.full_name ?? ""))
@@ -479,7 +493,7 @@ export default function NewOrder() {
           <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
 
             {/* Existing employee picker for managers */}
-            {isManagerOrAdmin && (
+            {isPrivileged && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Beställ till *</Label>
                 <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
@@ -555,7 +569,7 @@ export default function NewOrder() {
                 </p>
               </div>
             )}
-            {!isManagerOrAdmin && myManagerProfile && (
+            {!isPrivileged && myManagerProfile && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <p className="text-sm text-foreground">
                   <span className="font-medium">Attesteras av:</span>{" "}
@@ -563,7 +577,7 @@ export default function NewOrder() {
                 </p>
               </div>
             )}
-            {!isManagerOrAdmin && !myManagerProfile && (
+            {!isPrivileged && !myManagerProfile && (
               <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
                 <p className="text-sm text-destructive">
                   Du har ingen chef kopplad till din profil. Kontakta din administratör.
