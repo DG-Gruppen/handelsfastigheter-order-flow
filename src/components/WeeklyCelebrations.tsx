@@ -88,6 +88,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
           label: `Fyller år ${formatBirthday(p.birthday)}`,
           emoji: "🎂",
           date: p.birthday,
+          weekKey: `birthday:${p.full_name}:${isoWeek}`,
         });
       }
 
