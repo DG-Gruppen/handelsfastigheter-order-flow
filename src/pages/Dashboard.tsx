@@ -22,6 +22,7 @@ export default function Dashboard() {
   const { user, profile, roles } = useAuth();
   const isIT = roles.includes("it");
   const [recognitions, setRecognitions] = useState<any[]>([]);
+  const [latestNews, setLatestNews] = useState<any[]>([]);
 
   const fetchRecognitions = useCallback(async () => {
     const { data } = await supabase
