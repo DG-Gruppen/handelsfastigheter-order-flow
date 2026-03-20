@@ -15,9 +15,37 @@ interface Comment {
   author_name: string;
 }
 
-export default function CelebrationComments({ weekKey }: { weekKey: string }) {
+/** Standalone toggle button – render wherever you want in the card */
+export function CelebrationCommentToggle({
+  count,
+  open,
+  onToggle,
+}: {
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex items-center justify-center w-10 h-10 md:w-9 md:h-9 rounded-full hover:bg-accent/20 transition-colors shrink-0"
+      aria-label="Kommentera"
+    >
+      <div className="relative">
+        <MessageCircle className={`w-5 h-5 ${open ? "text-primary" : "text-muted-foreground"}`} />
+        {count > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+            {count}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+/** The expandable comment list + input */
+export default function CelebrationComments({ weekKey, open }: { weekKey: string; open: boolean }) {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
@@ -76,66 +104,54 @@ export default function CelebrationComments({ weekKey }: { weekKey: string }) {
     fetchComments();
   };
 
-  const count = comments.length;
+  if (!open) return null;
 
   return (
-    <div className="mt-2">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <MessageCircle className="w-3.5 h-3.5" />
-        {count > 0 ? `${count} kommentar${count > 1 ? "er" : ""}` : "Kommentera"}
-      </button>
-
-      {open && (
-        <div className="mt-2 space-y-2">
-          {comments.length > 0 && (
-            <ScrollArea className="max-h-32">
-              <div className="space-y-1.5 pr-2">
-                {comments.map((c) => (
-                  <div key={c.id} className="flex items-start gap-2 group">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium text-foreground">{c.author_name}</span>
-                      <span className="text-[10px] text-muted-foreground/60 ml-1.5">
-                        {format(new Date(c.created_at), "d MMM HH:mm", { locale: sv })}
-                      </span>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{c.message}</p>
-                    </div>
-                    {user && c.user_id === user.id && (
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+    <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+      {comments.length > 0 && (
+        <ScrollArea className="max-h-32">
+          <div className="space-y-1.5 pr-2">
+            {comments.map((c) => (
+              <div key={c.id} className="flex items-start gap-2 group">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium text-foreground">{c.author_name}</span>
+                  <span className="text-[10px] text-muted-foreground/60 ml-1.5">
+                    {format(new Date(c.created_at), "d MMM HH:mm", { locale: sv })}
+                  </span>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{c.message}</p>
+                </div>
+                {user && c.user_id === user.id && (
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
               </div>
-            </ScrollArea>
-          )}
-
-          <div className="flex gap-2">
-            <input
-              value={newMsg}
-              onChange={(e) => setNewMsg(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-              placeholder="Skriv en hälsning..."
-              className="flex-1 h-10 md:h-9 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={handleSend}
-              disabled={sending || !newMsg.trim()}
-              className="h-10 w-10 md:h-9 md:w-9 shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+            ))}
           </div>
-        </div>
+        </ScrollArea>
       )}
+
+      <div className="flex gap-2">
+        <input
+          value={newMsg}
+          onChange={(e) => setNewMsg(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+          placeholder="Skriv en hälsning..."
+          className="flex-1 h-10 md:h-9 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={handleSend}
+          disabled={sending || !newMsg.trim()}
+          className="h-10 w-10 md:h-9 md:w-9 shrink-0"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 }
