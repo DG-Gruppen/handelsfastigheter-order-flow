@@ -248,7 +248,93 @@ export default function News() {
       )}
 
       {/* ── Internal News ── */}
-      {(tab === "internal" || tab === "all") && (
+      {/* ── "All" tab – merged interleaved list ── */}
+      {tab === "all" && (
+        <div className="space-y-3">
+          {(loading && cisionLoading) ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : mergedItems.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Newspaper className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">{search || selectedCategory ? "Inga nyheter matchar din sökning" : "Inga nyheter ännu"}</p>
+            </div>
+          ) : (
+            mergedItems.map((item) => {
+              if (item.type === "internal") {
+                const news = item.data as InternalNews;
+                const colors = CATEGORY_COLORS[news.category] ?? { bg: "bg-secondary", text: "text-secondary-foreground" };
+                return (
+                  <Card
+                    key={`int-${news.id}`}
+                    className={`cursor-pointer hover:shadow-md active:scale-[0.99] transition-all border-l-4 ${
+                      news.is_pinned ? "border-l-accent" : "border-l-transparent"
+                    }`}
+                    onClick={() => setSelectedArticle(news)}
+                  >
+                    <CardContent className="p-4 md:p-5">
+                      <div className="flex gap-3 md:gap-4">
+                        <span className="text-2xl shrink-0 mt-0.5">{news.emoji}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className={`text-[10px] uppercase tracking-wider font-bold ${colors.text} ${colors.bg} px-2 py-0.5 rounded-full`}>
+                              {news.category}
+                            </span>
+                            {news.is_pinned && (
+                              <span className="flex items-center gap-0.5 text-[10px] uppercase tracking-wider font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                                <Pin className="h-2.5 w-2.5" /> Pinnad
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(news.published_at).toLocaleDateString("sv-SE")}
+                            </span>
+                          </div>
+                          <h3 className="text-sm md:text-base font-semibold text-foreground leading-snug">{news.title}</h3>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{news.excerpt}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              } else {
+                const release = item.data as CisionRelease;
+                return (
+                  <Card key={`cis-${release.id}`} className="hover:shadow-md active:scale-[0.99] transition-all">
+                    <CardContent className="p-4 md:p-5">
+                      <div className="flex gap-3 md:gap-4">
+                        {release.image_url ? (
+                          <img src={release.image_url} alt="" className="h-16 w-20 md:w-24 rounded-lg object-cover shrink-0" />
+                        ) : (
+                          <div className="h-16 w-20 md:w-24 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Globe className="h-6 w-6 text-primary" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Cision</span>
+                            <span className="text-[10px] text-muted-foreground">{new Date(release.published_at).toLocaleDateString("sv-SE")}</span>
+                          </div>
+                          <h3 className="text-sm md:text-base font-semibold text-foreground leading-snug">{release.title}</h3>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{release.excerpt}</p>
+                          {release.url && (
+                            <a href={release.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2 min-h-[36px]" onClick={(e) => e.stopPropagation()}>
+                              Läs på Cision <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              }
+            })
+          )}
+        </div>
+      )}
+
+      {/* ── Internal News (only for "internal" tab) ── */}
+      {tab === "internal" && (
         <div className="space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -299,8 +385,8 @@ export default function News() {
         </div>
       )}
 
-      {/* ── Cision Releases ── */}
-      {(tab === "cision" || tab === "all") && (
+      {/* ── Cision Releases (only for "cision" tab) ── */}
+      {tab === "cision" && (
         <div className="space-y-3">
           {cisionLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -317,11 +403,7 @@ export default function News() {
                 <CardContent className="p-4 md:p-5">
                   <div className="flex gap-3 md:gap-4">
                     {release.image_url ? (
-                      <img
-                        src={release.image_url}
-                        alt=""
-                        className="h-16 w-20 md:w-24 rounded-lg object-cover shrink-0"
-                      />
+                      <img src={release.image_url} alt="" className="h-16 w-20 md:w-24 rounded-lg object-cover shrink-0" />
                     ) : (
                       <div className="h-16 w-20 md:w-24 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Globe className="h-6 w-6 text-primary" />
@@ -329,23 +411,13 @@ export default function News() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                          Cision
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(release.published_at).toLocaleDateString("sv-SE")}
-                        </span>
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Cision</span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(release.published_at).toLocaleDateString("sv-SE")}</span>
                       </div>
                       <h3 className="text-sm md:text-base font-semibold text-foreground leading-snug">{release.title}</h3>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{release.excerpt}</p>
                       {release.url && (
-                        <a
-                          href={release.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2 min-h-[36px]"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <a href={release.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2 min-h-[36px]" onClick={(e) => e.stopPropagation()}>
                           Läs på Cision <ExternalLink className="h-3 w-3" />
                         </a>
                       )}
@@ -357,7 +429,6 @@ export default function News() {
           )}
         </div>
       )}
-
 
       {/* ── Article Detail Dialog ── */}
       <Dialog open={!!selectedArticle} onOpenChange={(v) => !v && setSelectedArticle(null)}>
