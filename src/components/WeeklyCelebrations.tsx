@@ -151,45 +151,46 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
     );
   }
 
-  // Full Culture page version
+  // Full Culture page version – wrapped in card like other sections
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-4">
-        <PartyPopper className="w-5 h-5 text-accent" />
-        <h2 className="font-heading text-xl font-semibold text-foreground">Veckans jubilarer</h2>
-      </div>
-
-      {celebrations.length === 0 ? (
-        <div className="glass-card rounded-2xl p-6 text-center">
+    <Card className="glass-card">
+      <CardHeader className="pb-2">
+        <CardTitle className="font-heading text-base flex items-center gap-2">
+          <PartyPopper className="w-5 h-5 text-accent" />
+          Veckans jubilarer
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {celebrations.length === 0 ? (
           <p className="text-sm text-muted-foreground">Inga jubilarer denna vecka 🎈</p>
-        </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {celebrations.map((c, i) => (
-            <div
-              key={i}
-              className={`glass-card rounded-2xl p-5 flex items-center gap-4 border-l-4 ${
-                c.type === "birthday"
-                  ? "border-l-primary/60"
-                  : "border-l-accent/60"
-              }`}
-            >
-              <span className="text-3xl shrink-0">{c.emoji}</span>
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-foreground">{c.name}</div>
-                <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                  {c.type === "birthday" ? (
-                    <Cake className="w-3 h-3 shrink-0" />
-                  ) : (
-                    <Briefcase className="w-3 h-3 shrink-0" />
-                  )}
-                  {c.label}
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {celebrations.map((c, i) => (
+              <div
+                key={i}
+                className={`rounded-xl p-4 flex items-center gap-4 border-l-4 bg-accent/5 ${
+                  c.type === "birthday"
+                    ? "border-l-primary/60"
+                    : "border-l-accent/60"
+                }`}
+              >
+                <span className="text-3xl shrink-0">{c.emoji}</span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-foreground">{c.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                    {c.type === "birthday" ? (
+                      <Cake className="w-3 h-3 shrink-0" />
+                    ) : (
+                      <Briefcase className="w-3 h-3 shrink-0" />
+                    )}
+                    {c.label}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
