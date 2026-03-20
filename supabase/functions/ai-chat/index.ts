@@ -1,12 +1,24 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const ALLOWED_ORIGIN = "https://intra.handelsfastigheter.se";
+const PRIMARY_ORIGIN = "https://intra.handelsfastigheter.se";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+const isAllowedOrigin = (origin: string | null) => {
+  if (!origin) return false;
+  return (
+    origin === PRIMARY_ORIGIN ||
+    origin === "https://handelsfastigheter.lovable.app" ||
+    origin.endsWith(".lovableproject.com") ||
+    origin.endsWith(".lovable.app") ||
+    origin === "http://localhost:5173"
+  );
+};
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin! : PRIMARY_ORIGIN,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+  "Vary": "Origin",
+});
 
 const SYSTEM_PROMPT = `Du är SHF-assistenten, en hjälpsam och kunnig AI-chatbot för medarbetare på Svenska Handelsfastigheter (SHF).
 
@@ -46,6 +58,9 @@ Du kan hjälpa med:
 - Hitta INTE på information. Gissa aldrig på interna rutiner eller policyer.`;
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
