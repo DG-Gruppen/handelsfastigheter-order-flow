@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone } from "lucide-react";
+import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 
 /* ── Types ── */
