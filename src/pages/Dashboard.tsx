@@ -68,7 +68,7 @@ export default function Dashboard() {
           });
         }
       });
-    supabase.from("news").select("id, title, excerpt, category, emoji, is_pinned, published_at").eq("is_published", true).order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(3).then(({ data }) => {
+    supabase.from("news").select("id, title, excerpt, category, emoji, is_pinned, published_at").eq("is_published", true).order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4).then(({ data }) => {
       setLatestNews((data as any[]) ?? []);
     });
   }, [user, profile, fetchRecognitions]);
