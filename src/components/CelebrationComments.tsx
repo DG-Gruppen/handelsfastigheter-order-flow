@@ -70,6 +70,8 @@ export default function CelebrationComments({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
+  const onCountChangeRef = React.useRef(onCountChange);
+  onCountChangeRef.current = onCountChange;
 
   const fetchComments = useCallback(async () => {
     const { data } = await supabase
