@@ -268,6 +268,7 @@ export default function NewOrder() {
       isManagerOrAdmin,
       isManager: roles.includes("manager"),
       isStaff: myProfile?.is_staff === true,
+      isIT,
       reportsDirectlyToCeo: rdtc,
       approvalSettings,
       ceoProfileId: ceoProfile?.user_id ?? null,
