@@ -50,7 +50,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user || !profile) return;
     fetchRecognitions();
-    supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).eq("is_starred", true).order("sort_order").then(({ data }) => {
+    supabase.from("tools" as any).select("id, name, emoji, url").eq("is_active", true).eq("is_starred", true).order("sort_order").limit(6).then(({ data }) => {
       setQuickTools((data as any[]) ?? []);
     });
     supabase.from("news").select("id, title, excerpt, category, emoji, is_pinned, published_at").eq("is_published", true).order("is_pinned", { ascending: false }).order("published_at", { ascending: false }).limit(3).then(({ data }) => {
