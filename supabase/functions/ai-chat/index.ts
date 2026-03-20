@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: Deno.env.get("AI_MODEL") ?? "google/gemini-2.0-flash",
+          model: Deno.env.get("AI_MODEL") ?? "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemMessage },
             ...messages,
