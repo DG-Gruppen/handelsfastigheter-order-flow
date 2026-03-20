@@ -102,6 +102,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
             label: `${years} år på SHF`,
             emoji: years >= 10 ? "🏅" : years >= 5 ? "🎉" : "⭐",
             date: p.start_date,
+            weekKey: `anniversary:${p.full_name}:${isoWeek}`,
           });
         }
       }
