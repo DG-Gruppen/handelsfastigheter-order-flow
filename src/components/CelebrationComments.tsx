@@ -40,11 +40,11 @@ export function CelebrationCommentToggle({
     >
       <div className="relative">
         <MessageCircle className={`w-5 h-5 ${open ? "text-primary" : "text-muted-foreground"}`} />
-        {count > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-            {count}
-          </span>
-        )}
+        <span
+          className={`absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center transition-opacity duration-200 ${count > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
+          {count}
+        </span>
       </div>
     </button>
   );
