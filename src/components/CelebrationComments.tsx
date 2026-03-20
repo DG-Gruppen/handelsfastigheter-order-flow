@@ -59,6 +59,7 @@ export default function CelebrationComments({ weekKey, open, onCountChange }: { 
 
     if (!data || (data as any[]).length === 0) {
       setComments([]);
+      onCountChange?.(0);
       return;
     }
 
