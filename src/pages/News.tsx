@@ -276,7 +276,7 @@ export default function News() {
               <p className="text-sm">{search || selectedCategory ? "Inga nyheter matchar din sökning" : "Inga nyheter ännu"}</p>
             </div>
           ) : (
-            mergedItems.map((item) => {
+            paginatedMerged.map((item) => {
               if (item.type === "internal") {
                 const news = item.data as InternalNews;
                 const colors = CATEGORY_COLORS[news.category] ?? { bg: "bg-secondary", text: "text-secondary-foreground" };
