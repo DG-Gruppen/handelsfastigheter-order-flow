@@ -12,7 +12,8 @@ import {
 import { kpis, okrs, weeklyWin } from "@/data/dashboard";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import WeeklyCelebrations from "@/components/WeeklyCelebrations";
-import { newsPosts } from "@/data/news"; // fallback static data
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
