@@ -83,9 +83,19 @@ export default function CelebrationComments({ weekKey, open, onCountChange }: { 
     onCountChange?.(mapped.length);
   }, [weekKey, onCountChange]);
 
+  // Fetch count on mount, full data when open
   useEffect(() => {
-    if (open) fetchComments();
-  }, [open, fetchComments]);
+    if (open) {
+      fetchComments();
+    } else {
+      // Just get the count
+      supabase
+        .from("celebration_comments" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("week_key", weekKey)
+        .then(({ count }) => onCountChange?.(count ?? 0));
+    }
+  }, [open, fetchComments, weekKey, onCountChange]);
 
   const handleSend = async () => {
     if (!newMsg.trim() || !user) return;
