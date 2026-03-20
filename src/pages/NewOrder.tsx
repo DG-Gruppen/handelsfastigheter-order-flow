@@ -251,8 +251,8 @@ export default function NewOrder() {
     e.preventDefault();
     const validItems = items.filter((it) => it.typeId);
 
-    if (!user || validItems.length === 0 || (!isManagerOrAdmin && !myManagerProfile)) {
-      toast.error(!myManagerProfile && !isManagerOrAdmin
+    if (!user || validItems.length === 0 || (!isPrivileged && !myManagerProfile)) {
+      toast.error(!myManagerProfile && !isPrivileged
         ? "Du har ingen chef kopplad till din profil. Kontakta din administratör."
         : "Lägg till minst en utrustning");
       return;
