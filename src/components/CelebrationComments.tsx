@@ -72,16 +72,16 @@ export default function CelebrationComments({ weekKey, open, onCountChange }: { 
     const nameMap: Record<string, string> = {};
     for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
 
-    setComments(
-      (data as any[]).map((c: any) => ({
-        id: c.id,
-        message: c.message,
-        created_at: c.created_at,
-        user_id: c.user_id,
-        author_name: nameMap[c.user_id] || "Okänd",
-      }))
-    );
-  }, [weekKey]);
+    const mapped = (data as any[]).map((c: any) => ({
+      id: c.id,
+      message: c.message,
+      created_at: c.created_at,
+      user_id: c.user_id,
+      author_name: nameMap[c.user_id] || "Okänd",
+    }));
+    setComments(mapped);
+    onCountChange?.(mapped.length);
+  }, [weekKey, onCountChange]);
 
   useEffect(() => {
     if (open) fetchComments();
