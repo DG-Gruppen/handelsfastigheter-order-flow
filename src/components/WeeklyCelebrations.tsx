@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Cake, Briefcase, PartyPopper } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import CelebrationComments from "@/components/CelebrationComments";
+import CelebrationComments, { CelebrationCommentToggle } from "@/components/CelebrationComments";
 
 interface Celebration {
   name: string;
@@ -62,6 +62,8 @@ function getAnniversaryYears(startDate: string): number {
 export default function WeeklyCelebrations({ compact = false }: { compact?: boolean }) {
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const fetchCelebrations = useCallback(async () => {
     const { data: profiles } = await supabase
@@ -188,7 +190,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
               >
                 <div className="flex items-center gap-4">
                   <span className="text-3xl shrink-0">{c.emoji}</span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-foreground">{c.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                       {c.type === "birthday" ? (
@@ -199,8 +201,17 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
                       {c.label}
                     </div>
                   </div>
+                  <CelebrationCommentToggle
+                    count={commentCounts[c.weekKey] || 0}
+                    open={!!openComments[c.weekKey]}
+                    onToggle={() => setOpenComments(prev => ({ ...prev, [c.weekKey]: !prev[c.weekKey] }))}
+                  />
                 </div>
-                <CelebrationComments weekKey={c.weekKey} />
+                <CelebrationComments
+                  weekKey={c.weekKey}
+                  open={!!openComments[c.weekKey]}
+                  onCountChange={(n) => setCommentCounts(prev => ({ ...prev, [c.weekKey]: n }))}
+                />
               </div>
             ))}
           </div>
