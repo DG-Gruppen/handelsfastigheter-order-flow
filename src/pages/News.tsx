@@ -462,6 +462,16 @@ export default function News() {
               </Card>
             ))
           )}
+          {hasMore && tab === "cision" && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} className="gap-2">
+                Visa fler <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {!hasMore && shownCount > PAGE_SIZE && tab === "cision" && (
+            <p className="text-center text-xs text-muted-foreground pt-2">Visar alla {totalForTab} pressmeddelanden</p>
+          )}
         </div>
       )}
 
