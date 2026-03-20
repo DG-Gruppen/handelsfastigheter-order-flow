@@ -53,9 +53,9 @@ export default function GroupsManager() {
       supabase.from("group_members").select("*"),
       supabase.from("profiles").select("user_id, full_name, email, department"),
     ]);
-    // Hide system groups (e.g. Superadmin) from the UI
+    // Hide the Superadmin group (is_system + name Superadmin) from UI, show all others
     const allGroups = (g.data as Group[]) ?? [];
-    setGroups(allGroups.filter(grp => !grp.is_system));
+    setGroups(allGroups.filter(grp => grp.name !== "Superadmin"));
     setMembers((m.data as GroupMember[]) ?? []);
     setProfiles(((p.data as Profile[]) ?? []).filter(pr => pr.full_name && !(pr as any).is_hidden));
   }, []);
