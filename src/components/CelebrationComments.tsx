@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageCircle, Send, Trash2 } from "lucide-react";
@@ -70,6 +70,8 @@ export default function CelebrationComments({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
+  const onCountChangeRef = useRef(onCountChange);
+  onCountChangeRef.current = onCountChange;
 
   const fetchComments = useCallback(async () => {
     const { data } = await supabase
@@ -80,7 +82,7 @@ export default function CelebrationComments({
 
     if (!data || (data as any[]).length === 0) {
       setComments([]);
-      onCountChange?.(0);
+      onCountChangeRef.current?.(0);
       return;
     }
 
@@ -101,8 +103,8 @@ export default function CelebrationComments({
       author_name: nameMap[c.user_id] || "Okänd",
     }));
     setComments(mapped);
-    onCountChange?.(mapped.length);
-  }, [weekKey, onCountChange]);
+    onCountChangeRef.current?.(mapped.length);
+  }, [weekKey]);
 
   // Fetch count on mount, full data when open
   useEffect(() => {
@@ -113,9 +115,9 @@ export default function CelebrationComments({
         .from("celebration_comments" as any)
         .select("id", { count: "exact", head: true })
         .eq("week_key", weekKey)
-        .then(({ count }) => onCountChange?.(count ?? 0));
+        .then(({ count }) => onCountChangeRef.current?.(count ?? 0));
     }
-  }, [open, fetchComments, weekKey, onCountChange]);
+  }, [open, fetchComments, weekKey]);
 
   const handleSend = async () => {
     if (!newMsg.trim() || !user) return;
