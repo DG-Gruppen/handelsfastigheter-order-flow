@@ -37,7 +37,7 @@ export default function Personnel() {
   const fetchData = useCallback(async () => {
     const [rolesRes, profilesRes, settingsRes] = await Promise.all([
       supabase.rpc("get_all_user_roles"),
-      supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override").order("full_name"),
+      supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override, birthday").order("full_name"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
     ]);
 
