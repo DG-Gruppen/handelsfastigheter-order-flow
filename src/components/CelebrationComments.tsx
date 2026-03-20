@@ -73,12 +73,17 @@ export default function CelebrationComments({
   const onCountChangeRef = useRef(onCountChange);
   onCountChangeRef.current = onCountChange;
 
-  const fetchComments = useCallback(async () => {
-    const { data } = await supabase
+  const fetchComments = useCallback(async (retries = 2) => {
+    const { data, error } = await supabase
       .from("celebration_comments" as any)
       .select("id, message, created_at, user_id")
       .eq("week_key", weekKey)
       .order("created_at", { ascending: true });
+
+    if (error && retries > 0) {
+      setTimeout(() => fetchComments(retries - 1), 1500);
+      return;
+    }
 
     if (!data || (data as any[]).length === 0) {
       setComments([]);
