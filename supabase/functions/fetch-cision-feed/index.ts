@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,7 +60,6 @@ function parseRss(xml: string): Release[] {
 
 function parseXmlFeed(xml: string): Release[] {
   const items: Release[] = [];
-  // Cision XML uses <Release> elements
   const releaseRegex = /<Release>([\s\S]*?)<\/Release>/gi;
   let match;
   while ((match = releaseRegex.exec(xml)) !== null) {
@@ -80,11 +80,72 @@ function parseXmlFeed(xml: string): Release[] {
       image_url: imgMatch?.[1]?.trim(),
     });
   }
-  // Fallback: try <item> tags (some Cision XML feeds use RSS-like structure)
   if (items.length === 0) {
     return parseRss(xml);
   }
   return items;
+}
+
+async function syncToNewsTable(releases: Release[]) {
+  if (releases.length === 0) return { imported: 0 };
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+  // Get existing Cision source_urls to avoid duplicates
+  const { data: existing } = await supabase
+    .from("news")
+    .select("source_url")
+    .eq("source", "cision")
+    .not("source_url", "is", null);
+
+  const existingUrls = new Set((existing ?? []).map((r: any) => r.source_url));
+
+  // Find an admin user to use as author
+  const { data: adminRole } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin")
+    .limit(1)
+    .single();
+
+  if (!adminRole) {
+    console.error("No admin user found for Cision import author");
+    return { imported: 0, error: "No admin user" };
+  }
+
+  const authorId = adminRole.user_id;
+
+  // Filter to only new releases
+  const newReleases = releases.filter((r) => r.url && !existingUrls.has(r.url));
+  if (newReleases.length === 0) {
+    console.log("No new Cision releases to import");
+    return { imported: 0 };
+  }
+
+  const rows = newReleases.map((r) => ({
+    title: r.title,
+    excerpt: r.excerpt,
+    body: `<p>${r.excerpt}</p>${r.url ? `<p><a href="${r.url}" target="_blank" rel="noopener noreferrer">Läs hela pressmeddelandet på Cision →</a></p>` : ""}`,
+    category: "Pressmeddelande",
+    emoji: "📢",
+    is_published: true,
+    is_pinned: false,
+    author_id: authorId,
+    published_at: r.published_at,
+    source: "cision",
+    source_url: r.url,
+  }));
+
+  const { error } = await supabase.from("news").insert(rows);
+  if (error) {
+    console.error("Error inserting Cision news:", error);
+    return { imported: 0, error: error.message };
+  }
+
+  console.log(`Imported ${rows.length} new Cision releases to news table`);
+  return { imported: rows.length };
 }
 
 serve(async (req) => {
@@ -123,8 +184,15 @@ serve(async (req) => {
       }
     }
 
+    // Sync to news table (auto-import)
+    const syncResult = await syncToNewsTable(releases);
+
     return new Response(
-      JSON.stringify({ releases, source: releases.length > 0 ? "cision" : "empty" }),
+      JSON.stringify({
+        releases,
+        source: releases.length > 0 ? "cision" : "empty",
+        sync: syncResult,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
