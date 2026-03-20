@@ -6,11 +6,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp, Banknote, Building2, Percent,
-  ArrowUpRight, Award, PartyPopper, Cake,
+  ArrowUpRight, Award, PartyPopper,
 } from "lucide-react";
 
-import { kpis, okrs, weeklyWin, jubilees } from "@/data/dashboard";
+import { kpis, okrs, weeklyWin } from "@/data/dashboard";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
+import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { newsPosts } from "@/data/news"; // fallback static data
 
 const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
@@ -196,27 +197,7 @@ export default function Dashboard() {
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
         {/* ── Jubilarer ── */}
-        <Card className="glass-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-base flex items-center gap-2">
-              <Cake className="w-5 h-5 text-accent" />
-              Veckans jubilarer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              {jubilees.map((j, i) => (
-                <div key={i} className="flex items-center gap-3 bg-accent/10 rounded-lg px-4 py-3">
-                  <span className="text-2xl">{j.emoji}</span>
-                  <div>
-                    <div className="text-sm font-medium">{j.name}</div>
-                    <div className="text-xs text-muted-foreground">{j.event}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <WeeklyCelebrations compact />
 
         {/* ── Snabbåtkomst ── */}
         <Card className="glass-card">

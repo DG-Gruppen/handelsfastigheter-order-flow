@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Award, PartyPopper, Pen, BookOpen, ChevronRight, Pencil, Check, X } from "lucide-react";
+import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,6 +129,9 @@ export default function Culture() {
         <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">Kulturen</h1>
         <p className="text-sm text-muted-foreground mt-1">Det som gör SHF till SHF</p>
       </div>
+
+      {/* Veckans jubilarer */}
+      <WeeklyCelebrations />
 
       {/* Veckans vinst – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
       {isIT && (

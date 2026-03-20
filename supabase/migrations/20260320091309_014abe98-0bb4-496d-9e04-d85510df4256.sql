@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN start_date date DEFAULT NULL;
