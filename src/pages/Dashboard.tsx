@@ -182,17 +182,20 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent className="px-4 md:px-6 space-y-4">
+          {latestNews.length === 0 && (
+            <p className="text-xs text-muted-foreground">Inga publicerade nyheter ännu.</p>
+          )}
           {latestNews.map((news) => (
-            <div key={news.id} className={`flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0 ${news.isPinned ? "pl-3 border-l-2 border-l-accent" : ""}`}>
+            <div key={news.id} className={`flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0 ${news.is_pinned ? "pl-3 border-l-2 border-l-accent" : ""}`}>
               <span className="text-2xl shrink-0">{news.emoji}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{news.category}</span>
-                  {news.isPinned && <span className="text-[10px] uppercase tracking-wider font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">📌 Pinnad</span>}
-                  <span className="text-[10px] text-muted-foreground">{news.publishedAt}</span>
+                  {news.is_pinned && <span className="text-[10px] uppercase tracking-wider font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">📌 Pinnad</span>}
+                  {news.published_at && <span className="text-[10px] text-muted-foreground">{format(new Date(news.published_at), "d MMM yyyy", { locale: sv })}</span>}
                 </div>
                 <h3 className="text-sm font-semibold text-foreground line-clamp-1">{news.title}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{news.body}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{news.excerpt}</p>
               </div>
             </div>
           ))}
