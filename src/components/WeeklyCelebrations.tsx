@@ -74,7 +74,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
       return;
     }
 
-    const { start, end } = getWeekRange();
+    const { start, end, isoWeek } = getWeekRange();
     const result: Celebration[] = [];
 
     for (const p of profiles as any[]) {
