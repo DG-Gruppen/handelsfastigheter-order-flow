@@ -118,6 +118,14 @@
     margin-right: 0px !important;
     padding-right: 0px !important;
   }
+  html[data-scroll-locked] {
+    overflow: auto !important;
+    margin-right: 0px !important;
+    padding-right: 0px !important;
+  }
+  [data-radix-scroll-area-viewport] {
+    scrollbar-gutter: stable;
+  }
   /* Hide scrollbars on mobile */
   @media (max-width: 767px) {
     html,
