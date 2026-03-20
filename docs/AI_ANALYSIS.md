@@ -1,38 +1,52 @@
-# AI Analysis Guide – handelsfastigheter-order-flow
+# AI_ANALYSIS_v2
 
-> **Instructions for Claude Code when analyzing this repository.**
-> Prioritize correctness over creativity. Verify before asserting.
->
-> **See also:** `DOMAIN_RULES.md` (intended behavior), `ARCHITECTURE.md` (how it is built)
-> **Inspected against commit:** *(update this when re-inspecting)*
-> **Last reviewed:** 2026-03-20
+## Purpose
+This file tells Claude Code how to analyze **DG-Gruppen/handelsfastigheter-order-flow** with stronger evidence discipline and clearer separation between:
+
+- intended business behavior
+- observed frontend implementation
+- unknown or unverified backend enforcement
+
+The goal is not generic review. The goal is accurate, low-hallucination analysis of:
+- authentication
+- role and group-derived permissions
+- module access
+- navigation gating
+- order creation and approval flow
+- admin actions
+- notifications and email side effects
 
 ---
 
-## Your Role
+## Core Review Principles
 
-You are a senior code analyst for this repository. Your job is to find real problems — not to clean up style or propose rewrites.
+Prioritize:
+1. correctness
+2. authorization integrity
+3. data integrity
+4. transactional safety
+5. evidence-backed conclusions
+6. smallest safe fix first
 
-**Do:**
-- Find bugs and regressions
-- Verify auth, permission, and module-access correctness against `DOMAIN_RULES.md`
-- Check order and approval workflow consistency
-- Identify data-integrity risks across multi-step writes
-- Flag where sensitive behavior depends on frontend trust alone
-- Recommend the smallest safe fix first
-
-**Do not:**
-- Invent backend guarantees that are not visible in inspected files
-- Assume Row Level Security is correct unless you have seen the policies
-- Treat frontend route guards as final authorization
-- Propose broad rewrites without proving a local fix is insufficient
+Avoid:
+- inventing backend guarantees
+- assuming Row Level Security exists unless visible
+- treating route guards as final authorization
+- recommending broad rewrites before local fixes are considered
 
 ---
 
 ## Verified Repository Context
+Based on inspected files, the repo currently uses:
+- React 18 + TypeScript + Vite
+- React Router
+- TanStack Query
+- Supabase Auth / Database / RPC / Realtime / Edge Functions
+- Tailwind CSS + shadcn/ui
+- lazy-loaded route pages and admin panels
+- direct client-side Supabase access from hooks and pages
 
-The following files have been inspected and their contents are treated as verified:
-
+Inspected files included:
 - `README.md`
 - `package.json`
 - `src/main.tsx`
@@ -49,258 +63,278 @@ The following files have been inspected and their contents are treated as verifi
 - `src/pages/Admin.tsx`
 - `src/integrations/supabase/client.ts`
 
-**Any claim about files not in this list must be marked as inferred, not verified.**
-
-If you inspect additional files during analysis, append them to this list with a note of when they were inspected.
+Anything beyond these areas must be labeled as inferred unless verified from code.
 
 ---
 
-## Tech Stack (Verified)
+## Evidence Rules
+Claude Code must follow these evidence rules on every review:
 
-- React 18 + TypeScript + Vite
-- React Router
-- TanStack Query
-- Supabase (Auth, Database, RPC, Realtime, Edge Functions)
-- Tailwind CSS + shadcn/ui
-- Lazy-loaded route pages and admin panels
-- Direct client-side Supabase access from hooks and pages
-
----
-
-## Analysis Priorities
-
-Work through these in order. Higher priorities surface more severe and more likely issues.
-
-### Priority 1 – Authorization and access control
-
-The system relies heavily on client-side role and module logic. Focus on:
-
-- Pages reachable through routing but not protected at the data layer
-- Admin access rules that exist only in the UI
-- Mismatches between roles, module slugs, and route access
-- Actions (approve, reject, deliver) that should be scoped to specific roles or specific users but are not enforced server-side
-
-### Priority 2 – Order workflow correctness
-
-The order flow is the core business process. Focus on:
-
-- Approval routing defects in `resolveApprovalRouting(...)`
-- Manager and CEO resolution mistakes
-- Requester/recipient confusion
-- Status transitions that bypass the permitted lifecycle (see `DOMAIN_RULES.md` Section 1)
-- Partial failure between `orders`, `order_items`, notifications, and email sending
-- Duplicate notifications or emails from retries or re-renders
-
-### Priority 3 – Data integrity
-
-Focus on:
-
-- Stale reads applied after auth state changes
-- Multi-step writes without transaction or compensating logic
-- Frontend-computed rules that can diverge from backend state
-- Row updates scoped only to `id` without additional predicate (e.g., expected current `status`)
-- Permission tables that can produce contradictory outcomes
-
-### Priority 4 – Async and realtime state
-
-Focus on:
-
-- Duplicate fetches triggered by auth or session change events
-- Stale role or profile data applied after token refresh or re-login
-- Debounce gaps leaving UI briefly out of sync with database state
-- Local UI state diverging from database state after async side effects
-
-### Priority 5 – Security and privacy
-
-Focus on:
-
-- Overly broad `.select("*")` on sensitive tables (`profiles`, permission tables, org settings)
-- Internal org data accessible more widely than intended
-- Domain restrictions enforced only in the browser
-- Edge Function or RPC calls that trust client-supplied inputs (e.g., `approver_id`)
-- Admin-only actions gated only by UI conditions
-
-### Priority 6 – Maintainability
-
-Focus on:
-
-- Permission logic split across hooks without shared invariants
-- Repeated Supabase query patterns that should be extracted
-- Business rules embedded inside pages instead of shared helpers
-- Slug and route mappings that appear in multiple files and can drift
-
----
-
-## Hotspots
-
-These areas have elevated risk based on architecture review. Inspect them carefully.
-
-### `useAuth.tsx`
-Resolves session, user, profile, direct roles, and group-derived roles.
-
-Check for:
-- Stale fetch results after token refresh
-- Duplicate auth event handling
-- Missing error handling on profile or role fetches
-- Role precedence ambiguity when direct and group roles conflict — direct roles must take precedence over group-derived roles; verify that the `new Set()` merge does not flatten this distinction for consuming code
-
-### `useModules.tsx` + `useModulePermission.tsx` + `useAdminAccess.tsx` + `ProtectedRoute.tsx`
-Together these form the access model. `useModules.tsx` maintains a Realtime channel on `module_permissions` — module access state depends on this channel being alive and current.
-
-Check for:
-- Explicit permission precedence bugs
-- Overly permissive defaults when a permission is absent
-- Route visibility that does not match actual data access
-- Admin section slug mappings drifting from actual module slugs in the database
-- Silent Realtime channel failure leaving the UI on a stale permission snapshot — there must be a reconnect or fallback reload strategy
-
-### `useNavSettings.tsx`
-Can disable routes through database settings.
-
-Check for:
-- Nav-disabled routes still reachable via direct URL
-- Settings reads broader than necessary (exposes internal config pre-auth)
-- Route-to-setting mappings that have drifted
-
-### `NewOrder.tsx`
-Contains approval routing and multi-step order creation.
-
-Check for:
-- Approval routing defects
-- Manager and CEO resolution edge cases (see `DOMAIN_RULES.md` Section 3)
-- Recipient identity mistakes
-- `orders` inserted before `order_items` without transactional safety
-- Notification and email side effects that may partially fail or duplicate
-
-### `OrderDetail.tsx`
-Handles approve, reject, and deliver actions.
-
-Check for:
-- State transitions permitted too broadly (wrong role, wrong user)
-- Requester/approver/admin authorization gaps
-- Duplicate outbound email from retry or re-render
-- Local state updates that mask backend failure or write conflicts
-
-### `Admin.tsx`
-Gates multiple sensitive sections.
-
-Check for:
-- Client-only gating of admin functionality
-- Section visibility that does not match actual backend write permissions
-- Null or missing slug mappings causing sections to be incorrectly hidden or exposed
-
-### `Login.tsx`
-Applies allowed-domain logic for email auth and Google OAuth.
-
-Check for:
-- Domain restrictions enforced only client-side
-- Signup/login behavior inconsistency
-- Pre-auth settings reads that expose internal configuration more broadly than intended
-
----
-
-## Anti-Patterns — Flag Immediately
-
-If you see any of the following, flag them regardless of where they appear:
-
-- `.select("*")` on `profiles`, permission tables, or org settings without a clear need
-- Client-side authorization treated as the final protection for a sensitive action
-- Status transitions that update a row by `id` alone without checking current `status`
-- Multi-step writes (order + items, order + notification) with no transaction or compensating safeguard
-- Permission logic duplicated across route guards, admin guards, and per-module hooks without a shared invariant
-- Role-to-module mappings hardcoded in more than one file
-- Missing error handling on auth-critical or permission-critical reads
-- `new Set()` used to merge direct and group-derived roles without subsequent priority resolution — consuming code must apply role precedence explicitly, or the effective role may be wrong
-- Local state updates in `OrderDetail.tsx` applied before backend confirmation — optimistic updates that are not rolled back on failure mask write errors from the user
-- `supabase.functions.invoke("send-email")` called directly from a component without error handling or retry — a network failure at this point produces a silently incomplete order action (approved/rejected/delivered with no email sent); every such call site is a **Critical Risk** for missed notifications
-
----
-
-## Hard Rules
-
-**Rule 1 — Do not invent backend policies.**
-The existence of a frontend role check does not imply a matching RLS policy.
-
-**Rule 2 — Treat writes as sensitive.**
-Any write to `orders`, `order_items`, permission tables, settings, or admin-managed content must be scrutinized.
-
-**Rule 3 — Treat broad profile and org reads as potentially risky.**
-Flag them unless clearly justified by the context of the read.
-
-**Rule 4 — Analyze multi-step flows as one unit.**
-An order creation flow that spans five steps is one operation. Analyze all five together.
-
-**Rule 5 — Distinguish verified from inferred.**
-Use explicit wording. "Verified from inspected files" vs. "this is safe only if Supabase policies enforce the same rule" vs. "the frontend prevents this path, but backend enforcement was not visible."
-
-**Rule 6 — Separate finding types.**
-Verified issues and conditional risks (dependent on unverified backend behavior) are different things. Never blend them.
-
----
-
-## Fix Strategy
-
-Suggest fixes in this order. Do not skip ahead.
-
-1. Add local guards and tighter predicates (smallest change)
-2. Reduce authorization ambiguity at the point of decision
-3. Strengthen multi-step failure handling
-4. Extract duplicated business rules into shared helpers
-5. Recommend backend hardening where client code cannot safely enforce the rule
+1. Always cite exact file and function/block.
+2. Separate:
+   - observed code behavior
+   - inferred architecture
+   - unknown backend enforcement
+3. Do not escalate severity without explaining blast radius.
+4. When backend policy is unknown, mark as:
+   - conditional risk
+   - not confirmed vulnerability
+5. If a rule appears enforced only in the browser, say:
+   - frontend enforcement observed
+   - backend enforcement not verified
 
 ---
 
 ## Output Format
-
-Every finding must use this structure:
-
----
+Always structure findings like this:
 
 ### Issue
-One-sentence summary of the problem.
+One-sentence summary.
+
+### Type
+One of:
+- Verified bug
+- Verified design risk
+- Conditional security risk
+- Maintainability issue
+- Observation
 
 ### Why it matters
-Concrete user, security, or business impact. Be specific.
+Concrete business, user, or security impact.
 
 ### Location
-File and function or block name.
+File and function/block.
 
 ### Evidence
-What in the code indicates the problem. Quote or describe the specific pattern.
+Observed code path and why it suggests the issue.
 
-### Related findings
-IDs or descriptions of other findings that compound or depend on this one. Use `—` if none.
+### Backend enforcement status
+Use one of:
+- Verified present
+- Not visible
+- Unclear
 
 ### Recommendation
-Smallest safe fix. If backend hardening is required, say so explicitly.
+Smallest safe fix first.
 
 ### Severity
-`Critical` | `High` | `Medium` | `Low` | `Observation`
+Use one of:
+- Critical
+- High
+- Medium
+- Low
+- Observation
 
 ### Confidence
-`High` | `Medium` | `Low`
+Use one of:
+- High
+- Medium
+- Low
 
 ---
 
-## Severity Reference
+## Severity Rules
 
-| Severity | Use when the issue could cause |
-|----------|-------------------------------|
-| Critical | Unauthorized admin access; unauthorized order approval, rejection, or delivery; incorrect approver selection |
-| High | Inconsistent `orders`/`order_items` state; internal user data exposure; client-only domain restrictions; approval routing bypass |
-| Medium | Stale UI state with functional impact; duplicated permission logic with behavioral divergence |
-| Low | Minor stale state; non-critical redundancy |
-| Observation | Cleanup opportunity; extraction candidate; naming or structural drift with no current impact |
+### Critical
+Use only when the issue could directly enable:
+- unauthorized admin capability
+- unauthorized approval/rejection/delivery
+- severe data corruption
+- exposure of sensitive internal data at scale
+
+### High
+Use when the issue could cause:
+- wrong approver resolution
+- inconsistent order/order_items state
+- privilege drift with real impact
+- serious but not fully proven authorization bypass
+
+### Medium
+Use when the issue causes:
+- partial workflow failure
+- stale state
+- repeated side effects
+- incorrect UX that may affect business flow
+
+### Low
+Use for:
+- minor correctness gaps
+- weak error handling
+- cleanup that reduces risk but is not urgent
+
+### Observation
+Use for:
+- architectural notes
+- extraction opportunities
+- naming/structure drift
 
 ---
 
-## Analysis Objective
+## Primary Analysis Priorities
 
-Help maintain a stable internal operations system with:
-- Correct and consistent access control
-- Predictable and tamper-resistant order approval
-- Safe and clearly bounded admin functionality
-- Consistent module permissions across all evaluation paths
-- Low-risk evolution of the current architecture
+### 1. Authorization and Access Control
+Check:
+- whether route access matches true intended access
+- whether admin actions depend only on UI gating
+- whether requester / approver / admin / IT boundaries are clear
+- whether permission precedence is deterministic
 
-The system is functional. The goal is not to redesign it — it is to identify where the current design creates real risk and recommend targeted mitigations.
+### 2. Order Workflow Correctness
+Check:
+- approver resolution
+- auto-approval logic
+- status transitions
+- requester vs recipient semantics
+- side effects across notifications and email
+- partial failure handling
+
+### 3. Data Integrity
+Check:
+- multi-step writes without transaction
+- deletes used as rollback
+- stale or conflicting permission data
+- updates based only on `id`
+- duplicated or repeated effects
+
+### 4. Auth and Session State
+Check:
+- stale profile/role application
+- duplicate auth-driven fetches
+- profile fetch failure handling
+- race conditions on refresh or auth event changes
+
+### 5. Security and Privacy
+Check:
+- broad profile reads
+- pre-auth reads of org settings
+- frontend-only domain restrictions
+- edge function or RPC calls trusting client input too much
+
+### 6. Maintainability
+Check:
+- permission logic scattered across multiple hooks
+- business rules embedded inside page components
+- mapping drift between slugs, routes, admin sections, and settings keys
+
+---
+
+## Project Hotspots
+
+### Auth hotspot
+`src/hooks/useAuth.tsx`
+- session listener
+- profile fetch
+- role merge
+- loading resolution
+
+Questions:
+- Can stale fetch results land after auth refresh?
+- What happens if one of the three parallel reads fails?
+- Is role precedence explicit enough?
+
+### Module/Permission hotspot
+`src/hooks/useModules.tsx`
+`src/hooks/useModulePermission.tsx`
+`src/hooks/useAdminAccess.tsx`
+`src/components/ProtectedRoute.tsx`
+
+Questions:
+- Which permission source wins on conflict?
+- Is “no rule means allow” intentional everywhere?
+- Can admin UI access diverge from actual writable backend actions?
+
+### Navigation hotspot
+`src/hooks/useNavSettings.tsx`
+Questions:
+- Is nav disablement merely cosmetic?
+- Are disabled routes still callable by URL?
+
+### Order creation hotspot
+`src/pages/NewOrder.tsx`
+Questions:
+- Is approval routing purely frontend?
+- Can order row and order_items drift apart?
+- Can notifications or emails duplicate or partially fail?
+- Is recipient selection over-broad for privileged users?
+
+### Order detail hotspot
+`src/pages/OrderDetail.tsx`
+Questions:
+- Are approve/reject/deliver transitions enforced only in UI?
+- Can status be changed with insufficient predicates?
+- Can email sending or notification creation duplicate?
+
+### Admin hotspot
+`src/pages/Admin.tsx`
+Questions:
+- Are hidden sections truly forbidden or just not shown?
+- Can slug mismatches silently grant or block admin access?
+
+### Login hotspot
+`src/pages/Login.tsx`
+Questions:
+- Are allowed domains enforced beyond the browser?
+- Is Google domain restriction mirrored in backend/session validation?
+
+---
+
+## Anti-Patterns To Flag Immediately
+- broad `.select("*")` on sensitive tables without strong reason
+- updates or deletes filtered only by `id` for sensitive transitions
+- client-side authorization treated as final protection
+- multi-step writes without transaction or compensating server logic
+- duplicated permission rules in different hooks
+- hardcoded permission mappings without one authoritative source
+- weak error handling on auth-critical or permission-critical fetches
+
+---
+
+## Review Mode Guidance
+
+### Whole-file review
+Explain:
+- file purpose
+- observed risks
+- business impact
+- smallest safe improvements
+
+### Cross-file workflow review
+Trace:
+- who initiates the action
+- which tables are read
+- which state determines authority
+- what side effects occur
+- where failure can leave inconsistent state
+
+### Diff review
+Focus on:
+- regressions against current architecture
+- widened access
+- changed order lifecycle behavior
+- changes to permission precedence
+- new side effects or missing rollback
+
+---
+
+## Recommended Recommendation Style
+Prefer:
+1. tighten query/update predicates
+2. add backend validation or RPC wrapper
+3. extract shared rule into helper
+4. improve error handling and rollback behavior
+5. only then propose deeper refactor
+
+Avoid leading with:
+- new framework
+- total rewrite
+- large state-management migration
+
+---
+
+## Final Objective
+Help maintain a stable internal operations system where:
+- access decisions are predictable
+- order lifecycle is safe
+- approval rules are consistent
+- admin boundaries are real
+- findings are grounded in code evidence

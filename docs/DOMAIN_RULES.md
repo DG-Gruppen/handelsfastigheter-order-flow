@@ -1,210 +1,401 @@
-# Domain Rules – handelsfastigheter-order-flow
+# DOMAIN_RULES_v2
 
-> **Ground truth for system behavior.**
-> Claude Code and all developers must treat this file as the authoritative definition of how the system is intended to work.
-> When code diverges from these rules, the code is wrong — not this document.
->
-> **See also:** `ARCHITECTURE.md` (how it is built), `AI_ANALYSIS.md` (how to analyze it)
-> **Last reviewed:** 2026-03-20
+## Purpose
+This file defines the intended business rules for `handelsfastigheter-order-flow`, and separates them from observed current implementation.
 
----
-
-## 1. Order Lifecycle
-
-### States
-
-| State | Terminal | Description |
-|-------|----------|-------------|
-| `pending` | No | Awaiting approver action |
-| `approved` | No | Approved; awaiting delivery |
-| `rejected` | **Yes** | Declined by approver |
-| `delivered` | **Yes** | Fulfilled by admin or IT |
-
-### Permitted transitions
-
-```
-pending → approved
-pending → rejected
-approved → delivered
-```
-
-Any other transition (e.g., `rejected → approved`, `delivered → anything`) is **invalid** and must be blocked at both UI and backend level.
-
-**Why terminal states matter:** Once an order is rejected or delivered, reopening it would create ambiguity in audit trails, duplicate notifications, and inconsistent approval history. Terminal states are irreversible by design.
+Claude Code must not confuse:
+- intended domain rule
+- current frontend behavior
+- unverified backend enforcement
 
 ---
 
-## 2. Roles
+## Reading Convention
+Each critical rule should be analyzed using:
 
-| Role | Description |
-|------|-------------|
-| `admin` | Full system access including delivery actions and settings |
-| `manager` | Can approve orders for their reports; may require CEO approval depending on order type |
-| `it` | Can deliver approved orders; otherwise treated as staff for ordering purposes |
-| `staff` | Standard employee; can create orders |
-| `user` | Baseline authenticated user with no elevated permissions |
-
-Roles can be assigned directly (`user_roles`) or inherited via group membership (`group_members`). Where both apply, direct roles take precedence unless admin override is active.
+- **Intended Rule** — how the system is supposed to behave
+- **Observed Implementation** — what the inspected frontend currently does
+- **Backend Enforcement Status** — verified / unclear / not visible
+- **Risk If Missing** — what can go wrong
 
 ---
 
-## 3. Approval Routing
+# 1. Core Actors
 
-### Central function
+## Actor types
+- requester
+- recipient
+- approver
+- admin
+- IT
+- manager
+- regular user
+- staff
 
-All approval routing is determined by `resolveApprovalRouting(...)` in `NewOrder.tsx`.
-
-This is currently frontend-only. **This is a known risk.** See Section 10.
-
-### Routing decision matrix
-
-| Requester role | Condition | Outcome |
-|----------------|-----------|---------|
-| CEO | Always | Auto-approve |
-| Manager / Admin | Order type requires CEO | Escalate to CEO approver |
-| Manager / Admin | Order type allows self-approve | Auto-approve |
-| Manager / Admin | Otherwise | Route to manager |
-| Staff / IT | No manager resolvable | Auto-approve |
-| Staff / IT | Manager exists | Route to manager |
-
-> **Important:** This matrix represents the intended behavior as defined in `resolveApprovalRouting(...)` in `NewOrder.tsx`. The function is the current source of truth for routing logic. Any refactoring of that function must preserve all rows of this matrix exactly. If the code diverges from this matrix, the code is wrong.
-
-### Edge cases that must be handled
-
-- **Staff with a manager in the system:** Route to that manager. Do not auto-approve.
-- **Manager ordering as a regular employee:** Apply manager rules, not staff rules. Role takes precedence over context.
-- **Multiple managers in group:** Resolution priority must be deterministic. Currently undefined — flag as a risk.
-- **CEO approval when no CEO account exists:** Must fail gracefully, not silently auto-approve.
-
-### Approver ID requirement
-
-Every non-auto-approved order **must** have a resolved `approver_id` before insertion. An order without an `approver_id` is an invalid state.
+### Intended meaning
+- **requester** = the authenticated user creating the order
+- **recipient** = the person the equipment/order is for
+- **approver** = the person who must approve or reject the order
+- **admin** = system-wide elevated access
+- **IT** = operational elevated access, especially around delivery and support
+- **manager** = role used in approval chains
+- **staff** = special employee type affecting approval routing
 
 ---
 
-## 4. Permission System
+# 2. Order Lifecycle
 
-### Layers (evaluated in order)
+## Allowed states
+- `pending`
+- `approved`
+- `rejected`
+- `delivered`
 
-1. **Admin override** — if the user is admin, full access is granted regardless of other checks.
-2. **Direct user permission** — explicit permission entry for the user in `module_permissions`.
-3. **Group-derived permission** — permission inherited from a group the user belongs to (`group_members`).
+## Intended lifecycle
+- `pending -> approved`
+- `pending -> rejected`
+- `approved -> delivered`
 
-### Rules
+## Forbidden transitions
+- `rejected -> *`
+- `delivered -> *`
+- `approved -> pending`
+- `approved -> rejected`
+- `pending -> delivered`
 
-- A permission granted at a higher layer cannot be revoked by a lower layer.
-- Module access and role access are separate concerns. A user may have a module enabled but lack the role to perform sensitive actions within it, and vice versa.
-- Permissions must be evaluated server-side for any write or sensitive read. Frontend-only permission checks are UI conveniences, not security controls.
+### Observed implementation
+Frontend clearly uses:
+- approve from pending
+- reject from pending
+- deliver from approved
 
----
+### Backend enforcement status
+Not visible.
 
-## 5. Order Creation
-
-### Requirements
-
-An order is only valid if it has:
-- At least one `order_item`
-- A `requester_id` (the authenticated user placing the order)
-- A resolved `approver_id` (or explicit auto-approve flag)
-
-### Intended creation flow
-
-1. Insert row into `orders`
-2. Insert rows into `order_items`
-3. Insert notification for approver
-4. Send email to approver
-
-**Steps 1 and 2 must be treated as a single atomic operation.** An `orders` row without corresponding `order_items` is an inconsistent state.
-
-**Steps 3 and 4 are side effects.** Their failure should not silently mark the order as successfully created from the user's perspective. Partial failure (order created, email not sent) must be surfaced or retried.
-
-### Recipient rules
-
-An order can be placed for the requester themselves or for another user (`recipient_type: "existing"`). The following rules apply:
-
-| Recipient type | Permitted for |
-|----------------|--------------|
-| Self (default) | Any authenticated user |
-| `existing` (another user) | Users with `isPrivileged` status — currently manager and admin roles |
-
-Ordering on behalf of another user without `isPrivileged` is not permitted. This rule currently lives only in `NewOrder.tsx` and is not enforced server-side.
-
-### Current gap
-
-The codebase does not use a database transaction for steps 1–2. This means a crash between step 1 and step 2 produces an orphaned order. This must be resolved via an RPC function or compensating cleanup logic.
+### Risk if missing
+A crafted client or weak policy could force illegal transitions.
 
 ---
 
-## 6. Action Authorization
+# 3. Transition Authority Rules
 
-| Action | Permitted roles |
-|--------|----------------|
-| Create order | Any authenticated user |
-| Approve order | The resolved `approver_id` for that order only |
-| Reject order | The resolved `approver_id` for that order only |
-| Deliver order | `admin`, `it` |
-| View all orders | `admin`, `it` |
-| View own orders | Any authenticated user |
-| Modify settings | `admin` |
+## Rule A: Approve
+### Intended Rule
+Only the assigned `approver_id` may approve a pending order.
 
-**Approval and rejection must be scoped to the specific approver on the order.** A manager who is not the assigned `approver_id` must not be able to approve, even if they have a manager role.
+### Observed Implementation
+`OrderDetail.tsx` derives `canApprove` from:
+- `order.status === "pending"`
+- `order.approver_id === user?.id`
 
----
+The update itself appears to filter by order id only.
 
-## 7. Notifications
+### Backend Enforcement Status
+Not visible.
 
-| Event | Recipient |
-|-------|-----------|
-| Order created | `approver_id` |
-| Order approved | Requester |
-| Order rejected | Requester |
-| Order delivered | Requester |
-
-Each event must trigger exactly one notification. Duplicate notifications caused by re-renders, retries, or auth refreshes are a known risk and must be guarded against (idempotency key or status check before insert).
+### Risk If Missing
+Approval could be performed by another authenticated user if backend policy is weak.
 
 ---
 
-## 8. Email Rules
+## Rule B: Reject
+### Intended Rule
+Only the assigned `approver_id` may reject a pending order.
 
-Emails are sent for the same events as notifications (see Section 7). Email sending is currently handled via Supabase Edge Functions.
+### Observed Implementation
+Reject action is exposed through the same UI area as approval, but the update path still appears to target by order id only.
 
-Email and notification delivery are independent side effects. A failure in one must not silently suppress the other, and neither failure must silently pass as a successful order action.
+### Backend Enforcement Status
+Not visible.
 
----
-
-## 9. System Invariants
-
-These conditions **must always be true.** Any state that violates an invariant is a bug, regardless of how it occurred.
-
-1. Every `orders` row has at least one corresponding `order_items` row.
-2. Every non-auto-approved order has a non-null `approver_id` that references a valid user.
-3. Order status always follows the permitted transition graph (Section 1).
-4. Only the assigned `approver_id` may approve or reject a given order.
-5. Only `admin` or `it` roles may transition an order to `delivered`.
-6. Roles used in approval routing reflect server-verified values, not client-computed ones.
+### Risk If Missing
+Unauthorized rejection or altered rejection reason.
 
 ---
 
-## 10. Known Security Risks
+## Rule C: Deliver
+### Intended Rule
+Only `admin` or `it` should be able to transition an approved order to `delivered`.
 
-These are **current gaps** between intended behavior and implementation reality. They are listed here so that analysis tools and developers understand the delta — not because they represent acceptable design.
+### Observed Implementation
+Frontend shows delivery action for admin-like access.
 
-| Risk | Description | Severity |
-|------|-------------|----------|
-| Frontend approval routing | `resolveApprovalRouting()` runs in the browser and can be manipulated | Critical |
-| Admin UI gating only | Admin sections are hidden in UI but not necessarily blocked at data layer | High |
-| Domain restriction client-side | Allowed email domains enforced in `Login.tsx`, not at auth/RPC level | High |
-| Multi-step order write | No transaction between `orders` and `order_items` inserts | High |
-| Approver ID not verified server-side | Backend does not confirm that the acting user matches `approver_id` | High |
+### Backend Enforcement Status
+Not visible.
+
+### Risk If Missing
+Unauthorized fulfillment or false delivery marking.
 
 ---
 
-## 11. Required Backend Guarantees (Target State)
+# 4. Order Creation Rules
 
-The following rules **should** be enforced server-side via RLS policies or RPC validation, not relying on frontend enforcement:
+## Rule A: Minimum valid order
+### Intended Rule
+An order must:
+- have a requester
+- have at least one valid item
+- resolve an approver or valid auto-approval path
+- have a valid lifecycle starting state
 
-- Approve/reject: verify that `auth.uid() = approver_id` on the target order
-- Deliver: verify that the acting user has `admin` or `it` role
-- Order insert: use an RPC that atomically inserts `orders` + `order_items`
-- Domain restriction: enforce at Edge Function or auth hook level
-- Admin writes: RLS policies must restrict sensitive table writes to admin role
+### Observed Implementation
+`NewOrder.tsx` validates:
+- at least one selected item
+- current user exists
+- non-privileged user has manager profile unless privileged logic applies
+
+### Backend Enforcement Status
+Unclear.
+
+### Risk If Missing
+Malformed orders or orphaned rows.
+
+---
+
+## Rule B: Order and items should be atomic
+### Intended Rule
+`orders` and `order_items` should succeed or fail together.
+
+### Observed Implementation
+Frontend inserts `orders`, then inserts `order_items`, then deletes the order on item failure.
+
+### Backend Enforcement Status
+No transaction visible.
+
+### Risk If Missing
+Partial writes, orphaned rows, or rollback gaps if later side effects fail.
+
+---
+
+## Rule C: Side effects are secondary
+### Intended Rule
+Core order persistence should be authoritative.
+Notifications and emails should not determine whether the order exists.
+
+### Observed Implementation
+Order creation succeeds before several notification/email steps run.
+
+### Backend Enforcement Status
+Not applicable at frontend level.
+
+### Risk If Missing
+Users may see created orders without expected notifications, or duplicate messages if retries occur.
+
+---
+
+# 5. Approval Routing Rules
+
+## Intended Rule
+Approver routing must be deterministic and based on trusted org data.
+
+## Observed Implementation
+Frontend helper `resolveApprovalRouting(...)` decides:
+- auto approval
+- CEO approval
+- manager approval
+- resolved approver id
+
+Observed factors:
+- whether user is CEO
+- whether user is manager/admin
+- whether user is IT
+- whether user is staff
+- whether user reports directly to CEO
+- approval settings
+- manager profile existence
+
+### Backend Enforcement Status
+Not visible.
+
+### Risk If Missing
+Browser-side manipulation or logic drift may produce wrong approver assignment.
+
+---
+
+## Specific routing intentions
+
+### CEO
+- always auto-approved
+
+### IT / Staff without manager
+- auto-approved
+
+### Manager/Admin reporting directly to CEO
+- may require CEO approval depending on settings
+
+### Manager/Admin not directly under CEO
+- may require manager approval if manager exists
+
+### Fallback expectation
+- approver resolution should never silently produce an invalid authority state
+
+---
+
+# 6. Permission Model
+
+## Permission sources observed
+- `user_roles`
+- `group_members`
+- group-derived `role_equivalent`
+- `module_role_access`
+- `module_permissions`
+- `useAdminAccess`
+- `useModulePermission`
+
+## Intended Rule
+Permission precedence must be deterministic.
+
+## Recommended precedence model
+1. hard backend deny
+2. admin override
+3. explicit owner
+4. explicit user permission
+5. explicit group permission
+6. role-based module access
+7. fallback default
+
+### Observed Implementation
+Frontend appears to combine:
+- merged roles
+- explicit module permissions
+- group permissions
+- role-based fallbacks
+- special admin/IT behavior
+
+### Backend Enforcement Status
+Not visible.
+
+### Risk If Missing
+Privilege drift, inconsistent UI, or mismatched access between pages.
+
+---
+
+# 7. Admin Rules
+
+## Intended Rule
+Seeing an admin section is not the same as being authorized to mutate its data.
+
+## Observed Implementation
+Admin visibility is derived through `useAdminAccess` and hardcoded section mappings.
+
+### Backend Enforcement Status
+Not visible.
+
+### Risk If Missing
+Hidden-but-reachable or visible-but-not-authorized behavior.
+
+---
+
+# 8. Navigation Rules
+
+## Intended Rule
+Disabled navigation should reflect true system policy, not just visual hiding.
+
+## Observed Implementation
+`useNavSettings.tsx` maps routes to org setting keys and disables routes in frontend logic.
+
+### Backend Enforcement Status
+Not visible.
+
+### Risk If Missing
+Direct URL access may bypass intended route disablement.
+
+---
+
+# 9. Login / Identity Domain Rules
+
+## Rule A: Domain restrictions
+### Intended Rule
+Restricted domains should be enforced as security policy if they are part of trust assumptions.
+
+### Observed Implementation
+`Login.tsx` checks allowed domains in browser logic for email auth and passes Google Workspace hinting.
+
+### Backend Enforcement Status
+Not visible.
+
+### Risk If Missing
+Browser-only restriction may give false confidence.
+
+---
+
+## Rule B: Profile and role completeness
+### Intended Rule
+A signed-in user should have a resolvable profile and deterministic role set before sensitive decisions are made.
+
+### Observed Implementation
+Frontend fetches profile and roles after auth state changes.
+
+### Backend Enforcement Status
+Not applicable directly.
+
+### Risk If Missing
+Incorrect access decisions during partial load or fetch failure.
+
+---
+
+# 10. Notification and Email Rules
+
+## Intended Rule
+Notifications and emails should mirror state transitions, not define them.
+
+## Expected triggers
+- new pending order -> approver notified
+- approved order -> requester notified
+- rejected order -> requester notified
+- delivered order -> requester notified
+
+### Observed Implementation
+Frontend triggers these side effects after state changes.
+
+### Backend Enforcement Status
+Not visible for authorization; implementation visible only partly.
+
+### Risk If Missing
+Duplicate or missing communications without state rollback.
+
+---
+
+# 11. Invariants
+
+These should always be true:
+
+1. every order has at least one item
+2. every pending order has a valid approver unless explicitly auto-approved
+3. only allowed actors can perform lifecycle transitions
+4. status transitions follow the allowed lifecycle
+5. recipient and requester semantics remain distinct
+6. permission precedence is deterministic
+7. admin visibility does not substitute for backend authorization
+
+---
+
+# 12. What Claude Should Flag
+
+Flag as **High** when:
+- a sensitive transition updates only by `id`
+- frontend-only checks enforce authority
+- approval routing depends solely on browser logic
+- order creation can leave inconsistent state
+
+Flag as **Medium** when:
+- permission precedence is ambiguous
+- route disablement is only visual
+- notification/email behavior can drift from order state
+
+Flag as **Observation** when:
+- rules are duplicated across hooks
+- mappings are hardcoded in multiple places
+- architecture could be clarified without immediate correctness risk
+
+---
+
+# 13. Final Interpretation Rule
+When analyzing this repo, Claude must prefer this reasoning style:
+
+- first identify the intended domain rule
+- then compare observed implementation
+- then state whether backend enforcement is verified
+- then assess risk
+
+Never treat current frontend behavior as proof that the business rule is safely enforced.

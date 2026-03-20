@@ -1,211 +1,317 @@
-# System Architecture – handelsfastigheter-order-flow
-
-> This document describes how the system is currently built.
-> For intended behavior, see `DOMAIN_RULES.md`.
-> For analysis instructions, see `AI_ANALYSIS.md`.
->
-> **Last reviewed:** 2026-03-20
-
----
+# ARCHITECTURE_v2
 
 ## Overview
-
-An internal operations platform built as a **thin-backend / fat-client hybrid**. Most business logic, authorization decisions, and approval routing run in the browser. The backend (Supabase) is used primarily for data storage, auth session management, and edge function execution.
-
-This architecture trades backend complexity for frontend development speed, but shifts security and consistency responsibility to the client — which is safe only when properly compensated by backend enforcement. Currently, several of those compensating controls are missing.
-
-**Stack:**
-
+`handelsfastigheter-order-flow` is a frontend-driven internal operations system built with:
 - React 18 + TypeScript + Vite
-- Supabase (Auth, Database, RPC, Realtime, Edge Functions)
-- Tailwind CSS + shadcn/ui
-- TanStack Query (server state)
-- React Router (routing)
+- Supabase Auth / DB / RPC / Realtime / Edge Functions
+- Tailwind + shadcn/ui
+- TanStack Query
+
+The current architecture is best described as:
+
+**thin backend + fat client orchestration**
+
+A large share of business logic is implemented in the frontend, especially around:
+- auth resolution
+- role merging
+- module access
+- navigation gating
+- order creation
+- approval routing
+- admin visibility
 
 ---
 
-## Layer Map
+## Architectural Layers
 
-```
-┌─────────────────────────────────────┐
-│             Browser (React)         │
-│                                     │
-│  Auth Layer → Authorization Layer   │
-│       ↓               ↓             │
-│  Navigation Layer   Order System    │
-│                         ↓           │
-│              Approval Engine        │
-└────────────────┬────────────────────┘
-                 │ direct client calls
-┌────────────────▼────────────────────┐
-│              Supabase               │
-│  Auth | DB | RPC | Edge Functions   │
-│             Realtime                │
-└─────────────────────────────────────┘
-```
-
-There is no middleware layer. All Supabase calls originate from the browser client. Edge Functions are invoked for email delivery and specific RPC operations but are not a general API gateway.
-
----
-
-## Layer 1 – Authentication
-
-**Hook:** `useAuth.tsx`
+### 1. App Shell Layer
+Key file:
+- `src/App.tsx`
 
 Responsibilities:
-- Session management (Supabase Auth)
-- User profile resolution
-- Direct role fetches (`user_roles`)
-- Group-derived role resolution (`group_members`)
+- app providers
+- router
+- query client
+- protected layout
+- route registration
+- lazy loading of major pages
 
-Data sources for roles are combined in the hook. This means the effective role set is an aggregate computed in the browser from multiple async fetches. If any fetch is stale, errors, or returns before the session is fully established, the role set can be temporarily incorrect.
+Observed providers:
+- `ThemeProvider`
+- `QueryClientProvider`
+- `AuthProvider`
+- `NavSettingsProvider`
+- `ModulesProvider`
 
-### Role merge behavior
-
-Direct roles (`user_roles`) and group-derived roles (`group_members`) are merged using `new Set()` — a union with no documented conflict resolution. The intended precedence rule is: **direct roles take precedence over group-derived roles** (see `DOMAIN_RULES.md` Section 2). However, if the merge implementation does not enforce this — for example, if a group grants `user` and a direct role is `admin`, and the consuming code iterates the set without priority logic — the effective role may be incorrect.
-
-**This must be verified in `useAuth.tsx`.** If `new Set()` is the only merge mechanism and callers do not apply priority logic themselves, this is a bug, not just a documentation gap.
-
-**Active risks:**
-- Multiple async sources for roles create a window where the computed role set is incomplete or stale after login, token refresh, or tab resume.
-- Role merge via `new Set()` does not guarantee priority ordering — consuming code must apply precedence explicitly or risk using the wrong effective role.
-- Auth events (`onAuthStateChange`) may trigger redundant profile/role fetches if not properly debounced or deduplicated.
-- Missing error handling on profile or role fetches can leave the user in a partially-resolved auth state with no visible indication.
+Implication:
+- most business decisions happen after provider hydration, not through a dedicated backend gateway
 
 ---
 
-## Layer 2 – Authorization
+### 2. Auth and Identity Layer
+Key file:
+- `src/hooks/useAuth.tsx`
 
-**Hooks:** `useModules.tsx`, `useModulePermission.tsx`, `useAdminAccess.tsx`
-**Component:** `ProtectedRoute.tsx`
+Responsibilities:
+- subscribe to auth state
+- restore session
+- fetch current profile
+- fetch direct roles
+- fetch group-derived role equivalents
+- merge role sources
 
-Access is evaluated through a pipeline:
+Inputs:
+- Supabase auth session
+- `profiles`
+- `user_roles`
+- `group_members -> groups.role_equivalent`
 
-```
-Authenticated user
-  → Resolved roles (direct + group)
-  → Module permissions (user + group-derived)
-  → Route access decision (ProtectedRoute)
-```
+Outputs:
+- `user`
+- `session`
+- `profile`
+- `roles`
+- `loading`
 
-There is no single central authorization function. Permission logic is distributed across multiple hooks, each encoding part of the access model. This makes it possible for the same user to have inconsistent access across different parts of the application if any hook applies a different interpretation of the same role or permission.
-
-**Active risks:**
-- No shared invariant between the route guard, admin guard, and per-module hooks. A change to one does not automatically propagate to the others.
-- Admin access is gated by `useAdminAccess` in the UI. If the underlying Supabase tables do not enforce the same restrictions via RLS, admin-level data can be read or written by non-admin users with direct API access.
-- Module slug values are referenced in multiple places. Drift between definitions causes sections to become incorrectly hidden or incorrectly exposed.
-
----
-
-## Layer 3 – Navigation
-
-**Hook:** `useNavSettings.tsx`
-
-Navigation items can be enabled or disabled via database settings. The hook reads these settings and conditionally renders routes.
-
-**Active risk:** Disabling a route in navigation does not make it unreachable. A user who knows the URL can navigate directly to a disabled route. Navigation state is a UI concern, not an authorization control.
+Architectural risk:
+- identity and authorization context are assembled client-side from multiple tables
 
 ---
 
-## Layer 4 – Order System
+### 3. Authorization Layer
+Key files:
+- `src/hooks/useModules.tsx`
+- `src/hooks/useModulePermission.tsx`
+- `src/hooks/useAdminAccess.tsx`
+- `src/components/ProtectedRoute.tsx`
 
-**Pages:** `NewOrder.tsx`, `OrderDetail.tsx`
-**Core tables:** `orders`, `order_items`, `order_systems`
+Responsibilities:
+- load modules
+- load module access rules
+- load explicit permissions
+- derive accessible modules
+- derive admin section visibility
+- gate routes
 
-### Creation flow
+Inputs:
+- `modules`
+- `module_role_access`
+- `module_permissions`
+- `group_members`
+- auth roles
+- hardcoded admin section slug mapping
 
-```
-1. resolveApprovalRouting()   ← runs in browser
-2. INSERT into orders
-3. INSERT into order_items
-4. INSERT notification
-5. Invoke edge function (email)
-```
-
-Steps 2 and 3 are sequential client-side inserts with no wrapping transaction. A failure between them produces an orphaned `orders` row with no items — an invalid state per domain rules.
-
-Steps 4 and 5 are side effects. Their failure does not roll back the order, and there is no guaranteed retry or user-visible error for partial failure.
-
-### Detail / action flow
-
-`OrderDetail.tsx` handles:
-- Approve
-- Reject  
-- Deliver
-
-Each action updates the order row and triggers a notification and email. Local UI state is updated optimistically in some cases, which can mask backend failure or write conflicts.
-
-**Active risks:**
-- No transaction wrapping steps 2–3.
-- Partial side-effect failure (notification sent, email failed) is not surfaced consistently.
-- Optimistic UI updates may diverge from actual database state after a failed write.
+Architectural risk:
+- access logic is distributed across several helpers rather than enforced from one authoritative backend decision layer
 
 ---
 
-## Layer 5 – Approval Engine
+### 4. Navigation Configuration Layer
+Key file:
+- `src/hooks/useNavSettings.tsx`
 
-**Function:** `resolveApprovalRouting(...)` in `NewOrder.tsx`
+Responsibilities:
+- load org settings
+- map route → setting key
+- determine whether route is disabled in frontend
 
-Determines:
-- Whether the order auto-approves
-- Whether CEO approval is required
-- Which user is assigned as `approver_id`
-
-This function runs entirely in the browser. The result (including `approver_id`) is submitted as part of the order insert payload. The backend does not independently verify the routing decision.
-
-This means a manipulated client can:
-- Submit an order with a forged `approver_id`
-- Force auto-approval by omitting or falsifying the approval flag
-- Route an order to an unintended approver
-
-**This is the highest-severity architectural risk in the system.** Approval routing must be moved server-side (RPC or Edge Function) to be trustworthy.
+Architectural risk:
+- route disablement appears to be primarily frontend-driven
+- direct URL access may not equal hidden navigation state
 
 ---
 
-## Layer 6 – Admin System
+### 5. Order Domain Layer
+Key files:
+- `src/pages/NewOrder.tsx`
+- `src/pages/OrderDetail.tsx`
 
-**Page:** `Admin.tsx`
-**Access hooks:** `useAdminAccess`, module permissions
+Core tables inferred from inspected code:
+- `orders`
+- `order_items`
+- `order_systems`
+- `profiles`
+- notification RPC
+- email edge function / helpers
 
-Admin sections are lazy-loaded and conditionally rendered based on the result of `useAdminAccess`. If the hook returns false, the section is not rendered.
+Responsibilities:
+- resolve approver
+- create order
+- create items
+- notify approver
+- send approval emails
+- approve / reject / deliver order
+- notify requester
+- send outbound confirmation/delivery/rejection emails
 
-**Active risk:** This is UI-only gating. If RLS policies on the underlying tables do not restrict write access to admin-role users, the protection is bypassable via direct API calls.
-
----
-
-## Layer 7 – Realtime
-
-Supabase Realtime channels are used to push updates to the UI when order state changes. Reloads are debounced to reduce redundant fetches.
-
-`useModules.tsx` uses a dedicated Postgres channel to listen for changes to `module_permissions`. This means module access state in the UI is kept in sync with the database without requiring a full page reload. **Realtime updates are a structural dependency of the permission model** — if the channel drops or the debounce gap is too wide, users may operate under a stale permission set until the next reload or reconnect.
-
-**Active risks:**
-- A debounce gap means the UI can be briefly stale after a database change, including permission changes.
-- A dropped Realtime channel is not equivalent to "no changes" — it is an unknown state. Silent channel failure must be treated as a potential stale-permission condition.
-- Auth state changes (token refresh, re-login) may trigger realtime reconnection events that cause duplicate data fetches alongside existing TanStack Query invalidations.
-
----
-
-## Current Architecture Risks – Summary
-
-| Layer | Risk | Severity |
-|-------|------|----------|
-| Approval Engine | Routing computed and trusted from browser | Critical |
-| Authorization | No backend enforcement of access decisions | High |
-| Order System | No transaction for order + items write | High |
-| Login | Domain restriction client-side only | High |
-| Admin | UI-only gating of sensitive sections | High |
-| Auth | Stale role state after token refresh | Medium |
-| Realtime | Debounce gaps and duplicate fetch triggers | Low |
+Architectural risk:
+- one business workflow spans DB writes, RPC, email, and UI state without true transaction boundaries
 
 ---
 
-## Recommended Hardening Path
+### 6. Admin Layer
+Key file:
+- `src/pages/Admin.tsx`
 
-In priority order:
+Responsibilities:
+- render admin dashboard
+- show or hide admin sections
+- lazy-load admin management panels
 
-1. **Move approval routing server-side** — RPC function that resolves `approver_id` and validates the result before inserting the order.
-2. **Atomic order creation** — Single RPC call for `orders` + `order_items` insert.
-3. **RLS enforcement for admin and approver actions** — Approve, reject, and deliver must be gated by `auth.uid()` checks at the database level.
-4. **Domain restriction at auth layer** — Enforce in an auth hook or Edge Function, not in `Login.tsx`.
-5. **Central permission resolver** — Single shared function that all hooks delegate to, preventing drift between route guard, admin guard, and module hooks.
+This layer is heavily coupled to authorization helpers and hardcoded section mappings.
+
+Architectural risk:
+- visibility logic and actual server-side write authority may diverge
+
+---
+
+## Concrete Data Flows
+
+### A. Auth Resolution Flow
+1. App mounts providers in `App.tsx`
+2. `AuthProvider` subscribes to Supabase auth changes
+3. `AuthProvider` also checks current session
+4. On session presence, it fetches in parallel:
+   - profile
+   - direct user roles
+   - group-derived roles
+5. Role arrays are merged client-side
+6. The resulting auth context feeds:
+   - `ProtectedRoute`
+   - `ModulesProvider`
+   - `NavSettingsProvider`
+   - admin access helpers
+
+Failure implications:
+- if profile or role fetches fail silently, route and permission decisions may be wrong or incomplete
+
+---
+
+### B. New Order Creation Flow
+1. User opens `NewOrder.tsx`
+2. Page loads:
+   - categories
+   - order types
+   - profiles
+   - all profiles
+   - roles via RPC
+   - current profile
+   - category/department mappings
+   - type/department mappings
+   - approval settings
+   - departments
+3. Frontend derives:
+   - filtered visible categories/types
+   - CEO profile
+   - manager profile
+   - approval routing
+4. On submit:
+   - validate current form
+   - call `resolveApprovalRouting(...)`
+   - insert `orders`
+   - insert `order_items`
+   - if items fail, delete order row as compensating rollback
+   - if pending, notify approver and maybe email approver
+   - if auto-approved, notify/helpdesk/email requester
+5. UI redirects to dashboard
+
+Failure implications:
+- no true transaction
+- side effects after DB writes may partially fail
+- approval authority is derived in browser logic
+
+---
+
+### C. Order Approval / Delivery Flow
+1. User opens `OrderDetail.tsx`
+2. Page loads:
+   - `orders`
+   - `order_items`
+   - `order_systems`
+   - requester and approver profiles
+3. Realtime channel listens for order row changes
+4. UI derives:
+   - canApprove
+   - admin delivery action
+5. On approve:
+   - update `orders.status = approved`
+   - notify requester
+   - send requester email
+   - send helpdesk email
+6. On reject:
+   - update `orders.status = rejected`
+   - notify requester
+   - send rejection email
+7. On deliver:
+   - update `orders.status = delivered`
+   - notify requester
+   - send delivery email
+
+Failure implications:
+- transitions appear update-by-id based
+- frontend controls action visibility
+- partial side-effect failures can occur after status update
+
+---
+
+## Current Trust Boundaries
+
+### Frontend-trusted decisions observed
+The browser currently appears to determine:
+- approver routing
+- who can see admin sections
+- who can approve/reject/deliver in UI
+- which modules a user can access
+- whether some routes are disabled
+
+### Backend-trusted decisions not verified
+Not visible from inspected files:
+- exact Row Level Security policies
+- database constraints on lifecycle transitions
+- RPC validation for approval/security rules
+- edge function authorization checks
+
+This means any strong authorization claim must be treated as unverified unless backend code/policies are also reviewed.
+
+---
+
+## Architectural Strengths
+- clear provider structure
+- modular route organization
+- access logic extracted into hooks rather than scattered entirely in pages
+- approval routing isolated in a dedicated helper function inside order creation
+- realtime refresh is at least partially debounced
+
+---
+
+## Architectural Weaknesses
+- business-critical rules live in frontend
+- authorization logic is layered but not centrally authoritative
+- order workflow is not transaction-safe
+- permission precedence is implicit rather than formalized
+- route visibility and true backend authority may diverge
+- compensating rollback exists, but only for one part of the order workflow
+
+---
+
+## Recommended Evolution Path
+Prefer these improvements in order:
+
+1. formalize permission precedence in one place
+2. move approval-critical decisions to backend validation or RPC
+3. wrap order create/approve/reject/deliver flows in server-side transaction-like logic
+4. tighten update predicates for sensitive state transitions
+5. keep frontend hooks as view-model helpers, not final authority
+
+---
+
+## Summary
+This system is not badly structured, but it is carrying too much authority in the frontend.
+
+Most important architectural truths:
+- auth context is assembled client-side
+- access control is layered and distributed
+- order flow spans multiple side effects without hard transaction boundaries
+- backend enforcement may exist, but it is not visible from the inspected frontend snapshot
+
+Claude Code should analyze this repo with those constraints in mind.
