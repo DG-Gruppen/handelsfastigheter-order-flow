@@ -44,7 +44,7 @@ export function CelebrationCommentToggle({
 }
 
 /** The expandable comment list + input */
-export default function CelebrationComments({ weekKey, open }: { weekKey: string; open: boolean }) {
+export default function CelebrationComments({ weekKey, open, onCountChange }: { weekKey: string; open: boolean; onCountChange?: (count: number) => void }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMsg, setNewMsg] = useState("");
