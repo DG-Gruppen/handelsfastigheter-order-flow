@@ -93,6 +93,12 @@ Deno.serve(async (req) => {
           kb_videos: "Kunskapsbanken (video)",
           website: "Webbplatsen (handelsfastigheter.se)",
           allabolag: "Allabolag.se (bolagsinfo)",
+          news: "Nyheter (internt)",
+          ceo_blog: "VD-bloggen",
+          tools: "Verktyg & system",
+          departments: "Avdelningar",
+          document_folders: "Dokumentbiblioteket (mapp)",
+          document_files: "Dokumentbiblioteket (fil)",
         };
 
         contextBlock = "\n\n--- INTERN KUNSKAPSBAS (kontext) ---\n" +
