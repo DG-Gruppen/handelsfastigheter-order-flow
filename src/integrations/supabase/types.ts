@@ -1728,6 +1728,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_tool_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          sort_order: number
+          tool_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          tool_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sort_order?: number
+          tool_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tool_favorites_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workwear_orders: {
         Row: {
           created_at: string
