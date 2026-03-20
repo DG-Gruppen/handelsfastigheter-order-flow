@@ -52,6 +52,8 @@ export default function News() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<InternalNews | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 8;
 
   const fetchInternal = useCallback(async () => {
     const { data } = await supabase
