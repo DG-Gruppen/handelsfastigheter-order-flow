@@ -17,7 +17,8 @@ const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
 /* ── Component ── */
 export default function Dashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles } = useAuth();
+  const isIT = roles.includes("it");
   const [recognitions, setRecognitions] = useState<any[]>([]);
 
   const fetchRecognitions = useCallback(async () => {
@@ -94,7 +95,8 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* ── OKR Snapshot ── */}
+      {/* ── OKR Snapshot (IT only) ── */}
+      {isIT && (
       <Card className="glass-card">
         <CardHeader className="pb-2 px-4 md:px-6">
           <div className="flex items-center justify-between">
@@ -116,9 +118,11 @@ export default function Dashboard() {
           ))}
         </CardContent>
       </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
-        {/* ── Veckans vinst ── */}
+        {/* ── Veckans vinst (IT only) ── */}
+        {isIT && (
         <Card className="glass-card border-l-4 border-l-accent">
           <CardHeader className="pb-2">
             <CardTitle className="font-heading text-base flex items-center gap-2">
@@ -131,6 +135,7 @@ export default function Dashboard() {
             <p className="text-xs font-medium text-accent mt-3">Publicerad av {weeklyWin.author} · {weeklyWin.week}</p>
           </CardContent>
         </Card>
+        )}
 
         {/* ── Erkännanden ── */}
         <Card className="glass-card">
