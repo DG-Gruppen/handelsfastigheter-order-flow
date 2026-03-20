@@ -242,7 +242,8 @@ export default function Culture() {
         </div>
       )}
 
-      {/* Karriärvägar */}
+      {/* Karriärvägar – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
+      {isIT && (
       <div className="rounded-2xl p-6 bg-accent/10">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-5 h-5 text-accent" />
@@ -262,6 +263,7 @@ export default function Culture() {
           </p>
         </div>
       </div>
+      )}
     </div>
   );
 }
