@@ -117,6 +117,8 @@
     overscroll-behavior: auto !important;
     margin-right: 0px !important;
     padding-right: 0px !important;
+    position: static !important;
+    top: auto !important;
   }
   html[data-scroll-locked] {
     overflow: auto !important;
