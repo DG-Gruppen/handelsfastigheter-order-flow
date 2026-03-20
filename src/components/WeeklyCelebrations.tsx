@@ -135,7 +135,6 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
   }
 
   if (compact) {
-    // Dashboard version – compact with comments
     return (
       <Card className="glass-card">
         <CardHeader className="pb-1">
@@ -165,7 +164,10 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
                   </div>
                   <CelebrationComments
                     weekKey={c.weekKey}
+                    celebrationName={c.name}
+                    celebrationEmoji={c.emoji}
                     open={!!openComments[c.weekKey]}
+                    onOpenChange={(v) => setOpenComments(prev => ({ ...prev, [c.weekKey]: v }))}
                     onCountChange={(n) => setCommentCounts(prev => ({ ...prev, [c.weekKey]: n }))}
                   />
                 </div>
@@ -221,7 +223,10 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
                 </div>
                 <CelebrationComments
                   weekKey={c.weekKey}
+                  celebrationName={c.name}
+                  celebrationEmoji={c.emoji}
                   open={!!openComments[c.weekKey]}
+                  onOpenChange={(v) => setOpenComments(prev => ({ ...prev, [c.weekKey]: v }))}
                   onCountChange={(n) => setCommentCounts(prev => ({ ...prev, [c.weekKey]: n }))}
                 />
               </div>
