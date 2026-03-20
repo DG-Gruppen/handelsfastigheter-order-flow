@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Award, PartyPopper, Pen, BookOpen, ChevronRight, Pencil, Check, X } from "lucide-react";
+import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
