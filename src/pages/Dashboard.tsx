@@ -17,7 +17,8 @@ const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
 /* ── Component ── */
 export default function Dashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles } = useAuth();
+  const isIT = roles.includes("it");
   const [recognitions, setRecognitions] = useState<any[]>([]);
 
   const fetchRecognitions = useCallback(async () => {
