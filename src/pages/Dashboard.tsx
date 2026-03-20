@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp, Banknote, Building2, Percent,
-  ArrowUpRight, Award, PartyPopper, Cake,
+  ArrowUpRight, Award, PartyPopper,
 } from "lucide-react";
 
 import { kpis, okrs, weeklyWin } from "@/data/dashboard";
