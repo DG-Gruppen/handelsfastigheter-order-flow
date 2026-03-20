@@ -1,31 +1,50 @@
 
 
-## Plan: Lägg till birthday-fält och visa på personalkort
+## Plan: Kommentarer på jubilarkort
 
-### 1. Databasmigration — lägg till `birthday`-kolumn på `profiles`
+### Koncept
+Varje jubilarkort (födelsedag/jubileum) får en liten kommentarssektion. Kommentarerna knyts till en **veckonyckel** (t.ex. `birthday:Anna Svensson:2026-W12`) som gör att de automatiskt "försvinner" nästa gång kortet visas (nästa år) — ingen cleanup behövs, vi filtrerar bara på aktuell veckonyckel.
 
+### UX-flöde
+- Varje kort visar en liten pratbubbla-ikon med antal kommentarer
+- Klick öppnar en inline-sektion (under kortet) med befintliga kommentarer + ett litet textfält
+- Kommentarer visas med avsändarens namn och tid
+- Mobilanpassat: full bredd, touch-vänliga targets (h-12 input)
+
+### Tekniska steg
+
+**1. Ny databastabell `celebration_comments`**
 ```sql
-ALTER TABLE public.profiles ADD COLUMN birthday date DEFAULT NULL;
+CREATE TABLE public.celebration_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  week_key text NOT NULL,        -- t.ex. "birthday:Anna Svensson:2026-W12"
+  user_id uuid NOT NULL,
+  message text NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.celebration_comments ENABLE ROW LEVEL SECURITY;
+-- Alla inloggade kan läsa och skriva
+CREATE POLICY "Authenticated can view" ON public.celebration_comments FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated can insert own" ON public.celebration_comments FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own" ON public.celebration_comments FOR DELETE TO authenticated USING (auth.uid() = user_id);
 ```
 
-### 2. Importera födelsedagar från Excel-filen
+**2. Uppdatera `Celebration`-interfacet**
+- Lägg till `weekKey: string` (genereras som `${type}:${name}:${isoWeek}`)
 
-Kör ett script som läser Excel-filen och matchar namn mot profiler, sedan uppdaterar `birthday` via SQL INSERT/UPDATE.
+**3. Ny komponent `CelebrationComments`**
+- Props: `weekKey`, `compact` (dold i dashboard-versionen)
+- Hämtar kommentarer filtrerat på `week_key`
+- Visar kommentarer + input-fält
+- Hämtar avsändarnamn via profiles-join eller separat query
+- Expanderar/kollapsar med en pratbubbla-knapp
 
-Matchning sker på `full_name`. De 54 personerna i filen matchar alla befintliga profiler (bekräftat i föregående analys).
+**4. Uppdatera `WeeklyCelebrations`**
+- Integrera `CelebrationComments` i varje kort (bara i full-versionen på Kultursidan, ej compact/dashboard)
+- Kortet expanderas vertikalt när kommentarer öppnas
 
-### 3. Uppdatera Personnel-sidan
-
-**`src/pages/Personnel.tsx`**:
-- Lägg till `birthday` i `PersonnelProfile`-interfacet och i select-queryn
-- Importera `Cake`-ikonen från lucide-react
-- Visa födelsedatum på varje personalkort (formaterat som "12 mars") under avdelningsraden
-- Lägg till en liten tårtikon bredvid datumet
-
-### Filer som ändras
-| Fil | Ändring |
-|-----|---------|
-| Migration (SQL) | `ALTER TABLE profiles ADD COLUMN birthday date` |
-| Script (engångs) | Importera 54 födelsedagar från Excel → profiles |
-| `src/pages/Personnel.tsx` | Visa födelsedag på korten |
+### Mobilanpassning
+- Input-fältet använder minst h-12 för touch
+- Kommentarslistan scrollar vid >3 kommentarer (max-h med overflow)
+- Full bredd på mobil (redan hanterat av grid sm:grid-cols-2 → 1 kolumn på mobil)
 
