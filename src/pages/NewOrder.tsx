@@ -493,7 +493,7 @@ export default function NewOrder() {
           <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
 
             {/* Existing employee picker for managers */}
-            {isManagerOrAdmin && (
+            {isPrivileged && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Beställ till *</Label>
                 <Select value={selectedExistingRecipient} onValueChange={setSelectedExistingRecipient}>
