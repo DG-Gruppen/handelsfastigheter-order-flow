@@ -2,16 +2,26 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Cake, Briefcase, PartyPopper } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CelebrationComments from "@/components/CelebrationComments";
 
 interface Celebration {
   name: string;
   type: "birthday" | "anniversary";
   label: string;
   emoji: string;
-  date: string; // ISO date of the event this week
+  date: string;
+  weekKey: string;
 }
 
-function getWeekRange(): { start: Date; end: Date } {
+function getISOWeek(d: Date): string {
+  const year = d.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  const days = Math.floor((d.getTime() - jan1.getTime()) / 86400000);
+  const week = Math.ceil((days + jan1.getDay() + 1) / 7);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+function getWeekRange(): { start: Date; end: Date; isoWeek: string } {
   const now = new Date();
   const day = now.getDay(); // 0=Sun
   const monday = new Date(now);
@@ -20,7 +30,7 @@ function getWeekRange(): { start: Date; end: Date } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
-  return { start: monday, end: sunday };
+  return { start: monday, end: sunday, isoWeek: getISOWeek(monday) };
 }
 
 function isDateInWeek(dateStr: string, weekStart: Date, weekEnd: Date): boolean {
@@ -64,7 +74,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
       return;
     }
 
-    const { start, end } = getWeekRange();
+    const { start, end, isoWeek } = getWeekRange();
     const result: Celebration[] = [];
 
     for (const p of profiles as any[]) {
@@ -78,6 +88,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
           label: `Fyller år ${formatBirthday(p.birthday)}`,
           emoji: "🎂",
           date: p.birthday,
+          weekKey: `birthday:${p.full_name}:${isoWeek}`,
         });
       }
 
@@ -91,6 +102,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
             label: `${years} år på SHF`,
             emoji: years >= 10 ? "🏅" : years >= 5 ? "🎉" : "⭐",
             date: p.start_date,
+            weekKey: `anniversary:${p.full_name}:${isoWeek}`,
           });
         }
       }
@@ -168,24 +180,27 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
             {celebrations.map((c, i) => (
               <div
                 key={i}
-                className={`rounded-xl p-4 flex items-center gap-4 border-l-4 bg-accent/5 ${
+                className={`rounded-xl p-4 border-l-4 bg-accent/5 ${
                   c.type === "birthday"
                     ? "border-l-primary/60"
                     : "border-l-accent/60"
                 }`}
               >
-                <span className="text-3xl shrink-0">{c.emoji}</span>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-foreground">{c.name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                    {c.type === "birthday" ? (
-                      <Cake className="w-3 h-3 shrink-0" />
-                    ) : (
-                      <Briefcase className="w-3 h-3 shrink-0" />
-                    )}
-                    {c.label}
+                <div className="flex items-center gap-4">
+                  <span className="text-3xl shrink-0">{c.emoji}</span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-foreground">{c.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                      {c.type === "birthday" ? (
+                        <Cake className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <Briefcase className="w-3 h-3 shrink-0" />
+                      )}
+                      {c.label}
+                    </div>
                   </div>
                 </div>
+                <CelebrationComments weekKey={c.weekKey} />
               </div>
             ))}
           </div>

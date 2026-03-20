@@ -74,6 +74,30 @@ export type Database = {
           },
         ]
       }
+      celebration_comments: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          user_id: string
+          week_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          user_id: string
+          week_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          user_id?: string
+          week_key?: string
+        }
+        Relationships: []
+      }
       ceo_blog: {
         Row: {
           author: string
