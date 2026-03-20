@@ -191,7 +191,14 @@ export default function ToolsManager() {
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_active: !t.is_active } : t));
   };
 
+  const MAX_STARRED = 6;
+  const starredCount = tools.filter(t => t.is_starred).length;
+
   const handleToggleStar = async (tool: Tool) => {
+    if (!tool.is_starred && starredCount >= MAX_STARRED) {
+      toast.error(`Max ${MAX_STARRED} verktyg kan visas i snabbåtkomst`);
+      return;
+    }
     await supabase.from("tools" as any).update({ is_starred: !tool.is_starred }).eq("id", tool.id);
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_starred: !t.is_starred } : t));
   };
