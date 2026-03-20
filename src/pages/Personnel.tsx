@@ -194,6 +194,12 @@ export default function Personnel() {
                 <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                   {emp.department || "Ingen avdelning"}
                 </p>
+                {emp.birthday && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 flex items-center gap-1">
+                    <Cake className="w-3 h-3" />
+                    {formatBirthday(emp.birthday)}
+                  </p>
+                )}
 
                 {/* Contact */}
                 <div className="flex items-center gap-1 mt-3">
