@@ -1,39 +1,31 @@
 
 
-## Fix: Checklista-knappen i högermenyn
+## Plan: Lägg till birthday-fält och visa på personalkort
 
-### Problem
-Det finns två "Lägg till checklista"-knappar:
-1. **Högermenyn (sidebar)** – rad 334 i `CardDetailDialog.tsx` – gör ingenting (`onClick` är tom)
-2. **Inuti CardChecklists** – "Lägg till checklista"-knappen längst ner i komponenten – fungerar
+### 1. Databasmigration — lägg till `birthday`-kolumn på `profiles`
 
-Användaren vill att sidebar-knappen ska vara den enda som fungerar.
-
-### Lösning
-
-**CardChecklists.tsx:**
-- Exponera `addChecklist`-funktionen via en callback-prop (`onAddChecklist`) eller `useImperativeHandle`
-- Ta bort den interna "Lägg till checklista"-knappen längst ner i komponenten
-
-**CardDetailDialog.tsx:**
-- Håll en ref eller callback till `addChecklist`
-- Koppla sidebar-knappen (rad 334) till att anropa `addChecklist` på CardChecklists
-
-### Implementation
-Enklast: lägg till en `addChecklistRef`-prop på CardChecklists som sätter en extern referens till `addChecklist`-funktionen. Alternativt `forwardRef` + `useImperativeHandle`. Callback-ref är enklare:
-
-```tsx
-// CardChecklists: ta emot prop
-onRegisterAdd?: (fn: () => void) => void;
-// Anropa i useEffect: onRegisterAdd?.(() => addChecklist);
-
-// CardDetailDialog: spara referensen
-const addChecklistRef = useRef<() => void>();
-<CardChecklists cardId={card.id} onRegisterAdd={fn => addChecklistRef.current = fn} />
-<SidebarButton icon={CheckSquare} label="Checklista" onClick={() => addChecklistRef.current?.()} />
+```sql
+ALTER TABLE public.profiles ADD COLUMN birthday date DEFAULT NULL;
 ```
 
+### 2. Importera födelsedagar från Excel-filen
+
+Kör ett script som läser Excel-filen och matchar namn mot profiler, sedan uppdaterar `birthday` via SQL INSERT/UPDATE.
+
+Matchning sker på `full_name`. De 54 personerna i filen matchar alla befintliga profiler (bekräftat i föregående analys).
+
+### 3. Uppdatera Personnel-sidan
+
+**`src/pages/Personnel.tsx`**:
+- Lägg till `birthday` i `PersonnelProfile`-interfacet och i select-queryn
+- Importera `Cake`-ikonen från lucide-react
+- Visa födelsedatum på varje personalkort (formaterat som "12 mars") under avdelningsraden
+- Lägg till en liten tårtikon bredvid datumet
+
 ### Filer som ändras
-- `src/components/planner/CardChecklists.tsx` – ta bort intern knapp, exponera addChecklist via prop
-- `src/components/planner/CardDetailDialog.tsx` – koppla sidebar-knappen till addChecklist
+| Fil | Ändring |
+|-----|---------|
+| Migration (SQL) | `ALTER TABLE profiles ADD COLUMN birthday date` |
+| Script (engångs) | Importera 54 födelsedagar från Excel → profiles |
+| `src/pages/Personnel.tsx` | Visa födelsedag på korten |
 
