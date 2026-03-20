@@ -138,6 +138,7 @@ export default function NewOrder() {
     isManagerOrAdmin,
     isManager,
     isStaff,
+    isIT,
     reportsDirectlyToCeo,
     approvalSettings,
     ceoProfileId: ceoProfile?.user_id ?? null,
