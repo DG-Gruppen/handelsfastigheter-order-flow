@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageCircle, Send, Trash2 } from "lucide-react";
@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 interface Comment {
   id: string;
@@ -50,28 +43,12 @@ export function CelebrationCommentToggle({
   );
 }
 
-/** The comment modal dialog */
-export default function CelebrationComments({
-  weekKey,
-  celebrationName,
-  celebrationEmoji,
-  open,
-  onOpenChange,
-  onCountChange,
-}: {
-  weekKey: string;
-  celebrationName?: string;
-  celebrationEmoji?: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCountChange?: (count: number) => void;
-}) {
+/** The expandable comment list + input */
+export default function CelebrationComments({ weekKey, open, onCountChange }: { weekKey: string; open: boolean; onCountChange?: (count: number) => void }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
-  const onCountChangeRef = useRef(onCountChange);
-  onCountChangeRef.current = onCountChange;
 
   const fetchComments = useCallback(async () => {
     const { data } = await supabase
@@ -82,7 +59,7 @@ export default function CelebrationComments({
 
     if (!data || (data as any[]).length === 0) {
       setComments([]);
-      onCountChangeRef.current?.(0);
+      onCountChange?.(0);
       return;
     }
 
@@ -103,21 +80,22 @@ export default function CelebrationComments({
       author_name: nameMap[c.user_id] || "Okänd",
     }));
     setComments(mapped);
-    onCountChangeRef.current?.(mapped.length);
-  }, [weekKey]);
+    onCountChange?.(mapped.length);
+  }, [weekKey, onCountChange]);
 
   // Fetch count on mount, full data when open
   useEffect(() => {
     if (open) {
       fetchComments();
     } else {
+      // Just get the count
       supabase
         .from("celebration_comments" as any)
         .select("id", { count: "exact", head: true })
         .eq("week_key", weekKey)
-        .then(({ count }) => onCountChangeRef.current?.(count ?? 0));
+        .then(({ count }) => onCountChange?.(count ?? 0));
     }
-  }, [open, fetchComments, weekKey]);
+  }, [open, fetchComments, weekKey, onCountChange]);
 
   const handleSend = async () => {
     if (!newMsg.trim() || !user) return;
@@ -137,70 +115,54 @@ export default function CelebrationComments({
     fetchComments();
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {celebrationEmoji && <span className="text-xl">{celebrationEmoji}</span>}
-            Hälsningar{celebrationName ? ` till ${celebrationName}` : ""}
-          </DialogTitle>
-          <DialogDescription>Skriv en hälsning eller gratulation!</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {comments.length > 0 && (
-            <ScrollArea className="max-h-60">
-              <div className="space-y-3 pr-2">
-                {comments.map((c) => (
-                  <div key={c.id} className="flex items-start gap-2 group">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm font-medium text-foreground">{c.author_name}</span>
-                        <span className="text-[11px] text-muted-foreground/60">
-                          {format(new Date(c.created_at), "d MMM HH:mm", { locale: sv })}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{c.message}</p>
-                    </div>
-                    {user && c.user_id === user.id && (
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive mt-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+    <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+      {comments.length > 0 && (
+        <ScrollArea className="max-h-32">
+          <div className="space-y-1.5 pr-2">
+            {comments.map((c) => (
+              <div key={c.id} className="flex items-start gap-2 group">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium text-foreground">{c.author_name}</span>
+                  <span className="text-[10px] text-muted-foreground/60 ml-1.5">
+                    {format(new Date(c.created_at), "d MMM HH:mm", { locale: sv })}
+                  </span>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{c.message}</p>
+                </div>
+                {user && c.user_id === user.id && (
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
               </div>
-            </ScrollArea>
-          )}
-
-          {comments.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">Inga hälsningar ännu – var först!</p>
-          )}
-
-          <div className="flex gap-2">
-            <input
-              value={newMsg}
-              onChange={(e) => setNewMsg(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-              placeholder="Skriv en hälsning..."
-              className="flex-1 h-11 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={handleSend}
-              disabled={sending || !newMsg.trim()}
-              className="h-11 w-11 shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+            ))}
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </ScrollArea>
+      )}
+
+      <div className="flex gap-2">
+        <input
+          value={newMsg}
+          onChange={(e) => setNewMsg(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+          placeholder="Skriv en hälsning..."
+          className="flex-1 h-10 md:h-9 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={handleSend}
+          disabled={sending || !newMsg.trim()}
+          className="h-10 w-10 md:h-9 md:w-9 shrink-0"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
