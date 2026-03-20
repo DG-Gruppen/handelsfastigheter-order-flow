@@ -1,0 +1,3 @@
+ALTER TABLE public.news 
+  ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'internal',
+  ADD COLUMN IF NOT EXISTS source_url text DEFAULT NULL;
