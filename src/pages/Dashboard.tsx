@@ -66,7 +66,7 @@ export default function Dashboard() {
   }
 
   const firstName = profile?.full_name?.split(" ")[0] || "du";
-  const latestNews = newsPosts.slice(0, 3);
+  const firstName = profile?.full_name?.split(" ")[0] || "du";
 
   return (
     <div className="space-y-6 md:space-y-8">
