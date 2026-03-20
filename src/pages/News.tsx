@@ -103,12 +103,28 @@ export default function News() {
   }, [internalNews, search, selectedCategory]);
 
   const filteredCision = useMemo(() => {
-    if (!search.trim()) return cisionReleases;
-    const q = search.toLowerCase();
-    return cisionReleases.filter(
-      (r) => r.title.toLowerCase().includes(q) || r.excerpt.toLowerCase().includes(q)
+    let result = [...cisionReleases].sort(
+      (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (r) => r.title.toLowerCase().includes(q) || r.excerpt.toLowerCase().includes(q)
+      );
+    }
+    return result;
   }, [cisionReleases, search]);
+
+  // Merged list for "all" tab – interleaved by date, pinned internal first
+  const mergedItems = useMemo(() => {
+    if (tab !== "all") return [];
+    const internals = filteredInternal.map((n) => ({ type: "internal" as const, date: new Date(n.published_at).getTime(), pinned: n.is_pinned, data: n }));
+    const cisions = filteredCision.map((r) => ({ type: "cision" as const, date: new Date(r.published_at).getTime(), pinned: false, data: r }));
+    return [...internals, ...cisions].sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return b.date - a.date;
+    });
+  }, [tab, filteredInternal, filteredCision]);
 
   if (loading && cisionLoading) {
     return (
