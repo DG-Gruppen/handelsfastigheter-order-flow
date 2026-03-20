@@ -24,6 +24,15 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+const MONTH_NAMES = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+
+function formatBirthday(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
+}
+
 export default function Personnel() {
   const [profiles, setProfiles] = useState<PersonnelProfile[]>([]);
   const [roleMap, setRoleMap] = useState<Record<string, string>>({});
