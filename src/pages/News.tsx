@@ -433,7 +433,7 @@ export default function News() {
               <p className="text-sm">{search ? "Inga pressmeddelanden matchar din sökning" : "Inga pressmeddelanden hittades"}</p>
             </div>
           ) : (
-            filteredCision.map((release) => (
+            paginatedCision.map((release) => (
               <Card key={release.id} className="hover:shadow-md active:scale-[0.99] transition-all">
                 <CardContent className="p-4 md:p-5">
                   <div className="flex gap-3 md:gap-4">
