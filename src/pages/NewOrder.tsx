@@ -295,7 +295,7 @@ export default function NewOrder() {
         order_reason: "broken_equipment",
         status: autoApprove ? "approved" : "pending",
         approved_at: autoApprove ? new Date().toISOString() : null,
-      } as Parameters<typeof supabase.from<"orders">>[0] extends never ? never : any)
+      } as any)
       .select("id")
       .single();
 

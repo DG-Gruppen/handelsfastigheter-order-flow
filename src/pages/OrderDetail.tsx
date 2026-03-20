@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Zap, LogOut, UserPlus, Truck,
+  ArrowLeft, Zap, LogOut, UserPlus, Truck, CheckCircle2, XCircle,
 } from "lucide-react";
 
 import {
