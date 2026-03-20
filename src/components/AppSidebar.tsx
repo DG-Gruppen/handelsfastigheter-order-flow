@@ -120,7 +120,8 @@ export default function AppSidebar() {
       .sort((a, b) => {
         const nameA = SLUG_NAME_OVERRIDES[a.slug] || a.name;
         const nameB = SLUG_NAME_OVERRIDES[b.slug] || b.name;
-        return nameA.localeCompare(nameB, "sv");
+        const dir = g.label === "Information" ? -1 : 1;
+        return dir * nameA.localeCompare(nameB, "sv");
       }),
   })).filter((g) => g.modules.length > 0);
 
