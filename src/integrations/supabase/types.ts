@@ -130,6 +130,7 @@ export type Database = {
       }
       content_index: {
         Row: {
+          chunk_index: number
           content: string
           fts: unknown
           id: string
@@ -140,6 +141,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          chunk_index?: number
           content?: string
           fts?: unknown
           id?: string
@@ -150,6 +152,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          chunk_index?: number
           content?: string
           fts?: unknown
           id?: string
@@ -1893,6 +1896,17 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      upsert_chunked_content: {
+        Args: {
+          _chunk_size?: number
+          _content: string
+          _metadata: Json
+          _source_id: string
+          _source_table: string
+          _title: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "employee" | "manager" | "admin" | "staff" | "it"
