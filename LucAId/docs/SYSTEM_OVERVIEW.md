@@ -438,7 +438,8 @@ Admin nås via profilmenyn, inte sidofältet.
 | `index_ceo_blog` | `ceo_blog` | Synkar VD-blogg till `content_index` |
 | `index_tools` | `tools` | Synkar aktiva verktyg till `content_index` |
 | `index_department` | `departments` | Synkar avdelningar till `content_index` |
-| `index_document_file` | `document_files` | Synkar dokument till `content_index` |
+| `index_document_file` | `document_files` | Synkar dokument-metadata till `content_index` |
+| `notify_extract_document_text` | `document_files` | Anropar `extract-document-text` Edge Function via pg_net för att extrahera filinnehåll |
 | `index_document_folder` | `document_folders` | Synkar mappar till `content_index` |
 | `notify_new_document_file` | `document_files` | Skapar notifikationer vid nya dokument |
 | `notify_kb_article_published` | `kb_articles` | Notifierar vid publicerad artikel |
