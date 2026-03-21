@@ -46,17 +46,6 @@ export default function News() {
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [page, setPage] = useState(1);
 
-  // Trigger Cision sync on mount, then re-fetch articles when done
-  useEffect(() => {
-    supabase.functions.invoke("fetch-cision-feed")
-      .then((res) => {
-        if (res?.data?.sync?.imported > 0) {
-          fetchArticles();
-        }
-      })
-      .catch(() => {});
-  }, [fetchArticles]);
-
   const fetchArticles = useCallback(async () => {
     const { data } = await supabase
       .from("news" as any)
@@ -67,6 +56,17 @@ export default function News() {
     setArticles((data as any[]) ?? []);
     setLoading(false);
   }, []);
+
+  // Trigger Cision sync on mount, then re-fetch articles when done
+  useEffect(() => {
+    supabase.functions.invoke("fetch-cision-feed")
+      .then((res) => {
+        if (res?.data?.sync?.imported > 0) {
+          fetchArticles();
+        }
+      })
+      .catch(() => {});
+  }, [fetchArticles]);
 
   useEffect(() => {
     fetchArticles();
