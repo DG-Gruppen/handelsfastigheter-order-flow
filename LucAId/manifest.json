@@ -1,0 +1,678 @@
+{
+  "package": {
+    "name": "LucAId",
+    "version": "3.6.0",
+    "repository": "{{REPOSITORY}}",
+    "system": "{{SYSTEM_NAME}}",
+    "default_branch": "main",
+    "generated_at": "{{DATE}}",
+    "entry_points": {
+      "human": "docs/README.md",
+      "full_analysis": "docs/MASTER_PROMPT.md",
+      "pr_audit": "docs/AUTO_AUDIT_PROMPT.md",
+      "quickstart": "docs/QUICKSTART.md"
+    }
+  },
+  "conventions": {
+    "doc_status": [
+      "Draft",
+      "Active",
+      "Deprecated"
+    ],
+    "evidence_labels": [
+      "VERIFIED",
+      "OBSERVED",
+      "INFERRED",
+      "UNKNOWN"
+    ],
+    "severity": [
+      "Critical",
+      "High",
+      "Medium",
+      "Low",
+      "Observation"
+    ],
+    "escalation_levels": [
+      "SAFE",
+      "REVIEW",
+      "CRITICAL",
+      "BLOCKED"
+    ]
+  },
+  "verified_context": [
+    "docs/SYSTEM_OVERVIEW.md",
+    "docs/core/AI_ANALYSIS.md",
+    "docs/core/ARCHITECTURE.md",
+    "docs/core/DOMAIN_RULES.md",
+    "docs/core/PERMISSION_MODEL.md",
+    "docs/core/WORKFLOW_MAPS.md",
+    "docs/governance/CHANGE_SAFETY_RULES.md",
+    "docs/governance/DOC_OWNERSHIP_RULES.md",
+    "docs/governance/KNOWN_RISKS.md",
+    "docs/governance/REFACTOR_RULES.md",
+    "docs/governance/SELF_VALIDATION_RULES.md",
+    "docs/reference/CODEBASE_GLOSSARY.md",
+    "docs/reference/DATA_MODEL.md"
+  ],
+  "documents": [
+    {
+      "id": "root-version",
+      "path": "VERSION",
+      "title": "Version Pin",
+      "role": "version-pin",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [],
+      "used_by": [
+        "manifest.json",
+        ".github/workflows/lucaid-audit.yml"
+      ],
+      "update_triggers": [
+        "package version changes"
+      ]
+    },
+    {
+      "id": "root-changelog",
+      "path": "CHANGELOG.md",
+      "title": "Changelog",
+      "role": "history",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "VERSION"
+      ],
+      "used_by": [],
+      "update_triggers": [
+        "package release",
+        "breaking change",
+        "new automation rule"
+      ]
+    },
+    {
+      "id": "root-manifest",
+      "path": "manifest.json",
+      "title": "LucAId Manifest",
+      "role": "control-plane",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "schema.json"
+      ],
+      "used_by": [
+        "docs/README.md",
+        "docs/MASTER_PROMPT.md",
+        "docs/AUTO_AUDIT_PROMPT.md",
+        ".github/workflows/lucaid-audit.yml",
+        "tools/lucaid_validate.py",
+        "tools/lucaid_plan.py"
+      ],
+      "update_triggers": [
+        "file added",
+        "file removed",
+        "path renamed",
+        "impact rule changed",
+        "verified context changed"
+      ]
+    },
+    {
+      "id": "root-schema",
+      "path": "schema.json",
+      "title": "Manifest Schema",
+      "role": "schema",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [],
+      "used_by": [
+        "manifest.json",
+        "tools/lucaid_validate.py",
+        ".github/workflows/lucaid-audit.yml"
+      ],
+      "update_triggers": [
+        "manifest contract changes",
+        "enum changes",
+        "new validator"
+      ]
+    },
+    {
+      "id": "docs-readme",
+      "path": "docs/README.md",
+      "title": "README",
+      "role": "entry-point",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json"
+      ],
+      "used_by": [],
+      "update_triggers": [
+        "entry point changes",
+        "folder structure changes",
+        "usage changes"
+      ]
+    },
+    {
+      "id": "docs-quickstart",
+      "path": "docs/QUICKSTART.md",
+      "title": "Quickstart",
+      "role": "quickstart",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json",
+        "docs/README.md"
+      ],
+      "used_by": [
+        "new users"
+      ],
+      "update_triggers": [
+        "onboarding flow changes",
+        "new getting started step",
+        "tool usage changes"
+      ]
+    },
+    {
+      "id": "docs-master-prompt",
+      "path": "docs/MASTER_PROMPT.md",
+      "title": "Master Prompt",
+      "role": "prompt-full-analysis",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json",
+        "docs/core/AI_ANALYSIS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "used_by": [
+        "Claude Code",
+        "Cursor",
+        "CI manual reviews"
+      ],
+      "update_triggers": [
+        "load order change",
+        "output format change",
+        "new control plane rules"
+      ]
+    },
+    {
+      "id": "docs-auto-audit",
+      "path": "docs/AUTO_AUDIT_PROMPT.md",
+      "title": "Auto Audit Prompt",
+      "role": "prompt-pr-review",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "used_by": [
+        "PR review automation"
+      ],
+      "update_triggers": [
+        "impact map change",
+        "PR review policy change",
+        "new module area"
+      ]
+    },
+    {
+      "id": "docs-system-overview",
+      "path": "docs/SYSTEM_OVERVIEW.md",
+      "title": "System Overview",
+      "role": "system-description",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [],
+      "used_by": [
+        "docs/MASTER_PROMPT.md",
+        "docs/core/AI_ANALYSIS.md"
+      ],
+      "update_triggers": [
+        "new module",
+        "new route",
+        "new table",
+        "integration change",
+        "role change"
+      ]
+    },
+    {
+      "id": "core-ai-analysis",
+      "path": "docs/core/AI_ANALYSIS.md",
+      "title": "AI Analysis",
+      "role": "analysis-method",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/reference/CODEBASE_GLOSSARY.md"
+      ],
+      "used_by": [
+        "docs/MASTER_PROMPT.md",
+        "docs/AUTO_AUDIT_PROMPT.md"
+      ],
+      "update_triggers": [
+        "analysis method change",
+        "new hotspot",
+        "evidence model change"
+      ]
+    },
+    {
+      "id": "core-architecture",
+      "path": "docs/core/ARCHITECTURE.md",
+      "title": "Architecture",
+      "role": "architecture",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/SYSTEM_OVERVIEW.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md",
+        "docs/governance/KNOWN_RISKS.md"
+      ],
+      "update_triggers": [
+        "layer changes",
+        "trust boundary changes",
+        "new edge function",
+        "new integration"
+      ]
+    },
+    {
+      "id": "core-domain-rules",
+      "path": "docs/core/DOMAIN_RULES.md",
+      "title": "Domain Rules",
+      "role": "domain-rules",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/SYSTEM_OVERVIEW.md"
+      ],
+      "used_by": [
+        "docs/core/WORKFLOW_MAPS.md",
+        "docs/governance/KNOWN_RISKS.md"
+      ],
+      "update_triggers": [
+        "business rule changes",
+        "module behavior change",
+        "lifecycle change"
+      ]
+    },
+    {
+      "id": "core-permission-model",
+      "path": "docs/core/PERMISSION_MODEL.md",
+      "title": "Permission Model",
+      "role": "permission-model",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/SYSTEM_OVERVIEW.md",
+        "docs/core/ARCHITECTURE.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md",
+        "docs/governance/KNOWN_RISKS.md"
+      ],
+      "update_triggers": [
+        "role change",
+        "permission precedence change",
+        "module access change"
+      ]
+    },
+    {
+      "id": "core-workflow-maps",
+      "path": "docs/core/WORKFLOW_MAPS.md",
+      "title": "Workflow Maps",
+      "role": "workflow-maps",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/core/DOMAIN_RULES.md",
+        "docs/core/PERMISSION_MODEL.md",
+        "docs/core/ARCHITECTURE.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md",
+        "docs/governance/KNOWN_RISKS.md"
+      ],
+      "update_triggers": [
+        "workflow step change",
+        "approval flow change",
+        "email flow change",
+        "new workflow"
+      ]
+    },
+    {
+      "id": "gov-change-safety",
+      "path": "docs/governance/CHANGE_SAFETY_RULES.md",
+      "title": "Change Safety Rules",
+      "role": "change-safety",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/governance/KNOWN_RISKS.md"
+      ],
+      "used_by": [
+        "docs/MASTER_PROMPT.md",
+        "docs/AUTO_AUDIT_PROMPT.md",
+        ".github/workflows/lucaid-audit.yml"
+      ],
+      "update_triggers": [
+        "change policy update",
+        "new sensitive subsystem",
+        "escalation model change"
+      ]
+    },
+    {
+      "id": "gov-doc-ownership",
+      "path": "docs/governance/DOC_OWNERSHIP_RULES.md",
+      "title": "Doc Ownership Rules",
+      "role": "doc-governance",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json"
+      ],
+      "used_by": [
+        "all docs maintainers"
+      ],
+      "update_triggers": [
+        "new doc added",
+        "ownership change",
+        "source-of-truth change"
+      ]
+    },
+    {
+      "id": "gov-known-risks",
+      "path": "docs/governance/KNOWN_RISKS.md",
+      "title": "Known Risks",
+      "role": "risk-register",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/core/DOMAIN_RULES.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md",
+        ".github/workflows/lucaid-audit.yml"
+      ],
+      "update_triggers": [
+        "new risk",
+        "risk resolved",
+        "severity change",
+        "backend enforcement added"
+      ]
+    },
+    {
+      "id": "gov-refactor-rules",
+      "path": "docs/governance/REFACTOR_RULES.md",
+      "title": "Refactor Rules",
+      "role": "refactor-rules",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md"
+      ],
+      "update_triggers": [
+        "refactor policy changes"
+      ]
+    },
+    {
+      "id": "gov-self-validation",
+      "path": "docs/governance/SELF_VALIDATION_RULES.md",
+      "title": "Self Validation Rules",
+      "role": "package-validation",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json",
+        "schema.json",
+        "docs/governance/DOC_OWNERSHIP_RULES.md"
+      ],
+      "used_by": [
+        ".github/workflows/lucaid-audit.yml",
+        "tools/lucaid_validate.py"
+      ],
+      "update_triggers": [
+        "new validation rule",
+        "new doc category",
+        "manifest contract change",
+        "CI rule change"
+      ]
+    },
+    {
+      "id": "ref-glossary",
+      "path": "docs/reference/CODEBASE_GLOSSARY.md",
+      "title": "Codebase Glossary",
+      "role": "glossary",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/SYSTEM_OVERVIEW.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md",
+        ".github/workflows/lucaid-audit.yml"
+      ],
+      "update_triggers": [
+        "new term",
+        "role change",
+        "new table",
+        "function renamed"
+      ]
+    },
+    {
+      "id": "ref-data-model",
+      "path": "docs/reference/DATA_MODEL.md",
+      "title": "Data Model",
+      "role": "data-model",
+      "status": "Active",
+      "source_of_truth": true,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "docs/SYSTEM_OVERVIEW.md"
+      ],
+      "used_by": [
+        "docs/core/AI_ANALYSIS.md",
+        "docs/core/DOMAIN_RULES.md",
+        "docs/core/ARCHITECTURE.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/reference/CODEBASE_GLOSSARY.md"
+      ],
+      "update_triggers": [
+        "new table",
+        "column added/removed/renamed",
+        "enum value added",
+        "constraint changed",
+        "RLS policy change",
+        "relationship changed"
+      ]
+    },
+    {
+      "id": "tool-discover",
+      "path": "tools/lucaid_discover.py",
+      "title": "LucAId Discover",
+      "role": "discovery-tool",
+      "status": "Active",
+      "source_of_truth": false,
+      "owner": "DG Gruppen",
+      "depends_on": [
+        "manifest.json"
+      ],
+      "used_by": [
+        "new project setup",
+        "manifest.json impact_map bootstrap"
+      ],
+      "update_triggers": [
+        "new framework/stack support",
+        "new discovery pattern"
+      ]
+    }
+  ],
+  "impact_map": [
+    {
+      "id": "auth_permissions",
+      "patterns": [
+        "{{pattern for auth hooks and permission checks}}"
+      ],
+      "review_docs": [
+        "docs/core/PERMISSION_MODEL.md",
+        "docs/core/ARCHITECTURE.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Verify server-side role enforcement and access assumptions."
+      ]
+    },
+    {
+      "id": "backend",
+      "patterns": [
+        "{{pattern for backend functions and migrations}}"
+      ],
+      "review_docs": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/core/DOMAIN_RULES.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md",
+        "docs/reference/CODEBASE_GLOSSARY.md"
+      ],
+      "notes": [
+        "State whether the change closes, widens, or is unrelated to any open risk."
+      ]
+    },
+    {
+      "id": "data_model",
+      "patterns": [
+        "{{pattern for DB migrations and schema files}}"
+      ],
+      "review_docs": [
+        "docs/reference/DATA_MODEL.md",
+        "docs/core/ARCHITECTURE.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Review constraint changes, RLS policy changes, and enum modifications."
+      ]
+    },
+    {
+      "id": "system_docs",
+      "patterns": [
+        "^docs/SYSTEM_OVERVIEW\\.md",
+        "^manifest\\.json",
+        "^schema\\.json"
+      ],
+      "review_docs": [
+        "docs/core/AI_ANALYSIS.md",
+        "docs/core/ARCHITECTURE.md",
+        "docs/core/DOMAIN_RULES.md",
+        "docs/core/PERMISSION_MODEL.md",
+        "docs/core/WORKFLOW_MAPS.md",
+        "docs/governance/DOC_OWNERSHIP_RULES.md",
+        "docs/governance/SELF_VALIDATION_RULES.md",
+        "docs/reference/CODEBASE_GLOSSARY.md",
+        "docs/reference/DATA_MODEL.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Review package-wide consistency and control-plane drift."
+      ]
+    }
+  ],
+  "self_validation": {
+    "rules_doc": "docs/governance/SELF_VALIDATION_RULES.md",
+    "required_root_files": [
+      "VERSION",
+      "CHANGELOG.md",
+      "manifest.json",
+      "schema.json"
+    ],
+    "required_metadata_fields": [
+      "Repository",
+      "System",
+      "Package Version",
+      "Status",
+      "Source of Truth",
+      "Depends On",
+      "Used By",
+      "Owner",
+      "Update Triggers"
+    ],
+    "rules": [
+      "every_document_exists",
+      "unique_document_ids",
+      "verified_context_paths_exist",
+      "dependencies_resolve",
+      "source_of_truth_roles_are_unique",
+      "version_consistency",
+      "entry_points_exist",
+      "impact_map_docs_exist",
+      "impact_map_patterns_compile",
+      "schema_enforcement",
+      "enum_severity_conformance",
+      "enum_escalation_conformance",
+      "crossdoc_glossary_coverage",
+      "crossdoc_risk_ids",
+      "crossdoc_impact_domain_coverage",
+      "fix_templates_coverage"
+    ],
+    "validation_layers": 8
+  },
+  "_instructions": {
+    "impact_map": "Replace {{pattern ...}} placeholders with actual regex patterns matching your project's file structure. See examples/shf-intra/manifest.json.example for a fully populated reference.",
+    "package": "Replace {{REPOSITORY}}, {{SYSTEM_NAME}}, {{DATE}} with your project's values.",
+    "verified_context": "Do not change paths — they match the skeleton doc structure. Add project-specific docs as needed."
+  },
+  "fix_templates": {
+    "manifest_exists": "Restore or regenerate manifest.json from schema.json and the document registry.",
+    "schema_exists": "Restore schema.json. Reference copy available in the LucAId release package.",
+    "version_exists": "Create a VERSION file in the repo root containing only the semver string, e.g. '3.6.0'.",
+    "version_consistency": "Set the version string identically in VERSION and manifest.json → package.version.",
+    "schema_validation_failed": "Open manifest.json and fix the field indicated in the error path. Run python tools/lucaid_validate.py after each change to verify.",
+    "schema_invalid": "schema.json is malformed. Restore from the LucAId release package.",
+    "document_id_format": "Rename the document id to use only lowercase letters, digits, and hyphens (e.g. 'core-domain-rules').",
+    "unique_document_ids": "Two documents share the same id. Assign a unique id to the duplicate entry in manifest.json → documents[].",
+    "document_path_missing": "Add a 'path' field to the document entry in manifest.json → documents[].",
+    "every_document_exists": "Create the missing file at the registered path, or remove it from manifest.json → documents[].",
+    "document_status_enum": "Set the 'status' field to one of the allowed values defined in manifest.json → conventions.doc_status.",
+    "verified_context_registry": "Add a documents[] entry for this path, or remove it from verified_context[].",
+    "verified_context_paths_exist": "Create the missing file, or remove the path from verified_context[].",
+    "dependencies_resolve": "Either register the target in documents[] or correct the depends_on value to an existing path.",
+    "impact_map_docs_exist": "Either register the doc in documents[] or remove it from the impact_map review_docs list.",
+    "impact_map_patterns_compile": "Fix the regex pattern in manifest.json → impact_map. Test with: python3 -c \"import re; re.compile('<pattern>')\"",
+    "source_of_truth_roles_unique": "Two docs share the same source-of-truth role. Either use distinct role names or explicitly document that the overlap is intentional in DOC_OWNERSHIP_RULES.md.",
+    "metadata_block": "Add a '## Metadata' block at the top of the file with all required fields. See any core doc for the standard format.",
+    "metadata_field": "Add the missing field under ## Metadata. Format: '- FieldName: value'.",
+    "metadata_version_consistency": "Update the Package Version field in the file's ## Metadata block to match VERSION.",
+    "enum_severity_conformance": "Replace the non-standard severity value with one of: Critical, High, Medium, Low, Observation.",
+    "enum_escalation_conformance": "Replace the non-standard escalation value with one of: SAFE, REVIEW, CRITICAL, BLOCKED.",
+    "crossdoc_glossary_coverage": "Add the missing identifiers to CODEBASE_GLOSSARY.md, or add them to the NOISE_TERMS set in lucaid_validate.py if they are intentionally excluded.",
+    "crossdoc_risk_ids": "Add the referenced risk ID to KNOWN_RISKS.md using the standard RISK-N template, or correct the ID reference in the source file.",
+    "crossdoc_impact_domain_coverage": "Verify that DOMAIN_RULES.md contains a section covering this module area, or update the impact_map area id to match the existing section name.",
+    "jsonschema_unavailable": "Run: pip install jsonschema"
+  }
+}

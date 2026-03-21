@@ -1,0 +1,211 @@
+name: lucaid-audit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  validate-lucaid:
+    runs-on: ubuntu-latest
+    outputs:
+      validation_ok: ${{ steps.validate.outputs.ok }}
+      summary_md: ${{ steps.publish.outputs.summary_md }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install jsonschema
+
+      - name: Validate LucAId control plane
+        id: validate
+        run: |
+          python tools/lucaid_validate.py > lucaid-validation.json || true
+          cat lucaid-validation.json
+          OK=$(python -c "import json,sys; d=json.load(open('lucaid-validation.json')); print('true' if d.get('ok') else 'false')")
+          echo "ok=$OK" >> "$GITHUB_OUTPUT"
+
+      - name: Build validation summary markdown
+        id: publish
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, pathlib
+          data = json.loads(pathlib.Path("lucaid-validation.json").read_text())
+          lines = []
+          lines.append("## 🔍 LucAId validation")
+          lines.append("")
+          status = "✅ Passed" if data.get("ok") else "❌ Failed"
+          lines.append(f"| | |")
+          lines.append(f"|---|---|")
+          lines.append(f"| Status | **{status}** |")
+          lines.append(f"| Package version | `{data.get('package_version')}` |")
+          lines.append(f"| Registered docs | `{data.get('registered_docs')}` |")
+          lines.append(f"| Verified-context docs | `{data.get('verified_context_docs')}` |")
+          lines.append(f"| Validation layers | `{data.get('validation_layers', 8)}` |")
+          lines.append("")
+          results = data.get("results", [])
+          if results:
+              lines.append("### Findings")
+              lines.append("")
+              for item in results:
+                  icon = {"BLOCKER":"🚫","ERROR":"❌","WARNING":"⚠️","INFO":"ℹ️"}.get(item["severity"],"•")
+                  files = ", ".join(f"`{f}`" for f in item.get("files",[])) or "—"
+                  lines.append(f"- {icon} **{item['severity']}** `{item['rule_id']}` — {item['message']}")
+                  lines.append(f"  - Files: {files}")
+                  if item.get("suggested_fix"):
+                      lines.append(f"  - Fix: {item['suggested_fix']}")
+          else:
+              lines.append("✅ No validation issues found.")
+          md = "\n".join(lines)
+          pathlib.Path("validation-summary.md").write_text(md)
+          # Escape for GITHUB_OUTPUT multiline
+          import os
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("summary_md<<EOF_SUMMARY\n")
+              f.write(md + "\n")
+              f.write("EOF_SUMMARY\n")
+          PY
+          cat validation-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload validation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lucaid-validation
+          path: lucaid-validation.json
+
+  docs-impact-check:
+    needs: validate-lucaid
+    runs-on: ubuntu-latest
+    if: ${{ needs.validate-lucaid.outputs.validation_ok == 'true' }}
+    outputs:
+      impact_md: ${{ steps.impact_summary.outputs.impact_md }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Detect changed files
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
+
+      - name: Build LucAId impact plan
+        run: |
+          python tools/lucaid_plan.py changed_files.txt > lucaid-impact.json
+          cat lucaid-impact.json
+
+      - name: Build impact summary markdown
+        id: impact_summary
+        run: |
+          python - << 'PY'
+          import json, pathlib, os
+          data = json.loads(pathlib.Path("lucaid-impact.json").read_text())
+          lines = []
+          lines.append("## 📋 LucAId impact plan")
+          lines.append("")
+          changed = data.get("changed_files", [])
+          areas   = data.get("impact_areas", [])
+          lines.append(f"| | |")
+          lines.append(f"|---|---|")
+          lines.append(f"| Changed files | `{len(changed)}` |")
+          lines.append(f"| Impact areas matched | `{len(areas)}` |")
+          lines.append("")
+          if areas:
+              lines.append("### Impact areas")
+              lines.append("")
+              for area in areas:
+                  lines.append(f"#### `{area['id']}`")
+                  lines.append(f"- **Matched files:** {', '.join(f'`{h}`' for h in area['hits'])}")
+                  lines.append(f"- **Review docs:**")
+                  for doc in area["review_docs"]:
+                      lines.append(f"  - `{doc}`")
+                  for note in area.get("notes", []):
+                      lines.append(f"- ⚠️ {note}")
+                  lines.append("")
+          else:
+              lines.append("ℹ️ No manifest impact rules matched.")
+              lines.append("Review `CHANGE_SAFETY_RULES.md` and inspect manually.")
+              lines.append("")
+          lines.append("### All docs to review")
+          lines.append("")
+          for doc in data.get("docs_to_review", []):
+              lines.append(f"- `{doc}`")
+          md = "\n".join(lines)
+          pathlib.Path("impact-summary.md").write_text(md)
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("impact_md<<EOF_IMPACT\n")
+              f.write(md + "\n")
+              f.write("EOF_IMPACT\n")
+          PY
+          cat impact-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload impact artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lucaid-impact
+          path: |
+            lucaid-impact.json
+            changed_files.txt
+
+  post-pr-comment:
+    needs: [validate-lucaid, docs-impact-check]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - name: Post combined PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const validation_md = `${{ needs.validate-lucaid.outputs.summary_md }}`;
+            const impact_md = `${{ needs.docs-impact-check.outputs.impact_md }}`;
+            const body = [
+              "<!-- lucaid-audit-comment -->",
+              validation_md || "## 🔍 LucAId validation\n\n*(result unavailable)*",
+              "",
+              "---",
+              "",
+              impact_md || "## 📋 LucAId impact plan\n\n*(skipped — validation failed or no changes matched)*",
+              "",
+              "---",
+              "*Posted by [lucaid-audit](/.github/workflows/lucaid-audit.yml)*"
+            ].join("\n");
+
+            // Find and update existing comment, or create new
+            const marker = "<!-- lucaid-audit-comment -->";
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.data.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
