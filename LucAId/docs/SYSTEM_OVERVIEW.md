@@ -534,3 +534,4 @@ Admin nås via profilmenyn, inte sidofältet.
 | Datum | Vad ändrades |
 |-------|-------------|
 | 2026-03-21 | Initial version — komplett systembeskrivning genererad från kodbasen |
+| 2026-03-21 | Lade till `extract-document-text` Edge Function och `notify_extract_document_text` trigger för automatisk textextraktion från dokument |
