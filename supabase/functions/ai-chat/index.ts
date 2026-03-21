@@ -111,8 +111,6 @@ Deno.serve(async (req) => {
             `[${i + 1}] ${sourceLabels[r.source_table] || r.source_table}: "${r.title}" (relevans: ${r.relevance?.toFixed(2) ?? '?'})\n${r.content.slice(0, 2000)}`
           ).join("\n\n") +
           "\n--- SLUT PÅ KONTEXT ---";
-          ).join("\n\n") +
-          "\n--- SLUT PÅ KONTEXT ---";
       }
     }
 
