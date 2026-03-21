@@ -4,6 +4,21 @@ All versions of the `LucAId` package for `DG-Gruppen/handelsfastigheter-order-fl
 
 ---
 
+## [3.11.0] — 2026-03-21
+
+### Improved
+- **RAG search optimization**: Replaced expensive `similarity(content, ...)` with dual-language FTS (`swedish` + `simple` config) for better matching of IT/English terms
+- **Keyword extraction**: AI-chat now strips Swedish stop-words and question patterns before searching, improving precision on conversational queries
+- **Parallel search**: Runs keyword search + full-message search simultaneously, deduplicates and merges by highest relevance
+- **Source diversity**: Max 4 results per source type prevents one category from dominating context
+- **Adaptive context length**: Top 3 results get 4000 chars, next 3 get 2000, rest get 1000 — more signal from best matches
+- **Extracted document boost**: Documents with full-text extraction rank higher than metadata-only entries
+- **Recency bonus**: News and CEO blog posts from last 30/90 days get relevance boost
+- **Title substring matching**: Exact title matches get additional 0.5 relevance bonus
+- **Model upgrade**: Default model changed to `gemini-2.5-flash` for faster responses with maintained quality
+
+---
+
 ## [3.10.0] — 2026-03-21
 
 ### Added
