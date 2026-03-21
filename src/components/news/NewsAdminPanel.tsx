@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RichTextEditor from "@/components/kb/RichTextEditor";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Pin } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Pin, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface NewsArticle {
   id: string;
@@ -23,10 +24,12 @@ interface NewsArticle {
   is_published: boolean;
   published_at: string | null;
   created_at: string;
+  source?: string;
 }
 
 const EMOJI_OPTIONS = ["📰", "📊", "🏗️", "🌱", "🏆", "👤", "💼", "🎉", "📢", "🔔"];
 const CATEGORY_OPTIONS = ["Nyhet", "Rapport", "Förvärv", "Finans", "Hållbarhet", "Personal", "Projekt", "Event"];
+const PAGE_SIZES = [10, 20, 30] as const;
 
 export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => void }) {
   const { user } = useAuth();
@@ -39,6 +42,13 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
     is_pinned: false, is_published: false,
   });
 
+  // Filter & pagination state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const fetchArticles = async () => {
     const { data } = await supabase
       .from("news" as any)
@@ -48,6 +58,27 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
   };
 
   useEffect(() => { fetchArticles(); }, []);
+
+  // Filtered articles
+  const filtered = useMemo(() => {
+    let result = articles;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(a => a.title.toLowerCase().includes(q) || a.excerpt?.toLowerCase().includes(q));
+    }
+    if (filterCategory !== "all") {
+      result = result.filter(a => a.category === filterCategory);
+    }
+    if (filterStatus === "published") result = result.filter(a => a.is_published);
+    else if (filterStatus === "draft") result = result.filter(a => !a.is_published);
+    return result;
+  }, [articles, searchQuery, filterCategory, filterStatus]);
+
+  // Reset page on filter change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterCategory, filterStatus, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const openDialog = (art?: NewsArticle) => {
     if (art) {
@@ -103,6 +134,12 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
     onDataChange();
   };
 
+  // Unique categories from data
+  const availableCategories = useMemo(() => {
+    const cats = new Set(articles.map(a => a.category));
+    return Array.from(cats).sort();
+  }, [articles]);
+
   return (
     <>
       <Card className="glass-card border-t-2 border-t-accent/40">
@@ -113,14 +150,54 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
               <Plus className="h-3.5 w-3.5 mr-1" />Ny nyhet
             </Button>
           </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <div className="relative flex-1 min-w-[180px] max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Sök titel..."
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[140px] h-9 text-sm">
+                <SelectValue placeholder="Kategori" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla kategorier</SelectItem>
+                {availableCategories.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-[130px] h-9 text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla status</SelectItem>
+                <SelectItem value="published">Publicerad</SelectItem>
+                <SelectItem value="draft">Utkast</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
+
         <CardContent className="px-4 md:px-6 space-y-2">
-          {articles.map((a) => (
+          {paginated.map((a) => (
             <div key={a.id} className="flex items-center gap-2 rounded-lg border p-2.5 bg-card">
               <span className="text-lg shrink-0">{a.emoji}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{a.title}</p>
-                <p className="text-xs text-muted-foreground">{a.category}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-muted-foreground">{a.category}</p>
+                  {a.source === "cision" && (
+                    <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">Cision</span>
+                  )}
+                </div>
               </div>
               {a.is_pinned && <Pin className="h-3 w-3 text-accent shrink-0" />}
               <Badge variant={a.is_published ? "default" : "secondary"} className="text-[10px] shrink-0">
@@ -137,7 +214,56 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
               </Button>
             </div>
           ))}
-          {articles.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Inga nyheter ännu</p>}
+          {filtered.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {searchQuery || filterCategory !== "all" || filterStatus !== "all" ? "Inga nyheter matchar filtren" : "Inga nyheter ännu"}
+            </p>
+          )}
+
+          {/* Pagination */}
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between pt-3 border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Visa</span>
+                <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
+                  <SelectTrigger className="w-[70px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map(s => (
+                      <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground">
+                  av {filtered.length} nyheter
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs text-muted-foreground px-2">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
