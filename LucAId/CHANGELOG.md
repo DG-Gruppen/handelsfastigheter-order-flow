@@ -4,6 +4,15 @@ All versions of the `LucAId` package for `DG-Gruppen/handelsfastigheter-order-fl
 
 ---
 
+## [3.10.0] — 2026-03-21
+
+### Added
+- **Document text extraction**: New `extract-document-text` Edge Function that automatically extracts text from uploaded PDF, DOCX, XLSX, and text files and indexes the content in `content_index` for the AI assistant
+- **Automatic extraction trigger**: `notify_extract_document_text` DB trigger fires on document_files INSERT/UPDATE, calls the extraction function asynchronously via pg_net
+- Supported formats: PDF (pdf-parse), DOCX (mammoth), XLSX (SheetJS), plain text, JSON, XML
+
+---
+
 ## [3.9.0] — 2026-03-21
 
 ### Improved

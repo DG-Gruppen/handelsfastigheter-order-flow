@@ -1,7 +1,7 @@
 ## Metadata
 - Repository: DG-Gruppen/handelsfastigheter-order-flow
 - System: SHF Intra
-- Package Version: 3.7.0
+- Package Version: 3.10.0
 - Last Reviewed: 2026-03-21
 - Status: Active
 - Source of Truth: Yes — for system purpose, module inventory, route map, DB table inventory, Edge Function inventory, integration list, and known complexity areas
@@ -409,6 +409,7 @@ Admin nås via profilmenyn, inte sidofältet.
 | `cleanup-notifications` | Rensar gamla notifikationer | pg_cron | — |
 | `notify-workwear-season` | Skickar påminnelse om arbetsklädbeställning | pg_cron | — |
 | `seed-demo-data` | Skapar testdata | Manuell | — |
+| `extract-document-text` | Extraherar text från PDF/DOCX/XLSX/text-filer och indexerar i `content_index` | DB-trigger (`notify_extract_document_text`) via pg_net | Nej |
 
 ### Nyckel-DB-funktioner (RPC)
 
@@ -437,7 +438,8 @@ Admin nås via profilmenyn, inte sidofältet.
 | `index_ceo_blog` | `ceo_blog` | Synkar VD-blogg till `content_index` |
 | `index_tools` | `tools` | Synkar aktiva verktyg till `content_index` |
 | `index_department` | `departments` | Synkar avdelningar till `content_index` |
-| `index_document_file` | `document_files` | Synkar dokument till `content_index` |
+| `index_document_file` | `document_files` | Synkar dokument-metadata till `content_index` |
+| `notify_extract_document_text` | `document_files` | Anropar `extract-document-text` Edge Function via pg_net för att extrahera filinnehåll |
 | `index_document_folder` | `document_folders` | Synkar mappar till `content_index` |
 | `notify_new_document_file` | `document_files` | Skapar notifikationer vid nya dokument |
 | `notify_kb_article_published` | `kb_articles` | Notifierar vid publicerad artikel |
@@ -532,3 +534,4 @@ Admin nås via profilmenyn, inte sidofältet.
 | Datum | Vad ändrades |
 |-------|-------------|
 | 2026-03-21 | Initial version — komplett systembeskrivning genererad från kodbasen |
+| 2026-03-21 | Lade till `extract-document-text` Edge Function och `notify_extract_document_text` trigger för automatisk textextraktion från dokument |
