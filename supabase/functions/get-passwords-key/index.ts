@@ -28,6 +28,9 @@ const getCorsHeaders = (origin: string | null) => ({
 });
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -80,7 +83,6 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .in(
         "group_id",
-        // Subquery: groups the user belongs to
         (await adminClient
           .from("group_members")
           .select("group_id")
