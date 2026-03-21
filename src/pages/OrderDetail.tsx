@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail, buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmails";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
