@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
 import { FALLBACK_IT_EMAIL } from "@/lib/constants";
 import {
