@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const TABLES = [
   "profiles",
+  "user_roles",
   "groups",
   "group_members",
   "modules",
@@ -29,12 +30,17 @@ const TABLES = [
   "kb_videos",
   "it_faq",
   "tools",
+  "user_tool_favorites",
   "document_folders",
   "document_files",
   "notifications",
   "recognitions",
+  "celebration_comments",
   "ceo_blog",
   "org_chart_settings",
+  "shared_passwords",
+  "shared_password_groups",
+  "password_access_log",
   "planner_boards",
   "planner_columns",
   "planner_cards",
@@ -43,7 +49,12 @@ const TABLES = [
   "planner_card_comments",
   "planner_card_attachments",
   "planner_activity_log",
+  "workwear_orders",
   "content_index",
+  "email_send_log",
+  "email_send_state",
+  "email_unsubscribe_tokens",
+  "suppressed_emails",
 ];
 
 Deno.serve(async (req) => {
