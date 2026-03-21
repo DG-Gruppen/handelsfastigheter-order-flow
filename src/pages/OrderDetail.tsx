@@ -163,8 +163,8 @@ export default function OrderDetail() {
           items: items.map((i) => ({ name: i.name, quantity: i.quantity })),
           orderUrl,
         });
-        try { await supabase.functions.invoke("send-email", { body: { to: requesterProfile.email, subject: `[SHF IT] Din beställning har godkänts: ${order.title}`, html: approvalHtml } }); }
-        catch (err) { console.error("Failed to send approval confirmation email:", err); }
+        try { await enqueueEmail({ to: requesterProfile.email, subject: `[SHF IT] Din beställning har godkänts: ${order.title}`, html: approvalHtml }); }
+        catch (err) { console.error("Failed to enqueue approval confirmation email:", err); }
       }
 
       const systemsList = orderSystems.map((os) => ({ name: os.system?.name || "", description: os.system?.description || null }));

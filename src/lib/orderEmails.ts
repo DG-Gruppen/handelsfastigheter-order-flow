@@ -83,11 +83,9 @@ export async function sendRejectionEmail(params: RejectionEmailParams) {
   `);
 
   try {
-    await supabase.functions.invoke("send-email", {
-      body: { to: requesterEmail, subject: `[SHF IT] Din beställning har avslagits: ${title}`, html },
-    });
+    await enqueueEmail({ to: requesterEmail, subject: `[SHF IT] Din beställning har avslagits: ${title}`, html });
   } catch (err) {
-    console.error("Failed to send rejection email:", err);
+    console.error("Failed to enqueue rejection email:", err);
   }
 }
 
