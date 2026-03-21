@@ -50,11 +50,9 @@ export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   `);
 
   try {
-    await supabase.functions.invoke("send-email", {
-      body: { to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html },
-    });
+    await enqueueEmail({ to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html });
   } catch (err) {
-    console.error("Failed to send new order email to approver:", err);
+    console.error("Failed to enqueue new order email to approver:", err);
   }
 }
 
