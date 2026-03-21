@@ -130,8 +130,8 @@ export default function OrderDetail() {
           comment,
           orderUrl,
         });
-        try { await supabase.functions.invoke("send-email", { body: { to: requesterProfile.email, subject: `[SHF IT Beställning] Levererad: ${order.title}`, html } }); }
-        catch (err) { console.error("Failed to send delivery email:", err); }
+        try { await enqueueEmail({ to: requesterProfile.email, subject: `[SHF IT Beställning] Levererad: ${order.title}`, html }); }
+        catch (err) { console.error("Failed to enqueue delivery email:", err); }
       }
     }
     setMarking(false);
