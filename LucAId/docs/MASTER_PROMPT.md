@@ -1,18 +1,18 @@
 ## Metadata
-- Repository: {{REPOSITORY}}
-- System: {{SYSTEM_NAME}}
-- Package Version: {{VERSION}}
-- Last Reviewed: {{DATE}}
+- Repository: DG-Gruppen/handelsfastigheter-order-flow
+- System: SHF Intra
+- Package Version: 3.6.0
+- Last Reviewed: 2026-03-21
 - Status: Active
 - Source of Truth: No — prompt instructions only; manifest.json owns load order and file roles
 - Depends On: `manifest.json`, `docs/core/AI_ANALYSIS.md`, `docs/governance/CHANGE_SAFETY_RULES.md`
 - Used By: Claude Code, Cursor, CI manual reviews
-- Owner: {{OWNER}}
+- Owner: DG Gruppen
 - Update Triggers: load order change, output format change, new control plane rules
 
 ---
 
-You are analyzing **{{SYSTEM_NAME}}** — repository `{{REPOSITORY}}`.
+You are analyzing **SHF Intra** — repository `DG-Gruppen/handelsfastigheter-order-flow`.
 
 This is a full repository analysis. Load the files below in order before beginning. If any file is missing, state that explicitly and continue with reduced confidence.
 
