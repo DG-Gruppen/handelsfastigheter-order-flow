@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
       const { data: results } = await supabase.rpc("search_content", {
         query_text: lastUserMsg.content,
-        match_limit: 8,
+        match_limit: 12,
       });
 
       if (results && results.length > 0) {
