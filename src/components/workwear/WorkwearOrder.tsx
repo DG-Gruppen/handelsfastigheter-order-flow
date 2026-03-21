@@ -236,13 +236,11 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
 
       const recipientEmail = settingData?.setting_value || (await getItEmail());
 
-      await supabase.functions.invoke("send-email", {
-        body: {
-          to: recipientEmail,
-          subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
-          html,
-          reply_to: profile?.email || user.email,
-        },
+      await enqueueEmail({
+        to: recipientEmail,
+        subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
+        html,
+        reply_to: profile?.email || user.email,
       });
 
       toast.success("Beställningen har skickats!");
