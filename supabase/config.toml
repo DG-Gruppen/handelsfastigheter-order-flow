@@ -19,7 +19,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.database-backup]
-verify_jwt = true
+verify_jwt = false
 
 [functions.get-passwords-key]
 verify_jwt = true
