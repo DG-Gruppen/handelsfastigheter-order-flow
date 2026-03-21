@@ -108,7 +108,9 @@ Deno.serve(async (req) => {
 
         contextBlock = "\n\n--- INTERN KUNSKAPSBAS (kontext) ---\n" +
           results.map((r: any, i: number) =>
-            `[${i + 1}] ${sourceLabels[r.source_table] || r.source_table}: "${r.title}"\n${r.content.slice(0, 800)}`
+            `[${i + 1}] ${sourceLabels[r.source_table] || r.source_table}: "${r.title}" (relevans: ${r.relevance?.toFixed(2) ?? '?'})\n${r.content.slice(0, 2000)}`
+          ).join("\n\n") +
+          "\n--- SLUT PÅ KONTEXT ---";
           ).join("\n\n") +
           "\n--- SLUT PÅ KONTEXT ---";
       }
