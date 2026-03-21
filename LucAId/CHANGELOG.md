@@ -4,6 +4,24 @@ All versions of the `LucAId` package for `DG-Gruppen/handelsfastigheter-order-fl
 
 ---
 
+## [3.8.0] — 2026-03-21
+
+### Security fixes (6 risks resolved)
+- **RISK-1/RISK-10**: Added `validate_order_status_transition` DB trigger — enforces valid state transitions (pending→approved/rejected, approved→delivered), requires rejection_reason on rejection, requires admin/IT for delivery
+- **RISK-2**: `get-passwords-key` Edge Function now checks group membership before returning AES key (admin/IT bypass, others need shared_password_groups membership)
+- **RISK-8**: `database-backup` — set `verify_jwt = true`, restricted CORS to production domain, simplified auth to use `has_role` RPC
+- **RISK-9**: All direct `send-email` invocations replaced with `enqueue_email` RPC via new `src/lib/enqueueEmail.ts` helper (OrderDetail, NewOrder, Onboarding, WorkwearOrder, orderEmails, sendHelpdeskEmail)
+- **RISK-11**: `impersonate-user` Edge Function now accepts both IT and admin roles
+
+### Added
+- `src/lib/enqueueEmail.ts` — shared helper for routing emails through pgmq queue
+
+### Changed
+- `docs/governance/KNOWN_RISKS.md` — 6 risks moved to Resolved; 5 remain Open
+- `VERSION` bumped to 3.8.0
+
+---
+
 ## [3.7.1] — 2026-03-21
 
 ### Changed
