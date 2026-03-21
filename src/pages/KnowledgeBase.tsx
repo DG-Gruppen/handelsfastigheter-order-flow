@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Search, BookOpen, PlayCircle, GraduationCap, Sparkles } from "lucide-react";
 import KbArticleCard from "@/components/kb/KbArticleCard";
@@ -10,9 +11,7 @@ import KbVideoPlayer from "@/components/kb/KbVideoPlayer";
 interface KbCategory { id: string; name: string; slug: string; icon: string; sort_order: number; is_active: boolean; }
 interface KbArticle { id: string; title: string; slug: string; content: string; excerpt: string; category_id: string | null; tags: string[]; is_published: boolean; views: number; created_at: string; updated_at: string; author_id: string; }
 interface KbVideo { id: string; title: string; description: string; video_url: string; thumbnail_url: string | null; category_id: string | null; tags: string[]; is_published: boolean; views: number; duration_seconds: number | null; created_at: string; author_id: string; }
-interface Profile { user_id: string; full_name: string; }
 
-// SHF category color palette mapped by index
 const CATEGORY_COLORS = [
   { bg: "bg-primary/10", text: "text-primary", border: "border-l-primary" },
   { bg: "bg-accent/10", text: "text-accent", border: "border-l-accent" },
@@ -22,56 +21,51 @@ const CATEGORY_COLORS = [
   { bg: "bg-accent/10", text: "text-accent", border: "border-l-accent" },
 ];
 
-export default function KnowledgeBase() {
-  const [categories, setCategories] = useState<KbCategory[]>([]);
-  const [articles, setArticles] = useState<KbArticle[]>([]);
-  const [videos, setVideos] = useState<KbVideo[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+/* ── Data fetchers ── */
+async function fetchKbData() {
+  const [catRes, artRes, vidRes] = await Promise.all([
+    supabase.from("kb_categories").select("*").order("sort_order"),
+    supabase.from("kb_articles").select("*").order("created_at", { ascending: false }),
+    supabase.from("kb_videos").select("*").order("created_at", { ascending: false }),
+  ]);
+  const categories = (catRes.data as KbCategory[]) ?? [];
+  const articles = (artRes.data as KbArticle[]) ?? [];
+  const videos = (vidRes.data as KbVideo[]) ?? [];
 
+  // Only fetch profiles for authors that exist
+  const authorIds = [...new Set([
+    ...articles.map(a => a.author_id),
+    ...videos.map(v => v.author_id),
+  ])].filter(Boolean);
+
+  let profileMap: Record<string, string> = {};
+  if (authorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", authorIds);
+    for (const p of (profiles ?? []) as any[]) profileMap[p.user_id] = p.full_name;
+  }
+
+  return { categories, articles, videos, profileMap };
+}
+
+export default function KnowledgeBase() {
   const [tab, setTab] = useState<"wiki" | "courses">("wiki");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
   const [viewArticle, setViewArticle] = useState<KbArticle | null>(null);
   const [viewVideo, setViewVideo] = useState<KbVideo | null>(null);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["kb-data"],
+    queryFn: fetchKbData,
+  });
 
-  const fetchData = useCallback(async () => {
-    const [catRes, artRes, vidRes, profRes] = await Promise.all([
-      supabase.from("kb_categories").select("*").order("sort_order"),
-      supabase.from("kb_articles").select("*").order("created_at", { ascending: false }),
-      supabase.from("kb_videos").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("user_id, full_name"),
-    ]);
-    setCategories((catRes.data as KbCategory[]) ?? []);
-    setArticles((artRes.data as KbArticle[]) ?? []);
-    setVideos((vidRes.data as KbVideo[]) ?? []);
-    setProfiles((profRes.data as Profile[]) ?? []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-
-    const debouncedRefetch = () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => fetchData(), 500);
-    };
-
-    const channel = supabase
-      .channel("kb-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "kb_articles" }, debouncedRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "kb_videos" }, debouncedRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "kb_categories" }, debouncedRefetch)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [fetchData]);
+  const categories = data?.categories ?? [];
+  const articles = data?.articles ?? [];
+  const videos = data?.videos ?? [];
+  const profileMap = data?.profileMap ?? {};
 
   const categoryMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -84,12 +78,6 @@ export default function KnowledgeBase() {
     categories.forEach((c, i) => { map[c.id] = CATEGORY_COLORS[i % CATEGORY_COLORS.length]; });
     return map;
   }, [categories]);
-
-  const profileMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    profiles.forEach(p => { map[p.user_id] = p.full_name; });
-    return map;
-  }, [profiles]);
 
   const filteredArticles = useMemo(() => {
     let result = articles;

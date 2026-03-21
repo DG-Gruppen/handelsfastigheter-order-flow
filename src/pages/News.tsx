@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Newspaper, Globe, Pin, Loader2, ExternalLink, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Newspaper, Globe, Pin, ExternalLink, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /* ── Types ── */
@@ -37,42 +38,42 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 
+async function fetchNewsArticles(): Promise<NewsArticle[]> {
+  const { data } = await supabase
+    .from("news" as any)
+    .select("*")
+    .eq("is_published", true)
+    .order("is_pinned", { ascending: false })
+    .order("published_at", { ascending: false });
+  return (data as any[]) ?? [];
+}
+
 /* ── Component ── */
 export default function News() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"all" | "internal" | "press">("all");
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
-  const fetchArticles = useCallback(async () => {
-    const { data } = await supabase
-      .from("news" as any)
-      .select("*")
-      .eq("is_published", true)
-      .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false });
-    setArticles((data as any[]) ?? []);
-    setLoading(false);
-  }, []);
+  const { data: articles = [], isLoading: loading } = useQuery({
+    queryKey: ["news-articles"],
+    queryFn: fetchNewsArticles,
+  });
 
-  // Trigger Cision sync on mount, then re-fetch articles when done
+  // Trigger Cision sync in background, refetch if new items imported
   useEffect(() => {
     supabase.functions.invoke("fetch-cision-feed")
       .then((res) => {
         if (res?.data?.sync?.imported > 0) {
-          fetchArticles();
+          queryClient.invalidateQueries({ queryKey: ["news-articles"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard-latest-news"] });
         }
       })
       .catch(() => {});
-  }, [fetchArticles]);
-
-  useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+  }, [queryClient]);
 
   /* ── Derived data ── */
   const categories = useMemo(() => {
