@@ -4,6 +4,20 @@ All versions of the `LucAId` package for `DG-Gruppen/handelsfastigheter-order-fl
 
 ---
 
+## [3.7.1] — 2026-03-21
+
+### Changed
+- `docs/governance/KNOWN_RISKS.md` — updated based on LucAId audit findings:
+  - RISK-1: Blast radius corrected (approver/admin, not any authenticated user); sub-finding RISK-1a added (nullable rejection_reason)
+  - RISK-8: Severity downgraded from High to Medium; description corrected (manual auth exists, not "no authentication")
+  - RISK-9 added: Email notifications bypass pgmq queue (finding F-1)
+  - RISK-10 added: Approver can mark orders as delivered, admin-only per domain rule (finding F-2)
+  - RISK-11 added: impersonate-user rejects admins, IT-only check (finding F-3)
+  - All risks updated with `Last verified` dates from audit
+- `VERSION` bumped to 3.7.1
+
+---
+
 ## [3.7.0] — 2026-03-21
 
 ### Added
