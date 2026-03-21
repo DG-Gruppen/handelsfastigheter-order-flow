@@ -46,6 +46,7 @@ export default function News() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const fetchArticles = useCallback(async () => {
     const { data } = await supabase
