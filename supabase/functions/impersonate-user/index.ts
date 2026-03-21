@@ -42,14 +42,16 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Verify caller has 'it' role
+  // Verify caller has 'it' or 'admin' role
   const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-  const { data: roleCheck } = await adminClient
-    .rpc("has_role", { _user_id: callerUser.id, _role: "it" });
+  const [{ data: isIt }, { data: isAdmin }] = await Promise.all([
+    adminClient.rpc("has_role", { _user_id: callerUser.id, _role: "it" }),
+    adminClient.rpc("has_role", { _user_id: callerUser.id, _role: "admin" }),
+  ]);
 
-  if (!roleCheck) {
-    return new Response(JSON.stringify({ error: "Forbidden: requires IT role" }), {
+  if (!isIt && !isAdmin) {
+    return new Response(JSON.stringify({ error: "Forbidden: requires IT or admin role" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
