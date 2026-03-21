@@ -1,18 +1,18 @@
 ## Metadata
-- Repository: {{REPOSITORY}}
-- System: {{SYSTEM_NAME}}
-- Package Version: {{VERSION}}
-- Last Reviewed: {{DATE}}
+- Repository: DG-Gruppen/handelsfastigheter-order-flow
+- System: SHF Intra
+- Package Version: 3.7.0
+- Last Reviewed: 2026-03-21
 - Status: Active
 - Source of Truth: No — prompt instructions only; manifest.json owns impact map and file roles
 - Depends On: `manifest.json`, `docs/governance/CHANGE_SAFETY_RULES.md`
 - Used By: PR review automation
-- Owner: {{OWNER}}
+- Owner: DG Gruppen
 - Update Triggers: impact map change, PR review policy change, new module area
 
 ---
 
-Review this pull request against **{{SYSTEM_NAME}}** (`{{REPOSITORY}}`).
+Review this pull request against **SHF Intra** (`DG-Gruppen/handelsfastigheter-order-flow`).
 
 This is a PR-scoped audit. Load only the docs flagged by the changed files below. Always load `docs/governance/CHANGE_SAFETY_RULES.md` regardless of what changed.
 

@@ -4,6 +4,29 @@ All versions of the `LucAId` package for `DG-Gruppen/handelsfastigheter-order-fl
 
 ---
 
+## [3.7.0] — 2026-03-21
+
+### Added
+- All skeleton docs populated with full SHF Intra content:
+  - `docs/core/AI_ANALYSIS.md` — hotspots, anti-patterns, hard rules for SHF Intra
+  - `docs/core/ARCHITECTURE.md` — system layers, trust boundaries, enforcement ownership, blast radius map
+  - `docs/core/DOMAIN_RULES.md` — business rules for all 17 modules with §1–§17 sections
+  - `docs/core/PERMISSION_MODEL.md` — role resolution, precedence, frontend vs backend enforcement table
+  - `docs/core/WORKFLOW_MAPS.md` — 14 workflows with smoke tests (WF-1 through WF-14)
+  - `docs/governance/KNOWN_RISKS.md` — 8 identified risks (RISK-1 through RISK-8)
+  - `docs/reference/DATA_MODEL.md` — full table definitions with columns, RLS, constraints
+  - `docs/reference/CODEBASE_GLOSSARY.md` — all roles, terms, tables, functions, enums
+- `manifest.json` configured with real `impact_map` patterns for 11 areas (auth, backend, data_model, orders, passwords, documents, planner, email, admin, ai_chat, system_docs)
+
+### Changed
+- `manifest.json` — placeholders replaced with actual values (repository, system, date, impact_map patterns)
+- `docs/MASTER_PROMPT.md` — metadata updated with SHF Intra values
+- `docs/AUTO_AUDIT_PROMPT.md` — metadata updated with SHF Intra values
+- All doc statuses changed from Draft to Active
+- `VERSION` bumped to 3.7.0
+
+---
+
 ## [3.6.0] — 2026-03-21
 
 ### Added

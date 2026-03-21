@@ -1,11 +1,11 @@
 {
   "package": {
     "name": "LucAId",
-    "version": "3.6.0",
-    "repository": "{{REPOSITORY}}",
-    "system": "{{SYSTEM_NAME}}",
+    "version": "3.7.0",
+    "repository": "DG-Gruppen/handelsfastigheter-order-flow",
+    "system": "SHF Intra",
     "default_branch": "main",
-    "generated_at": "{{DATE}}",
+    "generated_at": "2026-03-21",
     "entry_points": {
       "human": "docs/README.md",
       "full_analysis": "docs/MASTER_PROMPT.md",
@@ -64,13 +64,8 @@
       "source_of_truth": false,
       "owner": "DG Gruppen",
       "depends_on": [],
-      "used_by": [
-        "manifest.json",
-        ".github/workflows/lucaid-audit.yml"
-      ],
-      "update_triggers": [
-        "package version changes"
-      ]
+      "used_by": ["manifest.json", ".github/workflows/lucaid-audit.yml"],
+      "update_triggers": ["package version changes"]
     },
     {
       "id": "root-changelog",
@@ -80,15 +75,9 @@
       "status": "Active",
       "source_of_truth": false,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "VERSION"
-      ],
+      "depends_on": ["VERSION"],
       "used_by": [],
-      "update_triggers": [
-        "package release",
-        "breaking change",
-        "new automation rule"
-      ]
+      "update_triggers": ["package release", "breaking change", "new automation rule"]
     },
     {
       "id": "root-manifest",
@@ -98,24 +87,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "schema.json"
-      ],
-      "used_by": [
-        "docs/README.md",
-        "docs/MASTER_PROMPT.md",
-        "docs/AUTO_AUDIT_PROMPT.md",
-        ".github/workflows/lucaid-audit.yml",
-        "tools/lucaid_validate.py",
-        "tools/lucaid_plan.py"
-      ],
-      "update_triggers": [
-        "file added",
-        "file removed",
-        "path renamed",
-        "impact rule changed",
-        "verified context changed"
-      ]
+      "depends_on": ["schema.json"],
+      "used_by": ["docs/README.md", "docs/MASTER_PROMPT.md", "docs/AUTO_AUDIT_PROMPT.md", ".github/workflows/lucaid-audit.yml", "tools/lucaid_validate.py", "tools/lucaid_plan.py"],
+      "update_triggers": ["file added", "file removed", "path renamed", "impact rule changed", "verified context changed"]
     },
     {
       "id": "root-schema",
@@ -126,16 +100,8 @@
       "source_of_truth": true,
       "owner": "DG Gruppen",
       "depends_on": [],
-      "used_by": [
-        "manifest.json",
-        "tools/lucaid_validate.py",
-        ".github/workflows/lucaid-audit.yml"
-      ],
-      "update_triggers": [
-        "manifest contract changes",
-        "enum changes",
-        "new validator"
-      ]
+      "used_by": ["manifest.json", "tools/lucaid_validate.py", ".github/workflows/lucaid-audit.yml"],
+      "update_triggers": ["manifest contract changes", "enum changes", "new validator"]
     },
     {
       "id": "docs-readme",
@@ -145,15 +111,9 @@
       "status": "Active",
       "source_of_truth": false,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json"
-      ],
+      "depends_on": ["manifest.json"],
       "used_by": [],
-      "update_triggers": [
-        "entry point changes",
-        "folder structure changes",
-        "usage changes"
-      ]
+      "update_triggers": ["entry point changes", "folder structure changes", "usage changes"]
     },
     {
       "id": "docs-quickstart",
@@ -163,18 +123,9 @@
       "status": "Active",
       "source_of_truth": false,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json",
-        "docs/README.md"
-      ],
-      "used_by": [
-        "new users"
-      ],
-      "update_triggers": [
-        "onboarding flow changes",
-        "new getting started step",
-        "tool usage changes"
-      ]
+      "depends_on": ["manifest.json", "docs/README.md"],
+      "used_by": ["new users"],
+      "update_triggers": ["onboarding flow changes", "new getting started step", "tool usage changes"]
     },
     {
       "id": "docs-master-prompt",
@@ -184,21 +135,9 @@
       "status": "Active",
       "source_of_truth": false,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json",
-        "docs/core/AI_ANALYSIS.md",
-        "docs/governance/CHANGE_SAFETY_RULES.md"
-      ],
-      "used_by": [
-        "Claude Code",
-        "Cursor",
-        "CI manual reviews"
-      ],
-      "update_triggers": [
-        "load order change",
-        "output format change",
-        "new control plane rules"
-      ]
+      "depends_on": ["manifest.json", "docs/core/AI_ANALYSIS.md", "docs/governance/CHANGE_SAFETY_RULES.md"],
+      "used_by": ["Claude Code", "Cursor", "CI manual reviews"],
+      "update_triggers": ["load order change", "output format change", "new control plane rules"]
     },
     {
       "id": "docs-auto-audit",
@@ -208,18 +147,9 @@
       "status": "Active",
       "source_of_truth": false,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json",
-        "docs/governance/CHANGE_SAFETY_RULES.md"
-      ],
-      "used_by": [
-        "PR review automation"
-      ],
-      "update_triggers": [
-        "impact map change",
-        "PR review policy change",
-        "new module area"
-      ]
+      "depends_on": ["manifest.json", "docs/governance/CHANGE_SAFETY_RULES.md"],
+      "used_by": ["PR review automation"],
+      "update_triggers": ["impact map change", "PR review policy change", "new module area"]
     },
     {
       "id": "docs-system-overview",
@@ -230,17 +160,8 @@
       "source_of_truth": true,
       "owner": "DG Gruppen",
       "depends_on": [],
-      "used_by": [
-        "docs/MASTER_PROMPT.md",
-        "docs/core/AI_ANALYSIS.md"
-      ],
-      "update_triggers": [
-        "new module",
-        "new route",
-        "new table",
-        "integration change",
-        "role change"
-      ]
+      "used_by": ["docs/MASTER_PROMPT.md", "docs/core/AI_ANALYSIS.md"],
+      "update_triggers": ["new module", "new route", "new table", "integration change", "role change"]
     },
     {
       "id": "core-ai-analysis",
@@ -250,20 +171,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json",
-        "docs/governance/KNOWN_RISKS.md",
-        "docs/reference/CODEBASE_GLOSSARY.md"
-      ],
-      "used_by": [
-        "docs/MASTER_PROMPT.md",
-        "docs/AUTO_AUDIT_PROMPT.md"
-      ],
-      "update_triggers": [
-        "analysis method change",
-        "new hotspot",
-        "evidence model change"
-      ]
+      "depends_on": ["manifest.json", "docs/governance/KNOWN_RISKS.md", "docs/reference/CODEBASE_GLOSSARY.md"],
+      "used_by": ["docs/MASTER_PROMPT.md", "docs/AUTO_AUDIT_PROMPT.md"],
+      "update_triggers": ["analysis method change", "new hotspot", "evidence model change"]
     },
     {
       "id": "core-architecture",
@@ -273,19 +183,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/SYSTEM_OVERVIEW.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md",
-        "docs/governance/KNOWN_RISKS.md"
-      ],
-      "update_triggers": [
-        "layer changes",
-        "trust boundary changes",
-        "new edge function",
-        "new integration"
-      ]
+      "depends_on": ["docs/SYSTEM_OVERVIEW.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md", "docs/governance/KNOWN_RISKS.md"],
+      "update_triggers": ["layer changes", "trust boundary changes", "new edge function", "new integration"]
     },
     {
       "id": "core-domain-rules",
@@ -295,18 +195,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/SYSTEM_OVERVIEW.md"
-      ],
-      "used_by": [
-        "docs/core/WORKFLOW_MAPS.md",
-        "docs/governance/KNOWN_RISKS.md"
-      ],
-      "update_triggers": [
-        "business rule changes",
-        "module behavior change",
-        "lifecycle change"
-      ]
+      "depends_on": ["docs/SYSTEM_OVERVIEW.md"],
+      "used_by": ["docs/core/WORKFLOW_MAPS.md", "docs/governance/KNOWN_RISKS.md"],
+      "update_triggers": ["business rule changes", "module behavior change", "lifecycle change"]
     },
     {
       "id": "core-permission-model",
@@ -316,19 +207,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/SYSTEM_OVERVIEW.md",
-        "docs/core/ARCHITECTURE.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md",
-        "docs/governance/KNOWN_RISKS.md"
-      ],
-      "update_triggers": [
-        "role change",
-        "permission precedence change",
-        "module access change"
-      ]
+      "depends_on": ["docs/SYSTEM_OVERVIEW.md", "docs/core/ARCHITECTURE.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md", "docs/governance/KNOWN_RISKS.md"],
+      "update_triggers": ["role change", "permission precedence change", "module access change"]
     },
     {
       "id": "core-workflow-maps",
@@ -338,21 +219,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/core/DOMAIN_RULES.md",
-        "docs/core/PERMISSION_MODEL.md",
-        "docs/core/ARCHITECTURE.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md",
-        "docs/governance/KNOWN_RISKS.md"
-      ],
-      "update_triggers": [
-        "workflow step change",
-        "approval flow change",
-        "email flow change",
-        "new workflow"
-      ]
+      "depends_on": ["docs/core/DOMAIN_RULES.md", "docs/core/PERMISSION_MODEL.md", "docs/core/ARCHITECTURE.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md", "docs/governance/KNOWN_RISKS.md"],
+      "update_triggers": ["workflow step change", "approval flow change", "email flow change", "new workflow"]
     },
     {
       "id": "gov-change-safety",
@@ -362,20 +231,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/core/ARCHITECTURE.md",
-        "docs/governance/KNOWN_RISKS.md"
-      ],
-      "used_by": [
-        "docs/MASTER_PROMPT.md",
-        "docs/AUTO_AUDIT_PROMPT.md",
-        ".github/workflows/lucaid-audit.yml"
-      ],
-      "update_triggers": [
-        "change policy update",
-        "new sensitive subsystem",
-        "escalation model change"
-      ]
+      "depends_on": ["docs/core/ARCHITECTURE.md", "docs/governance/KNOWN_RISKS.md"],
+      "used_by": ["docs/MASTER_PROMPT.md", "docs/AUTO_AUDIT_PROMPT.md", ".github/workflows/lucaid-audit.yml"],
+      "update_triggers": ["change policy update", "new sensitive subsystem", "escalation model change"]
     },
     {
       "id": "gov-doc-ownership",
@@ -385,17 +243,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json"
-      ],
-      "used_by": [
-        "all docs maintainers"
-      ],
-      "update_triggers": [
-        "new doc added",
-        "ownership change",
-        "source-of-truth change"
-      ]
+      "depends_on": ["manifest.json"],
+      "used_by": ["all docs maintainers"],
+      "update_triggers": ["new doc added", "ownership change", "source-of-truth change"]
     },
     {
       "id": "gov-known-risks",
@@ -405,20 +255,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/core/ARCHITECTURE.md",
-        "docs/core/DOMAIN_RULES.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md",
-        ".github/workflows/lucaid-audit.yml"
-      ],
-      "update_triggers": [
-        "new risk",
-        "risk resolved",
-        "severity change",
-        "backend enforcement added"
-      ]
+      "depends_on": ["docs/core/ARCHITECTURE.md", "docs/core/DOMAIN_RULES.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md", ".github/workflows/lucaid-audit.yml"],
+      "update_triggers": ["new risk", "risk resolved", "severity change", "backend enforcement added"]
     },
     {
       "id": "gov-refactor-rules",
@@ -428,15 +267,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/governance/CHANGE_SAFETY_RULES.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md"
-      ],
-      "update_triggers": [
-        "refactor policy changes"
-      ]
+      "depends_on": ["docs/governance/CHANGE_SAFETY_RULES.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md"],
+      "update_triggers": ["refactor policy changes"]
     },
     {
       "id": "gov-self-validation",
@@ -446,21 +279,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json",
-        "schema.json",
-        "docs/governance/DOC_OWNERSHIP_RULES.md"
-      ],
-      "used_by": [
-        ".github/workflows/lucaid-audit.yml",
-        "tools/lucaid_validate.py"
-      ],
-      "update_triggers": [
-        "new validation rule",
-        "new doc category",
-        "manifest contract change",
-        "CI rule change"
-      ]
+      "depends_on": ["manifest.json", "schema.json", "docs/governance/DOC_OWNERSHIP_RULES.md"],
+      "used_by": [".github/workflows/lucaid-audit.yml", "tools/lucaid_validate.py"],
+      "update_triggers": ["new validation rule", "new doc category", "manifest contract change", "CI rule change"]
     },
     {
       "id": "ref-glossary",
@@ -470,19 +291,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/SYSTEM_OVERVIEW.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md",
-        ".github/workflows/lucaid-audit.yml"
-      ],
-      "update_triggers": [
-        "new term",
-        "role change",
-        "new table",
-        "function renamed"
-      ]
+      "depends_on": ["docs/SYSTEM_OVERVIEW.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md", ".github/workflows/lucaid-audit.yml"],
+      "update_triggers": ["new term", "role change", "new table", "function renamed"]
     },
     {
       "id": "ref-data-model",
@@ -492,24 +303,9 @@
       "status": "Active",
       "source_of_truth": true,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "docs/SYSTEM_OVERVIEW.md"
-      ],
-      "used_by": [
-        "docs/core/AI_ANALYSIS.md",
-        "docs/core/DOMAIN_RULES.md",
-        "docs/core/ARCHITECTURE.md",
-        "docs/governance/KNOWN_RISKS.md",
-        "docs/reference/CODEBASE_GLOSSARY.md"
-      ],
-      "update_triggers": [
-        "new table",
-        "column added/removed/renamed",
-        "enum value added",
-        "constraint changed",
-        "RLS policy change",
-        "relationship changed"
-      ]
+      "depends_on": ["docs/SYSTEM_OVERVIEW.md"],
+      "used_by": ["docs/core/AI_ANALYSIS.md", "docs/core/DOMAIN_RULES.md", "docs/core/ARCHITECTURE.md", "docs/governance/KNOWN_RISKS.md", "docs/reference/CODEBASE_GLOSSARY.md"],
+      "update_triggers": ["new table", "column added/removed/renamed", "enum value added", "constraint changed", "RLS policy change", "relationship changed"]
     },
     {
       "id": "tool-discover",
@@ -519,24 +315,21 @@
       "status": "Active",
       "source_of_truth": false,
       "owner": "DG Gruppen",
-      "depends_on": [
-        "manifest.json"
-      ],
-      "used_by": [
-        "new project setup",
-        "manifest.json impact_map bootstrap"
-      ],
-      "update_triggers": [
-        "new framework/stack support",
-        "new discovery pattern"
-      ]
+      "depends_on": ["manifest.json"],
+      "used_by": ["new project setup", "manifest.json impact_map bootstrap"],
+      "update_triggers": ["new framework/stack support", "new discovery pattern"]
     }
   ],
   "impact_map": [
     {
       "id": "auth_permissions",
       "patterns": [
-        "{{pattern for auth hooks and permission checks}}"
+        "^src/hooks/useAuth\\.tsx$",
+        "^src/hooks/useAdminAccess\\.tsx$",
+        "^src/hooks/useModulePermission\\.tsx$",
+        "^src/hooks/useModules\\.tsx$",
+        "^src/components/ProtectedRoute\\.tsx$",
+        "^supabase/functions/impersonate-user/"
       ],
       "review_docs": [
         "docs/core/PERMISSION_MODEL.md",
@@ -545,13 +338,15 @@
         "docs/governance/CHANGE_SAFETY_RULES.md"
       ],
       "notes": [
-        "Verify server-side role enforcement and access assumptions."
+        "Verify server-side role enforcement and access assumptions.",
+        "Check blast radius — these hooks affect all protected routes."
       ]
     },
     {
       "id": "backend",
       "patterns": [
-        "{{pattern for backend functions and migrations}}"
+        "^supabase/functions/",
+        "^supabase/config\\.toml$"
       ],
       "review_docs": [
         "docs/core/ARCHITECTURE.md",
@@ -567,7 +362,8 @@
     {
       "id": "data_model",
       "patterns": [
-        "{{pattern for DB migrations and schema files}}"
+        "^supabase/migrations/",
+        "^src/integrations/supabase/types\\.ts$"
       ],
       "review_docs": [
         "docs/reference/DATA_MODEL.md",
@@ -577,6 +373,119 @@
       ],
       "notes": [
         "Review constraint changes, RLS policy changes, and enum modifications."
+      ]
+    },
+    {
+      "id": "orders",
+      "patterns": [
+        "^src/pages/NewOrder\\.tsx$",
+        "^src/pages/OrderDetail\\.tsx$",
+        "^src/pages/Onboarding\\.tsx$",
+        "^src/pages/History\\.tsx$",
+        "^src/components/orders/"
+      ],
+      "review_docs": [
+        "docs/core/DOMAIN_RULES.md",
+        "docs/core/WORKFLOW_MAPS.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Verify approval flow, auto-approval rules, and status transitions."
+      ]
+    },
+    {
+      "id": "passwords",
+      "patterns": [
+        "^src/pages/Passwords\\.tsx$",
+        "^src/lib/passwordCrypto\\.ts$",
+        "^supabase/functions/get-passwords-key/"
+      ],
+      "review_docs": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/core/PERMISSION_MODEL.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Sensitive subsystem — review full access chain before any change."
+      ]
+    },
+    {
+      "id": "documents",
+      "patterns": [
+        "^src/pages/Documents\\.tsx$",
+        "^src/hooks/useDocuments\\.tsx$",
+        "^src/components/documents/"
+      ],
+      "review_docs": [
+        "docs/core/PERMISSION_MODEL.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Check folder access_roles/write_roles and storage bucket policy alignment."
+      ]
+    },
+    {
+      "id": "planner",
+      "patterns": [
+        "^src/pages/Planner\\.tsx$",
+        "^src/components/planner/"
+      ],
+      "review_docs": [
+        "docs/core/DOMAIN_RULES.md",
+        "docs/core/WORKFLOW_MAPS.md"
+      ],
+      "notes": [
+        "Check drag-and-drop sort order persistence and WIP limit enforcement."
+      ]
+    },
+    {
+      "id": "email",
+      "patterns": [
+        "^supabase/functions/send-email/",
+        "^supabase/functions/process-email-queue/",
+        "^src/lib/emailTemplates\\.ts$",
+        "^src/lib/orderEmails\\.ts$"
+      ],
+      "review_docs": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/core/WORKFLOW_MAPS.md",
+        "docs/governance/KNOWN_RISKS.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Never bypass DLQ logic. Check rate limiting in email_send_state."
+      ]
+    },
+    {
+      "id": "admin",
+      "patterns": [
+        "^src/pages/Admin\\.tsx$",
+        "^src/components/admin/"
+      ],
+      "review_docs": [
+        "docs/core/PERMISSION_MODEL.md",
+        "docs/governance/CHANGE_SAFETY_RULES.md"
+      ],
+      "notes": [
+        "Check admin access gating via useAdminAccess hook."
+      ]
+    },
+    {
+      "id": "ai_chat",
+      "patterns": [
+        "^supabase/functions/ai-chat/",
+        "^supabase/functions/sync-content-index/",
+        "^src/components/AiChatBubble\\.tsx$"
+      ],
+      "review_docs": [
+        "docs/core/ARCHITECTURE.md",
+        "docs/governance/KNOWN_RISKS.md"
+      ],
+      "notes": [
+        "Check content_index dual-indexing consistency."
       ]
     },
     {
@@ -641,11 +550,6 @@
       "fix_templates_coverage"
     ],
     "validation_layers": 8
-  },
-  "_instructions": {
-    "impact_map": "Replace {{pattern ...}} placeholders with actual regex patterns matching your project's file structure. See examples/shf-intra/manifest.json.example for a fully populated reference.",
-    "package": "Replace {{REPOSITORY}}, {{SYSTEM_NAME}}, {{DATE}} with your project's values.",
-    "verified_context": "Do not change paths — they match the skeleton doc structure. Add project-specific docs as needed."
   },
   "fix_templates": {
     "manifest_exists": "Restore or regenerate manifest.json from schema.json and the document registry.",
