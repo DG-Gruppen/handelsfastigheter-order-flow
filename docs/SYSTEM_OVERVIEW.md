@@ -52,6 +52,7 @@ Each module is registered in the `modules` table with a slug, route, icon, and a
 | Arbetskläder (Workwear) | `workwear` | `/arbetsklader` | Seasonal workwear ordering with predefined product catalog | All authenticated; admin manages seasons | `workwear_orders` |
 | Mitt SHF (My SHF) | `my-shf` | `/mitt-shf` | Personal page *(inferred — verify against source)* | All authenticated | — |
 | Profil (Profile) | — | `/profile` | User profile editing (name, phone, theme preference) | Own profile only | `profiles` |
+| SHF-Assistenten (AI Chat) | — | — (floating bubble) | AI-powered assistant available on every page via `AiChatBubble`. Uses RAG: queries `content_index` (hybrid fulltext + trigram search via `search_content()`), then streams a response from Lovable AI Gateway (`google/gemini-3-flash-preview`). Knowledge sources: KB articles, KB videos, IT FAQ, News, CEO blog, Tools, Departments, Document folders/files, plus nightly-scraped content from handelsfastigheter.se and allabolag.se. Real-time indexing via DB triggers on 8 tables; nightly batch sync via `sync-content-index`, `scrape-website`, `scrape-allabolag` (pg_cron 02:00). Cision press releases imported every 12h. | All authenticated users | `content_index` (read); Edge Function: `ai-chat` |
 | Admin | — | `/admin` | Admin panel with tabs: categories, equipment, systems, knowledge, news, tools, users, groups, permissions, settings, IT, backup, workwear | Admin/IT role OR module-level edit permission on mapped slug | Multiple tables |
 
 **Complexity notes:**
