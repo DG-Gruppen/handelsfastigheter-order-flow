@@ -35,7 +35,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Event: { bg: "bg-pink-500/10", text: "text-pink-600 dark:text-pink-400" },
 };
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 
 /* ── Component ── */
 export default function News() {
