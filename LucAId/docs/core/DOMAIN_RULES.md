@@ -1,7 +1,7 @@
 ## Metadata
 - Repository: DG-Gruppen/handelsfastigheter-order-flow
 - System: SHF Intra
-- Package Version: 3.6.0
+- Package Version: 3.7.0
 - Last Reviewed: 2026-03-21
 - Status: Active
 - Source of Truth: Yes — for business rules and intended behavior per module. When a rule appears in multiple files, this file wins.
