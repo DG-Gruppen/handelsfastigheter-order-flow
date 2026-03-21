@@ -3,10 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
-const ReactQueryDevtools = lazy(() =>
-  import("@tanstack/react-query-devtools").then((m) => ({ default: m.ReactQueryDevtools }))
-);
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NavSettingsProvider } from "@/hooks/useNavSettings";
