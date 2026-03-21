@@ -4,6 +4,15 @@ All versions of the `LucAId` package for `DG-Gruppen/handelsfastigheter-order-fl
 
 ---
 
+## [3.9.0] — 2026-03-21
+
+### Improved
+- **AI Assistant RAG pipeline**: Upgraded `search_content` RPC with content trigram similarity, source quality weighting (KB articles > FAQ > news > website), and increased default match limit from 8 to 12
+- **AI Assistant context window**: Increased per-result context from 800 to 2000 characters, added relevance scores to context block
+- **AI model upgrade**: Switched from `google/gemini-3-flash-preview` to `google/gemini-2.5-pro` for stronger reasoning and accuracy
+
+---
+
 ## [3.8.0] — 2026-03-21
 
 ### Security fixes (6 risks resolved)
