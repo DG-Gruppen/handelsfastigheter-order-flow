@@ -7,13 +7,25 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const ALLOWED_ORIGIN = "https://intra.handelsfastigheter.se";
+const PRIMARY_ORIGIN = "https://intra.handelsfastigheter.se";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+const isAllowedOrigin = (origin: string | null) => {
+  if (!origin) return false;
+  return (
+    origin === PRIMARY_ORIGIN ||
+    origin === "https://handelsfastigheter.lovable.app" ||
+    origin.endsWith(".lovableproject.com") ||
+    origin.endsWith(".lovable.app") ||
+    origin === "http://localhost:5173"
+  );
 };
+
+const getCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin! : PRIMARY_ORIGIN,
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Vary": "Origin",
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
