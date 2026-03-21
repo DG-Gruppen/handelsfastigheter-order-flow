@@ -103,19 +103,49 @@ async function syncToNewsTable(releases: Release[]) {
   const existingUrls = new Set((existing ?? []).map((r: any) => r.source_url));
 
   // Find an admin user to use as author
-  const { data: adminRole } = await supabase
+  // Check both user_roles table AND groups with role_equivalent = 'admin'
+  let authorUserId: string | null = null;
+
+  // 1) Try user_roles first
+  const { data: directAdmin } = await supabase
     .from("user_roles")
     .select("user_id")
     .eq("role", "admin")
     .limit(1)
     .single();
 
-  if (!adminRole) {
+  if (directAdmin) {
+    authorUserId = directAdmin.user_id;
+  } else {
+    // 2) Fall back to groups with role_equivalent = 'admin'
+    const { data: adminGroups } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("role_equivalent", "admin");
+
+    if (adminGroups && adminGroups.length > 0) {
+      const groupIds = adminGroups.map((g: any) => g.id);
+      const { data: groupMember } = await supabase
+        .from("group_members")
+        .select("user_id")
+        .in("group_id", groupIds)
+        .limit(1)
+        .single();
+
+      if (groupMember) {
+        authorUserId = groupMember.user_id;
+      }
+    }
+  }
+
+  if (!authorUserId) {
     console.error("No admin user found for Cision import author");
     return { imported: 0, error: "No admin user" };
   }
 
-  const authorId = adminRole.user_id;
+  console.log("Using author_id:", authorUserId);
+
+  const authorId = authorUserId;
 
   // Filter to only new releases
   const newReleases = releases.filter((r) => r.url && !existingUrls.has(r.url));
