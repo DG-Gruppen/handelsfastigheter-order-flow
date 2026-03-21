@@ -145,7 +145,7 @@ async function syncToNewsTable(releases: Release[]) {
 
   console.log("Using author_id:", authorUserId);
 
-  const authorId = adminRole.user_id;
+  const authorId = authorUserId;
 
   // Filter to only new releases
   const newReleases = releases.filter((r) => r.url && !existingUrls.has(r.url));
