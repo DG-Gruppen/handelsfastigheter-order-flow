@@ -410,6 +410,7 @@ Admin nås via profilmenyn, inte sidofältet.
 | `notify-workwear-season` | Skickar påminnelse om arbetsklädbeställning | pg_cron | — |
 | `seed-demo-data` | Skapar testdata | Manuell | — |
 | `extract-document-text` | Extraherar text från PDF/DOCX/XLSX/text-filer och indexerar i `content_index` | DB-trigger (`notify_extract_document_text`) via pg_net | Nej |
+| `reindex-documents` | Batch-omindexering av alla befintliga dokument som saknar extraherat innehåll | pg_cron (nattlig kl 02:30) | Nej |
 
 ### Nyckel-DB-funktioner (RPC)
 
