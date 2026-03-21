@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
 import { FALLBACK_IT_EMAIL } from "@/lib/constants";
 import {
@@ -49,11 +50,9 @@ export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   `);
 
   try {
-    await supabase.functions.invoke("send-email", {
-      body: { to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html },
-    });
+    await enqueueEmail({ to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html });
   } catch (err) {
-    console.error("Failed to send new order email to approver:", err);
+    console.error("Failed to enqueue new order email to approver:", err);
   }
 }
 
@@ -84,11 +83,9 @@ export async function sendRejectionEmail(params: RejectionEmailParams) {
   `);
 
   try {
-    await supabase.functions.invoke("send-email", {
-      body: { to: requesterEmail, subject: `[SHF IT] Din beställning har avslagits: ${title}`, html },
-    });
+    await enqueueEmail({ to: requesterEmail, subject: `[SHF IT] Din beställning har avslagits: ${title}`, html });
   } catch (err) {
-    console.error("Failed to send rejection email:", err);
+    console.error("Failed to enqueue rejection email:", err);
   }
 }
 

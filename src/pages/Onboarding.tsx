@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -464,11 +465,13 @@ export default function Onboarding() {
           isAutoApproved: true,
         });
         try {
-          await supabase.functions.invoke("send-email", {
-            body: { to: reqEmail.email, subject: `[SHF IT] Din beställning har godkänts: ${title}`, html: confirmHtml },
+          await enqueueEmail({
+            to: reqEmail.email,
+            subject: `[SHF IT] Din beställning har godkänts: ${title}`,
+            html: confirmHtml,
           });
         } catch (err) {
-          console.error("Failed to send approval confirmation email:", err);
+          console.error("Failed to enqueue approval confirmation email:", err);
         }
       }
     }

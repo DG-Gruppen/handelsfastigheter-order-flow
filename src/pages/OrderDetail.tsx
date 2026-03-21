@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail, buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmails";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
@@ -129,8 +130,8 @@ export default function OrderDetail() {
           comment,
           orderUrl,
         });
-        try { await supabase.functions.invoke("send-email", { body: { to: requesterProfile.email, subject: `[SHF IT Beställning] Levererad: ${order.title}`, html } }); }
-        catch (err) { console.error("Failed to send delivery email:", err); }
+        try { await enqueueEmail({ to: requesterProfile.email, subject: `[SHF IT Beställning] Levererad: ${order.title}`, html }); }
+        catch (err) { console.error("Failed to enqueue delivery email:", err); }
       }
     }
     setMarking(false);
@@ -162,8 +163,8 @@ export default function OrderDetail() {
           items: items.map((i) => ({ name: i.name, quantity: i.quantity })),
           orderUrl,
         });
-        try { await supabase.functions.invoke("send-email", { body: { to: requesterProfile.email, subject: `[SHF IT] Din beställning har godkänts: ${order.title}`, html: approvalHtml } }); }
-        catch (err) { console.error("Failed to send approval confirmation email:", err); }
+        try { await enqueueEmail({ to: requesterProfile.email, subject: `[SHF IT] Din beställning har godkänts: ${order.title}`, html: approvalHtml }); }
+        catch (err) { console.error("Failed to enqueue approval confirmation email:", err); }
       }
 
       const systemsList = orderSystems.map((os) => ({ name: os.system?.name || "", description: os.system?.description || null }));

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getItContactEmail } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
 import {
@@ -56,11 +57,8 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   const subject = `[SHF IT Beställning] ${typeLabel}: ${title}`;
 
   try {
-    const { error } = await supabase.functions.invoke("send-email", {
-      body: { to: itEmail, subject, html, reply_to: requesterEmail },
-    });
-    if (error) console.error("Failed to send helpdesk email:", error);
+    await enqueueEmail({ to: itEmail, subject, html, reply_to: requesterEmail });
   } catch (err) {
-    console.error("Failed to send helpdesk email:", err);
+    console.error("Failed to enqueue helpdesk email:", err);
   }
 }

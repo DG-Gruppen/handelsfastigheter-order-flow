@@ -1,7 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const ALLOWED_ORIGIN = "https://intra.handelsfastigheter.se";
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
@@ -87,23 +89,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
+    // Check admin role via has_role RPC (includes group-based roles)
     const adminClient = createClient(supabaseUrl, serviceKey);
-    const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", claims.user.id);
-
-    // Also check group-based admin role
     const { data: groupRole } = await adminClient.rpc("has_role", {
       _user_id: claims.user.id,
       _role: "admin",
     });
 
-    const isAdmin =
-      roleData?.some((r: any) => r.role === "admin") || groupRole === true;
-
-    if (!isAdmin) {
+    if (!groupRole) {
       return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

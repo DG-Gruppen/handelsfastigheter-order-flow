@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShoppingBag, Minus, Plus, Trash2, Send, ExternalLink, Settings2, CalendarClock, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { enqueueEmail } from "@/lib/enqueueEmail";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { toast } from "sonner";
@@ -235,13 +236,11 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
 
       const recipientEmail = settingData?.setting_value || (await getItEmail());
 
-      await supabase.functions.invoke("send-email", {
-        body: {
-          to: recipientEmail,
-          subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
-          html,
-          reply_to: profile?.email || user.email,
-        },
+      await enqueueEmail({
+        to: recipientEmail,
+        subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
+        html,
+        reply_to: profile?.email || user.email,
       });
 
       toast.success("Beställningen har skickats!");
