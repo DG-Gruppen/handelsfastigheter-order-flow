@@ -159,7 +159,9 @@ async function extractPdfText(blob: Blob): Promise<string> {
 async function extractDocxText(blob: Blob): Promise<string> {
   const mammoth = await import("npm:mammoth@1.8.0");
   const arrayBuffer = await blob.arrayBuffer();
-  const result = await mammoth.extractRawText({ arrayBuffer });
+  const buffer = new Uint8Array(arrayBuffer);
+  // mammoth accepts { buffer } (Node Buffer-like) in Deno
+  const result = await mammoth.extractRawText({ buffer });
   return result.value;
 }
 
