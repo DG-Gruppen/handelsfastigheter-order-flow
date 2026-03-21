@@ -1,13 +1,13 @@
 ## Metadata
-- Repository: {{REPOSITORY}}
-- System: {{SYSTEM_NAME}}
-- Package Version: {{VERSION}}
-- Last Reviewed: {{DATE}}
-- Status: Draft
+- Repository: DG-Gruppen/handelsfastigheter-order-flow
+- System: SHF Intra
+- Package Version: 3.6.0
+- Last Reviewed: 2026-03-21
+- Status: Active
 - Source of Truth: Yes — for analysis method, priorities, evidence labels, hotspots, anti-patterns, and output format
 - Depends On: `manifest.json`, `docs/governance/KNOWN_RISKS.md`, `docs/reference/CODEBASE_GLOSSARY.md`
 - Used By: `docs/MASTER_PROMPT.md`, `docs/AUTO_AUDIT_PROMPT.md`
-- Owner: {{OWNER}}
+- Owner: DG Gruppen
 - Update Triggers: analysis method change, new hotspot identified, evidence model change, new module added
 
 ---
@@ -69,32 +69,47 @@ Work through these in order. Do not skip to lower priorities if higher-priority 
 
 ## Hotspots
 
-*List the files, modules, or patterns in this codebase that are highest risk and require extra scrutiny.*
+These files and modules are highest risk and require extra scrutiny:
 
-*Example format:*
-- `src/hooks/useAuth.ts` — authentication chain; any change here has wide blast radius
+- `src/hooks/useAuth.tsx` — Session and role resolution chain; any change affects all access decisions across all modules
+- `src/hooks/useModules.tsx` — Module access resolution and Realtime subscription; structural dependency for sidebar and route guards
+- `src/hooks/useAdminAccess.tsx` — Admin panel access gating; slug mapping could drift from `useModules`
+- `src/hooks/useModulePermission.tsx` — Per-module permission evaluation; used by all feature-gated pages
+- `src/pages/NewOrder.tsx` — Order creation with approval routing, auto-approval logic, and email dispatch
+- `src/pages/OrderDetail.tsx` — Lifecycle transitions (approve/reject/deliver) with authorization checks
+- `src/pages/Onboarding.tsx` — Creates placeholder profiles; auto-approval for certain roles; links via `handle_new_user()` trigger
+- `src/pages/Passwords.tsx` + `src/lib/passwordCrypto.ts` — AES-encrypted vault; key issuance via Edge Function
+- `src/pages/Documents.tsx` + `src/hooks/useDocuments.tsx` — Folder-level RBAC with `access_roles`/`write_roles`
+- `supabase/functions/impersonate-user/` — Generates real session tokens; IT/admin role check is the only gate
+- `supabase/functions/get-passwords-key/` — Returns AES encryption key; JWT-only gate, no group check
+- `supabase/functions/process-email-queue/` — pgmq queue processing with DLQ; rate limiting via `email_send_state`
+- `supabase/functions/ai-chat/` — AI assistant accessing `content_index`; prompt injection surface
 - `supabase/migrations/` — RLS policies; verify every new policy against PERMISSION_MODEL
 
 ---
 
 ## Anti-patterns
 
-*List known bad patterns specific to this codebase that AI should flag.*
+Flag these patterns when found in this codebase:
 
-*Example:*
-- Frontend-only access checks without server-side enforcement
-- Status transitions without server-side state machine validation
+- **Frontend-only access checks without server-side enforcement** — e.g. hiding a button without RLS policy
+- **Status transitions without server-side state machine validation** — orders can be set to any status via UPDATE
+- **Client-side role checks used as security controls** — `useAuth` role checks are UI convenience, not authorization
+- **Direct Supabase UPDATE without column-level restrictions** — approver can change any column on `orders`
+- **AES key issuance without group membership check** — `get-passwords-key` returns key to all authenticated users
+- **String-based department matching** — `profiles.department` is text, not FK to `departments.id`
+- **Trigger-based indexing without failure handling** — content_index triggers silently fail
+- **Storage bucket policies misaligned with folder-level access_roles** — URL bypass risk
 
 ---
 
 ## Hard rules
 
-*Rules that must never be violated in recommendations.*
-
-- Do not recommend changes that bypass documented permission precedence
+- Do not recommend changes that bypass documented permission precedence (`core/PERMISSION_MODEL.md`)
 - Do not suggest frontend-only fixes for authorization issues
 - Prefer the smallest safe fix over structural rewrites (see `governance/REFACTOR_RULES.md`)
 - Cross-reference every finding against `governance/KNOWN_RISKS.md` before reporting
+- Do not assume backend enforcement exists unless verified in migrations, RLS policies, or Edge Function source
 
 ---
 
