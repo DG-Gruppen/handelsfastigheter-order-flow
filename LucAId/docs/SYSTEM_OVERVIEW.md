@@ -409,6 +409,7 @@ Admin nås via profilmenyn, inte sidofältet.
 | `cleanup-notifications` | Rensar gamla notifikationer | pg_cron | — |
 | `notify-workwear-season` | Skickar påminnelse om arbetsklädbeställning | pg_cron | — |
 | `seed-demo-data` | Skapar testdata | Manuell | — |
+| `extract-document-text` | Extraherar text från PDF/DOCX/XLSX/text-filer och indexerar i `content_index` | DB-trigger (`notify_extract_document_text`) via pg_net | Nej |
 
 ### Nyckel-DB-funktioner (RPC)
 
