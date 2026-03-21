@@ -286,15 +286,56 @@ export default function News() {
             );
           })
         )}
-        {hasMore && (
-          <div className="flex justify-center pt-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} className="gap-2">
-              Visa fler <ChevronRight className="h-4 w-4" />
-            </Button>
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Visa</span>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="w-[70px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">per sida</span>
+              <span className="text-xs text-muted-foreground ml-2">
+                {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} av {filtered.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                .reduce<(number | "ellipsis")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1]) > 1) acc.push("ellipsis");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "ellipsis" ? (
+                    <span key={`e${idx}`} className="px-1 text-xs text-muted-foreground">…</span>
+                  ) : (
+                    <Button
+                      key={p}
+                      variant={p === page ? "default" : "outline"}
+                      size="icon"
+                      className="h-8 w-8 text-xs"
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </Button>
+                  )
+                )}
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        )}
-        {!hasMore && paginated.length > PAGE_SIZE && (
-          <p className="text-center text-xs text-muted-foreground pt-2">Visar alla {filtered.length} nyheter</p>
         )}
       </div>
 
