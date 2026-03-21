@@ -1,73 +1,36 @@
-# Welcome to your Lovable project
+# AI Analysis Documentation (v2.3)
 
-## Project info
+## Repository
+DG-Gruppen/handelsfastigheter-order-flow
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Verified Repository Snapshot
+- Default branch: `main`
+- Public GitHub repository
+- Top-level paths observed: `.lovable`, `docs`, `public`, `src`, `supabase`
+- Root files observed: `README.md`, `package.json`, Vite/Tailwind/TS configs, lockfiles, `.env`
 
-## How can I edit this code?
+## Purpose
+This package provides a compact, repo-specific framework for AI-assisted analysis of `handelsfastigheter-order-flow`.
 
-There are several ways of editing your application.
+## Read Order
+1. `MASTER_PROMPT.md`
+2. `core/AI_ANALYSIS.md`
+3. `core/DOMAIN_RULES.md`
+4. `core/PERMISSION_MODEL.md`
+5. `core/ARCHITECTURE.md`
+6. `core/WORKFLOW_MAPS.md`
+7. `governance/KNOWN_RISKS.md`
+8. `governance/CHANGE_SAFETY_RULES.md`
+9. `governance/REFACTOR_RULES.md`
+10. `reference/CODEBASE_GLOSSARY.md`
+11. `AUTO_AUDIT_PROMPT.md`
 
-**Use Lovable**
+## Coupled Update Rules
+When code changes in these areas, review the matching docs:
+- `src/hooks/**`, `src/components/ProtectedRoute*`, auth/admin hooks → `core/PERMISSION_MODEL.md`, `governance/KNOWN_RISKS.md`
+- `src/pages/NewOrder*`, `src/pages/OrderDetail*`, approval/order pages → `core/DOMAIN_RULES.md`, `core/WORKFLOW_MAPS.md`
+- `src/integrations/**`, `supabase/functions/**`, `supabase/migrations/**` → `core/ARCHITECTURE.md`, `governance/KNOWN_RISKS.md`
+- route/layout/app-shell changes in `src/App.tsx`, `src/main.tsx`, nav hooks → `core/ARCHITECTURE.md`, `core/PERMISSION_MODEL.md`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Notes
+The repository already contains `docs/AI_ANALYSIS.md`, `docs/ARCHITECTURE.md`, and `docs/DOMAIN_RULES.md`. This v2.3 layout extends that structure into a more complete, less repetitive, metadata-driven package.
