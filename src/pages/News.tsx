@@ -101,10 +101,10 @@ export default function News() {
   }, [articles, tab, search, selectedCategory]);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [tab, search, selectedCategory]);
+  useEffect(() => { setPage(1); }, [tab, search, selectedCategory, pageSize]);
 
-  const paginated = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
-  const hasMore = paginated.length < filtered.length;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
 
   if (loading) {
     return (
