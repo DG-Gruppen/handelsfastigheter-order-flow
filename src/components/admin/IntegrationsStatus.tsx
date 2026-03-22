@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
+import IntegrationDetailDialog from "./IntegrationDetailDialog";
 
 interface IntegrationRow {
   id: string;
@@ -41,6 +42,8 @@ export default function IntegrationsStatus() {
   const [rows, setRows] = useState<IntegrationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
+  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -54,7 +57,8 @@ export default function IntegrationsStatus() {
 
   useEffect(() => { fetchStatus(); }, []);
 
-  const testIntegration = async (slug: string) => {
+  const testIntegration = async (slug: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setTesting(slug);
     try {
       const fnMap: Record<string, string> = {
@@ -75,6 +79,11 @@ export default function IntegrationsStatus() {
     } finally {
       setTesting(null);
     }
+  };
+
+  const openDetail = (row: IntegrationRow) => {
+    setSelectedIntegration(row);
+    setDetailOpen(true);
   };
 
   if (loading) {
@@ -104,7 +113,11 @@ export default function IntegrationsStatus() {
           const StatusIcon = sc.icon;
 
           return (
-            <Card key={row.id} className={`border ${sc.border}`}>
+            <Card
+              key={row.id}
+              className={`border ${sc.border} cursor-pointer transition-shadow hover:shadow-md active:scale-[0.99]`}
+              onClick={() => openDetail(row)}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2.5">
@@ -148,7 +161,7 @@ export default function IntegrationsStatus() {
                     size="sm"
                     className="w-full mt-1 h-8 text-xs"
                     disabled={testing === row.slug}
-                    onClick={() => testIntegration(row.slug)}
+                    onClick={(e) => testIntegration(row.slug, e)}
                   >
                     {testing === row.slug ? (
                       <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
@@ -167,6 +180,14 @@ export default function IntegrationsStatus() {
           Inga integrationer hittades.
         </p>
       )}
+
+      <IntegrationDetailDialog
+        integration={selectedIntegration}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onRefresh={fetchStatus}
+        icon={SLUG_ICON[selectedIntegration?.slug || ""] || Search}
+      />
     </div>
   );
 }
