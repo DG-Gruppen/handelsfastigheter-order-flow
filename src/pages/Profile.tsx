@@ -154,7 +154,7 @@ export default function Profile() {
 
         {/* Settings */}
         <Card className="glass-card">
-          <CardContent className="p-4 md:p-6 space-y-4">
+          <CardContent className="p-5 space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Inställningar</h2>
 
             <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 min-h-[56px] min-w-0 gap-3">
