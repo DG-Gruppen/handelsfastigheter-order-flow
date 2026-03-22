@@ -73,7 +73,7 @@ export default function WorkwearAdminPanel() {
     const load = async () => {
       const [ordersRes, profilesRes, seasonRes, deadlineRes] = await Promise.all([
         supabase.from("workwear_orders" as any).select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("user_id, full_name, department"),
+        supabase.from("profiles").select("user_id, full_name, department, region_id"),
         supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "workwear_season").single(),
         supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "workwear_deadline").single(),
       ]);
