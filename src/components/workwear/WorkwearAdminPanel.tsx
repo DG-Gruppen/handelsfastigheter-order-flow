@@ -57,9 +57,10 @@ export default function WorkwearAdminPanel() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [activeSeason, setActiveSeason] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
-  const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterRegion, setFilterRegion] = useState<string>("all");
   const [filterSeason, setFilterSeason] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const { regions } = useRegions();
 
   // Sort states per tab
   const [sortItems, setSortItems] = useState<SortConfig | null>(null);
