@@ -17,10 +17,11 @@ const SettingsContent = lazy(() => import("@/components/admin/SettingsContent"))
 const ITContent = lazy(() => import("@/components/admin/ITContent"));
 const DatabaseBackup = lazy(() => import("@/components/admin/DatabaseBackup"));
 const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
+const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug,
 } from "lucide-react";
 
 type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear";
