@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useRegions } from "@/hooks/useRegions";
-import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download, StickyNote } from "lucide-react";
+import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download, StickyNote, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { SEASON_LABELS, ALL_SEASONS, type Season } from "./workwearProducts";
@@ -68,6 +69,8 @@ export default function WorkwearAdminPanel() {
   const [sortOrders, setSortOrders] = useState<SortConfig | null>(null);
   const [sortSupplier, setSortSupplier] = useState<SortConfig | null>(null);
   const [sortPick, setSortPick] = useState<SortConfig | null>(null);
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -132,8 +135,11 @@ export default function WorkwearAdminPanel() {
 
   // ── Item stats (Sammanställning + Beställningslista) ──
   const itemStats = useMemo(() => {
-    const map = new Map<string, { name: string; color: string; size: string; qty: number; logo: string }>();
+    const map = new Map<string, { name: string; color: string; size: string; qty: number; logo: string; orderers: Set<string>; regions: Set<string> }>();
     filteredOrders.forEach((o) => {
+      const p = profileMap.get(o.user_id);
+      const ordererName = p?.full_name || "Okänd";
+      const regionName = getRegionName(o.user_id);
       const items = Array.isArray(o.items) ? o.items : [];
       items.forEach((item: any) => {
         const colorLabel = item.colorLabel || item.color || "";
@@ -141,6 +147,8 @@ export default function WorkwearAdminPanel() {
         const existing = map.get(key);
         if (existing) {
           existing.qty += item.quantity || 1;
+          existing.orderers.add(ordererName);
+          existing.regions.add(regionName);
         } else {
           map.set(key, {
             name: item.productName || item.productId,
@@ -148,12 +156,14 @@ export default function WorkwearAdminPanel() {
             size: item.size || "",
             qty: item.quantity || 1,
             logo: parseLogoInfo(colorLabel),
+            orderers: new Set([ordererName]),
+            regions: new Set([regionName]),
           });
         }
       });
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "sv") || a.color.localeCompare(b.color, "sv") || a.size.localeCompare(b.size, "sv"));
-  }, [filteredOrders]);
+  }, [filteredOrders, profileMap, regionMap]);
 
   // Supplier list with subtotals
   const supplierRows = useMemo(() => {
@@ -258,6 +268,76 @@ export default function WorkwearAdminPanel() {
   const uniqueOrderers = useMemo(() => new Set(filteredOrders.map((o) => o.user_id)).size, [filteredOrders]);
   const uniqueRegions = useMemo(() => new Set(filteredOrders.map((o) => getRegionName(o.user_id)).filter((r) => r !== "Okänd")).size, [filteredOrders, profileMap, regionMap]);
 
+  const generatePickCsv = (rows: typeof pickRows, filename: string) => {
+    const csvRows: string[][] = [];
+    let currentUserId = "";
+    rows.forEach((r) => {
+      if (r.user_id !== currentUserId) {
+        currentUserId = r.user_id;
+        const notes = personNotes.get(r.user_id);
+        if (notes?.length) {
+          csvRows.push([r.region, r.name, "📝 " + notes.join("; "), "", "", ""]);
+        }
+      }
+      csvRows.push([r.region, r.name, r.product, r.color, r.size, String(r.qty)]);
+    });
+    downloadCsv(["Region", "Namn", "Plagg", "Färg", "Storlek", "Antal"], csvRows, filename);
+  };
+
+  const handlePrintPickList = (regionFilter?: string) => {
+    const rows = regionFilter ? pickRows.filter((r) => r.region === regionFilter) : pickRows;
+    const title = regionFilter ? `Plocklista – ${regionFilter}` : "Plocklista – Alla regioner";
+    const w = window.open("", "_blank");
+    if (!w) return;
+    let html = `<html><head><title>${title}</title><style>
+      body{font-family:system-ui,sans-serif;padding:20px;font-size:12px}
+      h1{font-size:16px;margin-bottom:4px}
+      h3{font-size:13px;margin:12px 0 4px;background:#f0f0f0;padding:4px 8px}
+      table{width:100%;border-collapse:collapse;margin-bottom:8px}
+      th,td{border:1px solid #ddd;padding:4px 8px;text-align:left}
+      th{background:#f5f5f5;font-weight:600}
+      .note{font-size:11px;color:#666;font-style:italic}
+      .total-row{background:#f9f9f9;font-weight:bold}
+      @media print{body{padding:0}}
+    </style></head><body>`;
+    html += `<h1>${title}</h1>`;
+    html += `<p>${new Set(rows.map(r=>r.user_id)).size} personer · ${rows.reduce((s,r)=>s+r.qty,0)} plagg</p>`;
+
+    let currentUser = "";
+    let personItems: typeof rows = [];
+    const flushUser = () => {
+      if (!personItems.length) return;
+      const first = personItems[0];
+      const notes = personNotes.get(first.user_id);
+      html += `<h3>${first.name} – ${first.region}</h3>`;
+      if (notes?.length) html += `<p class="note">📝 ${notes.join(" · ")}</p>`;
+      html += `<table><tr><th>Plagg</th><th>Färg</th><th>Storlek</th><th>Antal</th></tr>`;
+      let total = 0;
+      personItems.forEach(r => {
+        html += `<tr><td>${r.product}</td><td>${r.color}</td><td>${r.size}</td><td>${r.qty}</td></tr>`;
+        total += r.qty;
+      });
+      html += `<tr class="total-row"><td colspan="3">Totalt</td><td>${total}</td></tr></table>`;
+    };
+    rows.forEach(r => {
+      if (r.user_id !== currentUser) { flushUser(); currentUser = r.user_id; personItems = []; }
+      personItems.push(r);
+    });
+    flushUser();
+    html += `</body></html>`;
+    w.document.write(html);
+    w.document.close();
+    w.print();
+  };
+
+  const toggleOrderExpanded = (orderId: string) => {
+    setExpandedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId); else next.add(orderId);
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -355,8 +435,8 @@ export default function WorkwearAdminPanel() {
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
               <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
-                ["Plagg", "Färg", "Storlek", "Antal"],
-                sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty)]),
+                ["Plagg", "Färg", "Storlek", "Antal", "Beställare", "Region"],
+                sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty), Array.from(i.orderers).join(", "), Array.from(i.regions).join(", ")]),
                 "sammanstallning.csv"
               )}>
                 <Download className="w-3.5 h-3.5" /> CSV
@@ -374,6 +454,8 @@ export default function WorkwearAdminPanel() {
                         <SortableHeader label="Färg" sortKey="color" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
                         <SortableHeader label="Storlek" sortKey="size" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
                         <SortableHeader label="Antal" sortKey="qty" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} className="text-right" />
+                        <TableHead>Beställare</TableHead>
+                        <TableHead>Region</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -383,11 +465,14 @@ export default function WorkwearAdminPanel() {
                           <TableCell className="text-sm">{item.color}</TableCell>
                           <TableCell className="text-sm">{item.size}</TableCell>
                           <TableCell className="text-right font-semibold text-sm">{item.qty}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px]">{Array.from(item.orderers).join(", ")}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{Array.from(item.regions).filter(r => r !== "Okänd").join(", ")}</TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-secondary/50 font-bold">
                         <TableCell colSpan={3} className="text-sm">Totalt</TableCell>
                         <TableCell className="text-right text-sm">{totalItems}</TableCell>
+                        <TableCell colSpan={2} />
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -486,27 +571,42 @@ export default function WorkwearAdminPanel() {
               <CardTitle className="text-sm font-medium">
                 Plocklista – Leveransunderlag ({new Set(pickRows.map((r) => r.user_id)).size} personer · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
               </CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => {
-                const csvRows: string[][] = [];
-                let currentUserId = "";
-                pickRows.forEach((r) => {
-                  if (r.user_id !== currentUserId) {
-                    currentUserId = r.user_id;
-                    const notes = personNotes.get(r.user_id);
-                    if (notes?.length) {
-                      csvRows.push([r.region, r.name, "📝 " + notes.join("; "), "", "", ""]);
-                    }
-                  }
-                  csvRows.push([r.region, r.name, r.product, r.color, r.size, String(r.qty)]);
-                });
-                downloadCsv(
-                  ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
-                  csvRows,
-                  "plocklista.csv"
-                );
-              }}>
-                <Download className="w-3.5 h-3.5" /> CSV
-              </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                      <Download className="w-3.5 h-3.5" /> CSV <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => generatePickCsv(pickRows, "plocklista-alla.csv")}>
+                      Alla regioner
+                    </DropdownMenuItem>
+                    {regions.map((r) => (
+                      <DropdownMenuItem key={r.id} onClick={() => generatePickCsv(pickRows.filter((row) => row.region === r.name), `plocklista-${r.name.toLowerCase().replace(/\//g, "-")}.csv`)}>
+                        {r.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                      <Printer className="w-3.5 h-3.5" /> Skriv ut <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handlePrintPickList()}>
+                      Alla regioner
+                    </DropdownMenuItem>
+                    {regions.map((r) => (
+                      <DropdownMenuItem key={r.id} onClick={() => handlePrintPickList(r.name)}>
+                        {r.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {pickRows.length === 0 ? (
@@ -671,42 +771,71 @@ export default function WorkwearAdminPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium text-sm">
-                            {order.fullName}
-                            {order.notes && (
-                              <span className="block text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <StickyNote className="w-3 h-3 inline" /> {order.notes}
-                              </span>
+                      {sortedOrders.map((order) => {
+                        const isExpanded = expandedOrders.has(order.id);
+                        const orderItems = Array.isArray(order.items) ? order.items : [];
+                        return (
+                          <React.Fragment key={order.id}>
+                            <TableRow className="cursor-pointer" onClick={() => toggleOrderExpanded(order.id)}>
+                              <TableCell className="font-medium text-sm">
+                                <span className="inline-flex items-center gap-1">
+                                  {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                                  {order.fullName}
+                                </span>
+                                {order.notes && (
+                                  <span className="block text-xs text-muted-foreground mt-0.5 flex items-center gap-1 ml-5">
+                                    <StickyNote className="w-3 h-3 inline" /> {order.notes}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
+                              <TableCell className="text-sm">
+                                {order.totalQty} plagg
+                                <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
+                                  <SelectTrigger className="h-7 text-xs w-[130px]">
+                                    <SelectValue>
+                                      <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
+                                        {STATUS_LABEL[order.status] || order.status}
+                                      </Badge>
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending" className="text-xs">Väntande</SelectItem>
+                                    <SelectItem value="confirmed" className="text-xs">Bekräftad</SelectItem>
+                                    <SelectItem value="delivered" className="text-xs">Levererad</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            </TableRow>
+                            {isExpanded && orderItems.length > 0 && (
+                              <TableRow className="bg-muted/30">
+                                <TableCell colSpan={5} className="py-2 pl-10">
+                                  <div className="grid grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                                    <span className="font-semibold text-muted-foreground">Produkt</span>
+                                    <span className="font-semibold text-muted-foreground">Färg</span>
+                                    <span className="font-semibold text-muted-foreground">Storlek</span>
+                                    <span className="font-semibold text-muted-foreground">Antal</span>
+                                    {orderItems.map((item: any, idx: number) => (
+                                      <React.Fragment key={idx}>
+                                        <span>{item.productName || item.productId}</span>
+                                        <span>{parseColor(item.colorLabel || item.color || "")}</span>
+                                        <span>{item.size || "–"}</span>
+                                        <span>{item.quantity || 1}</span>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
                             )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
-                          <TableCell className="text-sm">
-                            {order.totalQty} plagg
-                            <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
-                          </TableCell>
-                          <TableCell>
-                            <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
-                              <SelectTrigger className="h-7 text-xs w-[130px]">
-                                <SelectValue>
-                                  <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
-                                    {STATUS_LABEL[order.status] || order.status}
-                                  </Badge>
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending" className="text-xs">Väntande</SelectItem>
-                                <SelectItem value="confirmed" className="text-xs">Bekräftad</SelectItem>
-                                <SelectItem value="delivered" className="text-xs">Levererad</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
