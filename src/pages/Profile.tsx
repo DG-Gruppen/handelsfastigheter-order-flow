@@ -57,7 +57,7 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ phone, region_id: regionId || null } as any)
+      .update({ phone } as any)
       .eq("user_id", profile.user_id);
     setSaving(false);
     if (error) {
