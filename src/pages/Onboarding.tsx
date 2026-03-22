@@ -786,6 +786,19 @@ export default function Onboarding() {
                     )}
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Region *</Label>
+                  <Select value={recipientRegionId} onValueChange={setRecipientRegionId}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj region..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regions.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
