@@ -192,7 +192,7 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
         {celebrations.length === 0 ? (
           <p className="text-sm text-muted-foreground">Inga jubilarer denna vecka 🎈</p>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto scrollbar-hide">
+          <div className="grid sm:grid-cols-2 gap-3">
             {celebrations.map((c, i) => (
               <div
                 key={i}
