@@ -256,7 +256,7 @@ export default function WorkwearAdminPanel() {
 
   // KPI derived from filteredOrders
   const uniqueOrderers = useMemo(() => new Set(filteredOrders.map((o) => o.user_id)).size, [filteredOrders]);
-  const uniqueDepts = useMemo(() => new Set(filteredOrders.map((o) => profileMap.get(o.user_id)?.department).filter(Boolean)).size, [filteredOrders, profileMap]);
+  const uniqueRegions = useMemo(() => new Set(filteredOrders.map((o) => getRegionName(o.user_id)).filter((r) => r !== "Okänd")).size, [filteredOrders, profileMap, regionMap]);
 
   if (loading) {
     return (
