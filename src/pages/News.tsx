@@ -66,6 +66,19 @@ export default function News() {
     queryFn: fetchNewsArticles,
   });
 
+  // Auto-open article from URL param (e.g. /nyheter?article=<id>)
+  useEffect(() => {
+    const articleId = searchParams.get("article");
+    if (articleId && articles.length > 0 && !selectedArticle) {
+      const found = articles.find((a) => a.id === articleId);
+      if (found) {
+        setSelectedArticle(found);
+        searchParams.delete("article");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [articles, searchParams]);
+
   // Trigger Cision sync in background, refetch if new items imported
   useEffect(() => {
     supabase.functions.invoke("fetch-cision-feed")
