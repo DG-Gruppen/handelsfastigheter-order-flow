@@ -553,7 +553,7 @@ export default function WorkwearAdminPanel() {
                             const notes = personNotes.get(row.user_id);
                             rows.push(
                               <TableRow key={`person-header-${row.user_id}`} className="bg-secondary/60 border-t-2 border-border">
-                                <TableCell className="py-2 text-xs text-muted-foreground font-medium">{row.dept}</TableCell>
+                                <TableCell className="py-2 text-xs text-muted-foreground font-medium">{row.region}</TableCell>
                                 <TableCell colSpan={4} className="py-2">
                                   <span className="font-semibold text-sm text-foreground">{row.name}</span>
                                   {notes?.length ? (
