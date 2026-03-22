@@ -365,8 +365,8 @@ export default function WorkwearAdminPanel() {
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
               <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
-                ["Plagg", "Färg", "Storlek", "Antal"],
-                sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty)]),
+                ["Plagg", "Färg", "Storlek", "Antal", "Beställare", "Region"],
+                sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty), Array.from(i.orderers).join(", "), Array.from(i.regions).join(", ")]),
                 "sammanstallning.csv"
               )}>
                 <Download className="w-3.5 h-3.5" /> CSV
@@ -384,6 +384,8 @@ export default function WorkwearAdminPanel() {
                         <SortableHeader label="Färg" sortKey="color" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
                         <SortableHeader label="Storlek" sortKey="size" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} />
                         <SortableHeader label="Antal" sortKey="qty" current={sortItems} onToggle={(k) => setSortItems(toggleSort(sortItems, k))} className="text-right" />
+                        <TableHead>Beställare</TableHead>
+                        <TableHead>Region</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -393,11 +395,14 @@ export default function WorkwearAdminPanel() {
                           <TableCell className="text-sm">{item.color}</TableCell>
                           <TableCell className="text-sm">{item.size}</TableCell>
                           <TableCell className="text-right font-semibold text-sm">{item.qty}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px]">{Array.from(item.orderers).join(", ")}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{Array.from(item.regions).filter(r => r !== "Okänd").join(", ")}</TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-secondary/50 font-bold">
                         <TableCell colSpan={3} className="text-sm">Totalt</TableCell>
                         <TableCell className="text-right text-sm">{totalItems}</TableCell>
+                        <TableCell colSpan={2} />
                       </TableRow>
                     </TableBody>
                   </Table>
