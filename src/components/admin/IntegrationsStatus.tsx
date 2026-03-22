@@ -28,6 +28,7 @@ const SLUG_ICON: Record<string, React.ElementType> = {
   "ai-chat": Bot,
   "content-index": Search,
   "document-extract": FileText,
+  "heartpace": Users,
 };
 
 const STATUS_CONFIG = {
