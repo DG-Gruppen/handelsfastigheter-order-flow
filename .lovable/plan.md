@@ -1,25 +1,30 @@
 
 
-## Importera regionstilldelningar från Word-fil
+## Fix Region Filter in Workwear Admin Panel
 
-### Sammanfattning
-Kör ett SQL-skript som matchar de 57 namnen från Word-filen mot `profiles.full_name` och sätter `region_id` baserat på korrekt regiontillhörighet.
+### Problem
+The workwear admin panel's "Region" filter and KPI card are incorrectly using `profiles.department` instead of the actual `regions` table (`profiles.region_id` → `regions.name`). This means the filter shows department names, not real regions (Norr, Söder, Mitt/Bromma).
 
-### Regionfördelning (korrigerad för sidbrytning)
+### Changes
 
-**Region Syd (18 st):** Beatrice Hedblom, Benny Andersson, Carl-Johan Örnberg, Daniel Olsson, Dick Magnusson, Fredrik Johansson, Jesper Rubin, Jörgen Seegh, Julia Eckerholm, Julia Parker, Kenneth Sjöstrom, Liridon Rama, Louise Grönvall, Marika Sprinzl, Marika Palm, Pernilla Kjellén, Peter Högberg, Ramona Halvars
+**File: `src/components/workwear/WorkwearAdminPanel.tsx`**
 
-**Region Mitt/Bromma (30 st):** Amanda Orre, Bircan Djafer, Camilla Clemens, Carolina Enhörning, Christel Johansson Korsner, Christian Olave, Claes Setthagen, Emma Lundberg, Erika Venäläinen, Fredrik Klasson, Fredrik Nordén, Inga Påhlsson, Jan Andersson, Jöran Rydberg, Jörgen Larssen, Josefine Johannsessen, Louise Eldwinger, Malin Ekwall, Malin Norén, Marit Karlsson, Mathias Jung, Mats Jäverlind, Mimmi Gade, Niklas Bodell, Petra Bondesson, Sara Ekesiöö, Thomas Holm, Thomas Österbladh, Tommi Pakola, Wilma Norin
+1. **Fetch region data**: Add `region_id` to the profiles query and fetch the `regions` table. Use the existing `useRegions` hook or a parallel query.
 
-**Region Nord (9 st):** Albin Östman, Alice Streymoy, Anders Norin, Erik Källberg, Gustaf Drake, Johan Eklund, Knud Lauridsen, Mats Bjuhr, Patrick Kaemmerle
+2. **Update ProfileRow interface**: Add `region_id: string | null` to `ProfileRow`.
 
-### Teknisk approach
+3. **Build region lookup**: Create a `regionMap` (id → name) from the regions data, and derive region name per profile.
 
-1. Hämta region-ID:n från `regions`-tabellen (Norr, Söder, Mitt/Bromma)
-2. Kör UPDATE-satser via insert-verktyget (data-operation, ingen migration)
-3. Matcha på `full_name` (utan parenteser som "Kalmar", "Örnsköldsvik")
-4. Logga eventuella namn som inte hittas i systemet
+4. **Replace department filter with real regions**: Change the `filterDept` dropdown to show the three actual regions (Norr, Söder, Mitt/Bromma) from the `regions` table instead of unique department strings.
 
-### Undantag
-DG-gruppen och Toni Kazarian ingår inte och får ingen region tilldelad.
+5. **Update filter logic**: In `filteredOrders`, match `profileMap.get(o.user_id)?.region_id` against the selected region instead of comparing department strings.
+
+6. **Fix KPI card "Regioner"**: Count unique `region_id` values (not departments) from filtered orders.
+
+7. **Update "Per region" tab (`deptStats`)**: Group by region name instead of department. Update column headers accordingly.
+
+8. **Update pick list region column**: Show region name instead of department in the plocklista rows.
+
+### No database changes needed
+The `regions` table and `profiles.region_id` already exist from the previous migration.
 
