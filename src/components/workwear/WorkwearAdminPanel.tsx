@@ -135,8 +135,11 @@ export default function WorkwearAdminPanel() {
 
   // ── Item stats (Sammanställning + Beställningslista) ──
   const itemStats = useMemo(() => {
-    const map = new Map<string, { name: string; color: string; size: string; qty: number; logo: string }>();
+    const map = new Map<string, { name: string; color: string; size: string; qty: number; logo: string; orderers: Set<string>; regions: Set<string> }>();
     filteredOrders.forEach((o) => {
+      const p = profileMap.get(o.user_id);
+      const ordererName = p?.full_name || "Okänd";
+      const regionName = getRegionName(o.user_id);
       const items = Array.isArray(o.items) ? o.items : [];
       items.forEach((item: any) => {
         const colorLabel = item.colorLabel || item.color || "";
@@ -144,6 +147,8 @@ export default function WorkwearAdminPanel() {
         const existing = map.get(key);
         if (existing) {
           existing.qty += item.quantity || 1;
+          existing.orderers.add(ordererName);
+          existing.regions.add(regionName);
         } else {
           map.set(key, {
             name: item.productName || item.productId,
@@ -151,12 +156,14 @@ export default function WorkwearAdminPanel() {
             size: item.size || "",
             qty: item.quantity || 1,
             logo: parseLogoInfo(colorLabel),
+            orderers: new Set([ordererName]),
+            regions: new Set([regionName]),
           });
         }
       });
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "sv") || a.color.localeCompare(b.color, "sv") || a.size.localeCompare(b.size, "sv"));
-  }, [filteredOrders]);
+  }, [filteredOrders, profileMap, regionMap]);
 
   // Supplier list with subtotals
   const supplierRows = useMemo(() => {
