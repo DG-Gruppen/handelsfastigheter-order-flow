@@ -392,7 +392,7 @@ ${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Komm
                             <select
                               value={sel.color}
                               onChange={(e) => updateSelection(product.id, "color", e.target.value)}
-                              className="w-[110px] h-9 text-xs rounded-md border border-input bg-background pl-3 pr-7 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                              className="w-[110px] h-9 text-xs rounded-md border border-input bg-background pl-3 pr-8 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             >
                               <option value="">Färg</option>
                               {product.variants.map((v) => (
