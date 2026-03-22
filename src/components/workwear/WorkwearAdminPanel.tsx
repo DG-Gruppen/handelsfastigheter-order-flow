@@ -195,15 +195,15 @@ export default function WorkwearAdminPanel() {
     });
     const rows = Array.from(map.values());
     if (sortPick) return applySortString(rows, sortPick);
-    // Default: sort by dept, then name, then product
+    // Default: sort by region, then name, then product
     return rows.sort((a, b) => {
-      const d = a.dept.localeCompare(b.dept, "sv");
+      const d = a.region.localeCompare(b.region, "sv");
       if (d !== 0) return d;
       const n = a.name.localeCompare(b.name, "sv");
       if (n !== 0) return n;
       return a.product.localeCompare(b.product, "sv");
     });
-  }, [filteredOrders, profileMap, sortPick]);
+  }, [filteredOrders, profileMap, sortPick, regionMap]);
 
   // ── Notes per person (for plocklista) ──
   const personNotes = useMemo(() => {
