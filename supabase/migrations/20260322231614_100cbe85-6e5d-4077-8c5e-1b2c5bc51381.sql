@@ -1,0 +1,1 @@
+UPDATE document_folders SET name = '📚 AI Inlärning (Admins)' WHERE id = 'd8acceeb-db2e-421a-a2f8-57fae849bf94';
