@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import DOMPurify from "dompurify";
 import { Clock, Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
