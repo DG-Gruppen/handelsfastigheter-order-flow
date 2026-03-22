@@ -35,6 +35,7 @@ interface ProfileRow {
   user_id: string;
   full_name: string;
   department: string | null;
+  region_id: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
