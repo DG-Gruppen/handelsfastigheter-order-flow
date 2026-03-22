@@ -52,7 +52,7 @@ export default function KbArticleViewer({ article, open, onClose }: Props) {
             prose-headings:font-heading prose-headings:text-foreground
             prose-p:text-muted-foreground prose-li:text-muted-foreground
             prose-strong:text-foreground prose-a:text-primary"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
         />
       </DialogContent>
     </Dialog>

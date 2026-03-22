@@ -29,11 +29,48 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Extract user ID from JWT for rate limiting (JWT verified by Supabase)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+  // Verify JWT and extract user
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.replace('Bearer ', '')
-  // Use first 16 chars of token as rate limit key (avoid storing full JWT)
-  const rateLimitKey = token.slice(0, 16) || req.headers.get('x-real-ip') || 'anonymous'
+  if (!token) {
+    return new Response(
+      JSON.stringify({ error: 'Missing authorization token' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Create a client with the user's token to get their identity
+  const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  })
+  const { data: { user }, error: userError } = await userClient.auth.getUser()
+  if (userError || !user) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid or expired token' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Role check: only admin, it, or manager can send emails
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey)
+  const [adminCheck, itCheck, managerCheck] = await Promise.all([
+    adminClient.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
+    adminClient.rpc('has_role', { _user_id: user.id, _role: 'it' }),
+    adminClient.rpc('has_role', { _user_id: user.id, _role: 'manager' }),
+  ])
+  const isAllowed = adminCheck.data === true || itCheck.data === true || managerCheck.data === true
+  if (!isAllowed) {
+    return new Response(
+      JSON.stringify({ error: 'Forbidden: insufficient permissions' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Rate limiting using user ID
+  const rateLimitKey = user.id
   if (!checkRateLimit(rateLimitKey)) {
     return new Response(
       JSON.stringify({ error: 'För många förfrågningar. Försök igen om en stund.' }),
@@ -83,17 +120,13 @@ Deno.serve(async (req) => {
     if (!resendResponse.ok) {
       console.error('Resend API error:', resendData)
       return new Response(
-        JSON.stringify({ error: 'Failed to send email', details: resendData }),
+        JSON.stringify({ error: 'Failed to send email' }),
         { status: resendResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // Log to email_send_log
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    await supabase.from('email_send_log').insert({
+    await adminClient.from('email_send_log').insert({
       message_id: resendData.id,
       template_name: 'resend',
       recipient_email: Array.isArray(to) ? to[0] : to,
@@ -107,7 +140,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error sending email:', error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'An error occurred while sending the email' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
