@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -362,7 +363,7 @@ export default function News() {
               </DialogHeader>
               <div
                 className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: selectedArticle.body }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedArticle.body) }}
               />
               {selectedArticle.source === "cision" && selectedArticle.source_url && (
                 <a
