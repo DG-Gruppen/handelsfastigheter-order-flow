@@ -643,7 +643,7 @@ export default function WorkwearAdminPanel() {
                 ["Namn", "Region", "Plagg", "Antal", "Anteckning", "Datum", "Status"],
                 sortedOrders.map((o) => [
                   o.fullName,
-                  o.dept,
+                  o.region,
                   o.itemNames,
                   String(o.totalQty),
                   o.notes || "",
