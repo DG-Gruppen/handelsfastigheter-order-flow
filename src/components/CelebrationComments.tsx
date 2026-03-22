@@ -155,7 +155,7 @@ export default function CelebrationComments({
 
         <div className="space-y-4">
           {comments.length > 0 && (
-            <ScrollArea className="max-h-60">
+            <ScrollArea className="max-h-[40vh] sm:max-h-60">
               <div className="space-y-3 pr-2">
                 {comments.map((c) => (
                   <div key={c.id} className="flex items-start gap-2 group">
