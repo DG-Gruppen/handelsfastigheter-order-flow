@@ -36,6 +36,7 @@ interface ProfileWithRoles {
   phone: string | null;
   title_override: string | null;
   manager_id: string | null;
+  region_id: string | null;
 }
 
 interface GroupWithRole {
