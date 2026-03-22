@@ -223,15 +223,15 @@ export default function WorkwearAdminPanel() {
   const deptStats = useMemo(() => {
     const map = new Map<string, { dept: string; count: number; items: number }>();
     filteredOrders.forEach((o) => {
-      const dept = profileMap.get(o.user_id)?.department || "Okänd";
-      const existing = map.get(dept) || { dept, count: 0, items: 0 };
+      const regionName = getRegionName(o.user_id);
+      const existing = map.get(regionName) || { dept: regionName, count: 0, items: 0 };
       existing.count += 1;
       const items = Array.isArray(o.items) ? o.items : [];
       existing.items += items.reduce((s: number, i: any) => s + (i.quantity || 1), 0);
-      map.set(dept, existing);
+      map.set(regionName, existing);
     });
     return applySortString(Array.from(map.values()), sortRegions);
-  }, [filteredOrders, profileMap, sortRegions]);
+  }, [filteredOrders, profileMap, sortRegions, regionMap]);
 
   const totalItems = useMemo(() => itemStats.reduce((s, i) => s + i.qty, 0), [itemStats]);
 
