@@ -34,9 +34,9 @@ export default function Profile() {
   const { theme, setTheme } = useTheme();
 
   const [phone, setPhone] = useState(profile?.phone || "");
-  const [regionId, setRegionId] = useState((profile as any)?.region_id || "");
   const [saving, setSaving] = useState(false);
   const { regions } = useRegions();
+  const regionName = regions.find(r => r.id === (profile as any)?.region_id)?.name;
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
