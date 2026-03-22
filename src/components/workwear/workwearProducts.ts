@@ -28,8 +28,8 @@ export const PRODUCTS_BY_SEASON: Record<Season, WorkwearProduct[]> = {
   sommar: [
     // ── HERR ──
     { id: "h-tshirt-william", gender: "herr", name: "T-shirt William", variants: [
-      { color: "white", colorLabel: "Vit (tryck svart)", url: "https://www.157work.com/p/heavy-t-shirt-william/white/" },
-      { color: "black", colorLabel: "Svart (tryck vit)", url: "https://www.157work.com/p/heavy-t-shirt-william/black/" },
+      { color: "white", colorLabel: "Vit (tryck svart)", url: "https://www.157work.com/p/heavy-tee-william/white/" },
+      { color: "black", colorLabel: "Svart (tryck vit)", url: "https://www.157work.com/p/heavy-tee-william/black/" },
     ], sizes: ["S", "M", "L", "XL", "XXL"] },
     { id: "h-pike-alan", gender: "herr", name: "Pikétröja Alan", variants: [
       { color: "white", colorLabel: "Vit (brodyr svart)", url: "https://www.157work.com/p/pik-alan/white/" },
