@@ -169,9 +169,10 @@ export default function WorkwearAdminPanel() {
 
   // ── Pick list ──
   const pickRows = useMemo(() => {
-    const map = new Map<string, { user_id: string; dept: string; name: string; product: string; color: string; size: string; qty: number }>();
+    const map = new Map<string, { user_id: string; region: string; name: string; product: string; color: string; size: string; qty: number }>();
     filteredOrders.forEach((o) => {
       const p = profileMap.get(o.user_id);
+      const regionName = getRegionName(o.user_id);
       const items = Array.isArray(o.items) ? o.items : [];
       items.forEach((item: any) => {
         const colorLabel = item.colorLabel || item.color || "";
@@ -182,7 +183,7 @@ export default function WorkwearAdminPanel() {
         } else {
           map.set(key, {
             user_id: o.user_id,
-            dept: p?.department || "Okänd",
+            region: regionName,
             name: p?.full_name || "Okänd",
             product: item.productName || item.productId,
             color: parseColor(colorLabel),
