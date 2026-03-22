@@ -292,7 +292,7 @@ export default function WorkwearAdminPanel() {
           { label: "Beställningar", value: filteredOrders.length, icon: TrendingUp, color: "text-primary" },
           { label: "Beställare", value: uniqueOrderers, icon: Users, color: "text-accent" },
           { label: "Totalt plagg", value: totalItems, icon: Package, color: "text-warning" },
-          { label: "Regioner", value: uniqueDepts, icon: MapPin, color: "text-primary" },
+          { label: "Regioner", value: uniqueRegions, icon: MapPin, color: "text-primary" },
         ].map((kpi) => (
           <Card key={kpi.label} className="glass-card">
             <CardContent className="p-4 flex items-center gap-3">
