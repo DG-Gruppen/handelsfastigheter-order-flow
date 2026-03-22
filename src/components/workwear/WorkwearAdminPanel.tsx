@@ -664,7 +664,7 @@ export default function WorkwearAdminPanel() {
                     <TableHeader>
                       <TableRow>
                         <SortableHeader label="Namn" sortKey="fullName" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
-                        <SortableHeader label="Region" sortKey="dept" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Region" sortKey="region" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <SortableHeader label="Plagg" sortKey="totalQty" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <SortableHeader label="Datum" sortKey="created_at" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <TableHead className="min-w-[140px]">Status</TableHead>
