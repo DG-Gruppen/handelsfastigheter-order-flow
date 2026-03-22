@@ -54,7 +54,9 @@ export default function UsersContent() {
   const [filterDept, setFilterDept] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [filterPhone, setFilterPhone] = useState("all");
+  const [filterRegion, setFilterRegion] = useState("all");
   const [importing, setImporting] = useState(false);
+  const { regions } = useRegions();
 
   const fetchData = useCallback(async () => {
     const [{ data: profilesData }, { data: groupsData }, { data: membersData }] = await Promise.all([
