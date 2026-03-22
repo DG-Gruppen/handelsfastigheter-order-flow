@@ -124,11 +124,11 @@ export default function WorkwearAdminPanel() {
         return orderSeason === filterSeason || (!orderSeason && filterSeason === activeSeason);
       });
     }
-    if (filterDept !== "all") {
-      result = result.filter((o) => profileMap.get(o.user_id)?.department === filterDept);
+    if (filterRegion !== "all") {
+      result = result.filter((o) => profileMap.get(o.user_id)?.region_id === filterRegion);
     }
     return result;
-  }, [orders, filterSeason, filterDept, profileMap, activeSeason]);
+  }, [orders, filterSeason, filterRegion, profileMap, activeSeason]);
 
   // ── Item stats (Sammanställning + Beställningslista) ──
   const itemStats = useMemo(() => {
