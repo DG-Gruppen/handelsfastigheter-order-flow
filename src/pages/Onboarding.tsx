@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
+import { useRegions } from "@/hooks/useRegions";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
 import { enqueueEmail } from "@/lib/enqueueEmail";
@@ -85,11 +86,13 @@ export default function Onboarding() {
   const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
   const [approverId, setApproverId] = useState("");
   const [description, setDescription] = useState("");
+  const [recipientRegionId, setRecipientRegionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [profileSearchOpen, setProfileSearchOpen] = useState(false);
   const [profileSearchQuery, setProfileSearchQuery] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const { regions } = useRegions();
 
   // Approval logic
   const isManager = roles.includes("manager");
@@ -291,6 +294,10 @@ export default function Onboarding() {
       toast.error(isOffboarding ? "Ange namn på medarbetaren" : "Ange namn på den nya medarbetaren");
       return;
     }
+    if (!recipientRegionId) {
+      toast.error("Välj en region");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -389,6 +396,7 @@ export default function Onboarding() {
           email: suggestedEmail,
           department: recipientDepartment.trim() || null,
           start_date: recipientStartDate || null,
+          region_id: recipientRegionId || null,
         } as any);
       }
     }
@@ -665,6 +673,19 @@ export default function Onboarding() {
                     )}
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Region *</Label>
+                  <Select value={recipientRegionId} onValueChange={setRecipientRegionId}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj region..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regions.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
@@ -769,6 +790,19 @@ export default function Onboarding() {
                       </Select>
                     )}
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Region *</Label>
+                  <Select value={recipientRegionId} onValueChange={setRecipientRegionId}>
+                    <SelectTrigger className="h-12 md:h-10">
+                      <SelectValue placeholder="Välj region..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regions.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}

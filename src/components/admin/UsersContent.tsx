@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   Upload, Loader2,
-  Phone, Building2, Briefcase, Search, ArrowUpDown, Users,
+  Phone, Building2, Briefcase, Search, ArrowUpDown, Users, MapPin,
 } from "lucide-react";
+import { useRegions } from "@/hooks/useRegions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -35,6 +36,7 @@ interface ProfileWithRoles {
   phone: string | null;
   title_override: string | null;
   manager_id: string | null;
+  region_id: string | null;
 }
 
 interface GroupWithRole {
@@ -52,7 +54,9 @@ export default function UsersContent() {
   const [filterDept, setFilterDept] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [filterPhone, setFilterPhone] = useState("all");
+  const [filterRegion, setFilterRegion] = useState("all");
   const [importing, setImporting] = useState(false);
+  const { regions } = useRegions();
 
   const fetchData = useCallback(async () => {
     const [{ data: profilesData }, { data: groupsData }, { data: membersData }] = await Promise.all([
@@ -111,13 +115,14 @@ export default function UsersContent() {
       const effectiveRoles = userRolesFromGroups[p.user_id] ?? [];
       const matchesRole = filterRole === "all" || (filterRole === "none" ? effectiveRoles.length === 0 : effectiveRoles.includes(filterRole));
       const matchesPhone = filterPhone === "all" || (filterPhone === "yes" ? !!p.phone : !p.phone);
-      return matchesSearch && matchesDept && matchesRole && matchesPhone;
+      const matchesRegion = filterRegion === "all" || (filterRegion === "none" ? !p.region_id : p.region_id === filterRegion);
+      return matchesSearch && matchesDept && matchesRole && matchesPhone && matchesRegion;
     });
     return filtered.sort((a, b) => {
       const cmp = a.full_name.localeCompare(b.full_name, "sv");
       return sortAsc ? cmp : -cmp;
     });
-  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, userRolesFromGroups]);
+  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, filterRegion, userRolesFromGroups]);
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -215,9 +220,19 @@ export default function UsersContent() {
               <SelectItem value="no">Saknar telefonnummer</SelectItem>
             </SelectContent>
           </Select>
-          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all") && (
+          <Select value={filterRegion} onValueChange={setFilterRegion}>
+            <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
+              <MapPin className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Region" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla regioner</SelectItem>
+              {regions.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+              <SelectItem value="none">Utan region</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all" || filterRegion !== "all") && (
             <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground"
-              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); }}>
+              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); setFilterRegion("all"); }}>
               Rensa filter
             </Button>
           )}
@@ -242,6 +257,12 @@ export default function UsersContent() {
                     <span>{p.email}</span>
                     {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{p.phone}</span>}
                     {p.department && <span className="flex items-center gap-1"><Building2 className="h-3 w-3 shrink-0" />{p.department}</span>}
+                    {p.region_id && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {regions.find(r => r.id === p.region_id)?.name || "Okänd region"}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {/* Groups */}

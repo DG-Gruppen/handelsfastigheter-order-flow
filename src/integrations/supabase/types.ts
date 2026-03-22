@@ -1516,6 +1516,7 @@ export type Database = {
           is_staff: boolean | null
           manager_id: string | null
           phone: string | null
+          region_id: string | null
           sort_order: number | null
           start_date: string | null
           theme_preference: string | null
@@ -1534,6 +1535,7 @@ export type Database = {
           is_staff?: boolean | null
           manager_id?: string | null
           phone?: string | null
+          region_id?: string | null
           sort_order?: number | null
           start_date?: string | null
           theme_preference?: string | null
@@ -1552,6 +1554,7 @@ export type Database = {
           is_staff?: boolean | null
           manager_id?: string | null
           phone?: string | null
+          region_id?: string | null
           sort_order?: number | null
           start_date?: string | null
           theme_preference?: string | null
@@ -1565,6 +1568,13 @@ export type Database = {
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
             referencedColumns: ["id"]
           },
         ]
@@ -1593,6 +1603,27 @@ export type Database = {
           id?: string
           message?: string
           to_user_id?: string
+        }
+        Relationships: []
+      }
+      regions: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
