@@ -1,5 +1,23 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+async function updateIntegrationStatus(status: "ok" | "warning" | "error", lastError?: string) {
+  try {
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const update: Record<string, unknown> = {
+      status,
+      last_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (status === "ok") { update.last_error = null; update.error_count = 0; }
+    else {
+      update.last_error = lastError;
+      const { data } = await sb.from("integration_status").select("error_count").eq("slug", "document-extract").single();
+      update.error_count = ((data?.error_count) || 0) + 1;
+    }
+    await sb.from("integration_status").update(update).eq("slug", "document-extract");
+  } catch (e) { console.error("Failed to update integration status:", e); }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -132,12 +150,14 @@ ${content}`;
     }
 
     console.log(`✓ Extracted ${content.length} chars from "${name}"`);
+    await updateIntegrationStatus("ok");
     return new Response(
       JSON.stringify({ success: true, chars: content.length }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("extract-document-text error:", e);
+    await updateIntegrationStatus("error", e instanceof Error ? e.message : "Unknown error");
     return new Response(
       JSON.stringify({
         error: e instanceof Error ? e.message : "Unknown error",

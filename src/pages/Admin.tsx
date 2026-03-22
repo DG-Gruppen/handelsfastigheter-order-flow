@@ -17,13 +17,14 @@ const SettingsContent = lazy(() => import("@/components/admin/SettingsContent"))
 const ITContent = lazy(() => import("@/components/admin/ITContent"));
 const DatabaseBackup = lazy(() => import("@/components/admin/DatabaseBackup"));
 const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
+const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations";
 
 interface AdminGroup {
   label: string;
@@ -84,6 +85,7 @@ const adminGroups: AdminGroup[] = [
       { id: "settings", label: "Inställningar", description: "Attestering och andra inställningar", icon: Settings, color: "from-muted-foreground to-muted-foreground", borderColor: "border-t-muted-foreground/30", bgColor: "bg-muted-foreground/10", textColor: "text-muted-foreground" },
       { id: "it", label: "IT", description: "Navigationslänkar och utseende", icon: Wrench, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary", roles: ["it", "admin"] },
       { id: "backup", label: "Backup", description: "Exportera och säkerhetskopiera databasen", icon: Database, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
+      { id: "integrations", label: "Integrationer", description: "Status för externa system och API:er", icon: Plug, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
     ],
   },
 ];
@@ -142,6 +144,7 @@ export default function Admin() {
       case "tools": content = <ToolsManager />; break;
       case "backup": content = <DatabaseBackup />; break;
       case "workwear": content = <WorkwearAdminPanel />; break;
+      case "integrations": content = <IntegrationsStatus />; break;
     }
     return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
