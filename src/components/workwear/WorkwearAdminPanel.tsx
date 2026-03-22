@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { useRegions } from "@/hooks/useRegions";
 import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download, StickyNote } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -34,6 +35,7 @@ interface ProfileRow {
   user_id: string;
   full_name: string;
   department: string | null;
+  region_id: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -55,9 +57,10 @@ export default function WorkwearAdminPanel() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [activeSeason, setActiveSeason] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
-  const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterRegion, setFilterRegion] = useState<string>("all");
   const [filterSeason, setFilterSeason] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const { regions } = useRegions();
 
   // Sort states per tab
   const [sortItems, setSortItems] = useState<SortConfig | null>(null);
@@ -70,7 +73,7 @@ export default function WorkwearAdminPanel() {
     const load = async () => {
       const [ordersRes, profilesRes, seasonRes, deadlineRes] = await Promise.all([
         supabase.from("workwear_orders" as any).select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("user_id, full_name, department"),
+        supabase.from("profiles").select("user_id, full_name, department, region_id"),
         supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "workwear_season").single(),
         supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "workwear_deadline").single(),
       ]);
@@ -101,11 +104,16 @@ export default function WorkwearAdminPanel() {
     return m;
   }, [profiles]);
 
-  const departments = useMemo(() => {
-    const set = new Set<string>();
-    profiles.forEach((p) => { if (p.department) set.add(p.department); });
-    return Array.from(set).sort();
-  }, [profiles]);
+  const regionMap = useMemo(() => {
+    const m = new Map<string, string>();
+    regions.forEach((r) => m.set(r.id, r.name));
+    return m;
+  }, [regions]);
+
+  const getRegionName = (userId: string) => {
+    const p = profileMap.get(userId);
+    return p?.region_id ? regionMap.get(p.region_id) || "Okänd" : "Okänd";
+  };
 
   const filteredOrders = useMemo(() => {
     let result = orders;
@@ -116,11 +124,11 @@ export default function WorkwearAdminPanel() {
         return orderSeason === filterSeason || (!orderSeason && filterSeason === activeSeason);
       });
     }
-    if (filterDept !== "all") {
-      result = result.filter((o) => profileMap.get(o.user_id)?.department === filterDept);
+    if (filterRegion !== "all") {
+      result = result.filter((o) => profileMap.get(o.user_id)?.region_id === filterRegion);
     }
     return result;
-  }, [orders, filterSeason, filterDept, profileMap, activeSeason]);
+  }, [orders, filterSeason, filterRegion, profileMap, activeSeason]);
 
   // ── Item stats (Sammanställning + Beställningslista) ──
   const itemStats = useMemo(() => {
@@ -161,9 +169,10 @@ export default function WorkwearAdminPanel() {
 
   // ── Pick list ──
   const pickRows = useMemo(() => {
-    const map = new Map<string, { user_id: string; dept: string; name: string; product: string; color: string; size: string; qty: number }>();
+    const map = new Map<string, { user_id: string; region: string; name: string; product: string; color: string; size: string; qty: number }>();
     filteredOrders.forEach((o) => {
       const p = profileMap.get(o.user_id);
+      const regionName = getRegionName(o.user_id);
       const items = Array.isArray(o.items) ? o.items : [];
       items.forEach((item: any) => {
         const colorLabel = item.colorLabel || item.color || "";
@@ -174,7 +183,7 @@ export default function WorkwearAdminPanel() {
         } else {
           map.set(key, {
             user_id: o.user_id,
-            dept: p?.department || "Okänd",
+            region: regionName,
             name: p?.full_name || "Okänd",
             product: item.productName || item.productId,
             color: parseColor(colorLabel),
@@ -186,15 +195,15 @@ export default function WorkwearAdminPanel() {
     });
     const rows = Array.from(map.values());
     if (sortPick) return applySortString(rows, sortPick);
-    // Default: sort by dept, then name, then product
+    // Default: sort by region, then name, then product
     return rows.sort((a, b) => {
-      const d = a.dept.localeCompare(b.dept, "sv");
+      const d = a.region.localeCompare(b.region, "sv");
       if (d !== 0) return d;
       const n = a.name.localeCompare(b.name, "sv");
       if (n !== 0) return n;
       return a.product.localeCompare(b.product, "sv");
     });
-  }, [filteredOrders, profileMap, sortPick]);
+  }, [filteredOrders, profileMap, sortPick, regionMap]);
 
   // ── Notes per person (for plocklista) ──
   const personNotes = useMemo(() => {
@@ -214,15 +223,15 @@ export default function WorkwearAdminPanel() {
   const deptStats = useMemo(() => {
     const map = new Map<string, { dept: string; count: number; items: number }>();
     filteredOrders.forEach((o) => {
-      const dept = profileMap.get(o.user_id)?.department || "Okänd";
-      const existing = map.get(dept) || { dept, count: 0, items: 0 };
+      const regionName = getRegionName(o.user_id);
+      const existing = map.get(regionName) || { dept: regionName, count: 0, items: 0 };
       existing.count += 1;
       const items = Array.isArray(o.items) ? o.items : [];
       existing.items += items.reduce((s: number, i: any) => s + (i.quantity || 1), 0);
-      map.set(dept, existing);
+      map.set(regionName, existing);
     });
     return applySortString(Array.from(map.values()), sortRegions);
-  }, [filteredOrders, profileMap, sortRegions]);
+  }, [filteredOrders, profileMap, sortRegions, regionMap]);
 
   const totalItems = useMemo(() => itemStats.reduce((s, i) => s + i.qty, 0), [itemStats]);
 
@@ -235,7 +244,7 @@ export default function WorkwearAdminPanel() {
       return {
         ...order,
         fullName: p?.full_name || "Okänd",
-        dept: p?.department || "–",
+        region: getRegionName(order.user_id),
         totalQty,
         itemNames: items.map((i: any) => i.productName).join(", "),
       };
@@ -247,7 +256,7 @@ export default function WorkwearAdminPanel() {
 
   // KPI derived from filteredOrders
   const uniqueOrderers = useMemo(() => new Set(filteredOrders.map((o) => o.user_id)).size, [filteredOrders]);
-  const uniqueDepts = useMemo(() => new Set(filteredOrders.map((o) => profileMap.get(o.user_id)?.department).filter(Boolean)).size, [filteredOrders, profileMap]);
+  const uniqueRegions = useMemo(() => new Set(filteredOrders.map((o) => getRegionName(o.user_id)).filter((r) => r !== "Okänd")).size, [filteredOrders, profileMap, regionMap]);
 
   if (loading) {
     return (
@@ -283,7 +292,7 @@ export default function WorkwearAdminPanel() {
           { label: "Beställningar", value: filteredOrders.length, icon: TrendingUp, color: "text-primary" },
           { label: "Beställare", value: uniqueOrderers, icon: Users, color: "text-accent" },
           { label: "Totalt plagg", value: totalItems, icon: Package, color: "text-warning" },
-          { label: "Regioner", value: uniqueDepts, icon: MapPin, color: "text-primary" },
+          { label: "Regioner", value: uniqueRegions, icon: MapPin, color: "text-primary" },
         ].map((kpi) => (
           <Card key={kpi.label} className="glass-card">
             <CardContent className="p-4 flex items-center gap-3">
@@ -317,14 +326,14 @@ export default function WorkwearAdminPanel() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Region:</span>
-          <Select value={filterDept} onValueChange={setFilterDept}>
+          <Select value={filterRegion} onValueChange={setFilterRegion}>
             <SelectTrigger className="w-[200px] h-9 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">Alla regioner</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
+              {regions.map((r) => (
+                <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -485,10 +494,10 @@ export default function WorkwearAdminPanel() {
                     currentUserId = r.user_id;
                     const notes = personNotes.get(r.user_id);
                     if (notes?.length) {
-                      csvRows.push([r.dept, r.name, "📝 " + notes.join("; "), "", "", ""]);
+                      csvRows.push([r.region, r.name, "📝 " + notes.join("; "), "", "", ""]);
                     }
                   }
-                  csvRows.push([r.dept, r.name, r.product, r.color, r.size, String(r.qty)]);
+                  csvRows.push([r.region, r.name, r.product, r.color, r.size, String(r.qty)]);
                 });
                 downloadCsv(
                   ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
@@ -507,7 +516,7 @@ export default function WorkwearAdminPanel() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <SortableHeader label="Kontor" sortKey="dept" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
+                        <SortableHeader label="Region" sortKey="region" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
                         <SortableHeader label="Namn" sortKey="name" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
                         <SortableHeader label="Plagg" sortKey="product" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
                         <SortableHeader label="Färg" sortKey="color" current={sortPick} onToggle={(k) => setSortPick(toggleSort(sortPick, k))} />
@@ -544,7 +553,7 @@ export default function WorkwearAdminPanel() {
                             const notes = personNotes.get(row.user_id);
                             rows.push(
                               <TableRow key={`person-header-${row.user_id}`} className="bg-secondary/60 border-t-2 border-border">
-                                <TableCell className="py-2 text-xs text-muted-foreground font-medium">{row.dept}</TableCell>
+                                <TableCell className="py-2 text-xs text-muted-foreground font-medium">{row.region}</TableCell>
                                 <TableCell colSpan={4} className="py-2">
                                   <span className="font-semibold text-sm text-foreground">{row.name}</span>
                                   {notes?.length ? (
@@ -605,7 +614,7 @@ export default function WorkwearAdminPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <SortableHeader label="Region / Avdelning" sortKey="dept" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} />
+                      <SortableHeader label="Region" sortKey="dept" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} />
                       <SortableHeader label="Beställningar" sortKey="count" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} className="text-right" />
                       <SortableHeader label="Antal plagg" sortKey="items" current={sortRegions} onToggle={(k) => setSortRegions(toggleSort(sortRegions, k))} className="text-right" />
                     </TableRow>
@@ -634,7 +643,7 @@ export default function WorkwearAdminPanel() {
                 ["Namn", "Region", "Plagg", "Antal", "Anteckning", "Datum", "Status"],
                 sortedOrders.map((o) => [
                   o.fullName,
-                  o.dept,
+                  o.region,
                   o.itemNames,
                   String(o.totalQty),
                   o.notes || "",
@@ -655,7 +664,7 @@ export default function WorkwearAdminPanel() {
                     <TableHeader>
                       <TableRow>
                         <SortableHeader label="Namn" sortKey="fullName" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
-                        <SortableHeader label="Region" sortKey="dept" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Region" sortKey="region" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <SortableHeader label="Plagg" sortKey="totalQty" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <SortableHeader label="Datum" sortKey="created_at" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
                         <TableHead className="min-w-[140px]">Status</TableHead>
@@ -672,7 +681,7 @@ export default function WorkwearAdminPanel() {
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{order.dept}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
                           <TableCell className="text-sm">
                             {order.totalQty} plagg
                             <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
