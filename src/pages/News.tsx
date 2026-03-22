@@ -53,6 +53,7 @@ async function fetchNewsArticles(): Promise<NewsArticle[]> {
 /* ── Component ── */
 export default function News() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<"all" | "internal" | "press">("all");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
