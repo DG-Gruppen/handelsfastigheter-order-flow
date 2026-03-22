@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Save, Moon, Phone, Building2, Mail, Shield, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -34,9 +33,9 @@ export default function Profile() {
   const { theme, setTheme } = useTheme();
 
   const [phone, setPhone] = useState(profile?.phone || "");
-  const [regionId, setRegionId] = useState((profile as any)?.region_id || "");
   const [saving, setSaving] = useState(false);
   const { regions } = useRegions();
+  const regionName = regions.find(r => r.id === (profile as any)?.region_id)?.name;
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -57,7 +56,7 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ phone, region_id: regionId || null } as any)
+      .update({ phone } as any)
       .eq("user_id", profile.user_id);
     setSaving(false);
     if (error) {
@@ -145,23 +144,18 @@ export default function Profile() {
               />
             </div>
 
-            {/* Region */}
-            <div className="rounded-xl border border-border/50 bg-secondary/20 p-3 space-y-2 min-w-0">
-              <Label htmlFor="region" className="text-sm font-medium flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                Region
-              </Label>
-              <Select value={regionId} onValueChange={setRegionId}>
-                <SelectTrigger className="h-12 md:h-10">
-                  <SelectValue placeholder="Välj region..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {regions.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Region (read-only) */}
+            {regionName && (
+              <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-secondary/20 p-3 min-h-[56px] min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Region</p>
+                  <p className="text-sm font-medium text-foreground truncate">{regionName}</p>
+                </div>
+              </div>
+            )}
 
             <Button
               onClick={handleSave}
