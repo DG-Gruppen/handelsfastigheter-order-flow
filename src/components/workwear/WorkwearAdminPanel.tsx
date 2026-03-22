@@ -571,27 +571,42 @@ export default function WorkwearAdminPanel() {
               <CardTitle className="text-sm font-medium">
                 Plocklista – Leveransunderlag ({new Set(pickRows.map((r) => r.user_id)).size} personer · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
               </CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => {
-                const csvRows: string[][] = [];
-                let currentUserId = "";
-                pickRows.forEach((r) => {
-                  if (r.user_id !== currentUserId) {
-                    currentUserId = r.user_id;
-                    const notes = personNotes.get(r.user_id);
-                    if (notes?.length) {
-                      csvRows.push([r.region, r.name, "📝 " + notes.join("; "), "", "", ""]);
-                    }
-                  }
-                  csvRows.push([r.region, r.name, r.product, r.color, r.size, String(r.qty)]);
-                });
-                downloadCsv(
-                  ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
-                  csvRows,
-                  "plocklista.csv"
-                );
-              }}>
-                <Download className="w-3.5 h-3.5" /> CSV
-              </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                      <Download className="w-3.5 h-3.5" /> CSV <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => generatePickCsv(pickRows, "plocklista-alla.csv")}>
+                      Alla regioner
+                    </DropdownMenuItem>
+                    {regions.map((r) => (
+                      <DropdownMenuItem key={r.id} onClick={() => generatePickCsv(pickRows.filter((row) => row.region === r.name), `plocklista-${r.name.toLowerCase().replace(/\//g, "-")}.csv`)}>
+                        {r.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                      <Printer className="w-3.5 h-3.5" /> Skriv ut <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handlePrintPickList()}>
+                      Alla regioner
+                    </DropdownMenuItem>
+                    {regions.map((r) => (
+                      <DropdownMenuItem key={r.id} onClick={() => handlePrintPickList(r.name)}>
+                        {r.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {pickRows.length === 0 ? (
