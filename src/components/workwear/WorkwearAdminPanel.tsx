@@ -69,6 +69,8 @@ export default function WorkwearAdminPanel() {
   const [sortOrders, setSortOrders] = useState<SortConfig | null>(null);
   const [sortSupplier, setSortSupplier] = useState<SortConfig | null>(null);
   const [sortPick, setSortPick] = useState<SortConfig | null>(null);
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
