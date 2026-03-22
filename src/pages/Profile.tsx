@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Save, Moon, Phone, Building2, Mail, Shield } from "lucide-react";
+import { Save, Moon, Phone, Building2, Mail, Shield, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useRegions } from "@/hooks/useRegions";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
