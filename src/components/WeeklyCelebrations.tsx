@@ -147,9 +147,9 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
           {celebrations.length === 0 ? (
             <p className="text-sm text-muted-foreground">Inga jubilarer denna vecka</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {celebrations.map((c, i) => (
-                <div key={i} className="bg-accent/10 rounded-lg px-3 py-2 min-w-0">
+                <div key={i} className="bg-accent/10 rounded-lg px-3 py-2 min-w-0 w-full">
                   <div className="flex items-center gap-2">
                     <span className="text-lg leading-none">{c.emoji}</span>
                     <div className="min-w-0 flex-1">
