@@ -392,6 +392,7 @@ export default function Onboarding() {
           email: suggestedEmail,
           department: recipientDepartment.trim() || null,
           start_date: recipientStartDate || null,
+          region_id: recipientRegionId || null,
         } as any);
       }
     }
