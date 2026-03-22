@@ -220,9 +220,19 @@ export default function UsersContent() {
               <SelectItem value="no">Saknar telefonnummer</SelectItem>
             </SelectContent>
           </Select>
-          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all") && (
+          <Select value={filterRegion} onValueChange={setFilterRegion}>
+            <SelectTrigger className="h-9 w-auto min-w-[120px] text-xs">
+              <MapPin className="h-3.5 w-3.5 mr-1.5 shrink-0" /><SelectValue placeholder="Region" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla regioner</SelectItem>
+              {regions.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+              <SelectItem value="none">Utan region</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filterDept !== "all" || filterRole !== "all" || filterPhone !== "all" || filterRegion !== "all") && (
             <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground"
-              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); }}>
+              onClick={() => { setFilterDept("all"); setFilterRole("all"); setFilterPhone("all"); setFilterRegion("all"); }}>
               Rensa filter
             </Button>
           )}
