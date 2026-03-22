@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -52,6 +53,7 @@ async function fetchNewsArticles(): Promise<NewsArticle[]> {
 /* ── Component ── */
 export default function News() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<"all" | "internal" | "press">("all");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -63,6 +65,19 @@ export default function News() {
     queryKey: ["news-articles"],
     queryFn: fetchNewsArticles,
   });
+
+  // Auto-open article from URL param (e.g. /nyheter?article=<id>)
+  useEffect(() => {
+    const articleId = searchParams.get("article");
+    if (articleId && articles.length > 0 && !selectedArticle) {
+      const found = articles.find((a) => a.id === articleId);
+      if (found) {
+        setSelectedArticle(found);
+        searchParams.delete("article");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [articles, searchParams]);
 
   // Trigger Cision sync in background, refetch if new items imported
   useEffect(() => {

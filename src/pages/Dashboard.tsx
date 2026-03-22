@@ -221,7 +221,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">Inga publicerade nyheter ännu.</p>
           )}
           {latestNews.map((news: any) => (
-            <div key={news.id} className={`flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0 ${news.is_pinned ? "pl-3 border-l-2 border-l-accent" : ""}`}>
+            <Link key={news.id} to={`/nyheter?article=${news.id}`} className={`flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0 hover:bg-muted/50 rounded-lg transition-colors -mx-2 px-2 py-2 ${news.is_pinned ? "pl-3 border-l-2 border-l-accent" : ""}`}>
               <span className="text-2xl shrink-0">{news.emoji}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -232,7 +232,7 @@ export default function Dashboard() {
                 <h3 className="text-sm font-semibold text-foreground line-clamp-1">{news.title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{news.excerpt}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </CardContent>
       </Card>
