@@ -104,11 +104,16 @@ export default function WorkwearAdminPanel() {
     return m;
   }, [profiles]);
 
-  const departments = useMemo(() => {
-    const set = new Set<string>();
-    profiles.forEach((p) => { if (p.department) set.add(p.department); });
-    return Array.from(set).sort();
-  }, [profiles]);
+  const regionMap = useMemo(() => {
+    const m = new Map<string, string>();
+    regions.forEach((r) => m.set(r.id, r.name));
+    return m;
+  }, [regions]);
+
+  const getRegionName = (userId: string) => {
+    const p = profileMap.get(userId);
+    return p?.region_id ? regionMap.get(p.region_id) || "Okänd" : "Okänd";
+  };
 
   const filteredOrders = useMemo(() => {
     let result = orders;
