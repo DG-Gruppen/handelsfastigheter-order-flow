@@ -1,51 +1,25 @@
 
 
-## Integrations Admin View
+## Importera regionstilldelningar från Word-fil
 
-### Summary
-Add a new "Integrationer" section in the admin panel that shows the status, last sync time, and any errors for all external integrations (Cision RSS, E-post/Resend, AI-chat, Firecrawl/Scraping, Document extraction).
+### Sammanfattning
+Kör ett SQL-skript som matchar de 57 namnen från Word-filen mot `profiles.full_name` och sätter `region_id` baserat på korrekt regiontillhörighet.
 
-### What the user will see
-A new admin card "Integrationer" under "Systeminställningar" in the admin panel. Clicking it opens a dashboard with cards for each integration showing:
-- Name and icon
-- Status indicator (green/yellow/red)
-- Last successful sync timestamp
-- Error count and last error message
-- A "Test" button to ping each integration
+### Regionfördelning (korrigerad för sidbrytning)
 
-### Technical approach
+**Region Syd (18 st):** Beatrice Hedblom, Benny Andersson, Carl-Johan Örnberg, Daniel Olsson, Dick Magnusson, Fredrik Johansson, Jesper Rubin, Jörgen Seegh, Julia Eckerholm, Julia Parker, Kenneth Sjöstrom, Liridon Rama, Louise Grönvall, Marika Sprinzl, Marika Palm, Pernilla Kjellén, Peter Högberg, Ramona Halvars
 
-**1. Database table: `integration_status`**
-- Columns: `id`, `slug` (unique), `name`, `last_sync_at`, `last_error`, `error_count`, `status` (enum: ok/warning/error), `metadata` (jsonb), `updated_at`
-- RLS: admin/IT can read and write
-- Edge functions will upsert rows after each run (Cision feed, email queue, scraping, etc.)
+**Region Mitt/Bromma (30 st):** Amanda Orre, Bircan Djafer, Camilla Clemens, Carolina Enhörning, Christel Johansson Korsner, Christian Olave, Claes Setthagen, Emma Lundberg, Erika Venäläinen, Fredrik Klasson, Fredrik Nordén, Inga Påhlsson, Jan Andersson, Jöran Rydberg, Jörgen Larssen, Josefine Johannsessen, Louise Eldwinger, Malin Ekwall, Malin Norén, Marit Karlsson, Mathias Jung, Mats Jäverlind, Mimmi Gade, Niklas Bodell, Petra Bondesson, Sara Ekesiöö, Thomas Holm, Thomas Österbladh, Tommi Pakola, Wilma Norin
 
-**2. Update existing edge functions**
-- Add a small helper that upserts `integration_status` after each run completes (success or failure)
-- Applies to: `fetch-cision-feed`, `process-email-queue`, `sync-content-index`, `extract-document-text`
+**Region Nord (9 st):** Albin Östman, Alice Streymoy, Anders Norin, Erik Källberg, Gustaf Drake, Johan Eklund, Knud Lauridsen, Mats Bjuhr, Patrick Kaemmerle
 
-**3. New component: `IntegrationsStatus.tsx`**
-- Fetches from `integration_status` table
-- Displays cards per integration with status badge, timestamp, error info
-- "Test connection" button that invokes each edge function with a dry-run flag
+### Teknisk approach
 
-**4. Wire into Admin panel**
-- Add "integrations" to `AdminSection` type and `adminGroups` in `Admin.tsx`
-- Add to `SECTION_SLUG_MAP` in `useAdminAccess.tsx` (admin-only: `null`)
-- Lazy-load the new component
+1. Hämta region-ID:n från `regions`-tabellen (Norr, Söder, Mitt/Bromma)
+2. Kör UPDATE-satser via insert-verktyget (data-operation, ingen migration)
+3. Matcha på `full_name` (utan parenteser som "Kalmar", "Örnsköldsvik")
+4. Logga eventuella namn som inte hittas i systemet
 
-### Files to create/edit
-| File | Action |
-|------|--------|
-| Migration SQL | Create `integration_status` table with RLS |
-| `src/components/admin/IntegrationsStatus.tsx` | New component |
-| `src/pages/Admin.tsx` | Add section entry |
-| `src/hooks/useAdminAccess.tsx` | Add mapping |
-| `supabase/functions/fetch-cision-feed/index.ts` | Add status upsert |
-| `supabase/functions/process-email-queue/index.ts` | Add status upsert |
-| `supabase/functions/sync-content-index/index.ts` | Add status upsert |
-| `supabase/functions/extract-document-text/index.ts` | Add status upsert |
-
-### Regarding Lovable's API capability
-Lovable handles REST API integrations well through Edge Functions. Strengths: secret management, CORS, JWT validation, typed responses. Limitations: no WebSockets, no long-running processes (>60s), no traditional server middleware. For standard REST API integrations this is fully sufficient.
+### Undantag
+DG-gruppen och Toni Kazarian ingår inte och får ingen region tilldelad.
 
