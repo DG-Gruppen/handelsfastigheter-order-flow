@@ -97,7 +97,7 @@ export default function Profile() {
       <div className="space-y-4 min-w-0">
         {/* Contact info */}
         <Card className="glass-card">
-          <CardContent className="p-4 md:p-6 space-y-4">
+          <CardContent className="p-5 space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Kontaktuppgifter</h2>
 
             {/* Email (read-only) */}
@@ -125,7 +125,7 @@ export default function Profile() {
             )}
 
             {/* Phone (editable) */}
-            <div className="space-y-2">
+            <div className="rounded-xl border border-border/50 bg-secondary/20 p-3 space-y-2 min-w-0">
               <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                 Telefonnummer
@@ -154,7 +154,7 @@ export default function Profile() {
 
         {/* Settings */}
         <Card className="glass-card">
-          <CardContent className="p-4 md:p-6 space-y-4">
+          <CardContent className="p-5 space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Inställningar</h2>
 
             <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3 min-h-[56px] min-w-0 gap-3">
