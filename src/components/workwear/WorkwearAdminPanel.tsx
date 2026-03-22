@@ -244,7 +244,7 @@ export default function WorkwearAdminPanel() {
       return {
         ...order,
         fullName: p?.full_name || "Okänd",
-        dept: p?.department || "–",
+        region: getRegionName(order.user_id),
         totalQty,
         itemNames: items.map((i: any) => i.productName).join(", "),
       };
