@@ -1,30 +1,37 @@
 
 
-## Fix Region Filter in Workwear Admin Panel
+## Förbättra profilkläder admin-panel
 
 ### Problem
-The workwear admin panel's "Region" filter and KPI card are incorrectly using `profiles.department` instead of the actual `regions` table (`profiles.region_id` → `regions.name`). This means the filter shows department names, not real regions (Norr, Söder, Mitt/Bromma).
+Panelen har bra grundfunktionalitet men saknar:
+1. **Sammanställning** visar inte VEM som beställt varje plagg
+2. **Plocklista** kan bara laddas ner som en enda CSV -- behöver kunna laddas ner/skrivas ut per region
 
-### Changes
+### Ändringar
 
-**File: `src/components/workwear/WorkwearAdminPanel.tsx`**
+**Fil: `src/components/workwear/WorkwearAdminPanel.tsx`**
 
-1. **Fetch region data**: Add `region_id` to the profiles query and fetch the `regions` table. Use the existing `useRegions` hook or a parallel query.
+#### 1. Utöka Sammanställning-fliken
+- Lägg till en kolumn "Beställare" som visar namnen på de som beställt varje plagg/färg/storlek-kombination (kommaseparerade)
+- Lägg till en kolumn "Region" som visar vilka regioner beställningarna kommer från
+- Uppdatera `itemStats` att spåra beställarnamn och regioner per artikel
+- Uppdatera CSV-exporten med de nya kolumnerna
 
-2. **Update ProfileRow interface**: Add `region_id: string | null` to `ProfileRow`.
+#### 2. Plocklista per region
+- Byt ut den enskilda CSV-knappen mot en dropdown med:
+  - "Ladda ner alla" (som idag)
+  - En knapp per region (Norr, Söder, Mitt/Bromma) som filtrerar plocklistan till enbart den regionen
+- Lägg till en "Skriv ut"-knapp som öppnar webbläsarens utskriftsdialog med utskriftsvänlig formatering (via `@media print` eller `window.print()` på en filtrerad vy)
+- Regionrubrik som gruppöverskrift i tabellen för tydligare visuell separation
 
-3. **Build region lookup**: Create a `regionMap` (id → name) from the regions data, and derive region name per profile.
+#### 3. Beställningar-fliken
+- Lägg till en expanderbar rad (eller tooltip) som visar detaljerade plagg per beställning (produktnamn, färg, storlek, antal) -- just nu visas bara sammanfattade plaggnamn
 
-4. **Replace department filter with real regions**: Change the `filterDept` dropdown to show the three actual regions (Norr, Söder, Mitt/Bromma) from the `regions` table instead of unique department strings.
+### Inga databasändringar
+All data finns redan i `workwear_orders.items` (JSONB) och `profiles.region_id` → `regions`.
 
-5. **Update filter logic**: In `filteredOrders`, match `profileMap.get(o.user_id)?.region_id` against the selected region instead of comparing department strings.
-
-6. **Fix KPI card "Regioner"**: Count unique `region_id` values (not departments) from filtered orders.
-
-7. **Update "Per region" tab (`deptStats`)**: Group by region name instead of department. Update column headers accordingly.
-
-8. **Update pick list region column**: Show region name instead of department in the plocklista rows.
-
-### No database changes needed
-The `regions` table and `profiles.region_id` already exist from the previous migration.
+### Tekniska detaljer
+- Utöka `itemStats` map value med `orderers: Set<string>` och `regions: Set<string>`
+- Plocklista per-region-download: filtrera `pickRows` på `row.region === regionName` innan CSV-generering
+- Print: skapa en dold `<div>` med print-styles eller använd `window.print()` med CSS `@media print`
 
