@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Rss, Mail, Bot, Search, FileText, RefreshCw, CheckCircle2, AlertTriangle, XCircle,
+  Rss, Mail, Bot, Search, FileText, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -28,6 +28,7 @@ const SLUG_ICON: Record<string, React.ElementType> = {
   "ai-chat": Bot,
   "content-index": Search,
   "document-extract": FileText,
+  "heartpace": Users,
 };
 
 const STATUS_CONFIG = {
