@@ -681,7 +681,7 @@ export default function WorkwearAdminPanel() {
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{order.dept}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
                           <TableCell className="text-sm">
                             {order.totalQty} plagg
                             <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
