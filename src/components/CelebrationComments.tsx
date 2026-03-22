@@ -155,31 +155,29 @@ export default function CelebrationComments({
 
         <div className="space-y-4">
           {comments.length > 0 && (
-            <ScrollArea className="max-h-[40vh] sm:max-h-60">
-              <div className="space-y-3 pr-2">
-                {comments.map((c) => (
-                  <div key={c.id} className="flex items-start gap-2 group">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-sm font-medium text-foreground">{c.author_name}</span>
-                        <span className="text-[11px] text-muted-foreground/60">
-                          {format(new Date(c.created_at), "d MMM HH:mm", { locale: sv })}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{c.message}</p>
+            <div className="max-h-[40vh] sm:max-h-60 overflow-y-auto space-y-3 pr-1 scrollbar-hide">
+              {comments.map((c) => (
+                <div key={c.id} className="flex items-start gap-2 group">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-sm font-medium text-foreground">{c.author_name}</span>
+                      <span className="text-[11px] text-muted-foreground/60">
+                        {format(new Date(c.created_at), "d MMM HH:mm", { locale: sv })}
+                      </span>
                     </div>
-                    {user && c.user_id === user.id && (
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive mt-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <p className="text-sm text-muted-foreground leading-relaxed">{c.message}</p>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  {user && c.user_id === user.id && (
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-destructive mt-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
 
           {comments.length === 0 && (
