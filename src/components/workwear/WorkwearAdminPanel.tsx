@@ -268,6 +268,76 @@ export default function WorkwearAdminPanel() {
   const uniqueOrderers = useMemo(() => new Set(filteredOrders.map((o) => o.user_id)).size, [filteredOrders]);
   const uniqueRegions = useMemo(() => new Set(filteredOrders.map((o) => getRegionName(o.user_id)).filter((r) => r !== "Okänd")).size, [filteredOrders, profileMap, regionMap]);
 
+  const generatePickCsv = (rows: typeof pickRows, filename: string) => {
+    const csvRows: string[][] = [];
+    let currentUserId = "";
+    rows.forEach((r) => {
+      if (r.user_id !== currentUserId) {
+        currentUserId = r.user_id;
+        const notes = personNotes.get(r.user_id);
+        if (notes?.length) {
+          csvRows.push([r.region, r.name, "📝 " + notes.join("; "), "", "", ""]);
+        }
+      }
+      csvRows.push([r.region, r.name, r.product, r.color, r.size, String(r.qty)]);
+    });
+    downloadCsv(["Region", "Namn", "Plagg", "Färg", "Storlek", "Antal"], csvRows, filename);
+  };
+
+  const handlePrintPickList = (regionFilter?: string) => {
+    const rows = regionFilter ? pickRows.filter((r) => r.region === regionFilter) : pickRows;
+    const title = regionFilter ? `Plocklista – ${regionFilter}` : "Plocklista – Alla regioner";
+    const w = window.open("", "_blank");
+    if (!w) return;
+    let html = `<html><head><title>${title}</title><style>
+      body{font-family:system-ui,sans-serif;padding:20px;font-size:12px}
+      h1{font-size:16px;margin-bottom:4px}
+      h3{font-size:13px;margin:12px 0 4px;background:#f0f0f0;padding:4px 8px}
+      table{width:100%;border-collapse:collapse;margin-bottom:8px}
+      th,td{border:1px solid #ddd;padding:4px 8px;text-align:left}
+      th{background:#f5f5f5;font-weight:600}
+      .note{font-size:11px;color:#666;font-style:italic}
+      .total-row{background:#f9f9f9;font-weight:bold}
+      @media print{body{padding:0}}
+    </style></head><body>`;
+    html += `<h1>${title}</h1>`;
+    html += `<p>${new Set(rows.map(r=>r.user_id)).size} personer · ${rows.reduce((s,r)=>s+r.qty,0)} plagg</p>`;
+
+    let currentUser = "";
+    let personItems: typeof rows = [];
+    const flushUser = () => {
+      if (!personItems.length) return;
+      const first = personItems[0];
+      const notes = personNotes.get(first.user_id);
+      html += `<h3>${first.name} – ${first.region}</h3>`;
+      if (notes?.length) html += `<p class="note">📝 ${notes.join(" · ")}</p>`;
+      html += `<table><tr><th>Plagg</th><th>Färg</th><th>Storlek</th><th>Antal</th></tr>`;
+      let total = 0;
+      personItems.forEach(r => {
+        html += `<tr><td>${r.product}</td><td>${r.color}</td><td>${r.size}</td><td>${r.qty}</td></tr>`;
+        total += r.qty;
+      });
+      html += `<tr class="total-row"><td colspan="3">Totalt</td><td>${total}</td></tr></table>`;
+    };
+    rows.forEach(r => {
+      if (r.user_id !== currentUser) { flushUser(); currentUser = r.user_id; personItems = []; }
+      personItems.push(r);
+    });
+    flushUser();
+    html += `</body></html>`;
+    w.document.write(html);
+    w.document.close();
+    w.print();
+  };
+
+  const toggleOrderExpanded = (orderId: string) => {
+    setExpandedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId); else next.add(orderId);
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
