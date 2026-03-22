@@ -145,6 +145,24 @@ export default function Profile() {
               />
             </div>
 
+            {/* Region */}
+            <div className="rounded-xl border border-border/50 bg-secondary/20 p-3 space-y-2 min-w-0">
+              <Label htmlFor="region" className="text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                Region
+              </Label>
+              <Select value={regionId} onValueChange={setRegionId}>
+                <SelectTrigger className="h-12 md:h-10">
+                  <SelectValue placeholder="Välj region..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {regions.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button
               onClick={handleSave}
               disabled={saving}
