@@ -494,10 +494,10 @@ export default function WorkwearAdminPanel() {
                     currentUserId = r.user_id;
                     const notes = personNotes.get(r.user_id);
                     if (notes?.length) {
-                      csvRows.push([r.dept, r.name, "📝 " + notes.join("; "), "", "", ""]);
+                      csvRows.push([r.region, r.name, "📝 " + notes.join("; "), "", "", ""]);
                     }
                   }
-                  csvRows.push([r.dept, r.name, r.product, r.color, r.size, String(r.qty)]);
+                  csvRows.push([r.region, r.name, r.product, r.color, r.size, String(r.qty)]);
                 });
                 downloadCsv(
                   ["Kontor", "Namn", "Plagg", "Färg", "Storlek", "Antal"],
