@@ -771,42 +771,71 @@ export default function WorkwearAdminPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium text-sm">
-                            {order.fullName}
-                            {order.notes && (
-                              <span className="block text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <StickyNote className="w-3 h-3 inline" /> {order.notes}
-                              </span>
+                      {sortedOrders.map((order) => {
+                        const isExpanded = expandedOrders.has(order.id);
+                        const orderItems = Array.isArray(order.items) ? order.items : [];
+                        return (
+                          <React.Fragment key={order.id}>
+                            <TableRow className="cursor-pointer" onClick={() => toggleOrderExpanded(order.id)}>
+                              <TableCell className="font-medium text-sm">
+                                <span className="inline-flex items-center gap-1">
+                                  {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                                  {order.fullName}
+                                </span>
+                                {order.notes && (
+                                  <span className="block text-xs text-muted-foreground mt-0.5 flex items-center gap-1 ml-5">
+                                    <StickyNote className="w-3 h-3 inline" /> {order.notes}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
+                              <TableCell className="text-sm">
+                                {order.totalQty} plagg
+                                <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
+                                  <SelectTrigger className="h-7 text-xs w-[130px]">
+                                    <SelectValue>
+                                      <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
+                                        {STATUS_LABEL[order.status] || order.status}
+                                      </Badge>
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending" className="text-xs">Väntande</SelectItem>
+                                    <SelectItem value="confirmed" className="text-xs">Bekräftad</SelectItem>
+                                    <SelectItem value="delivered" className="text-xs">Levererad</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            </TableRow>
+                            {isExpanded && orderItems.length > 0 && (
+                              <TableRow className="bg-muted/30">
+                                <TableCell colSpan={5} className="py-2 pl-10">
+                                  <div className="grid grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                                    <span className="font-semibold text-muted-foreground">Produkt</span>
+                                    <span className="font-semibold text-muted-foreground">Färg</span>
+                                    <span className="font-semibold text-muted-foreground">Storlek</span>
+                                    <span className="font-semibold text-muted-foreground">Antal</span>
+                                    {orderItems.map((item: any, idx: number) => (
+                                      <React.Fragment key={idx}>
+                                        <span>{item.productName || item.productId}</span>
+                                        <span>{parseColor(item.colorLabel || item.color || "")}</span>
+                                        <span>{item.size || "–"}</span>
+                                        <span>{item.quantity || 1}</span>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
                             )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
-                          <TableCell className="text-sm">
-                            {order.totalQty} plagg
-                            <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
-                          </TableCell>
-                          <TableCell>
-                            <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
-                              <SelectTrigger className="h-7 text-xs w-[130px]">
-                                <SelectValue>
-                                  <Badge variant={STATUS_VARIANT[order.status] || "secondary"} className="text-xs">
-                                    {STATUS_LABEL[order.status] || order.status}
-                                  </Badge>
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending" className="text-xs">Väntande</SelectItem>
-                                <SelectItem value="confirmed" className="text-xs">Bekräftad</SelectItem>
-                                <SelectItem value="delivered" className="text-xs">Levererad</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
