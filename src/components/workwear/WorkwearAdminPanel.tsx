@@ -326,14 +326,14 @@ export default function WorkwearAdminPanel() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Region:</span>
-          <Select value={filterDept} onValueChange={setFilterDept}>
+          <Select value={filterRegion} onValueChange={setFilterRegion}>
             <SelectTrigger className="w-[200px] h-9 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">Alla regioner</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
+              {regions.map((r) => (
+                <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
