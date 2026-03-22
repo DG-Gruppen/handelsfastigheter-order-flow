@@ -339,6 +339,17 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Update integration status
+  try {
+    await supabase.from("integration_status").update({
+      status: "ok",
+      last_sync_at: new Date().toISOString(),
+      last_error: null,
+      error_count: 0,
+      updated_at: new Date().toISOString(),
+    }).eq("slug", "email-queue");
+  } catch {}
+
   return new Response(
     JSON.stringify({ processed: totalProcessed }),
     { headers: { 'Content-Type': 'application/json' } }

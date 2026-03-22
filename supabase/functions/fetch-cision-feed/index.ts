@@ -178,6 +178,34 @@ async function syncToNewsTable(releases: Release[]) {
   return { imported: rows.length };
 }
 
+async function updateIntegrationStatus(status: "ok" | "warning" | "error", lastError?: string) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, serviceRoleKey);
+    const update: Record<string, unknown> = {
+      status,
+      last_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (lastError) {
+      update.last_error = lastError;
+      // Increment error_count via raw update
+    }
+    if (status === "ok") {
+      update.last_error = null;
+      update.error_count = 0;
+    }
+    const { data: existing } = await sb.from("integration_status").select("error_count").eq("slug", "cision-feed").single();
+    if (status !== "ok" && existing) {
+      update.error_count = (existing.error_count || 0) + 1;
+    }
+    await sb.from("integration_status").update(update).eq("slug", "cision-feed");
+  } catch (e) {
+    console.error("Failed to update integration status:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -217,6 +245,11 @@ serve(async (req) => {
     // Sync to news table (auto-import)
     const syncResult = await syncToNewsTable(releases);
 
+    await updateIntegrationStatus(
+      releases.length > 0 ? "ok" : "warning",
+      releases.length === 0 ? "Inga nyheter hämtades" : undefined
+    );
+
     return new Response(
       JSON.stringify({
         releases,
@@ -226,9 +259,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
+    const errMsg = e instanceof Error ? e.message : "Okänt fel";
     console.error("Cision feed error:", e);
+    await updateIntegrationStatus("error", errMsg);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Okänt fel", releases: [] }),
+      JSON.stringify({ error: errMsg, releases: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

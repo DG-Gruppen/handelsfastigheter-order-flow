@@ -83,6 +83,27 @@ async function upsertChunked(
   return chunksCreated;
 }
 
+async function updateIntegrationStatus(supabase: any, status: "ok" | "warning" | "error", lastError?: string) {
+  try {
+    const update: Record<string, unknown> = {
+      status,
+      last_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (status === "ok") {
+      update.last_error = null;
+      update.error_count = 0;
+    } else {
+      update.last_error = lastError;
+      const { data: existing } = await supabase.from("integration_status").select("error_count").eq("slug", "content-index").single();
+      update.error_count = ((existing?.error_count) || 0) + 1;
+    }
+    await supabase.from("integration_status").update(update).eq("slug", "content-index");
+  } catch (e) {
+    console.error("Failed to update integration status:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -244,12 +265,17 @@ serve(async (req) => {
     }
 
     console.log(`Indexed ${indexed} items (including chunks)`);
+    await updateIntegrationStatus(supabase, "ok");
     return new Response(
       JSON.stringify({ success: true, indexed }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("Sync error:", e);
+    try {
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await updateIntegrationStatus(sb, "error", e instanceof Error ? e.message : "Unknown error");
+    } catch {}
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
