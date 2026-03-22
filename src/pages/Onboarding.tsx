@@ -294,6 +294,10 @@ export default function Onboarding() {
       toast.error(isOffboarding ? "Ange namn på medarbetaren" : "Ange namn på den nya medarbetaren");
       return;
     }
+    if (!recipientRegionId) {
+      toast.error("Välj en region");
+      return;
+    }
 
     setSubmitting(true);
 
