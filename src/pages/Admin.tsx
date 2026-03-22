@@ -144,6 +144,7 @@ export default function Admin() {
       case "tools": content = <ToolsManager />; break;
       case "backup": content = <DatabaseBackup />; break;
       case "workwear": content = <WorkwearAdminPanel />; break;
+      case "integrations": content = <IntegrationsStatus />; break;
     }
     return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
