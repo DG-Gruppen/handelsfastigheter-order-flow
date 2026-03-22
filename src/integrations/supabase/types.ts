@@ -439,6 +439,42 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_status: {
+        Row: {
+          error_count: number
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          metadata: Json | null
+          name: string
+          slug: string
+          status: Database["public"]["Enums"]["integration_status_level"]
+          updated_at: string
+        }
+        Insert: {
+          error_count?: number
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          name: string
+          slug: string
+          status?: Database["public"]["Enums"]["integration_status_level"]
+          updated_at?: string
+        }
+        Update: {
+          error_count?: number
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          name?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["integration_status_level"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       it_faq: {
         Row: {
           answer: string
@@ -1910,6 +1946,7 @@ export type Database = {
     }
     Enums: {
       app_role: "employee" | "manager" | "admin" | "staff" | "it"
+      integration_status_level: "ok" | "warning" | "error"
       order_category: "computer" | "phone" | "peripheral" | "other"
       order_status: "pending" | "approved" | "rejected" | "delivered"
     }
@@ -2040,6 +2077,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["employee", "manager", "admin", "staff", "it"],
+      integration_status_level: ["ok", "warning", "error"],
       order_category: ["computer", "phone", "peripheral", "other"],
       order_status: ["pending", "approved", "rejected", "delivered"],
     },
