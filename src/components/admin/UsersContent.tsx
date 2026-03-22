@@ -257,6 +257,12 @@ export default function UsersContent() {
                     <span>{p.email}</span>
                     {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{p.phone}</span>}
                     {p.department && <span className="flex items-center gap-1"><Building2 className="h-3 w-3 shrink-0" />{p.department}</span>}
+                    {p.region_id && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {regions.find(r => r.id === p.region_id)?.name || "Okänd region"}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {/* Groups */}
