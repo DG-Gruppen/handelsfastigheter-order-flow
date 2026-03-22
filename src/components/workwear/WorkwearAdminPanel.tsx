@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { useRegions } from "@/hooks/useRegions";
 import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download, StickyNote } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
