@@ -64,7 +64,6 @@ async function fetchLatestNews() {
     .from("news")
     .select("id, title, excerpt, category, emoji, is_pinned, published_at")
     .eq("is_published", true)
-    .order("is_pinned", { ascending: false })
     .order("published_at", { ascending: false })
     .limit(4);
   return (data as any[]) ?? [];
