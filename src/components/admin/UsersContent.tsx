@@ -115,13 +115,14 @@ export default function UsersContent() {
       const effectiveRoles = userRolesFromGroups[p.user_id] ?? [];
       const matchesRole = filterRole === "all" || (filterRole === "none" ? effectiveRoles.length === 0 : effectiveRoles.includes(filterRole));
       const matchesPhone = filterPhone === "all" || (filterPhone === "yes" ? !!p.phone : !p.phone);
-      return matchesSearch && matchesDept && matchesRole && matchesPhone;
+      const matchesRegion = filterRegion === "all" || (filterRegion === "none" ? !p.region_id : p.region_id === filterRegion);
+      return matchesSearch && matchesDept && matchesRole && matchesPhone && matchesRegion;
     });
     return filtered.sort((a, b) => {
       const cmp = a.full_name.localeCompare(b.full_name, "sv");
       return sortAsc ? cmp : -cmp;
     });
-  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, userRolesFromGroups]);
+  }, [profiles, searchQuery, sortAsc, filterDept, filterRole, filterPhone, filterRegion, userRolesFromGroups]);
 
   const handleGoogleWorkspaceImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
