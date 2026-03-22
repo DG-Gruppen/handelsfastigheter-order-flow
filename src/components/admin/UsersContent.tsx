@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   Upload, Loader2,
-  Phone, Building2, Briefcase, Search, ArrowUpDown, Users,
+  Phone, Building2, Briefcase, Search, ArrowUpDown, Users, MapPin,
 } from "lucide-react";
+import { useRegions } from "@/hooks/useRegions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
