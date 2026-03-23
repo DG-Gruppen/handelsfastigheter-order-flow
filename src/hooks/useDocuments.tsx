@@ -64,15 +64,6 @@ async function fetchModuleEditPermission(userId: string) {
 
   const userPermRes = await userPermQuery;
   return userPermRes.data?.some((p: any) => p.can_edit || p.is_owner) ?? false;
-  const userPerm = results[0].data;
-  if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
-
-  if (results[1]) {
-    const groupPerm = results[1].data;
-    if (groupPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
-  }
-
-  return false;
 }
 
 export function useDocuments() {
