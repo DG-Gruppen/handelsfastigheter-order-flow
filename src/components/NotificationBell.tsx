@@ -228,7 +228,7 @@ export default function NotificationBell() {
           )}
         </div>
 
-        <ScrollArea className="max-h-[420px]">
+        <ScrollArea className="max-h-[420px] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
           {/* Unread notifications */}
           {unread.length === 0 && archived.length === 0 ? (
             <div className="py-10 text-center">
