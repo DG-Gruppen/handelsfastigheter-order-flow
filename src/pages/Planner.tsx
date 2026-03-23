@@ -200,12 +200,6 @@ export default function Planner() {
     }
   }, [activeBoardId]);
 
-  // Fetch profiles
-  useEffect(() => {
-    supabase.from("profiles").select("user_id, full_name").then(({ data }) => {
-      setProfiles((data as Profile[]) ?? []);
-    });
-  }, []);
 
   useEffect(() => {
     fetchBoards();
