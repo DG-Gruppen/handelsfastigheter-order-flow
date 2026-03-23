@@ -28,8 +28,8 @@ export interface DocFile {
 
 async function fetchDocumentsData() {
   const [foldersRes, filesRes] = await Promise.all([
-    supabase.from("document_folders").select("*").order("name"),
-    supabase.from("document_files").select("*").order("name"),
+    supabase.from("document_folders").select("id,name,parent_id,icon,access_roles,write_roles,sort_order,created_at").order("name"),
+    supabase.from("document_files").select("id,folder_id,name,storage_path,file_size,mime_type,created_by,created_at").order("name"),
   ]);
   return {
     folders: (foldersRes.data as DocFolder[]) ?? [],
@@ -38,37 +38,32 @@ async function fetchDocumentsData() {
 }
 
 async function fetchModuleEditPermission(userId: string) {
-  const { data: mod } = await supabase
-    .from("modules")
-    .select("id")
-    .eq("slug", "documents")
-    .maybeSingle();
+  // Fetch module ID and user groups in parallel instead of sequentially
+  const [modRes, groupsRes] = await Promise.all([
+    supabase.from("modules").select("id").eq("slug", "documents").maybeSingle(),
+    supabase.from("group_members").select("group_id").eq("user_id", userId),
+  ]);
+
+  const mod = modRes.data;
   if (!mod) return false;
 
-  const { data: userPerm } = await supabase
-    .from("module_permissions")
-    .select("can_edit, is_owner")
-    .eq("module_id", mod.id)
-    .eq("grantee_type", "user")
-    .eq("grantee_id", userId);
+  const groupIds = (groupsRes.data ?? []).map((g: any) => g.group_id);
 
-  if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
+  // Fetch user permissions (and group permissions if applicable) in parallel
+  const userPermQuery = supabase.from("module_permissions").select("can_edit, is_owner")
+    .eq("module_id", mod.id).eq("grantee_type", "user").eq("grantee_id", userId);
 
-  const { data: groups } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId);
-  if (!groups?.length) return false;
+  if (groupIds.length > 0) {
+    const groupPermQuery = supabase.from("module_permissions").select("can_edit, is_owner")
+      .eq("module_id", mod.id).eq("grantee_type", "group").in("grantee_id", groupIds);
+    const [userPermRes, groupPermRes] = await Promise.all([userPermQuery, groupPermQuery]);
+    if (userPermRes.data?.some((p: any) => p.can_edit || p.is_owner)) return true;
+    if (groupPermRes.data?.some((p: any) => p.can_edit || p.is_owner)) return true;
+    return false;
+  }
 
-  const groupIds = groups.map((g: any) => g.group_id);
-  const { data: groupPerm } = await supabase
-    .from("module_permissions")
-    .select("can_edit, is_owner")
-    .eq("module_id", mod.id)
-    .eq("grantee_type", "group")
-    .in("grantee_id", groupIds);
-
-  return groupPerm?.some((p: any) => p.can_edit || p.is_owner) ?? false;
+  const userPermRes = await userPermQuery;
+  return userPermRes.data?.some((p: any) => p.can_edit || p.is_owner) ?? false;
 }
 
 export function useDocuments() {

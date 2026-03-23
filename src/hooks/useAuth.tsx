@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const fetchId = ++currentFetchId;
 
       const [profileResult, rolesResult, groupRolesResult] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", userId).single(),
+        supabase.from("profiles").select("id,user_id,full_name,email,department,phone,manager_id,theme_preference").eq("user_id", userId).single(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
         supabase
           .from("group_members")
