@@ -175,7 +175,7 @@ export default function AppSidebar() {
   };
 
   // Mobile overflow grouped — same categories & order as sidebar, excluding Information
-  const mobileOverflowGroups = GROUP_CONFIG
+  const mobileOverflowGroups = useMemo(() => GROUP_CONFIG
     .filter((g) => g.label !== "Information")
     .map((g) => ({
       label: g.label,
@@ -183,7 +183,7 @@ export default function AppSidebar() {
         .map((slug) => mobileOverflowModules.find((m) => m.slug === slug))
         .filter(Boolean) as typeof accessibleModules,
     }))
-    .filter((g) => g.modules.length > 0);
+    .filter((g) => g.modules.length > 0), [mobileOverflowModules]);
 
   return (
     <>
