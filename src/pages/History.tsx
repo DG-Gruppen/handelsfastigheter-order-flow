@@ -32,7 +32,7 @@ interface HistoryOrder {
 
 export default function History() {
   const { user, roles, profile } = useAuth();
-  const { isOwner: isModuleOwner, canEdit: isModuleEditor } = useModulePermission("history");
+  const { isOwner: isModuleOwner } = useModulePermission("history");
   const queryClient = useQueryClient();
   const [loadingMore, setLoadingMore] = useState(false);
   const [extraOrders, setExtraOrders] = useState<HistoryOrder[]>([]);
