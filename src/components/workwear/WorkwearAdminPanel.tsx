@@ -503,13 +503,24 @@ export default function WorkwearAdminPanel() {
           <Card className="glass-card">
             <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <CardTitle className="text-xs md:text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
-                ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
-                supplierRows.sorted.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
-                "beställningslista.csv"
-              )}>
-                <Download className="w-3.5 h-3.5" /> CSV
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
+                  if (expandedSupplierProducts.size === supplierGroups.length) {
+                    setExpandedSupplierProducts(new Set());
+                  } else {
+                    setExpandedSupplierProducts(new Set(supplierGroups.map(g => g.name)));
+                  }
+                }}>
+                  {expandedSupplierProducts.size === supplierGroups.length ? "Dölj alla" : "Visa alla"}
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+                  ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
+                  supplierRows.sorted.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
+                  "beställningslista.csv"
+                )}>
+                  <Download className="w-3.5 h-3.5" /> CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {supplierGroups.length === 0 ? (
