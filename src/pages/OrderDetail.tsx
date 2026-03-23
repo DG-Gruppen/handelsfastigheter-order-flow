@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,7 @@ import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail, buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmails";
 import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,67 +36,94 @@ interface OrderItem { id: string; name: string; description: string | null; quan
 interface Profile { full_name: string; email: string; }
 interface OrderSystem { id: string; system: { id: string; name: string; description: string; icon: string; }; }
 
+const ORDER_COLUMNS = "id,title,description,status,category,created_at,approved_at,requester_id,approver_id,order_reason,recipient_type,recipient_name,recipient_department,recipient_start_date,rejection_reason,delivery_comment,updated_at";
+const ORDER_ITEM_COLUMNS = "id,name,description,quantity,category_id,order_type_id";
+
+async function fetchOrderDetail(id: string) {
+  // Fetch order, items, and systems in parallel
+  const [orderRes, itemsRes, systemsRes] = await Promise.all([
+    supabase.from("orders").select(ORDER_COLUMNS).eq("id", id).single(),
+    supabase.from("order_items").select(ORDER_ITEM_COLUMNS).eq("order_id", id),
+    supabase.from("order_systems").select("id, system:systems(id, name, description, icon)").eq("order_id", id),
+  ]);
+
+  const order = orderRes.data as Order | null;
+  const items = (itemsRes.data as OrderItem[]) ?? [];
+  const orderSystems = (systemsRes.data as any[]) ?? [];
+
+  // Fetch profiles in parallel (not sequentially after order)
+  let requesterProfile: Profile | null = null;
+  let approverProfile: Profile | null = null;
+
+  if (order) {
+    const ids = [order.requester_id, order.approver_id].filter(Boolean) as string[];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, email")
+      .in("user_id", ids);
+    if (profiles) {
+      const req = profiles.find((p: any) => p.user_id === order.requester_id);
+      const app = profiles.find((p: any) => p.user_id === order.approver_id);
+      if (req) requesterProfile = { full_name: req.full_name, email: req.email };
+      if (app) approverProfile = { full_name: app.full_name, email: app.email };
+    }
+  }
+
+  return { order, items, orderSystems, requesterProfile, approverProfile };
+}
+
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, roles } = useAuth();
   const { canEdit: canEditAdmin } = useModulePermission("admin");
   const isAdmin = roles.includes("admin") || canEditAdmin;
-  const [order, setOrder] = useState<Order | null>(null);
-  const [items, setItems] = useState<OrderItem[]>([]);
-  const [orderSystems, setOrderSystems] = useState<OrderSystem[]>([]);
-  const [requesterProfile, setRequesterProfile] = useState<Profile | null>(null);
-  const [approverProfile, setApproverProfile] = useState<Profile | null>(null);
+  const queryClient = useQueryClient();
+
   const [marking, setMarking] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [approving, setApproving] = useState(false);
   const [deliverDialogOpen, setDeliverDialogOpen] = useState(false);
   const [deliveryComment, setDeliveryComment] = useState("");
 
-  const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadOrder = useCallback(async () => {
-    if (!id || !user) return;
-    const [orderRes, itemsRes, systemsRes] = await Promise.all([
-      supabase.from("orders").select("*").eq("id", id).single(),
-      supabase.from("order_items").select("*").eq("order_id", id),
-      supabase.from("order_systems").select("id, system:systems(id, name, description, icon)").eq("order_id", id),
-    ]);
-    const o = orderRes.data as Order | null;
-    setOrder(o);
-    setItems((itemsRes.data as OrderItem[]) ?? []);
-    setOrderSystems((systemsRes.data as any[]) ?? []);
+  const queryKey = ["order-detail", id];
 
-    if (o) {
-      const ids = [o.requester_id, o.approver_id].filter(Boolean) as string[];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", ids);
-      if (profiles) {
-        const req = profiles.find((p: any) => p.user_id === o.requester_id);
-        const app = profiles.find((p: any) => p.user_id === o.approver_id);
-        if (req) setRequesterProfile({ full_name: req.full_name, email: req.email });
-        if (app) setApproverProfile({ full_name: app.full_name, email: app.email });
-      }
-    }
-    setLoading(false);
-  }, [id, user]);
+  const { data, isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: () => fetchOrderDetail(id!),
+    enabled: !!id && !!user,
+    staleTime: 2 * 60 * 1000,
+  });
 
+  const order = data?.order ?? null;
+  const items = data?.items ?? [];
+  const orderSystems = data?.orderSystems ?? [];
+  const requesterProfile = data?.requesterProfile ?? null;
+  const approverProfile = data?.approverProfile ?? null;
+
+  const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, id]);
+
+  // Realtime subscription
   useEffect(() => {
     if (!id || !user) return;
-    loadOrder();
     const channel = supabase
       .channel(`order-detail-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `id=eq.${id}` }, () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => loadOrder(), 500);
+        debounceRef.current = setTimeout(() => invalidate(), 500);
       })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [id, user, loadOrder]);
+  }, [id, user, invalidate]);
 
   const handleMarkDelivered = async () => {
     if (!order) return;
@@ -108,10 +136,10 @@ export default function OrderDetail() {
     if (error) {
       toast.error("Kunde inte uppdatera status");
     } else {
-      setOrder({ ...order, status: "delivered", delivery_comment: comment || null });
       setDeliverDialogOpen(false);
       setDeliveryComment("");
       toast.success("Beställningen markerad som levererad");
+      invalidate();
 
       const notifMessage = comment
         ? `Din beställning "${order.title}" har markerats som levererad.\n\nKommentar från IT: ${comment}`
@@ -143,8 +171,8 @@ export default function OrderDetail() {
     const { error } = await supabase.from("orders").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", order.id);
     if (error) { toast.error("Kunde inte godkänna beställningen"); }
     else {
-      setOrder({ ...order, status: "approved", approved_at: new Date().toISOString() });
       toast.success("Beställningen har godkänts!");
+      invalidate();
 
       if (user && order.requester_id !== user.id) {
         const approverName = approverProfile?.full_name || "Attestanten";
@@ -189,10 +217,10 @@ export default function OrderDetail() {
       return;
     }
 
-    setOrder({ ...order, status: "rejected", rejection_reason: rejectionReason.trim() || null });
     toast.success("Beställningen har avslagits");
     setRejectDialogOpen(false);
     setRejectionReason("");
+    invalidate();
 
     if (user && order.requester_id !== user.id) {
       const approverName = approverProfile?.full_name || "Attestanten";

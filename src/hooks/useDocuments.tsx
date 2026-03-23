@@ -28,8 +28,8 @@ export interface DocFile {
 
 async function fetchDocumentsData() {
   const [foldersRes, filesRes] = await Promise.all([
-    supabase.from("document_folders").select("*").order("name"),
-    supabase.from("document_files").select("*").order("name"),
+    supabase.from("document_folders").select("id,name,parent_id,icon,access_roles,write_roles,sort_order,created_at").order("name"),
+    supabase.from("document_files").select("id,folder_id,name,storage_path,file_size,mime_type,created_by,created_at").order("name"),
   ]);
   return {
     folders: (foldersRes.data as DocFolder[]) ?? [],
