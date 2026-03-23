@@ -30,6 +30,7 @@ const SLUG_ICON: Record<string, React.ElementType> = {
   "content-index": Search,
   "document-extract": FileText,
   "heartpace": Users,
+  "google-drive": HardDrive,
 };
 
 const STATUS_CONFIG = {
