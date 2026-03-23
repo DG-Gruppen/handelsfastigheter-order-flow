@@ -434,9 +434,9 @@ export default function WorkwearAdminPanel() {
         {/* ── Sammanställning ── */}
         <TabsContent value="items" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Plagg", "Färg", "Storlek", "Antal", "Beställare", "Region"],
                 sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty), Array.from(i.orderers).join(", "), Array.from(i.regions).join(", ")]),
                 "sammanstallning.csv"
