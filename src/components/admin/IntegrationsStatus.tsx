@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Rss, Mail, Bot, Search, FileText, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Users,
+  Rss, Mail, Bot, Search, FileText, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Users, HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
