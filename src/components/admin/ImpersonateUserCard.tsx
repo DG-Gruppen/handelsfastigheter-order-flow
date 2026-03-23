@@ -20,21 +20,22 @@ interface ImpersonateUserCardProps {
 const IMPERSONATION_KEY = "shf_impersonation_original_session";
 
 export function isImpersonating(): boolean {
-  return !!sessionStorage.getItem(IMPERSONATION_KEY);
+  return !!localStorage.getItem(IMPERSONATION_KEY);
 }
 
 export async function exitImpersonation() {
-  const stored = sessionStorage.getItem(IMPERSONATION_KEY);
+  const stored = localStorage.getItem(IMPERSONATION_KEY);
   if (!stored) return;
 
   try {
     const { access_token, refresh_token } = JSON.parse(stored);
     await supabase.auth.setSession({ access_token, refresh_token });
-    sessionStorage.removeItem(IMPERSONATION_KEY);
+    localStorage.removeItem(IMPERSONATION_KEY);
     window.location.href = "/admin";
   } catch (err) {
     console.error("Failed to restore session:", err);
-    sessionStorage.removeItem(IMPERSONATION_KEY);
+    localStorage.removeItem(IMPERSONATION_KEY);
+    await supabase.auth.signOut();
     window.location.href = "/";
   }
 }
