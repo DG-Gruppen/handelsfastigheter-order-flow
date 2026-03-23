@@ -70,7 +70,7 @@ export default function WorkwearAdminPanel() {
   const [sortSupplier, setSortSupplier] = useState<SortConfig | null>(null);
   const [sortPick, setSortPick] = useState<SortConfig | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
-  const [expandedSupplierProducts, setExpandedSupplierProducts] = useState<Set<string> | null>(null); // null = all expanded
+  const [expandedSupplierProducts, setExpandedSupplierProducts] = useState<Set<string> | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
