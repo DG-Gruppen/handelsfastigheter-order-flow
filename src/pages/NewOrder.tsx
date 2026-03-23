@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrderFormData, resolveApprovalRouting } from "@/hooks/useOrderFormData";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
 import { enqueueEmail } from "@/lib/enqueueEmail";
@@ -16,98 +17,9 @@ import { toast } from "sonner";
 import { Send, Plus, Trash2 } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-}
-
-interface OrderType {
-  id: string;
-  name: string;
-  category_id: string | null;
-  description: string;
-  icon: string;
-}
-
-interface ProfileOption {
-  id: string;
-  user_id: string;
-  full_name: string;
-  manager_id?: string | null;
-}
-
-interface MyProfile {
-  id: string;
-  is_staff: boolean | null;
-  manager_id: string | null;
-  department: string | null;
-}
-
-interface ApprovalRouting {
-  autoApprove: boolean;
-  needsCeoApproval: boolean;
-  needsManagerApproval: boolean;
-  resolvedApproverId: string | null;
-}
-
 interface OrderItem {
-  /** Stable client-side ID for React list key */
   uid: string;
   typeId: string;
-}
-
-/** Centralised approval routing logic – single source of truth */
-function resolveApprovalRouting(params: {
-  isCeo: boolean;
-  isManagerOrAdmin: boolean;
-  isManager: boolean;
-  isStaff: boolean;
-  isIT: boolean;
-  reportsDirectlyToCeo: boolean;
-  approvalSettings: Record<string, string>;
-  ceoProfileId: string | null;
-  myManagerProfile: ProfileOption | null;
-  currentUserId: string;
-}): ApprovalRouting {
-  const {
-    isCeo, isManagerOrAdmin, isManager, isStaff, isIT,
-    reportsDirectlyToCeo, approvalSettings,
-    ceoProfileId, myManagerProfile, currentUserId,
-  } = params;
-
-  // VD always auto-approves
-  if (isCeo) {
-    return { autoApprove: true, needsCeoApproval: false, needsManagerApproval: false, resolvedApproverId: currentUserId };
-  }
-
-  // IT and STAB without a manager → auto-approve
-  if ((isIT || isStaff) && !myManagerProfile) {
-    return { autoApprove: true, needsCeoApproval: false, needsManagerApproval: false, resolvedApproverId: currentUserId };
-  }
-
-  const needsCeoApproval =
-    isManagerOrAdmin &&
-    reportsDirectlyToCeo &&
-    (
-      (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
-      (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
-    );
-
-  const needsManagerApproval =
-    isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
-
-  const autoApprove = isManagerOrAdmin && !needsCeoApproval && !needsManagerApproval;
-
-  const resolvedApproverId = needsCeoApproval && ceoProfileId
-    ? ceoProfileId
-    : needsManagerApproval && myManagerProfile
-      ? myManagerProfile.user_id
-      : autoApprove
-        ? currentUserId
-        : (myManagerProfile?.user_id ?? null);
-
-  return { autoApprove, needsCeoApproval, needsManagerApproval, resolvedApproverId };
 }
 
 export default function NewOrder() {
@@ -116,13 +28,16 @@ export default function NewOrder() {
   const isIT = roles.includes("it");
   const isPrivileged = isManagerOrAdmin || isIT;
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
-  const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
-  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
-  const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
-  const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
-  const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
+
+  const { data: refData } = useOrderFormData();
+
+  const categories = refData?.categories ?? [];
+  const orderTypes = refData?.orderTypes ?? [];
+  const allProfiles = refData?.allProfiles ?? [];
+  const approvalSettings = refData?.approvalSettings ?? {};
+  const myProfile = refData?.myProfile ?? null;
+  const ceoProfile = refData?.ceoProfile ?? null;
+  const myManagerProfile = refData?.myManagerProfile ?? null;
 
   // Form state
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
@@ -130,7 +45,7 @@ export default function NewOrder() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Derived approval state (for UI display)
+  // Derived approval state
   const isManager = roles.includes("manager");
   const isStaff = myProfile?.is_staff === true;
   const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile != null && myProfile?.manager_id === ceoProfile?.id);
@@ -146,101 +61,6 @@ export default function NewOrder() {
     myManagerProfile,
     currentUserId: user?.id ?? "",
   });
-
-  const fetchData = useCallback(async () => {
-    if (!user) return;
-
-    const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes, deptRows] = await Promise.all([
-      supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
-      supabase.from("order_types").select("*").eq("is_active", true).order("name"),
-      supabase.from("profiles").select("id, user_id, full_name").neq("user_id", user.id),
-      supabase.from("profiles").select("id, user_id, full_name, manager_id").order("full_name"),
-      supabase.rpc("get_all_user_roles"),
-      supabase.from("profiles").select("id, department, is_staff, manager_id").eq("user_id", user.id).single(),
-      supabase.from("category_departments").select("category_id, department_id"),
-      supabase.from("order_type_departments").select("order_type_id, department_id"),
-      supabase.from("org_chart_settings").select("setting_key, setting_value").in("setting_key", ["approval_managers_to_ceo", "approval_staff_to_ceo"]),
-      supabase.from("departments").select("id, name").order("name"),
-    ]);
-
-    const allCats = (catsRes.data as Category[]) ?? [];
-    const allTypes = (typesRes.data as OrderType[]) ?? [];
-    const fullProfiles = (allProfilesRes.data as ProfileOption[]) ?? [];
-    setAllProfiles(fullProfiles);
-
-    if (myProfileRes.data) {
-      const p = myProfileRes.data as { id: string; is_staff: boolean | null; manager_id: string | null; department: string | null };
-      setMyProfile({ id: p.id, is_staff: p.is_staff, manager_id: p.manager_id, department: p.department });
-    }
-
-    const aMap: Record<string, string> = {};
-    for (const s of (approvalRes.data as Array<{ setting_key: string; setting_value: string }>) ?? []) {
-      aMap[s.setting_key] = s.setting_value;
-    }
-    setApprovalSettings(aMap);
-
-    const catDeptMap: Record<string, string[]> = {};
-    for (const row of (catDeptsRes.data as Array<{ category_id: string; department_id: string }>) ?? []) {
-      if (!catDeptMap[row.category_id]) catDeptMap[row.category_id] = [];
-      catDeptMap[row.category_id].push(row.department_id);
-    }
-    const otDeptMap: Record<string, string[]> = {};
-    for (const row of (otDeptsRes.data as Array<{ order_type_id: string; department_id: string }>) ?? []) {
-      if (!otDeptMap[row.order_type_id]) otDeptMap[row.order_type_id] = [];
-      otDeptMap[row.order_type_id].push(row.department_id);
-    }
-
-    const userDept = (myProfileRes.data as { department?: string | null } | null)?.department ?? "";
-    const userDeptId = ((deptRows.data as Array<{ id: string; name: string }>) ?? []).find((d) => d.name === userDept)?.id;
-
-    const isAdmin = roles.includes("admin");
-    const filteredCats = isAdmin ? allCats : allCats.filter((c) => {
-      const restricted = catDeptMap[c.id];
-      if (!restricted || restricted.length === 0) return true;
-      return userDeptId ? restricted.includes(userDeptId) : true;
-    });
-    const filteredTypes = isAdmin ? allTypes : allTypes.filter((ot) => {
-      const restricted = otDeptMap[ot.id];
-      if (!restricted || restricted.length === 0) return true;
-      return userDeptId ? restricted.includes(userDeptId) : true;
-    });
-
-    setCategories(filteredCats);
-    setOrderTypes(filteredTypes);
-
-    const rolesData = (rolesRes.data as Array<{ user_id: string; role: string }>) ?? [];
-    const managerUserIds = new Set(
-      rolesData.filter((r) => r.role === "manager" || r.role === "admin").map((r) => r.user_id)
-    );
-    const adminUserIds = new Set(
-      rolesData.filter((r) => r.role === "admin").map((r) => r.user_id)
-    );
-
-    const managersWithProfiles = ((profilesRes.data as ProfileOption[]) ?? []).filter(
-      (p) => managerUserIds.has(p.user_id)
-    );
-    // Keep managers in allProfiles too for other lookups
-    setAllProfiles((prev) => {
-      if (prev.length) return prev;
-      return fullProfiles;
-    });
-    void managersWithProfiles; // used implicitly via fullProfiles
-
-    const ceo = fullProfiles.find((p) => !p.manager_id && adminUserIds.has(p.user_id));
-    if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
-
-    const myMgrId = (myProfileRes.data as { manager_id?: string | null } | null)?.manager_id;
-    if (myMgrId) {
-      const mgrProfile = fullProfiles.find((p) => p.id === myMgrId);
-      if (mgrProfile) {
-        setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
-      }
-    }
-  }, [user, roles]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const addItem = () => setItems((prev) => [...prev, { uid: crypto.randomUUID(), typeId: "" }]);
   const removeItem = (uid: string) => setItems((prev) => prev.filter((item) => item.uid !== uid));
@@ -336,7 +156,6 @@ export default function NewOrder() {
     const { error: itemsError } = await supabase.from("order_items").insert(orderItemsToInsert as any);
     if (itemsError) {
       console.error("Order items insert error:", itemsError);
-      // Order was created – delete it to avoid orphaned order
       await supabase.from("orders").delete().eq("id", order.id);
       toast.error("Kunde inte lägga till utrustning. Beställningen avbröts.");
       setSubmitting(false);
