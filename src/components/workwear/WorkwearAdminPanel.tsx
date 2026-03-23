@@ -569,11 +569,11 @@ export default function WorkwearAdminPanel() {
         {/* ── Plocklista ── */}
         <TabsContent value="pick" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Plocklista – Leveransunderlag ({new Set(pickRows.map((r) => r.user_id)).size} personer · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">
+                Plocklista ({new Set(pickRows.map((r) => r.user_id)).size} pers · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
