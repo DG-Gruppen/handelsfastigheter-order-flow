@@ -92,10 +92,9 @@ export default function Passwords() {
   const { canEdit } = useModulePermission("losenord");
   const isEditor = roles.includes("admin") || roles.includes("it") || canEdit;
 
-  const [passwords, setPasswords] = useState<SharedPassword[]>([]);
+  const queryClient = useQueryClient();
   const [decryptedPasswords, setDecryptedPasswords] = useState<Record<string, string>>({});
   const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   // Dialog state
