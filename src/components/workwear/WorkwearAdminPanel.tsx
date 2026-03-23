@@ -541,13 +541,18 @@ export default function WorkwearAdminPanel() {
                     </TableHeader>
                     <TableBody>
                       {supplierGroups.map((group) => {
-                        const isExpanded = expandedSupplierProducts.has(group.name);
+                        const isExpanded = expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.has(group.name));
                         return (
                           <React.Fragment key={group.name}>
                             <TableRow
                               className="bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-colors"
                               onClick={() => {
                                 setExpandedSupplierProducts((prev) => {
+                                  if (prev === "all") {
+                                    const next = new Set(supplierGroups.map(g => g.name));
+                                    next.delete(group.name);
+                                    return next;
+                                  }
                                   const next = new Set(prev);
                                   if (next.has(group.name)) next.delete(group.name); else next.add(group.name);
                                   return next;
