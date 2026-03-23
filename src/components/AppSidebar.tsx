@@ -183,9 +183,11 @@ export default function AppSidebar() {
   return (
     <>
       {/* ─── DESKTOP SIDEBAR ─── */}
+      {/* Spacer div to push content – mirrors sidebar width */}
+      <div className={cn("hidden md:block shrink-0 transition-[width] duration-200", collapsed ? "w-14" : "w-52")} />
       <aside
         className={cn(
-          "hidden md:flex flex-col h-screen max-h-screen self-start bg-sidebar sticky top-0 transition-[width] duration-200 shrink-0",
+          "hidden md:flex flex-col fixed inset-y-0 left-0 z-40 bg-sidebar transition-[width] duration-200",
           collapsed ? "w-14" : "w-52"
         )}
       >
