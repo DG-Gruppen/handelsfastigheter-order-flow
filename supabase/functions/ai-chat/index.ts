@@ -77,6 +77,7 @@ const SOURCE_LABELS: Record<string, string> = {
   departments: "Avdelningar",
   document_folders: "Dokumentbiblioteket (mapp)",
   document_files: "Dokumentbiblioteket (dokument)",
+  google_drive: "Google Drive (dokument)",
 };
 
 // ── Keyword extraction ──────────────────────────────────────────────
