@@ -739,9 +739,9 @@ export default function WorkwearAdminPanel() {
         {/* ── Individual orders ── */}
         <TabsContent value="orders" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Alla beställningar ({filteredOrders.length})</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Alla beställningar ({filteredOrders.length})</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Namn", "Region", "Plagg", "Antal", "Anteckning", "Datum", "Status"],
                 sortedOrders.map((o) => [
                   o.fullName,
