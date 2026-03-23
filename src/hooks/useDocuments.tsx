@@ -49,19 +49,21 @@ async function fetchModuleEditPermission(userId: string) {
 
   const groupIds = (groupsRes.data ?? []).map((g: any) => g.group_id);
 
-  // Fetch user and group permissions in parallel
-  const permQueries: Promise<any>[] = [
-    supabase.from("module_permissions").select("can_edit, is_owner")
-      .eq("module_id", mod.id).eq("grantee_type", "user").eq("grantee_id", userId),
-  ];
+  // Fetch user permissions (and group permissions if applicable) in parallel
+  const userPermQuery = supabase.from("module_permissions").select("can_edit, is_owner")
+    .eq("module_id", mod.id).eq("grantee_type", "user").eq("grantee_id", userId);
+
   if (groupIds.length > 0) {
-    permQueries.push(
-      supabase.from("module_permissions").select("can_edit, is_owner")
-        .eq("module_id", mod.id).eq("grantee_type", "group").in("grantee_id", groupIds)
-    );
+    const groupPermQuery = supabase.from("module_permissions").select("can_edit, is_owner")
+      .eq("module_id", mod.id).eq("grantee_type", "group").in("grantee_id", groupIds);
+    const [userPermRes, groupPermRes] = await Promise.all([userPermQuery, groupPermQuery]);
+    if (userPermRes.data?.some((p: any) => p.can_edit || p.is_owner)) return true;
+    if (groupPermRes.data?.some((p: any) => p.can_edit || p.is_owner)) return true;
+    return false;
   }
 
-  const results = await Promise.all(permQueries);
+  const userPermRes = await userPermQuery;
+  return userPermRes.data?.some((p: any) => p.can_edit || p.is_owner) ?? false;
   const userPerm = results[0].data;
   if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
 
