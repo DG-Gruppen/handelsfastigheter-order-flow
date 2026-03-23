@@ -505,13 +505,15 @@ export default function WorkwearAdminPanel() {
               <CardTitle className="text-xs md:text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
               <div className="flex items-center gap-2 shrink-0">
                 <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
-                  if (expandedSupplierProducts.size === supplierGroups.length) {
+                  const allExpanded = expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.size === supplierGroups.length);
+                  if (allExpanded) {
                     setExpandedSupplierProducts(new Set());
                   } else {
-                    setExpandedSupplierProducts(new Set(supplierGroups.map(g => g.name)));
+                    setExpandedSupplierProducts("all");
                   }
                 }}>
-                  {expandedSupplierProducts.size === supplierGroups.length ? "Dölj alla" : "Visa alla"}
+                  {expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.size === supplierGroups.length) ? "Dölj alla" : "Visa alla"}
+                </Button>
                 </Button>
                 <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
                   ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
