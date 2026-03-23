@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell, FileText, BookOpen, Video, ShoppingCart, CheckCircle2,
   XCircle, Package, Truck, Info, Archive, ChevronDown, ChevronUp,
@@ -28,87 +29,50 @@ interface Notification {
 }
 
 const typeConfig: Record<string, { icon: typeof Bell; color: string; route: (refId: string | null) => string | null }> = {
-  order_approved: {
-    icon: CheckCircle2,
-    color: "text-emerald-500",
-    route: (id) => id ? `/orders/${id}` : "/history",
-  },
-  order_rejected: {
-    icon: XCircle,
-    color: "text-destructive",
-    route: (id) => id ? `/orders/${id}` : "/history",
-  },
-  order_delivered: {
-    icon: Truck,
-    color: "text-primary",
-    route: (id) => id ? `/orders/${id}` : "/history",
-  },
-  order_pending: {
-    icon: ShoppingCart,
-    color: "text-amber-500",
-    route: (id) => id ? `/orders/${id}` : "/history",
-  },
-  document_new: {
-    icon: FileText,
-    color: "text-sky-500",
-    route: () => "/documents",
-  },
-  kb_article: {
-    icon: BookOpen,
-    color: "text-violet-500",
-    route: () => "/kunskapsbanken",
-  },
-  kb_video: {
-    icon: Video,
-    color: "text-rose-500",
-    route: () => "/kunskapsbanken",
-  },
-  info: {
-    icon: Info,
-    color: "text-muted-foreground",
-    route: () => null,
-  },
-  planner_assigned: {
-    icon: UserCheck,
-    color: "text-indigo-500",
-    route: () => "/planner",
-  },
-  planner_comment: {
-    icon: MessageSquare,
-    color: "text-teal-500",
-    route: () => "/planner",
-  },
+  order_approved: { icon: CheckCircle2, color: "text-emerald-500", route: (id) => id ? `/orders/${id}` : "/history" },
+  order_rejected: { icon: XCircle, color: "text-destructive", route: (id) => id ? `/orders/${id}` : "/history" },
+  order_delivered: { icon: Truck, color: "text-primary", route: (id) => id ? `/orders/${id}` : "/history" },
+  order_pending: { icon: ShoppingCart, color: "text-amber-500", route: (id) => id ? `/orders/${id}` : "/history" },
+  document_new: { icon: FileText, color: "text-sky-500", route: () => "/documents" },
+  kb_article: { icon: BookOpen, color: "text-violet-500", route: () => "/kunskapsbanken" },
+  kb_video: { icon: Video, color: "text-rose-500", route: () => "/kunskapsbanken" },
+  info: { icon: Info, color: "text-muted-foreground", route: () => null },
+  planner_assigned: { icon: UserCheck, color: "text-indigo-500", route: () => "/planner" },
+  planner_comment: { icon: MessageSquare, color: "text-teal-500", route: () => "/planner" },
 };
 
 const defaultConfig = typeConfig.info;
 
+async function fetchNotifications(userId: string): Promise<Notification[]> {
+  const { data } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  return (data as Notification[]) ?? [];
+}
+
 export default function NotificationBell() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications", user?.id],
+    queryFn: () => fetchNotifications(user!.id),
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
 
   const unread = useMemo(() => notifications.filter((n) => !n.is_read), [notifications]);
   const archived = useMemo(() => notifications.filter((n) => n.is_read), [notifications]);
   const unreadCount = unread.length;
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    setNotifications((data as Notification[]) ?? []);
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [user]);
-
-  // Realtime subscription
+  // Realtime subscription — optimistically add new notifications
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -122,29 +86,34 @@ export default function NotificationBell() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 50));
+          queryClient.setQueryData<Notification[]>(["notifications", user.id], (old) =>
+            [payload.new as Notification, ...(old ?? [])].slice(0, 50)
+          );
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
+
+  const setNotificationsOptimistic = useCallback(
+    (updater: (prev: Notification[]) => Notification[]) => {
+      if (!user) return;
+      queryClient.setQueryData<Notification[]>(["notifications", user.id], (old) => updater(old ?? []));
+    },
+    [user?.id, queryClient]
+  );
 
   const markAsRead = async (id: string) => {
+    setNotificationsOptimistic((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
     await supabase.from("notifications").update({ is_read: true } as any).eq("id", id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-    );
   };
 
   const markAllRead = async () => {
-    if (!user) return;
+    if (!user || unread.length === 0) return;
     const unreadIds = unread.map((n) => n.id);
-    if (unreadIds.length === 0) return;
+    setNotificationsOptimistic((prev) => prev.map((n) => ({ ...n, is_read: true })));
     await supabase.from("notifications").update({ is_read: true } as any).in("id", unreadIds);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
   const handleClick = (notification: Notification) => {
@@ -229,7 +198,6 @@ export default function NotificationBell() {
         </div>
 
         <ScrollArea className="max-h-[420px] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
-          {/* Unread notifications */}
           {unread.length === 0 && archived.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
@@ -254,7 +222,6 @@ export default function NotificationBell() {
                 </div>
               )}
 
-              {/* Archive section */}
               {archived.length > 0 && (
                 <>
                   <Separator />
