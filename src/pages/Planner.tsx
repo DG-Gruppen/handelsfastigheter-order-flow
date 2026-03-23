@@ -41,12 +41,22 @@ interface Profile {
 
 export default function Planner() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [boards, setBoards] = useState<Board[]>([]);
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [columns, setColumns] = useState<PlannerColumn[]>([]);
   const [cards, setCards] = useState<PlannerCard[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Cached profiles via React Query
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["planner-profiles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, full_name");
+      return (data as Profile[]) ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Dialogs
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
