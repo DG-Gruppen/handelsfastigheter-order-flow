@@ -183,12 +183,11 @@ export default function WorkwearOrder() {
     setSubmitting(true);
 
     try {
-      const { error: dbError } = await supabase.from("workwear_orders" as any).insert({
+      const { error: dbError } = await supabase.from("workwear_orders").insert({
         user_id: user.id,
-        items: cart,
+        items: cart as unknown as import("@/integrations/supabase/types").Json,
         notes,
-        season: activeSeason,
-      } as any);
+      });
       if (dbError) throw dbError;
 
       const itemsHtml = cart
