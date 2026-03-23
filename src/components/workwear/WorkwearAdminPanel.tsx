@@ -349,11 +349,11 @@ export default function WorkwearAdminPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+        <h2 className="font-heading text-base md:text-lg font-bold text-foreground flex items-center gap-2">
           <ShoppingBag className="w-5 h-5 text-primary" />
           Profilkläder – Översikt
         </h2>
-        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1 text-xs md:text-sm text-muted-foreground">
           {activeSeason && (
             <span>Aktiv säsong: <Badge variant="secondary" className="text-xs ml-1">{SEASON_LABELS[activeSeason as Season] || activeSeason}</Badge></span>
           )}
@@ -389,12 +389,12 @@ export default function WorkwearAdminPanel() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Säsong:</span>
+      <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3">
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground hidden md:inline">Säsong:</span>
           <Select value={filterSeason} onValueChange={setFilterSeason}>
-            <SelectTrigger className="w-[160px] h-9 text-xs">
-              <SelectValue />
+            <SelectTrigger className="w-full md:w-[160px] h-9 text-xs">
+              <SelectValue placeholder="Säsong" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">Alla säsonger</SelectItem>
@@ -404,11 +404,11 @@ export default function WorkwearAdminPanel() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Region:</span>
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground hidden md:inline">Region:</span>
           <Select value={filterRegion} onValueChange={setFilterRegion}>
-            <SelectTrigger className="w-[200px] h-9 text-xs">
-              <SelectValue />
+            <SelectTrigger className="w-full md:w-[200px] h-9 text-xs">
+              <SelectValue placeholder="Region" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">Alla regioner</SelectItem>
@@ -421,20 +421,22 @@ export default function WorkwearAdminPanel() {
       </div>
 
       <Tabs defaultValue="items">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="items">Sammanställning</TabsTrigger>
-          <TabsTrigger value="supplier">Beställningslista</TabsTrigger>
-          <TabsTrigger value="pick">Plocklista</TabsTrigger>
-          <TabsTrigger value="regions">Per region</TabsTrigger>
-          <TabsTrigger value="orders">Beställningar</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="flex-wrap h-auto gap-1 w-max md:w-auto">
+            <TabsTrigger value="items" className="text-xs md:text-sm">Sammanställning</TabsTrigger>
+            <TabsTrigger value="supplier" className="text-xs md:text-sm">Beställningslista</TabsTrigger>
+            <TabsTrigger value="pick" className="text-xs md:text-sm">Plocklista</TabsTrigger>
+            <TabsTrigger value="regions" className="text-xs md:text-sm">Per region</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm">Beställningar</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Sammanställning ── */}
         <TabsContent value="items" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Antal per plagg, färg & storlek</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Plagg", "Färg", "Storlek", "Antal", "Beställare", "Region"],
                 sortedItemStats.map((i) => [i.name, i.color, i.size, String(i.qty), Array.from(i.orderers).join(", "), Array.from(i.regions).join(", ")]),
                 "sammanstallning.csv"
@@ -485,9 +487,9 @@ export default function WorkwearAdminPanel() {
         {/* ── Beställningslista (leverantörsunderlag) ── */}
         <TabsContent value="supplier" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
                 supplierRows.sorted.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
                 "beställningslista.csv"
@@ -567,11 +569,11 @@ export default function WorkwearAdminPanel() {
         {/* ── Plocklista ── */}
         <TabsContent value="pick" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Plocklista – Leveransunderlag ({new Set(pickRows.map((r) => r.user_id)).size} personer · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">
+                Plocklista ({new Set(pickRows.map((r) => r.user_id)).size} pers · {pickRows.reduce((s, r) => s + r.qty, 0)} plagg)
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
@@ -697,9 +699,9 @@ export default function WorkwearAdminPanel() {
         {/* ── Per region ── */}
         <TabsContent value="regions" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Beställningar per region</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Beställningar per region</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Region", "Beställningar", "Antal plagg"],
                 deptStats.map((d) => [d.dept, String(d.count), String(d.items)]),
                 "per-region.csv"
@@ -737,9 +739,9 @@ export default function WorkwearAdminPanel() {
         {/* ── Individual orders ── */}
         <TabsContent value="orders" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Alla beställningar ({filteredOrders.length})</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Alla beställningar ({filteredOrders.length})</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Namn", "Region", "Plagg", "Antal", "Anteckning", "Datum", "Status"],
                 sortedOrders.map((o) => [
                   o.fullName,
@@ -764,10 +766,10 @@ export default function WorkwearAdminPanel() {
                     <TableHeader>
                       <TableRow>
                         <SortableHeader label="Namn" sortKey="fullName" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
-                        <SortableHeader label="Region" sortKey="region" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
+                        <SortableHeader label="Region" sortKey="region" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} className="hidden md:table-cell" />
                         <SortableHeader label="Plagg" sortKey="totalQty" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
-                        <SortableHeader label="Datum" sortKey="created_at" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} />
-                        <TableHead className="min-w-[140px]">Status</TableHead>
+                        <SortableHeader label="Datum" sortKey="created_at" current={sortOrders} onToggle={(k) => setSortOrders(toggleSort(sortOrders, k))} className="hidden md:table-cell" />
+                        <TableHead className="min-w-[120px]">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -788,12 +790,12 @@ export default function WorkwearAdminPanel() {
                                   </span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{order.region}</TableCell>
                               <TableCell className="text-sm">
                                 {order.totalQty} plagg
-                                <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
+                                <span className="text-muted-foreground ml-1 text-xs hidden sm:inline">({order.itemNames})</span>
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
+                              <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                                 {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
                               </TableCell>
                               <TableCell onClick={(e) => e.stopPropagation()}>
@@ -815,8 +817,8 @@ export default function WorkwearAdminPanel() {
                             </TableRow>
                             {isExpanded && orderItems.length > 0 && (
                               <TableRow className="bg-muted/30">
-                                <TableCell colSpan={5} className="py-2 pl-10">
-                                  <div className="grid grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                                <TableCell colSpan={5} className="py-2 px-3 md:pl-10">
+                                  <div className="grid grid-cols-4 gap-x-2 md:gap-x-4 gap-y-1 text-xs">
                                     <span className="font-semibold text-muted-foreground">Produkt</span>
                                     <span className="font-semibold text-muted-foreground">Färg</span>
                                     <span className="font-semibold text-muted-foreground">Storlek</span>
