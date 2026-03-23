@@ -55,7 +55,7 @@ export default function History() {
 
     let data: HistoryOrder[] = [];
 
-    if (isAdmin) {
+    if (canSeeAll) {
       const { data: rows } = await supabase
         .from("orders")
         .select("*, requester:profiles!requester_id(full_name)")
