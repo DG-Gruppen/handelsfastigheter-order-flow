@@ -38,37 +38,39 @@ async function fetchDocumentsData() {
 }
 
 async function fetchModuleEditPermission(userId: string) {
-  const { data: mod } = await supabase
-    .from("modules")
-    .select("id")
-    .eq("slug", "documents")
-    .maybeSingle();
+  // Fetch module ID and user groups in parallel instead of sequentially
+  const [modRes, groupsRes] = await Promise.all([
+    supabase.from("modules").select("id").eq("slug", "documents").maybeSingle(),
+    supabase.from("group_members").select("group_id").eq("user_id", userId),
+  ]);
+
+  const mod = modRes.data;
   if (!mod) return false;
 
-  const { data: userPerm } = await supabase
-    .from("module_permissions")
-    .select("can_edit, is_owner")
-    .eq("module_id", mod.id)
-    .eq("grantee_type", "user")
-    .eq("grantee_id", userId);
+  const groupIds = (groupsRes.data ?? []).map((g: any) => g.group_id);
 
+  // Fetch user and group permissions in parallel
+  const permQueries: Promise<any>[] = [
+    supabase.from("module_permissions").select("can_edit, is_owner")
+      .eq("module_id", mod.id).eq("grantee_type", "user").eq("grantee_id", userId),
+  ];
+  if (groupIds.length > 0) {
+    permQueries.push(
+      supabase.from("module_permissions").select("can_edit, is_owner")
+        .eq("module_id", mod.id).eq("grantee_type", "group").in("grantee_id", groupIds)
+    );
+  }
+
+  const results = await Promise.all(permQueries);
+  const userPerm = results[0].data;
   if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
 
-  const { data: groups } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId);
-  if (!groups?.length) return false;
+  if (results[1]) {
+    const groupPerm = results[1].data;
+    if (groupPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
+  }
 
-  const groupIds = groups.map((g: any) => g.group_id);
-  const { data: groupPerm } = await supabase
-    .from("module_permissions")
-    .select("can_edit, is_owner")
-    .eq("module_id", mod.id)
-    .eq("grantee_type", "group")
-    .in("grantee_id", groupIds);
-
-  return groupPerm?.some((p: any) => p.can_edit || p.is_owner) ?? false;
+  return false;
 }
 
 export function useDocuments() {
