@@ -128,15 +128,18 @@ export default function Passwords() {
       });
   }, []);
 
-  const fetchData = useCallback(async () => {
-    const { data } = await supabase.from("shared_passwords").select("*").order("service_name");
-    setPasswords((data as SharedPassword[]) ?? []);
-    setLoading(false);
-  }, []);
+  const { data: passwords = [], isLoading: loading } = useQuery({
+    queryKey: ["shared-passwords"],
+    queryFn: async () => {
+      const { data } = await supabase.from("shared_passwords").select("*").order("service_name");
+      return (data as SharedPassword[]) ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const fetchData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["shared-passwords"] });
+  }, [queryClient]);
 
   // Decrypt visible passwords when key is available
   useEffect(() => {
