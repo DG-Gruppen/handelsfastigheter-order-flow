@@ -512,66 +512,66 @@ export default function WorkwearAdminPanel() {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              {itemStats.length === 0 ? (
+              {supplierGroups.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Inga beställningar ännu</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <SortableHeader label="Plagg" sortKey="name" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
-                        <SortableHeader label="Färg" sortKey="color" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
-                        <SortableHeader label="Storlek" sortKey="size" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
-                        <SortableHeader label="Antal" sortKey="qty" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} className="text-right" />
-                        <SortableHeader label="Logga" sortKey="logo" current={sortSupplier} onToggle={(k) => setSortSupplier(toggleSort(sortSupplier, k))} />
+                        <TableHead className="w-8" />
+                        <TableHead>Plagg</TableHead>
+                        <TableHead>Färg</TableHead>
+                        <TableHead>Storlek</TableHead>
+                        <TableHead className="text-right">Antal</TableHead>
+                        <TableHead>Logga</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(() => {
-                        const sorted = supplierRows.sorted;
-                        const rows: React.ReactNode[] = [];
-                        let currentProduct = "";
-                        let productQty = 0;
-                        const flush = () => {
-                          if (currentProduct) {
-                            rows.push(
-                              <TableRow key={`sub-${currentProduct}`} className="bg-secondary/30">
-                                <TableCell colSpan={3} className="text-xs font-semibold text-muted-foreground italic">
-                                  Subtotal {currentProduct}
-                                </TableCell>
-                                <TableCell className="text-right text-xs font-bold text-muted-foreground">{productQty}</TableCell>
-                                <TableCell />
-                              </TableRow>
-                            );
-                          }
-                        };
-                        sorted.forEach((item, i) => {
-                          if (item.name !== currentProduct) {
-                            flush();
-                            currentProduct = item.name;
-                            productQty = 0;
-                          }
-                          productQty += item.qty;
-                          rows.push(
-                            <TableRow key={i}>
-                              <TableCell className="font-medium text-sm">{item.name}</TableCell>
-                              <TableCell className="text-sm">{item.color}</TableCell>
-                              <TableCell className="text-sm">{item.size}</TableCell>
-                              <TableCell className="text-right font-semibold text-sm">{item.qty}</TableCell>
-                              <TableCell className="text-sm">{item.logo}</TableCell>
+                      {supplierGroups.map((group) => {
+                        const isExpanded = expandedSupplierProducts.has(group.name);
+                        return (
+                          <React.Fragment key={group.name}>
+                            <TableRow
+                              className="bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setExpandedSupplierProducts((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(group.name)) next.delete(group.name); else next.add(group.name);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <TableCell className="w-8 px-2">
+                                {isExpanded
+                                  ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                  : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                              </TableCell>
+                              <TableCell className="font-semibold text-sm">{group.name}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{group.sizes.length} variant{group.sizes.length !== 1 ? "er" : ""}</TableCell>
+                              <TableCell />
+                              <TableCell className="text-right font-bold text-sm text-primary">{group.totalQty}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{group.logo}</TableCell>
                             </TableRow>
-                          );
-                        });
-                        flush();
-                        rows.push(
-                          <TableRow key="total" className="bg-secondary/50 font-bold">
-                            <TableCell colSpan={3} className="text-sm">Totalt</TableCell>
-                            <TableCell className="text-right text-sm">{totalItems}</TableCell>
-                            <TableCell />
-                          </TableRow>
+                            {isExpanded && group.sizes.map((s, si) => (
+                              <TableRow key={`${group.name}-${si}`} className="bg-background">
+                                <TableCell />
+                                <TableCell className="text-sm text-muted-foreground pl-6">↳</TableCell>
+                                <TableCell className="text-sm">{s.color}</TableCell>
+                                <TableCell className="text-sm">{s.size}</TableCell>
+                                <TableCell className="text-right font-medium text-sm">{s.qty}</TableCell>
+                                <TableCell className="text-sm">{s.logo}</TableCell>
+                              </TableRow>
+                            ))}
+                          </React.Fragment>
                         );
-                        return rows;
-                      })()}
+                      })}
+                      <TableRow className="bg-secondary/50 font-bold">
+                        <TableCell />
+                        <TableCell colSpan={3} className="text-sm">Totalt</TableCell>
+                        <TableCell className="text-right text-sm">{totalItems}</TableCell>
+                        <TableCell />
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </div>
