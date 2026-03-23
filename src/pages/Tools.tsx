@@ -1,7 +1,8 @@
 import { ExternalLink, Star } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface Tool {
@@ -15,25 +16,33 @@ interface Tool {
 
 const MAX_FAVORITES = 8;
 
+async function fetchToolsData(userId: string | undefined) {
+  const [toolsRes, favsRes] = await Promise.all([
+    supabase.from("tools" as any).select("*").eq("is_active", true).order("name"),
+    userId
+      ? supabase.from("user_tool_favorites" as any).select("tool_id").eq("user_id", userId)
+      : Promise.resolve({ data: [] }),
+  ]);
+  return {
+    tools: ((toolsRes.data as unknown) as Tool[]) ?? [],
+    favoriteIds: new Set(((favsRes.data as any[]) ?? []).map((f: any) => f.tool_id)) as Set<string>,
+  };
+}
+
 export default function Tools() {
   const { user } = useAuth();
-  const [tools, setTools] = useState<Tool[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [optimisticFavs, setOptimisticFavs] = useState<Set<string> | null>(null);
 
-  const fetchData = useCallback(async () => {
-    const [toolsRes, favsRes] = await Promise.all([
-      supabase.from("tools" as any).select("*").eq("is_active", true).order("name"),
-      user
-        ? supabase.from("user_tool_favorites" as any).select("tool_id").eq("user_id", user.id)
-        : Promise.resolve({ data: [] }),
-    ]);
-    setTools(((toolsRes.data as unknown) as Tool[]) ?? []);
-    setFavoriteIds(new Set(((favsRes.data as any[]) ?? []).map((f: any) => f.tool_id)));
-    setLoading(false);
-  }, [user]);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["tools-data", user?.id],
+    queryFn: () => fetchToolsData(user?.id),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const tools = data?.tools ?? [];
+  const favoriteIds = optimisticFavs ?? data?.favoriteIds ?? new Set<string>();
 
   const toggleFavorite = async (toolId: string) => {
     if (!user) return;
@@ -45,11 +54,9 @@ export default function Tools() {
     }
 
     // Optimistic update
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (isFav) next.delete(toolId); else next.add(toolId);
-      return next;
-    });
+    const next = new Set(favoriteIds);
+    if (isFav) next.delete(toolId); else next.add(toolId);
+    setOptimisticFavs(next);
 
     if (isFav) {
       await supabase.from("user_tool_favorites" as any).delete().eq("user_id", user.id).eq("tool_id", toolId);
@@ -60,6 +67,10 @@ export default function Tools() {
         sort_order: favoriteIds.size,
       });
     }
+
+    queryClient.invalidateQueries({ queryKey: ["tools-data"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-quick-tools"] });
+    setOptimisticFavs(null);
   };
 
   if (loading) {
