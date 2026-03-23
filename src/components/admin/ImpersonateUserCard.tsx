@@ -20,21 +20,22 @@ interface ImpersonateUserCardProps {
 const IMPERSONATION_KEY = "shf_impersonation_original_session";
 
 export function isImpersonating(): boolean {
-  return !!sessionStorage.getItem(IMPERSONATION_KEY);
+  return !!localStorage.getItem(IMPERSONATION_KEY);
 }
 
 export async function exitImpersonation() {
-  const stored = sessionStorage.getItem(IMPERSONATION_KEY);
+  const stored = localStorage.getItem(IMPERSONATION_KEY);
   if (!stored) return;
 
   try {
     const { access_token, refresh_token } = JSON.parse(stored);
     await supabase.auth.setSession({ access_token, refresh_token });
-    sessionStorage.removeItem(IMPERSONATION_KEY);
+    localStorage.removeItem(IMPERSONATION_KEY);
     window.location.href = "/admin";
   } catch (err) {
     console.error("Failed to restore session:", err);
-    sessionStorage.removeItem(IMPERSONATION_KEY);
+    localStorage.removeItem(IMPERSONATION_KEY);
+    await supabase.auth.signOut();
     window.location.href = "/";
   }
 }
@@ -55,19 +56,7 @@ export default function ImpersonateUserCard({ profiles }: ImpersonateUserCardPro
     setLoading(true);
 
     try {
-      // Store current session before switching
-      const { data: currentSession } = await supabase.auth.getSession();
-      if (currentSession?.session) {
-        sessionStorage.setItem(
-          IMPERSONATION_KEY,
-          JSON.stringify({
-            access_token: currentSession.session.access_token,
-            refresh_token: currentSession.session.refresh_token,
-          })
-        );
-      }
-
-      // Call edge function to get session tokens
+      // Call edge function to get session tokens FIRST
       const { data, error } = await supabase.functions.invoke("impersonate-user", {
         body: { target_user_id: targetUserId },
       });
@@ -76,13 +65,27 @@ export default function ImpersonateUserCard({ profiles }: ImpersonateUserCardPro
         throw new Error(error?.message || "Kunde inte generera session");
       }
 
-      // Set the impersonated session directly
+      // Store current session ONLY after edge function succeeds
+      const { data: currentSession } = await supabase.auth.getSession();
+      if (currentSession?.session) {
+        localStorage.setItem(
+          IMPERSONATION_KEY,
+          JSON.stringify({
+            access_token: currentSession.session.access_token,
+            refresh_token: currentSession.session.refresh_token,
+          })
+        );
+      }
+
+      // Set the impersonated session
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
       });
 
       if (sessionError) {
+        // Rollback – remove stored session since we failed to switch
+        localStorage.removeItem(IMPERSONATION_KEY);
         throw sessionError;
       }
 
@@ -91,8 +94,7 @@ export default function ImpersonateUserCard({ profiles }: ImpersonateUserCardPro
     } catch (err: any) {
       console.error("Impersonation failed:", err);
       toast.error("Kunde inte byta användare: " + (err.message || "Okänt fel"));
-      // Restore original session if impersonation failed
-      sessionStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(IMPERSONATION_KEY);
       setLoading(false);
     }
   };
