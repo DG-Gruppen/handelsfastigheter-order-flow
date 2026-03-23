@@ -32,6 +32,7 @@ interface HistoryOrder {
 
 export default function History() {
   const { user, roles, profile } = useAuth();
+  const { isOwner: isModuleOwner, canEdit: isModuleEditor } = useModulePermission("history");
   const queryClient = useQueryClient();
   const [loadingMore, setLoadingMore] = useState(false);
   const [extraOrders, setExtraOrders] = useState<HistoryOrder[]>([]);
@@ -42,6 +43,7 @@ export default function History() {
 
   const isAdmin = roles.includes("admin") || roles.includes("it");
   const isManager = roles.includes("manager");
+  const canSeeAll = isAdmin || isModuleOwner || isModuleEditor;
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
