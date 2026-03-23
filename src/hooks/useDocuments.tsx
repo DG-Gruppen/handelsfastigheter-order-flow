@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface DocFolder {
   id: string;
@@ -25,90 +26,75 @@ export interface DocFile {
   created_at: string;
 }
 
+async function fetchDocumentsData() {
+  const [foldersRes, filesRes] = await Promise.all([
+    supabase.from("document_folders").select("*").order("name"),
+    supabase.from("document_files").select("*").order("name"),
+  ]);
+  return {
+    folders: (foldersRes.data as DocFolder[]) ?? [],
+    files: (filesRes.data as DocFile[]) ?? [],
+  };
+}
+
+async function fetchModuleEditPermission(userId: string) {
+  const { data: mod } = await supabase
+    .from("modules")
+    .select("id")
+    .eq("slug", "documents")
+    .maybeSingle();
+  if (!mod) return false;
+
+  const { data: userPerm } = await supabase
+    .from("module_permissions")
+    .select("can_edit, is_owner")
+    .eq("module_id", mod.id)
+    .eq("grantee_type", "user")
+    .eq("grantee_id", userId);
+
+  if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) return true;
+
+  const { data: groups } = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("user_id", userId);
+  if (!groups?.length) return false;
+
+  const groupIds = groups.map((g: any) => g.group_id);
+  const { data: groupPerm } = await supabase
+    .from("module_permissions")
+    .select("can_edit, is_owner")
+    .eq("module_id", mod.id)
+    .eq("grantee_type", "group")
+    .in("grantee_id", groupIds);
+
+  return groupPerm?.some((p: any) => p.can_edit || p.is_owner) ?? false;
+}
+
 export function useDocuments() {
   const { user, roles } = useAuth();
-  const [folders, setFolders] = useState<DocFolder[]>([]);
-  const [files, setFiles] = useState<DocFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasModuleEdit, setHasModuleEdit] = useState(false);
+  const queryClient = useQueryClient();
   const isAdmin = roles.includes("admin");
 
-  const fetchData = useCallback(async () => {
-    const [foldersRes, filesRes] = await Promise.all([
-      supabase.from("document_folders").select("*").order("name"),
-      supabase.from("document_files").select("*").order("name"),
-    ]);
-    setFolders((foldersRes.data as DocFolder[]) ?? []);
-    setFiles((filesRes.data as DocFile[]) ?? []);
-    setLoading(false);
-  }, []);
+  const { data: docsData, isLoading: loading } = useQuery({
+    queryKey: ["documents-data"],
+    queryFn: fetchDocumentsData,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Check if user has module-level edit/owner permission on the documents module
-  useEffect(() => {
-    if (!user || isAdmin) return;
-    (async () => {
-      // Get the documents module id
-      const { data: mod } = await supabase
-        .from("modules")
-        .select("id")
-        .eq("slug", "documents")
-        .maybeSingle();
-      if (!mod) return;
+  const folders = docsData?.folders ?? [];
+  const files = docsData?.files ?? [];
 
-      // Check user-level permission
-      const { data: userPerm } = await supabase
-        .from("module_permissions")
-        .select("can_edit, is_owner")
-        .eq("module_id", mod.id)
-        .eq("grantee_type", "user")
-        .eq("grantee_id", user.id);
+  const { data: hasModuleEdit = false } = useQuery({
+    queryKey: ["documents-module-edit", user?.id],
+    queryFn: () => fetchModuleEditPermission(user!.id),
+    enabled: !!user && !isAdmin,
+    staleTime: 10 * 60 * 1000,
+  });
 
-      if (userPerm?.some((p: any) => p.can_edit || p.is_owner)) {
-        setHasModuleEdit(true);
-        return;
-      }
-
-      // Check group-level permission
-      const { data: groups } = await supabase
-        .from("group_members")
-        .select("group_id")
-        .eq("user_id", user.id);
-      if (!groups?.length) return;
-
-      const groupIds = groups.map((g: any) => g.group_id);
-      const { data: groupPerm } = await supabase
-        .from("module_permissions")
-        .select("can_edit, is_owner")
-        .eq("module_id", mod.id)
-        .eq("grantee_type", "group")
-        .in("grantee_id", groupIds);
-
-      if (groupPerm?.some((p: any) => p.can_edit || p.is_owner)) {
-        setHasModuleEdit(true);
-      }
-    })();
-  }, [user?.id, isAdmin]);
-
-  useEffect(() => {
-    fetchData();
-
-    const debounceRef = { current: null as ReturnType<typeof setTimeout> | null };
-    const debouncedRefetch = () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => fetchData(), 500);
-    };
-
-    const channel = supabase
-      .channel("documents-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "document_folders" }, debouncedRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "document_files" }, debouncedRefetch)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [fetchData]);
+  const refresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["documents-data"] });
+  }, [queryClient]);
 
   // ── Folder CRUD ──
   const createFolder = async (name: string, parentId: string | null, icon?: string) => {
@@ -123,47 +109,45 @@ export function useDocuments() {
     } as any);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Mapp skapad" });
-    fetchData();
+    refresh();
   };
 
   const renameFolder = async (id: string, name: string) => {
     const { error } = await supabase.from("document_folders").update({ name } as any).eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
-    fetchData();
+    refresh();
   };
 
   const deleteFolder = async (id: string) => {
     const { error } = await supabase.from("document_folders").delete().eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Mapp borttagen" });
-    fetchData();
+    refresh();
   };
 
   const moveFolder = async (id: string, newParentId: string | null) => {
     const { error } = await supabase.from("document_folders").update({ parent_id: newParentId } as any).eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Mapp flyttad" });
-    fetchData();
+    refresh();
   };
 
   const updateFolderAccess = async (id: string, accessRoles: string[] | null, writeRoles: string[] | null) => {
     const { error } = await supabase.from("document_folders").update({ access_roles: accessRoles, write_roles: writeRoles } as any).eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Behörighet uppdaterad" });
-    fetchData();
+    refresh();
   };
 
   const updateFolderIcon = async (id: string, icon: string) => {
     const { error } = await supabase.from("document_folders").update({ icon } as any).eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Ikon uppdaterad" });
-    fetchData();
+    refresh();
   };
 
-  // Check if current user can write to a specific folder
   const canWriteFolder = (folderId: string): boolean => {
     if (isAdmin) return true;
-    // Module-level edit/owner permission grants write access to all folders
     if (hasModuleEdit) return true;
     const folder = folders.find(f => f.id === folderId);
     if (!folder) return false;
@@ -191,7 +175,7 @@ export function useDocuments() {
     } as any);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Fil uppladdad", description: file.name });
-    fetchData();
+    refresh();
   };
 
   const deleteFile = async (file: DocFile) => {
@@ -199,20 +183,20 @@ export function useDocuments() {
     const { error } = await supabase.from("document_files").delete().eq("id", file.id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Fil borttagen" });
-    fetchData();
+    refresh();
   };
 
   const moveFile = async (fileId: string, newFolderId: string) => {
     const { error } = await supabase.from("document_files").update({ folder_id: newFolderId } as any).eq("id", fileId);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Fil flyttad" });
-    fetchData();
+    refresh();
   };
 
   const renameFile = async (id: string, name: string) => {
     const { error } = await supabase.from("document_files").update({ name } as any).eq("id", id);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
-    fetchData();
+    refresh();
   };
 
   const downloadFile = async (file: DocFile) => {
@@ -230,6 +214,6 @@ export function useDocuments() {
     folders, files, loading, isAdmin, roles,
     createFolder, renameFolder, deleteFolder, moveFolder, updateFolderAccess, updateFolderIcon,
     uploadFile, deleteFile, moveFile, renameFile, downloadFile,
-    canWriteFolder, refresh: fetchData,
+    canWriteFolder, refresh,
   };
 }
