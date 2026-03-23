@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -54,7 +55,7 @@ function getInitials(name?: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export default function KanbanCard({ card, assigneeName, reporterName, onClick, overlay, checklistSummary, attachmentCount }: Props) {
+function KanbanCardInner({ card, assigneeName, reporterName, onClick, overlay, checklistSummary, attachmentCount }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: "card", card },
@@ -199,3 +200,6 @@ export default function KanbanCard({ card, assigneeName, reporterName, onClick, 
     </div>
   );
 }
+
+const KanbanCard = memo(KanbanCardInner);
+export default KanbanCard;

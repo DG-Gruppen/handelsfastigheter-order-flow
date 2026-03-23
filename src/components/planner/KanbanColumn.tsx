@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -33,7 +34,7 @@ interface Props {
   overlay?: boolean;
 }
 
-export default function KanbanColumn({
+function KanbanColumnInner({
   column, cards, totalCardCount, profileMap, checklistSummaries, attachmentCounts, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
 }: Props) {
   const {
@@ -155,3 +156,6 @@ export default function KanbanColumn({
     </div>
   );
 }
+
+const KanbanColumn = memo(KanbanColumnInner);
+export default KanbanColumn;
