@@ -166,16 +166,29 @@ export default function WorkwearAdminPanel() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "sv") || a.color.localeCompare(b.color, "sv") || a.size.localeCompare(b.size, "sv"));
   }, [filteredOrders, profileMap, regionMap]);
 
-  // Supplier list with subtotals
+  // Supplier list grouped by product
+  const supplierGroups = useMemo(() => {
+    const groups = new Map<string, { name: string; totalQty: number; logo: string; sizes: { color: string; size: string; qty: number; logo: string }[] }>();
+    itemStats.forEach((item) => {
+      const existing = groups.get(item.name);
+      if (existing) {
+        existing.totalQty += item.qty;
+        existing.sizes.push({ color: item.color, size: item.size, qty: item.qty, logo: item.logo });
+      } else {
+        groups.set(item.name, {
+          name: item.name,
+          totalQty: item.qty,
+          logo: item.logo,
+          sizes: [{ color: item.color, size: item.size, qty: item.qty, logo: item.logo }],
+        });
+      }
+    });
+    return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  }, [itemStats]);
+
   const supplierRows = useMemo(() => {
     const sorted = applySortString(itemStats, sortSupplier);
-    const groups = new Map<string, typeof itemStats>();
-    sorted.forEach((item) => {
-      const arr = groups.get(item.name) || [];
-      arr.push(item);
-      groups.set(item.name, arr);
-    });
-    return { groups, sorted };
+    return { sorted };
   }, [itemStats, sortSupplier]);
 
   // ── Pick list ──
