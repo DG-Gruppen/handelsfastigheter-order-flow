@@ -421,13 +421,15 @@ export default function WorkwearAdminPanel() {
       </div>
 
       <Tabs defaultValue="items">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="items">Sammanställning</TabsTrigger>
-          <TabsTrigger value="supplier">Beställningslista</TabsTrigger>
-          <TabsTrigger value="pick">Plocklista</TabsTrigger>
-          <TabsTrigger value="regions">Per region</TabsTrigger>
-          <TabsTrigger value="orders">Beställningar</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="flex-wrap h-auto gap-1 w-max md:w-auto">
+            <TabsTrigger value="items" className="text-xs md:text-sm">Sammanställning</TabsTrigger>
+            <TabsTrigger value="supplier" className="text-xs md:text-sm">Beställningslista</TabsTrigger>
+            <TabsTrigger value="pick" className="text-xs md:text-sm">Plocklista</TabsTrigger>
+            <TabsTrigger value="regions" className="text-xs md:text-sm">Per region</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm">Beställningar</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Sammanställning ── */}
         <TabsContent value="items" className="mt-4">
