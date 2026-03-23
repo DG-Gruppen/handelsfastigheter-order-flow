@@ -157,7 +157,7 @@ export default function IntegrationsStatus() {
                   </p>
                 )}
 
-                {["cision-feed", "content-index"].includes(row.slug) && (
+                {["cision-feed", "content-index", "google-drive"].includes(row.slug) && (
                   <Button
                     variant="ghost"
                     size="sm"
