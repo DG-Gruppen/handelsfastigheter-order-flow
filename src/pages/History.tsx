@@ -167,7 +167,7 @@ export default function History() {
     return null;
   }
 
-  const showRequester = isAdmin || isManager;
+  const showRequester = canSeeAll || isManager;
 
   return (
     <div className="space-y-5 md:space-y-8">
