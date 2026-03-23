@@ -189,9 +189,22 @@ export default function Onboarding() {
   const myManagerProfile = refData?.myManagerProfile ?? null;
   const managers = refData?.managers ?? [];
 
+  // Approval logic
+  const isManager = roles.includes("manager");
+  const isAdmin = roles.includes("admin");
+  const isStaff = myProfile?.is_staff === true;
+  const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
+  const needsCeoApprovalCheck = isManagerOrAdmin && reportsDirectlyToCeo && (
+    (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
+    (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
+  );
+  const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
+  const needsApproval = needsCeoApprovalCheck || needsManagerApproval;
+  const showApproverPicker = !isManagerOrAdmin || needsApproval;
+
   // Pre-fill department from profile (once)
   useEffect(() => {
-    if (refData?.myProfile?.department && !roles.includes("admin") && !recipientDepartment) {
+    if (refData?.myProfile?.department && !isAdmin && !recipientDepartment) {
       setRecipientDepartment(refData.myProfile.department);
     }
   }, [refData?.myProfile?.department]);
