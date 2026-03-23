@@ -84,10 +84,6 @@ export default function Onboarding() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const { regions } = useRegions();
 
-  // Approval logic (computed from refData)
-  const isManager = roles.includes("manager");
-  const isStaff = refData?.myProfile?.is_staff === true;
-  const isAdmin = roles.includes("admin");
 
   const { data: refData } = useQuery({
     queryKey: ["onboarding-ref-data", user?.id],
