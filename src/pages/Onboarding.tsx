@@ -269,7 +269,6 @@ export default function Onboarding() {
   };
 
   // For offboarding: non-admins only see their subordinates
-  const isAdmin = roles.includes("admin");
 
   const getSubordinateIds = (profileId: string, profiles: ProfileOption[]): Set<string> => {
     const result = new Set<string>();
