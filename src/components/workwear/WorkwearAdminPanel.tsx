@@ -699,9 +699,9 @@ export default function WorkwearAdminPanel() {
         {/* ── Per region ── */}
         <TabsContent value="regions" className="mt-4">
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium">Beställningar per region</CardTitle>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
+            <CardHeader className="pb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Beställningar per region</CardTitle>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 shrink-0" onClick={() => downloadCsv(
                 ["Region", "Beställningar", "Antal plagg"],
                 deptStats.map((d) => [d.dept, String(d.count), String(d.items)]),
                 "per-region.csv"
