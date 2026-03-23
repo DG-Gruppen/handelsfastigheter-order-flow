@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,9 +31,9 @@ interface HistoryOrder {
 
 export default function History() {
   const { user, roles, profile } = useAuth();
-  const [orders, setOrders] = useState<HistoryOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [loadingMore, setLoadingMore] = useState(false);
+  const [extraOrders, setExtraOrders] = useState<HistoryOrder[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
@@ -44,8 +44,8 @@ export default function History() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchHistory = useCallback(async (pageIndex: number, append: boolean) => {
-    if (!user || !profile) return;
+  const fetchPage = useCallback(async (pageIndex: number) => {
+    if (!user || !profile) return [];
 
     const from = pageIndex * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -53,7 +53,6 @@ export default function History() {
     let data: HistoryOrder[] = [];
 
     if (isAdmin) {
-      // Admin: alla beställningar med JOIN på profil (eliminerar N+1)
       const { data: rows } = await supabase
         .from("orders")
         .select("*, requester:profiles!requester_id(full_name)")
@@ -65,7 +64,6 @@ export default function History() {
         requester_name: o.requester?.full_name ?? "Okänd",
       }));
     } else if (isManager) {
-      // Chef: egna + underställdas via RPC, sedan JOIN
       const { data: subRows } = await supabase.rpc("get_subordinate_user_ids", {
         _manager_profile_id: profile.id,
       });
@@ -84,7 +82,6 @@ export default function History() {
         requester_name: o.requester?.full_name ?? "Okänd",
       }));
     } else {
-      // Anställd: bara egna
       const { data: rows } = await supabase
         .from("orders")
         .select("*")
@@ -95,23 +92,36 @@ export default function History() {
       data = (rows ?? []).map((o) => ({ ...o, requester_name: profile.full_name }));
     }
 
-    setHasMore(data.length === PAGE_SIZE);
-    setOrders((prev) => (append ? [...prev, ...data] : data));
-    setLoading(false);
-    setLoadingMore(false);
+    return data;
   }, [user, profile, isAdmin, isManager]);
 
+  const { data: firstPageOrders = [], isLoading: loading } = useQuery({
+    queryKey: ["history-orders", user?.id, isAdmin, isManager, profile?.id],
+    queryFn: async () => {
+      const data = await fetchPage(0);
+      setHasMore(data.length === PAGE_SIZE);
+      setExtraOrders([]);
+      setPage(0);
+      return data;
+    },
+    enabled: !!user && !!profile,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const orders = useMemo(() => [...firstPageOrders, ...extraOrders], [firstPageOrders, extraOrders]);
+
+  // Realtime subscription
   useEffect(() => {
     if (!user || !profile) return;
-    setLoading(true);
-    setPage(0);
-    fetchHistory(0, false);
-
     const channel = supabase
       .channel("history-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => fetchHistory(0, false), 500);
+        debounceRef.current = setTimeout(() => {
+          setExtraOrders([]);
+          setPage(0);
+          queryClient.invalidateQueries({ queryKey: ["history-orders"] });
+        }, 500);
       })
       .subscribe();
 
@@ -119,13 +129,16 @@ export default function History() {
       supabase.removeChannel(channel);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [user, profile, isAdmin, isManager, fetchHistory]);
+  }, [user, profile, queryClient]);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = async () => {
     const nextPage = page + 1;
     setPage(nextPage);
     setLoadingMore(true);
-    fetchHistory(nextPage, true);
+    const data = await fetchPage(nextPage);
+    setHasMore(data.length === PAGE_SIZE);
+    setExtraOrders((prev) => [...prev, ...data]);
+    setLoadingMore(false);
   };
 
   const filtered = useMemo(() => orders.filter(o => {

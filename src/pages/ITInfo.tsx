@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones, Settings, Che
 import { toast } from "sonner";
 import FaqManager from "@/components/FaqManager";
 import PwaInstallGuide from "@/components/PwaInstallGuide";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface FaqItem {
   id: string;
@@ -18,42 +19,43 @@ interface FaqItem {
   sort_order: number;
 }
 
+async function fetchFaqData(): Promise<FaqItem[]> {
+  const { data } = await supabase
+    .from("it_faq")
+    .select("id, question, answer, sort_order")
+    .eq("is_active", true)
+    .order("sort_order");
+  return (data as FaqItem[]) ?? [];
+}
+
 export default function ITInfo() {
   const { settings, refresh } = useNavSettings();
   const { roles } = useAuth();
   const { canEdit: canEditIT } = useModulePermission("it-support");
-  const [faq, setFaq] = useState<FaqItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [managingFaq, setManagingFaq] = useState(false);
   const [editingContact, setEditingContact] = useState(false);
   const [editingRemoteHelp, setEditingRemoteHelp] = useState(false);
   const isItOrAdmin = canEditIT;
 
-  // Local edit state for contact
   const [contactForm, setContactForm] = useState({ email: "", phone: "", hours: "" });
-  // Local edit state for remote help
   const [remoteForm, setRemoteForm] = useState({ label: "", url: "", visible: true });
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadFaq = useCallback(async () => {
-    const { data } = await supabase
-      .from("it_faq")
-      .select("id, question, answer, sort_order")
-      .eq("is_active", true)
-      .order("sort_order");
-    setFaq((data as FaqItem[]) ?? []);
-    setLoading(false);
-  }, []);
+  const { data: faq = [], isLoading: loading } = useQuery({
+    queryKey: ["itinfo-faq"],
+    queryFn: fetchFaqData,
+    staleTime: 5 * 60 * 1000,
+  });
 
+  // Realtime subscription
   useEffect(() => {
-    loadFaq();
-
     const channel = supabase
       .channel("itinfo-faq")
       .on("postgres_changes", { event: "*", schema: "public", table: "it_faq" }, () => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => loadFaq(), 500);
+        debounceRef.current = setTimeout(() => queryClient.invalidateQueries({ queryKey: ["itinfo-faq"] }), 500);
       })
       .subscribe();
 
@@ -61,7 +63,7 @@ export default function ITInfo() {
       supabase.removeChannel(channel);
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [loadFaq]);
+  }, [queryClient]);
 
   const remoteHelpUrl = settings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU";
   const remoteHelpLabel = settings["it_remote_help_label"] || "Fjärrhjälp (Splashtop)";
@@ -81,11 +83,7 @@ export default function ITInfo() {
   };
 
   const startEditingContact = () => {
-    setContactForm({
-      email: contactEmail,
-      phone: contactPhone,
-      hours: contactHours,
-    });
+    setContactForm({ email: contactEmail, phone: contactPhone, hours: contactHours });
     setEditingContact(true);
   };
 
@@ -101,11 +99,7 @@ export default function ITInfo() {
   };
 
   const startEditingRemoteHelp = () => {
-    setRemoteForm({
-      label: remoteHelpLabel,
-      url: remoteHelpUrl,
-      visible: showRemoteHelp,
-    });
+    setRemoteForm({ label: remoteHelpLabel, url: remoteHelpUrl, visible: showRemoteHelp });
     setEditingRemoteHelp(true);
   };
 
@@ -301,7 +295,7 @@ export default function ITInfo() {
 
       {/* FAQ */}
       {managingFaq && isItOrAdmin ? (
-        <FaqManager onClose={() => { setManagingFaq(false); setLoading(true); supabase.from("it_faq").select("id, question, answer, sort_order").eq("is_active", true).order("sort_order").then(({ data }) => { setFaq((data as FaqItem[]) ?? []); setLoading(false); }); }} />
+        <FaqManager onClose={() => { setManagingFaq(false); queryClient.invalidateQueries({ queryKey: ["itinfo-faq"] }); }} />
       ) : !loading && faq.length > 0 ? (
         <Card className="glass-card border-t-2 border-t-accent/40">
           <CardHeader className="px-4 md:px-6 pb-2">

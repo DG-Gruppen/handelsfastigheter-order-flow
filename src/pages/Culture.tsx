@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Award, PartyPopper, Pen, BookOpen, ChevronRight, Pencil, Check, X } from "lucide-react";
@@ -10,6 +10,7 @@ import RecognitionDialog from "@/components/RecognitionDialog";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const veckansVinst = {
   title: "Region Syd knäcker alla förväntningar",
@@ -35,55 +36,65 @@ interface CeoBlog {
   period: string;
 }
 
+async function fetchRecognitionsData(): Promise<Recognition[]> {
+  const { data } = await supabase
+    .from("recognitions")
+    .select("id, icon, message, created_at, from_user_id, to_user_id")
+    .order("created_at", { ascending: false });
+  if (!data) return [];
+  const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
+  if (userIds.length === 0) return [];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, full_name")
+    .in("user_id", userIds);
+  const nameMap: Record<string, string> = {};
+  for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
+  return data.map((r: any) => ({
+    id: r.id,
+    icon: r.icon,
+    message: r.message,
+    created_at: r.created_at,
+    from_name: nameMap[r.from_user_id] || "Okänd",
+    to_name: nameMap[r.to_user_id] || "Okänd",
+  }));
+}
+
+async function fetchCeoBlogData(): Promise<CeoBlog | null> {
+  const { data } = await supabase
+    .from("ceo_blog" as any)
+    .select("id, title, excerpt, author, period")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+  return (data as any) ?? null;
+}
+
 export default function Culture() {
   const { roles, profile } = useAuth();
   const isAdmin = roles.includes("admin");
   const isIT = roles.includes("it");
+  const queryClient = useQueryClient();
 
-  const [recognitions, setRecognitions] = useState<Recognition[]>([]);
-  const [ceoBlog, setCeoBlog] = useState<CeoBlog | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<CeoBlog | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const fetchRecognitions = useCallback(async () => {
-    const { data } = await supabase
-      .from("recognitions")
-      .select("id, icon, message, created_at, from_user_id, to_user_id")
-      .order("created_at", { ascending: false });
-    if (!data) return;
-    const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
-    if (userIds.length === 0) { setRecognitions([]); return; }
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, full_name")
-      .in("user_id", userIds);
-    const nameMap: Record<string, string> = {};
-    for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
-    setRecognitions(data.map((r: any) => ({
-      id: r.id,
-      icon: r.icon,
-      message: r.message,
-      created_at: r.created_at,
-      from_name: nameMap[r.from_user_id] || "Okänd",
-      to_name: nameMap[r.to_user_id] || "Okänd",
-    })));
-  }, []);
+  const { data: recognitions = [] } = useQuery({
+    queryKey: ["culture-recognitions"],
+    queryFn: fetchRecognitionsData,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const fetchCeoBlog = useCallback(async () => {
-    const { data } = await supabase
-      .from("ceo_blog" as any)
-      .select("id, title, excerpt, author, period")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-    if (data) setCeoBlog(data as any);
-  }, []);
+  const { data: ceoBlog = null } = useQuery({
+    queryKey: ["culture-ceo-blog"],
+    queryFn: fetchCeoBlogData,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchRecognitions();
-    fetchCeoBlog();
-  }, [fetchRecognitions, fetchCeoBlog]);
+  const refreshRecognitions = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["culture-recognitions"] });
+  }, [queryClient]);
 
   const startEdit = () => {
     if (!ceoBlog) return;
@@ -116,7 +127,7 @@ export default function Culture() {
       toast.error("Kunde inte spara");
     } else {
       toast.success("Uppdaterat!");
-      setCeoBlog(editForm);
+      queryClient.invalidateQueries({ queryKey: ["culture-ceo-blog"] });
       setEditing(false);
       setEditForm(null);
     }
@@ -154,7 +165,7 @@ export default function Culture() {
             <PartyPopper className="w-5 h-5 text-primary" />
             <h2 className="font-heading text-xl font-semibold text-foreground">Klapp på axeln</h2>
           </div>
-          <RecognitionDialog onCreated={fetchRecognitions} />
+          <RecognitionDialog onCreated={refreshRecognitions} />
         </div>
         {recognitions.length === 0 && (
           <p className="text-sm text-muted-foreground">Inga erkännanden ännu. Var först med att uppmärksamma en kollega!</p>
