@@ -389,12 +389,12 @@ export default function WorkwearAdminPanel() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Säsong:</span>
+      <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3">
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground hidden md:inline">Säsong:</span>
           <Select value={filterSeason} onValueChange={setFilterSeason}>
-            <SelectTrigger className="w-[160px] h-9 text-xs">
-              <SelectValue />
+            <SelectTrigger className="w-full md:w-[160px] h-9 text-xs">
+              <SelectValue placeholder="Säsong" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">Alla säsonger</SelectItem>
@@ -404,11 +404,11 @@ export default function WorkwearAdminPanel() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Region:</span>
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground hidden md:inline">Region:</span>
           <Select value={filterRegion} onValueChange={setFilterRegion}>
-            <SelectTrigger className="w-[200px] h-9 text-xs">
-              <SelectValue />
+            <SelectTrigger className="w-full md:w-[200px] h-9 text-xs">
+              <SelectValue placeholder="Region" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="text-xs">Alla regioner</SelectItem>
