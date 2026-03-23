@@ -790,12 +790,12 @@ export default function WorkwearAdminPanel() {
                                   </span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{order.region}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground hidden md:table-cell">{order.region}</TableCell>
                               <TableCell className="text-sm">
                                 {order.totalQty} plagg
-                                <span className="text-muted-foreground ml-1 text-xs">({order.itemNames})</span>
+                                <span className="text-muted-foreground ml-1 text-xs hidden sm:inline">({order.itemNames})</span>
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
+                              <TableCell className="text-sm text-muted-foreground hidden md:table-cell">
                                 {format(parseISO(order.created_at), "d MMM yyyy", { locale: sv })}
                               </TableCell>
                               <TableCell onClick={(e) => e.stopPropagation()}>
