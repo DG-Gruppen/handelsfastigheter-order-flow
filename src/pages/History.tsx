@@ -99,7 +99,7 @@ export default function History() {
   }, [user, profile, canSeeAll, isManager]);
 
   const { data: firstPageOrders = [], isLoading: loading } = useQuery({
-    queryKey: ["history-orders", user?.id, isAdmin, isManager, profile?.id],
+    queryKey: ["history-orders", user?.id, canSeeAll, isManager, profile?.id],
     queryFn: async () => {
       const data = await fetchPage(0);
       setHasMore(data.length === PAGE_SIZE);
