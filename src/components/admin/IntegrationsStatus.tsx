@@ -65,6 +65,7 @@ export default function IntegrationsStatus() {
       const fnMap: Record<string, string> = {
         "cision-feed": "fetch-cision-feed",
         "content-index": "sync-content-index",
+        "google-drive": "index-google-drive",
       };
       const fnName = fnMap[slug];
       if (!fnName) {
