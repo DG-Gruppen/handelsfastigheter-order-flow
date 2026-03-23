@@ -514,7 +514,6 @@ export default function WorkwearAdminPanel() {
                 }}>
                   {expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.size === supplierGroups.length) ? "Dölj alla" : "Visa alla"}
                 </Button>
-                </Button>
                 <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
                   ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
                   supplierRows.sorted.map((i) => [i.name, i.color, i.size, String(i.qty), i.logo]),
