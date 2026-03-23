@@ -1932,6 +1932,10 @@ export type Database = {
         Args: { _password_id: string; _user_id: string }
         Returns: boolean
       }
+      is_subordinate_order: {
+        Args: { _requester_id: string; _viewer_id: string }
+        Returns: boolean
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
