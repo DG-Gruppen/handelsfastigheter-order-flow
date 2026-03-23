@@ -1,37 +1,27 @@
 
 
-## Förbättra profilkläder admin-panel
+## Fix sidebar jump when opening celebration comment dialog
 
 ### Problem
-Panelen har bra grundfunktionalitet men saknar:
-1. **Sammanställning** visar inte VEM som beställt varje plagg
-2. **Plocklista** kan bara laddas ner som en enda CSV -- behöver kunna laddas ner/skrivas ut per region
+When opening the chat bubble dialog for "Veckans jubilarer", Radix Dialog's scroll-locking (`RemoveScroll`) applies inline styles to `<html>` and `<body>` that shift the page layout, causing the sidebar to jump. The existing CSS overrides in `index.css` aren't fully preventing this.
 
-### Ändringar
+### Solution
+Two changes to make the fix robust:
 
-**Fil: `src/components/workwear/WorkwearAdminPanel.tsx`**
+**1. `src/components/ui/dialog.tsx`** — Disable Radix's built-in scroll-locking by passing `modal={false}` to `DialogPrimitive.Content` and manually adding the overlay click-to-close behavior. This prevents `RemoveScroll` from injecting inline styles entirely.
 
-#### 1. Utöka Sammanställning-fliken
-- Lägg till en kolumn "Beställare" som visar namnen på de som beställt varje plagg/färg/storlek-kombination (kommaseparerade)
-- Lägg till en kolumn "Region" som visar vilka regioner beställningarna kommer från
-- Uppdatera `itemStats` att spåra beställarnamn och regioner per artikel
-- Uppdatera CSV-exporten med de nya kolumnerna
+Alternatively (simpler): Add `onOpenAutoFocus={(e) => e.preventDefault()}` to prevent focus-triggered scroll jumps, and keep `modal` mode but override the `DialogPrimitive.Content` with `data-vaul-no-drag`.
 
-#### 2. Plocklista per region
-- Byt ut den enskilda CSV-knappen mot en dropdown med:
-  - "Ladda ner alla" (som idag)
-  - En knapp per region (Norr, Söder, Mitt/Bromma) som filtrerar plocklistan till enbart den regionen
-- Lägg till en "Skriv ut"-knapp som öppnar webbläsarens utskriftsdialog med utskriftsvänlig formatering (via `@media print` eller `window.print()` på en filtrerad vy)
-- Regionrubrik som gruppöverskrift i tabellen för tydligare visuell separation
+**Recommended approach**: The cleanest fix is to make `Dialog` pass through a `modal` prop and set `modal={false}` specifically in `CelebrationComments.tsx`. This avoids affecting all other dialogs in the app.
 
-#### 3. Beställningar-fliken
-- Lägg till en expanderbar rad (eller tooltip) som visar detaljerade plagg per beställning (produktnamn, färg, storlek, antal) -- just nu visas bara sammanfattade plaggnamn
+**2. `src/components/CelebrationComments.tsx`** — Pass `modal={false}` to the Dialog:
+```tsx
+<Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+```
 
-### Inga databasändringar
-All data finns redan i `workwear_orders.items` (JSONB) och `profiles.region_id` → `regions`.
+This disables Radix's `RemoveScroll` wrapper for this specific dialog, preventing the sidebar jump while keeping the dialog functional with the existing overlay.
 
-### Tekniska detaljer
-- Utöka `itemStats` map value med `orderers: Set<string>` och `regions: Set<string>`
-- Plocklista per-region-download: filtrera `pickRows` på `row.region === regionName` innan CSV-generering
-- Print: skapa en dold `<div>` med print-styles eller använd `window.print()` med CSS `@media print`
+### Scope
+- 1 file changed: `src/components/CelebrationComments.tsx` (1 line)
+- No database changes
 
