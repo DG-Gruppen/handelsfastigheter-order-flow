@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { useRegions } from "@/hooks/useRegions";
+import { useOrderFormData, resolveApprovalRouting, type ProfileOption } from "@/hooks/useOrderFormData";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
 import { enqueueEmail } from "@/lib/enqueueEmail";
@@ -23,36 +23,8 @@ import { getIcon } from "@/lib/icons";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-}
-
-interface OrderType {
-  id: string;
-  name: string;
-  category_id: string | null;
-  description: string;
-  icon: string;
-}
-
-interface ProfileOption {
-  id: string;
-  user_id: string;
-  full_name: string;
-  manager_id?: string | null;
-}
-
 interface OrderItem {
   typeId: string;
-}
-
-interface SystemOption {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
 }
 
 export default function Onboarding() {
