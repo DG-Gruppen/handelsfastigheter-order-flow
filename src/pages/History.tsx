@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ interface HistoryOrder {
 
 export default function History() {
   const { user, roles, profile } = useAuth();
+  const { isOwner: isModuleOwner, canEdit: isModuleEditor } = useModulePermission("history");
   const queryClient = useQueryClient();
   const [loadingMore, setLoadingMore] = useState(false);
   const [extraOrders, setExtraOrders] = useState<HistoryOrder[]>([]);
@@ -41,6 +43,7 @@ export default function History() {
 
   const isAdmin = roles.includes("admin") || roles.includes("it");
   const isManager = roles.includes("manager");
+  const canSeeAll = isAdmin || isModuleOwner || isModuleEditor;
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,7 +55,7 @@ export default function History() {
 
     let data: HistoryOrder[] = [];
 
-    if (isAdmin) {
+    if (canSeeAll) {
       const { data: rows } = await supabase
         .from("orders")
         .select("*, requester:profiles!requester_id(full_name)")
@@ -93,10 +96,10 @@ export default function History() {
     }
 
     return data;
-  }, [user, profile, isAdmin, isManager]);
+  }, [user, profile, canSeeAll, isManager]);
 
   const { data: firstPageOrders = [], isLoading: loading } = useQuery({
-    queryKey: ["history-orders", user?.id, isAdmin, isManager, profile?.id],
+    queryKey: ["history-orders", user?.id, canSeeAll, isManager, profile?.id],
     queryFn: async () => {
       const data = await fetchPage(0);
       setHasMore(data.length === PAGE_SIZE);
@@ -164,7 +167,7 @@ export default function History() {
     return null;
   }
 
-  const showRequester = isAdmin || isManager;
+  const showRequester = canSeeAll || isManager;
 
   return (
     <div className="space-y-5 md:space-y-8">
@@ -173,7 +176,7 @@ export default function History() {
             Historik
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {isAdmin ? "Alla beställningar i systemet" : isManager ? "Dina och dina anställdas beställningar" : "Dina beställningar"}
+            {canSeeAll ? "Alla beställningar i systemet" : isManager ? "Dina och dina anställdas beställningar" : "Dina beställningar"}
           </p>
         </div>
 
