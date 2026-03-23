@@ -61,54 +61,10 @@ export default function Onboarding() {
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin") || canEditOnboarding;
   const navigate = useNavigate();
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [orderTypes, setOrderTypes] = useState<OrderType[]>([]);
-  const [allProfiles, setAllProfiles] = useState<ProfileOption[]>([]);
-  const [systems, setSystems] = useState<SystemOption[]>([]);
-  const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string }[]>([]);
-  const [approvalSettings, setApprovalSettings] = useState<Record<string, string>>({});
-  const [myProfile, setMyProfile] = useState<{ id: string; is_staff: boolean | null; manager_id: string | null; department: string | null } | null>(null);
-  const [ceoProfile, setCeoProfile] = useState<ProfileOption | null>(null);
-  const [myManagerProfile, setMyManagerProfile] = useState<ProfileOption | null>(null);
-  const [managers, setManagers] = useState<ProfileOption[]>([]);
-
-  // Flow type: onboarding or offboarding
-  const [flowType, setFlowType] = useState<"onboarding" | "offboarding">("onboarding");
-  const isOffboarding = flowType === "offboarding";
-
-  // Form state
-  const [recipientFirstName, setRecipientFirstName] = useState("");
-  const [recipientLastName, setRecipientLastName] = useState("");
-  const recipientName = `${recipientFirstName} ${recipientLastName}`.trim();
-  const [recipientStartDate, setRecipientStartDate] = useState("");
-  const [recipientEndDate, setRecipientEndDate] = useState("");
-  const [recipientDepartment, setRecipientDepartment] = useState("");
-  const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
-  const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
-  const [approverId, setApproverId] = useState("");
-  const [description, setDescription] = useState("");
-  const [recipientRegionId, setRecipientRegionId] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [profileSearchOpen, setProfileSearchOpen] = useState(false);
-  const [profileSearchQuery, setProfileSearchQuery] = useState("");
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const { regions } = useRegions();
-
-  // Approval logic
-  const isManager = roles.includes("manager");
-  const isStaff = myProfile?.is_staff === true;
-  const reportsDirectlyToCeo = !myProfile?.manager_id || (ceoProfile && myProfile?.manager_id === ceoProfile?.id);
-  const needsCeoApprovalCheck = isManagerOrAdmin && reportsDirectlyToCeo && (
-    (isManager && approvalSettings["approval_managers_to_ceo"] === "true") ||
-    (isStaff && approvalSettings["approval_staff_to_ceo"] === "true")
-  );
-  const needsManagerApproval = isManagerOrAdmin && !reportsDirectlyToCeo && myManagerProfile != null;
-  const needsApproval = needsCeoApprovalCheck || needsManagerApproval;
-  const showApproverPicker = !isManagerOrAdmin || needsApproval;
-
-  useEffect(() => {
-    const fetchData = async () => {
+  // ── Cached reference data via React Query ──
+  const { data: refData } = useQuery({
+    queryKey: ["onboarding-ref-data", user?.id],
+    queryFn: async () => {
       const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes, systemsRes] = await Promise.all([
         supabase.from("categories").select("*").eq("is_active", true).order("sort_order"),
         supabase.from("order_types").select("*").eq("is_active", true).order("name"),
@@ -122,24 +78,15 @@ export default function Onboarding() {
         supabase.from("systems").select("id, name, description, icon").eq("is_active", true).order("sort_order"),
       ]);
 
-      setSystems((systemsRes.data as SystemOption[]) ?? []);
-
       const allCats = (catsRes.data as Category[]) ?? [];
       const allTypes = (typesRes.data as OrderType[]) ?? [];
-      setAllProfiles((allProfilesRes.data as ProfileOption[]) ?? []);
+      const fetchedAllProfiles = (allProfilesRes.data as ProfileOption[]) ?? [];
 
-      if (myProfileRes.data) {
-        const mp = myProfileRes.data as any;
-        setMyProfile({ id: mp.id, is_staff: mp.is_staff, manager_id: mp.manager_id, department: mp.department });
-        // For non-admin managers: pre-fill department
-        if (!roles.includes("admin") && mp.department) {
-          setRecipientDepartment(mp.department);
-        }
-      }
+      const mp = myProfileRes.data as any;
+      const myProfileData = mp ? { id: mp.id, is_staff: mp.is_staff, manager_id: mp.manager_id, department: mp.department } : null;
 
       const aMap: Record<string, string> = {};
       for (const s of (approvalRes.data as any[]) ?? []) aMap[s.setting_key] = s.setting_value;
-      setApprovalSettings(aMap);
 
       const catDeptMap: Record<string, string[]> = {};
       for (const row of (catDeptsRes.data as any[]) ?? []) {
@@ -152,25 +99,22 @@ export default function Onboarding() {
         otDeptMap[row.order_type_id].push(row.department_id);
       }
 
-      const userDept = (myProfileRes.data as any)?.department ?? "";
+      const userDept = mp?.department ?? "";
       const { data: deptRows } = await supabase.from("departments").select("id, name").order("name");
-      setDepartmentsList((deptRows as any[]) ?? []);
-      const userDeptId = (deptRows ?? []).find((d: any) => d.name === userDept)?.id;
+      const departments = (deptRows as any[]) ?? [];
+      const userDeptId = departments.find((d: any) => d.name === userDept)?.id;
 
-      const isAdmin = roles.includes("admin");
-      const filteredCats = isAdmin ? allCats : allCats.filter((c) => {
+      const isAdminUser = roles.includes("admin");
+      const filteredCats = isAdminUser ? allCats : allCats.filter((c) => {
         const restricted = catDeptMap[c.id];
         if (!restricted || restricted.length === 0) return true;
         return userDeptId ? restricted.includes(userDeptId) : true;
       });
-      const filteredTypes = isAdmin ? allTypes : allTypes.filter((ot) => {
+      const filteredTypes = isAdminUser ? allTypes : allTypes.filter((ot) => {
         const restricted = otDeptMap[ot.id];
         if (!restricted || restricted.length === 0) return true;
         return userDeptId ? restricted.includes(userDeptId) : true;
       });
-
-      setCategories(filteredCats);
-      setOrderTypes(filteredTypes);
 
       const rolesData = rolesRes.data ?? [];
       const managerUserIds = new Set(
@@ -179,23 +123,55 @@ export default function Onboarding() {
       const filteredManagers = ((profilesRes.data as ProfileOption[]) ?? []).filter(
         (p) => managerUserIds.has(p.user_id)
       );
-      setManagers(filteredManagers);
 
       const adminUserIds = new Set(
         rolesData.filter((r: any) => r.role === "admin").map((r: any) => r.user_id)
       );
       const { data: fullProfiles } = await supabase.from("profiles").select("id, user_id, full_name, manager_id");
       const ceo = (fullProfiles ?? []).find((p: any) => !p.manager_id && adminUserIds.has(p.user_id));
-      if (ceo) setCeoProfile({ id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name });
+      const ceoData = ceo ? { id: ceo.id, user_id: ceo.user_id, full_name: ceo.full_name } : null;
 
-      const myMgrId = (myProfileRes.data as any)?.manager_id;
+      const myMgrId = mp?.manager_id;
+      let myManagerData: ProfileOption | null = null;
       if (myMgrId) {
         const mgrProfile = (fullProfiles ?? []).find((p: any) => p.id === myMgrId);
-        if (mgrProfile) setMyManagerProfile({ id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name });
+        if (mgrProfile) myManagerData = { id: mgrProfile.id, user_id: mgrProfile.user_id, full_name: mgrProfile.full_name };
       }
-    };
-    if (user) fetchData();
-  }, [user, roles]);
+
+      return {
+        categories: filteredCats,
+        orderTypes: filteredTypes,
+        allProfiles: fetchedAllProfiles,
+        systems: (systemsRes.data as SystemOption[]) ?? [],
+        departmentsList: departments,
+        approvalSettings: aMap,
+        myProfile: myProfileData,
+        ceoProfile: ceoData,
+        myManagerProfile: myManagerData,
+        managers: filteredManagers,
+      };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categories = refData?.categories ?? [];
+  const orderTypes = refData?.orderTypes ?? [];
+  const allProfiles = refData?.allProfiles ?? [];
+  const systems = refData?.systems ?? [];
+  const departmentsList = refData?.departmentsList ?? [];
+  const approvalSettings = refData?.approvalSettings ?? {};
+  const myProfile = refData?.myProfile ?? null;
+  const ceoProfile = refData?.ceoProfile ?? null;
+  const myManagerProfile = refData?.myManagerProfile ?? null;
+  const managers = refData?.managers ?? [];
+
+  // Pre-fill department from profile (once)
+  useEffect(() => {
+    if (refData?.myProfile?.department && !roles.includes("admin") && !recipientDepartment) {
+      setRecipientDepartment(refData.myProfile.department);
+    }
+  }, [refData?.myProfile?.department]);
 
   const addItem = () => setItems((prev) => [...prev, { typeId: "" }]);
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
