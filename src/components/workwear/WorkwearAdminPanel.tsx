@@ -817,8 +817,8 @@ export default function WorkwearAdminPanel() {
                             </TableRow>
                             {isExpanded && orderItems.length > 0 && (
                               <TableRow className="bg-muted/30">
-                                <TableCell colSpan={5} className="py-2 pl-10">
-                                  <div className="grid grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                                <TableCell colSpan={5} className="py-2 px-3 md:pl-10">
+                                  <div className="grid grid-cols-4 gap-x-2 md:gap-x-4 gap-y-1 text-xs">
                                     <span className="font-semibold text-muted-foreground">Produkt</span>
                                     <span className="font-semibold text-muted-foreground">Färg</span>
                                     <span className="font-semibold text-muted-foreground">Storlek</span>
