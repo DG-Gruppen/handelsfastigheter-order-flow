@@ -110,8 +110,8 @@ export default function AppSidebar() {
   };
   const handleDragEnd = () => { setDraggedGroup(null); setDragOverGroup(null); };
 
-  // Build groups from modules
-  const groups = GROUP_CONFIG.map((g) => ({
+  // Build groups from modules (memoized)
+  const groups = useMemo(() => GROUP_CONFIG.map((g) => ({
     key: g.label || "__home__",
     label: g.label,
     modules: (g.slugs
@@ -123,7 +123,7 @@ export default function AppSidebar() {
         const dir = g.label === "Information" ? -1 : 1;
         return dir * nameA.localeCompare(nameB, "sv");
       }),
-  })).filter((g) => g.modules.length > 0);
+  })).filter((g) => g.modules.length > 0), [accessibleModules]);
 
   // Sync new groups into order
   useEffect(() => {
@@ -138,30 +138,35 @@ export default function AppSidebar() {
     }
   }, [groups.length]);
 
-  const sortedGroups = [...groups].sort((a, b) => {
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => {
     const ai = groupOrder.indexOf(a.key);
     const bi = groupOrder.indexOf(b.key);
     if (ai === -1) return 1;
     if (bi === -1) return -1;
     return ai - bi;
-  });
+  }), [groups, groupOrder]);
 
   // Close "Mer" sheet on route change
   useEffect(() => { setMoreOpen(false); }, [location.pathname]);
 
   // Mobile: dashboard + "Information" group in bottom nav, rest in Meny modal
-  const infoSlugs = GROUP_CONFIG.find((g) => g.label === "Information")?.slugs || [];
-  const dashMobile = accessibleModules.find((m) => m.slug === "home");
-  const mobileBarModules = [
-    ...(dashMobile ? [dashMobile] : []),
-    ...infoSlugs
-      .map((slug) => accessibleModules.find((m) => m.slug === slug))
-      .filter(Boolean) as typeof accessibleModules,
-  ];
-  const mobileBottomSlugs = new Set(["home", ...infoSlugs]);
-  const mobileOverflowModules = accessibleModules.filter(
-    (m) => !mobileBottomSlugs.has(m.slug)
-  );
+  const mobileBarModules = useMemo(() => {
+    const infoSlugs = GROUP_CONFIG.find((g) => g.label === "Information")?.slugs || [];
+    const dashMobile = accessibleModules.find((m) => m.slug === "home");
+    return [
+      ...(dashMobile ? [dashMobile] : []),
+      ...infoSlugs
+        .map((slug) => accessibleModules.find((m) => m.slug === slug))
+        .filter(Boolean) as typeof accessibleModules,
+    ];
+  }, [accessibleModules]);
+
+  const mobileOverflowModules = useMemo(() => {
+    const infoSlugs = GROUP_CONFIG.find((g) => g.label === "Information")?.slugs || [];
+    const mobileBottomSlugs = new Set(["home", ...infoSlugs]);
+    return accessibleModules.filter((m) => !mobileBottomSlugs.has(m.slug));
+  }, [accessibleModules]);
+
   const isOverflowActive = mobileOverflowModules.some((m) => location.pathname === m.route);
 
   const handleMobileNav = (path: string) => {
