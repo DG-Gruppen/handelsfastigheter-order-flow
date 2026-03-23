@@ -176,7 +176,7 @@ export default function History() {
             Historik
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {isAdmin ? "Alla beställningar i systemet" : isManager ? "Dina och dina anställdas beställningar" : "Dina beställningar"}
+            {canSeeAll ? "Alla beställningar i systemet" : isManager ? "Dina och dina anställdas beställningar" : "Dina beställningar"}
           </p>
         </div>
 
