@@ -200,3 +200,6 @@ function KanbanCardInner({ card, assigneeName, reporterName, onClick, overlay, c
     </div>
   );
 }
+
+const KanbanCard = memo(KanbanCardInner);
+export default KanbanCard;

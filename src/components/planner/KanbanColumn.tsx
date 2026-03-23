@@ -156,3 +156,6 @@ function KanbanColumnInner({
     </div>
   );
 }
+
+const KanbanColumn = memo(KanbanColumnInner);
+export default KanbanColumn;

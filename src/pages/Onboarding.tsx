@@ -148,31 +148,31 @@ export default function Onboarding() {
     setLoadingProfile(false);
   };
 
-  // For offboarding: non-admins only see their subordinates
-
-  const getSubordinateIds = (profileId: string, profiles: ProfileOption[]): Set<string> => {
+  // Memoize subordinate IDs to avoid O(n²) recalculation on every render
+  const subordinateIds = useMemo(() => {
+    if (!myProfile?.id || !allProfiles.length) return new Set<string>();
     const result = new Set<string>();
     const findChildren = (parentId: string) => {
-      for (const p of profiles) {
+      for (const p of allProfiles) {
         if ((p as any).manager_id === parentId && !result.has(p.id)) {
           result.add(p.id);
           findChildren(p.id);
         }
       }
     };
-    findChildren(profileId);
+    findChildren(myProfile.id);
     return result;
-  };
+  }, [myProfile?.id, allProfiles]);
 
-  const filteredSearchProfiles = allProfiles.filter((p) => {
-    // For non-admins in offboarding, only show subordinates
-    if (isOffboarding && !isAdmin && myProfile?.id) {
-      const subordinateIds = getSubordinateIds(myProfile.id, allProfiles);
-      if (!subordinateIds.has(p.id)) return false;
-    }
-    if (!profileSearchQuery) return true;
-    return p.full_name.toLowerCase().includes(profileSearchQuery.toLowerCase());
-  });
+  const filteredSearchProfiles = useMemo(() => {
+    return allProfiles.filter((p) => {
+      if (isOffboarding && !isAdmin && myProfile?.id) {
+        if (!subordinateIds.has(p.id)) return false;
+      }
+      if (!profileSearchQuery) return true;
+      return p.full_name.toLowerCase().includes(profileSearchQuery.toLowerCase());
+    });
+  }, [allProfiles, isOffboarding, isAdmin, myProfile?.id, subordinateIds, profileSearchQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
