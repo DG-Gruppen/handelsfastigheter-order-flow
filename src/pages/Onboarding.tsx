@@ -61,7 +61,34 @@ export default function Onboarding() {
   const isManagerOrAdmin = roles.includes("manager") || roles.includes("admin") || canEditOnboarding;
   const navigate = useNavigate();
 
-  // ── Cached reference data via React Query ──
+  // Flow type: onboarding or offboarding
+  const [flowType, setFlowType] = useState<"onboarding" | "offboarding">("onboarding");
+  const isOffboarding = flowType === "offboarding";
+
+  // Form state
+  const [recipientFirstName, setRecipientFirstName] = useState("");
+  const [recipientLastName, setRecipientLastName] = useState("");
+  const recipientName = `${recipientFirstName} ${recipientLastName}`.trim();
+  const [recipientStartDate, setRecipientStartDate] = useState("");
+  const [recipientEndDate, setRecipientEndDate] = useState("");
+  const [recipientDepartment, setRecipientDepartment] = useState("");
+  const [items, setItems] = useState<OrderItem[]>([{ typeId: "" }]);
+  const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
+  const [approverId, setApproverId] = useState("");
+  const [description, setDescription] = useState("");
+  const [recipientRegionId, setRecipientRegionId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [profileSearchOpen, setProfileSearchOpen] = useState(false);
+  const [profileSearchQuery, setProfileSearchQuery] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const { regions } = useRegions();
+
+  // Approval logic (computed from refData)
+  const isManager = roles.includes("manager");
+  const isStaff = refData?.myProfile?.is_staff === true;
+  const isAdmin = roles.includes("admin");
+
   const { data: refData } = useQuery({
     queryKey: ["onboarding-ref-data", user?.id],
     queryFn: async () => {
