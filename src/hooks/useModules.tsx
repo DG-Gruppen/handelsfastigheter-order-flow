@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from "react";
+import { createContext, useContext, useMemo, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export interface Module {
   id: string;
@@ -56,47 +58,47 @@ export interface FullModulePermission {
   is_owner: boolean;
 }
 
+async function fetchModulesData(userId: string) {
+  const [modulesRes, accessRes, permRes, groupRes] = await Promise.all([
+    supabase.from("modules").select("*").order("sort_order"),
+    supabase.from("module_role_access").select("module_id, role, has_access"),
+    supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view, can_edit, can_delete, is_owner"),
+    supabase.from("group_members").select("group_id").eq("user_id", userId),
+  ]);
+
+  return {
+    modules: (modulesRes.data as Module[]) ?? [],
+    allAccess: (accessRes.data as ModuleAccess[]) ?? [],
+    permissions: (permRes.data as ModulePermission[]) ?? [],
+    fullPermissions: (permRes.data as FullModulePermission[]) ?? [],
+    userGroupIds: (groupRes.data ?? []).map((g: { group_id: string }) => g.group_id),
+  };
+}
+
 export function ModulesProvider({ children }: { children: ReactNode }) {
   const { user, roles } = useAuth();
-  const [modules, setModules] = useState<Module[]>([]);
-  const [allAccess, setAllAccess] = useState<ModuleAccess[]>([]);
-  const [permissions, setPermissions] = useState<ModulePermission[]>([]);
-  const [fullPermissions, setFullPermissions] = useState<FullModulePermission[]>([]);
-  const [userGroupIds, setUserGroupIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchModules = async () => {
-    if (!user) {
-      setModules([]);
-      setAllAccess([]);
-      setPermissions([]);
-      setUserGroupIds([]);
-      setLoading(false);
-      return;
-    }
+  const { data, isLoading } = useQuery({
+    queryKey: ["modules-data", user?.id],
+    queryFn: () => fetchModulesData(user!.id),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
-    const [modulesRes, accessRes, permRes, groupRes] = await Promise.all([
-      supabase.from("modules").select("*").order("sort_order"),
-      supabase.from("module_role_access").select("module_id, role, has_access"),
-      supabase.from("module_permissions").select("module_id, grantee_type, grantee_id, can_view, can_edit, can_delete, is_owner"),
-      supabase.from("group_members").select("group_id").eq("user_id", user.id),
-    ]);
+  const modules = data?.modules ?? [];
+  const allAccess = data?.allAccess ?? [];
+  const permissions = data?.permissions ?? [];
+  const fullPermissions = data?.fullPermissions ?? [];
+  const userGroupIds = data?.userGroupIds ?? [];
+  const loading = !user ? false : isLoading;
 
-    setModules((modulesRes.data as Module[]) ?? []);
-    setAllAccess((accessRes.data as ModuleAccess[]) ?? []);
-    setPermissions((permRes.data as ModulePermission[]) ?? []);
-    setFullPermissions((permRes.data as FullModulePermission[]) ?? []);
-    setUserGroupIds((groupRes.data ?? []).map((g: { group_id: string }) => g.group_id));
-    setLoading(false);
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["modules-data", user?.id] });
   };
 
-  useEffect(() => {
-    fetchModules();
-  }, [user?.id]);
-
   // Realtime: refresh only when permissions affecting THIS user change.
-  // Filtering by grantee_id for user-level permissions; group_members is
-  // filtered by user_id so we only react to changes for this user.
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -109,7 +111,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
           table: "module_permissions",
           filter: `grantee_id=eq.${user.id}`,
         },
-        () => fetchModules()
+        () => refresh()
       )
       .on(
         "postgres_changes",
@@ -119,7 +121,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
           table: "group_members",
           filter: `user_id=eq.${user.id}`,
         },
-        () => fetchModules()
+        () => refresh()
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -155,7 +157,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   }, [modules, allAccess, permissions, userGroupIds, roles, user?.id]);
 
   return (
-    <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, allPermissions: fullPermissions, userGroupIds, loading, refresh: fetchModules }}>
+    <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, allPermissions: fullPermissions, userGroupIds, loading, refresh }}>
       {children}
     </ModulesContext.Provider>
   );

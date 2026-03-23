@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface NavSettingsContextType {
   settings: Record<string, string>;
@@ -20,33 +21,33 @@ const routeSettingMap: Record<string, string> = {
   "/admin": "nav_admin",
 };
 
+async function fetchNavSettings(): Promise<Record<string, string>> {
+  const { data } = await supabase
+    .from("org_chart_settings")
+    .select("setting_key, setting_value");
+  const map: Record<string, string> = {};
+  for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
+  return map;
+}
+
 export function NavSettingsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchSettings = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    const { data } = await supabase
-      .from("org_chart_settings")
-      .select("setting_key, setting_value");
-    const map: Record<string, string> = {};
-    for (const s of (data as any[]) ?? []) map[s.setting_key] = s.setting_value;
-    setSettings(map);
-    setLoading(false);
+  const { data: settings = {}, isLoading } = useQuery({
+    queryKey: ["nav-settings"],
+    queryFn: fetchNavSettings,
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["nav-settings"] });
   };
 
-  useEffect(() => {
-    fetchSettings();
-  }, [user]);
-
-  const refresh = () => { fetchSettings(); };
-
   return (
-    <NavSettingsContext.Provider value={{ settings, loading, refresh }}>
+    <NavSettingsContext.Provider value={{ settings, loading: !user ? false : isLoading, refresh }}>
       {children}
     </NavSettingsContext.Provider>
   );

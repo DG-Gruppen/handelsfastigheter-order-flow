@@ -1,11 +1,12 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import AppSidebar from "@/components/AppSidebar";
-import AiChatBubble from "@/components/AiChatBubble";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+
+const AiChatBubble = lazy(() => import("@/components/AiChatBubble"));
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
@@ -42,7 +43,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </main>
         </div>
 
-        <AiChatBubble />
+        <Suspense fallback={null}>
+          <AiChatBubble />
+        </Suspense>
       </div>
     </>
   );
