@@ -34,7 +34,7 @@ interface Props {
   overlay?: boolean;
 }
 
-export default function KanbanColumn({
+function KanbanColumnInner({
   column, cards, totalCardCount, profileMap, checklistSummaries, attachmentCounts, onAddCard, onEditColumn, onDeleteColumn, onCardClick, overlay,
 }: Props) {
   const {
