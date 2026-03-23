@@ -77,6 +77,7 @@ const SOURCE_LABELS: Record<string, string> = {
   departments: "Avdelningar",
   document_folders: "Dokumentbiblioteket (mapp)",
   document_files: "Dokumentbiblioteket (dokument)",
+  google_drive: "Google Drive (dokument)",
 };
 
 // ── Keyword extraction ──────────────────────────────────────────────
@@ -253,7 +254,7 @@ function buildContextBlock(results: any[]): string {
   const entries = diverse.map((r: any, i: number) => {
     const label = SOURCE_LABELS[r.source_table] || r.source_table;
     const isExtracted =
-      r.source_table === "document_files" && r.metadata?.extracted === true;
+      (r.source_table === "document_files" || r.source_table === "google_drive") && r.metadata?.extracted === true;
 
     let maxChars: number;
     if (i < 3) maxChars = 4000;
