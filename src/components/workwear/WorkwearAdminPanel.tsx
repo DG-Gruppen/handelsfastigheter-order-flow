@@ -349,11 +349,11 @@ export default function WorkwearAdminPanel() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+        <h2 className="font-heading text-base md:text-lg font-bold text-foreground flex items-center gap-2">
           <ShoppingBag className="w-5 h-5 text-primary" />
           Profilkläder – Översikt
         </h2>
-        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1 text-xs md:text-sm text-muted-foreground">
           {activeSeason && (
             <span>Aktiv säsong: <Badge variant="secondary" className="text-xs ml-1">{SEASON_LABELS[activeSeason as Season] || activeSeason}</Badge></span>
           )}
