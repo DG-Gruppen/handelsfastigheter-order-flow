@@ -96,7 +96,7 @@ export default function History() {
     }
 
     return data;
-  }, [user, profile, isAdmin, isManager]);
+  }, [user, profile, canSeeAll, isManager]);
 
   const { data: firstPageOrders = [], isLoading: loading } = useQuery({
     queryKey: ["history-orders", user?.id, isAdmin, isManager, profile?.id],
