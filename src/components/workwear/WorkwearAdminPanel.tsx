@@ -505,14 +505,14 @@ export default function WorkwearAdminPanel() {
               <CardTitle className="text-xs md:text-sm font-medium">Beställningslista – Leverantörsunderlag</CardTitle>
               <div className="flex items-center gap-2 shrink-0">
                 <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
-                  const allExpanded = expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.size === supplierGroups.length);
+                  const allExpanded = expandedSupplierProducts === null || (expandedSupplierProducts !== null && expandedSupplierProducts.size === supplierGroups.length);
                   if (allExpanded) {
                     setExpandedSupplierProducts(new Set());
                   } else {
-                    setExpandedSupplierProducts("all");
+                    setExpandedSupplierProducts(null);
                   }
                 }}>
-                  {expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.size === supplierGroups.length) ? "Dölj alla" : "Visa alla"}
+                  {expandedSupplierProducts === null || (expandedSupplierProducts !== null && expandedSupplierProducts.size === supplierGroups.length) ? "Dölj alla" : "Visa alla"}
                 </Button>
                 <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => downloadCsv(
                   ["Plagg", "Färg", "Storlek", "Antal", "Logga"],
@@ -541,14 +541,14 @@ export default function WorkwearAdminPanel() {
                     </TableHeader>
                     <TableBody>
                       {supplierGroups.map((group) => {
-                        const isExpanded = expandedSupplierProducts === "all" || (expandedSupplierProducts !== "all" && expandedSupplierProducts.has(group.name));
+                        const isExpanded = expandedSupplierProducts === null || (expandedSupplierProducts !== null && expandedSupplierProducts.has(group.name));
                         return (
                           <React.Fragment key={group.name}>
                             <TableRow
                               className="bg-secondary/20 hover:bg-secondary/40 cursor-pointer transition-colors"
                               onClick={() => {
                                 setExpandedSupplierProducts((prev) => {
-                                  if (prev === "all") {
+                                  if (prev === null) {
                                     const next = new Set(supplierGroups.map(g => g.name));
                                     next.delete(group.name);
                                     return next;
