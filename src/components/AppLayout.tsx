@@ -38,7 +38,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         {/* Main content area */}
         <div className="flex-1 min-w-0 flex flex-col gradient-bg pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 overflow-x-hidden">
-          <main className={`mx-auto px-4 py-5 md:py-8 w-full ${["/org", "/planner"].includes(location.pathname) ? "" : "max-w-6xl"}`}>
+          <main className={`mx-auto px-4 py-5 md:py-8 w-full ${location.pathname === "/org" ? "" : "max-w-6xl"}`}>
             {children}
           </main>
         </div>
