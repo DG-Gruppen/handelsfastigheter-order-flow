@@ -660,14 +660,17 @@ export default function WorkwearAdminPanel() {
                     <TableBody>
                       {(() => {
                         const rows: React.ReactNode[] = [];
+                        let currentRegion = "";
                         let currentUserId = "";
                         let personQty = 0;
+                        let regionQty = 0;
+                        let regionPersons = 0;
 
                         const flushPerson = (userId: string) => {
                           if (userId) {
                             rows.push(
                               <TableRow key={`person-total-${userId}`} className="bg-primary/5">
-                                <TableCell colSpan={5} className="text-xs font-semibold text-muted-foreground italic pl-4">
+                                <TableCell colSpan={5} className="text-xs font-semibold text-muted-foreground italic pl-8">
                                   Totalt
                                 </TableCell>
                                 <TableCell className="text-right text-xs font-bold text-primary">{personQty} plagg</TableCell>
@@ -676,17 +679,52 @@ export default function WorkwearAdminPanel() {
                           }
                         };
 
+                        const flushRegion = (regionName: string) => {
+                          if (regionName) {
+                            rows.push(
+                              <TableRow key={`region-total-${regionName}`} className="bg-accent/10 border-b-2 border-accent/20">
+                                <TableCell colSpan={5} className="text-xs font-bold text-accent pl-4">
+                                  Totalt {regionName} ({regionPersons} pers)
+                                </TableCell>
+                                <TableCell className="text-right text-xs font-bold text-accent">{regionQty} plagg</TableCell>
+                              </TableRow>
+                            );
+                          }
+                        };
+
                         pickRows.forEach((row, i) => {
+                          // Region header
+                          if (row.region !== currentRegion) {
+                            flushPerson(currentUserId);
+                            flushRegion(currentRegion);
+                            currentRegion = row.region;
+                            currentUserId = "";
+                            personQty = 0;
+                            regionQty = 0;
+                            regionPersons = 0;
+
+                            rows.push(
+                              <TableRow key={`region-header-${row.region}`} className="bg-primary/10 border-t-4 border-primary/20">
+                                <TableCell colSpan={6} className="py-3">
+                                  <span className="font-bold text-sm text-primary flex items-center gap-2">
+                                    <MapPin className="w-4 h-4" />
+                                    {row.region}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+
                           if (row.user_id !== currentUserId) {
                             flushPerson(currentUserId);
                             currentUserId = row.user_id;
                             personQty = 0;
+                            regionPersons += 1;
 
-                            // Person header row
                             const notes = personNotes.get(row.user_id);
                             rows.push(
                               <TableRow key={`person-header-${row.user_id}`} className="bg-secondary/60 border-t-2 border-border">
-                                <TableCell className="py-2 text-xs text-muted-foreground font-medium">{row.region}</TableCell>
+                                <TableCell className="py-2" />
                                 <TableCell colSpan={4} className="py-2">
                                   <span className="font-semibold text-sm text-foreground">{row.name}</span>
                                   {notes?.length ? (
@@ -702,11 +740,12 @@ export default function WorkwearAdminPanel() {
                           }
 
                           personQty += row.qty;
+                          regionQty += row.qty;
 
                           rows.push(
                             <TableRow key={i} className="hover:bg-muted/30">
-                              <TableCell className="text-xs text-muted-foreground pl-4" />
-                              <TableCell className="text-xs text-muted-foreground pl-4" />
+                              <TableCell className="pl-8" />
+                              <TableCell className="pl-8" />
                               <TableCell className="font-medium text-sm">{row.product}</TableCell>
                               <TableCell className="text-sm">{row.color}</TableCell>
                               <TableCell className="text-sm">{row.size}</TableCell>
@@ -716,6 +755,7 @@ export default function WorkwearAdminPanel() {
                         });
 
                         flushPerson(currentUserId);
+                        flushRegion(currentRegion);
 
                         return rows;
                       })()}
