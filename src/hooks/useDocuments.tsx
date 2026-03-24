@@ -158,8 +158,13 @@ export function useDocuments() {
     if (!user) return;
     const safeName = sanitizeFileName(file.name);
     const path = `${folderId}/${Date.now()}_${safeName}`;
+    console.log("[upload] path:", path, "folderId:", folderId, "userId:", user.id, "fileSize:", file.size);
     const { error: uploadError } = await supabase.storage.from("documents").upload(path, file);
-    if (uploadError) { toast({ title: "Uppladdningsfel", description: uploadError.message, variant: "destructive" }); return; }
+    if (uploadError) {
+      console.error("[upload] storage error:", uploadError);
+      toast({ title: "Uppladdningsfel", description: uploadError.message, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("document_files").insert({
       folder_id: folderId,
       name: file.name,
