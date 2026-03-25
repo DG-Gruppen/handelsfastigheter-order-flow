@@ -369,20 +369,29 @@ export default function WorkwearAdminPanel() {
       h1{font-size:16px;margin-bottom:4px}
       .product-block{break-inside:avoid;page-break-inside:avoid;margin-bottom:12px}
       .product-block h3{font-size:13px;margin:0 0 4px;background:#f0f0f0;padding:4px 8px}
+      .product-block h3 a{color:#2563eb;text-decoration:none;font-size:11px;margin-left:8px;font-weight:normal}
+      .product-block h3 a:hover{text-decoration:underline}
       table{width:100%;border-collapse:collapse;margin-bottom:0}
       th,td{border:1px solid #ddd;padding:4px 8px;text-align:left}
       th{background:#f5f5f5;font-weight:600}
       .total-row{background:#f9f9f9;font-weight:bold}
-      @media print{body{padding:0}}
+      a.color-link{color:#2563eb;text-decoration:none}
+      a.color-link:hover{text-decoration:underline}
+      @media print{body{padding:0} a{color:#000!important}}
     </style></head><body>`;
     html += `<h1>Beställningslista – Leverantörsunderlag</h1>`;
     html += `<p>${supplierGroups.length} produkter · ${totalItems} plagg totalt</p>`;
     supplierGroups.forEach((group) => {
+      // Find a representative URL for the product heading
+      const headingUrl = group.sizes.find(s => s.url)?.url || "";
       html += `<div class="product-block">`;
-      html += `<h3>${group.name} (${group.totalQty} st)</h3>`;
+      html += `<h3>${group.name} (${group.totalQty} st)${headingUrl ? ` <a href="${headingUrl}" target="_blank">🔗 157work.com</a>` : ""}</h3>`;
       html += `<table><tr><th>Färg</th><th>Storlek</th><th>Antal</th><th>Logga</th></tr>`;
       group.sizes.forEach((s) => {
-        html += `<tr><td>${s.color}</td><td>${s.size}</td><td>${s.qty}</td><td>${s.logo}</td></tr>`;
+        const colorCell = s.url
+          ? `<a class="color-link" href="${s.url}" target="_blank">${s.color}</a>`
+          : s.color;
+        html += `<tr><td>${colorCell}</td><td>${s.size}</td><td>${s.qty}</td><td>${s.logo}</td></tr>`;
       });
       html += `<tr class="total-row"><td colspan="2">Totalt</td><td>${group.totalQty}</td><td></td></tr></table>`;
       html += `</div>`;
