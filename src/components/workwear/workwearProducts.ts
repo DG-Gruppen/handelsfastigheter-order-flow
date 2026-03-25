@@ -80,6 +80,8 @@ export const PRODUCTS_BY_SEASON: Record<Season, WorkwearProduct[]> = {
     { id: "d-pilejacka-valla", gender: "dam", name: "Piléjacka Valla", variants: [
       { color: "ivory", colorLabel: "Ivory (brodyr svart)", url: "https://www.157work.com/p/pilejacka-valla/ivory/" },
       { color: "black", colorLabel: "Svart (brodyr vit)", url: "https://www.157work.com/p/pilejacka-valla/black/" },
+      { color: "dk-beige", colorLabel: "Beige (brodyr svart)", url: "https://www.157work.com/p/pilejacka-valla/dk-beige/" },
+      { color: "burgundy", colorLabel: "Burgundy (brodyr vit)", url: "https://www.157work.com/p/pilejacka-valla/burgundy/" },
     ], sizes: ["XS", "S", "M", "L", "XL"] },
     { id: "d-hybridjacka-ws", gender: "dam", name: "Hybridjacka WS", variants: [
       { color: "black", colorLabel: "Svart (brodyr vit)", url: "https://www.157work.com/p/hybridjacka-ws-hybrid-jacket/black/" },
