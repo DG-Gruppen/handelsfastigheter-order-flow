@@ -37,7 +37,10 @@ export default function History() {
   const { isOwner: isModuleOwner } = useModulePermission("history");
   const queryClient = useQueryClient();
   const isAdmin = roles.includes("admin") || roles.includes("it");
-  const [activeTab, setActiveTab] = useState<TabKey>(isAdmin ? "all" : "mine");
+  const isManager = roles.includes("manager");
+  const canSeeAll = isAdmin || isModuleOwner;
+
+  const [activeTab, setActiveTab] = useState<TabKey>(canSeeAll ? "all" : "mine");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -46,10 +49,6 @@ export default function History() {
   const [page, setPage] = useState(0);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const isAdmin = roles.includes("admin") || roles.includes("it");
-  const isManager = roles.includes("manager");
-  const canSeeAll = isAdmin || isModuleOwner;
 
   // Check if user is STAB (is_staff)
   const { data: isStaff = false } = useQuery({
