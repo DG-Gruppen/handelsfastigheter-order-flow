@@ -347,6 +347,38 @@ export default function WorkwearAdminPanel() {
     w.print();
   };
 
+  const handlePrintSupplierList = () => {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    let html = `<html><head><title>Beställningslista</title><style>
+      body{font-family:system-ui,sans-serif;padding:20px;font-size:12px}
+      h1{font-size:16px;margin-bottom:4px}
+      .product-block{break-inside:avoid;page-break-inside:avoid;margin-bottom:12px}
+      .product-block h3{font-size:13px;margin:0 0 4px;background:#f0f0f0;padding:4px 8px}
+      table{width:100%;border-collapse:collapse;margin-bottom:0}
+      th,td{border:1px solid #ddd;padding:4px 8px;text-align:left}
+      th{background:#f5f5f5;font-weight:600}
+      .total-row{background:#f9f9f9;font-weight:bold}
+      @media print{body{padding:0}}
+    </style></head><body>`;
+    html += `<h1>Beställningslista – Leverantörsunderlag</h1>`;
+    html += `<p>${supplierGroups.length} produkter · ${totalItems} plagg totalt</p>`;
+    supplierGroups.forEach((group) => {
+      html += `<div class="product-block">`;
+      html += `<h3>${group.name} (${group.totalQty} st)</h3>`;
+      html += `<table><tr><th>Färg</th><th>Storlek</th><th>Antal</th><th>Logga</th></tr>`;
+      group.sizes.forEach((s) => {
+        html += `<tr><td>${s.color}</td><td>${s.size}</td><td>${s.qty}</td><td>${s.logo}</td></tr>`;
+      });
+      html += `<tr class="total-row"><td colspan="2">Totalt</td><td>${group.totalQty}</td><td></td></tr></table>`;
+      html += `</div>`;
+    });
+    html += `</body></html>`;
+    w.document.write(html);
+    w.document.close();
+    w.print();
+  };
+
   const toggleOrderExpanded = (orderId: string) => {
     setExpandedOrders(prev => {
       const next = new Set(prev);
