@@ -165,6 +165,7 @@ export default function NewOrder() {
     // Notification + email for approver (if not auto-approved)
     if (!autoApprove && resolvedApproverId && resolvedApproverId !== user.id) {
       const requesterName = allProfiles.find(p => p.user_id === user.id)?.full_name || "Någon";
+      const { data: requesterEmailData } = await supabase.from("profiles").select("email").eq("user_id", user.id).single();
       await supabase.rpc("create_notification", {
         _user_id: resolvedApproverId,
         _title: "Ny beställning att attestera",
@@ -186,7 +187,7 @@ export default function NewOrder() {
             title,
             description: description.trim(),
             requesterName,
-            requesterEmail: allProfiles.find(p => p.user_id === user.id)?.email || "",
+            requesterEmail: requesterEmailData?.email || "",
             approverName: approverProfileData.full_name,
             approverEmail: approverEmailData.email,
             items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
