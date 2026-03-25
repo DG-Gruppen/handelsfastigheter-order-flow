@@ -197,7 +197,7 @@ export default function NotificationBell() {
           )}
         </div>
 
-        <ScrollArea className="max-h-[420px] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
+        <ScrollArea className="max-h-[min(420px,60vh)] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
           {unread.length === 0 && archived.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
@@ -211,14 +211,7 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
-                  {unread.slice(0, 5).map(renderNotification)}
-                  {unread.length > 5 && (
-                    <div className="px-4 py-2 text-center">
-                      <p className="text-xs text-muted-foreground">
-                        +{unread.length - 5} olästa till
-                      </p>
-                    </div>
-                  )}
+                  {unread.map(renderNotification)}
                 </div>
               )}
 
