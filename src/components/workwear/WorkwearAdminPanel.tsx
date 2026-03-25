@@ -306,11 +306,12 @@ export default function WorkwearAdminPanel() {
     let html = `<html><head><title>${title}</title><style>
       body{font-family:system-ui,sans-serif;padding:20px;font-size:12px}
       h1{font-size:16px;margin-bottom:4px}
-      h3{font-size:13px;margin:12px 0 4px;background:#f0f0f0;padding:4px 8px}
-      table{width:100%;border-collapse:collapse;margin-bottom:8px}
+      .person-block{break-inside:avoid;page-break-inside:avoid;margin-bottom:12px}
+      .person-block h3{font-size:13px;margin:0 0 4px;background:#f0f0f0;padding:4px 8px}
+      table{width:100%;border-collapse:collapse;margin-bottom:0}
       th,td{border:1px solid #ddd;padding:4px 8px;text-align:left}
       th{background:#f5f5f5;font-weight:600}
-      .note{font-size:11px;color:#666;font-style:italic}
+      .note{font-size:11px;color:#666;font-style:italic;margin:2px 0 4px}
       .total-row{background:#f9f9f9;font-weight:bold}
       @media print{body{padding:0}}
     </style></head><body>`;
@@ -323,6 +324,7 @@ export default function WorkwearAdminPanel() {
       if (!personItems.length) return;
       const first = personItems[0];
       const notes = personNotes.get(first.user_id);
+      html += `<div class="person-block">`;
       html += `<h3>${first.name} – ${first.region}</h3>`;
       if (notes?.length) html += `<p class="note">📝 ${notes.join(" · ")}</p>`;
       html += `<table><tr><th>Plagg</th><th>Färg</th><th>Storlek</th><th>Antal</th></tr>`;
@@ -332,6 +334,7 @@ export default function WorkwearAdminPanel() {
         total += r.qty;
       });
       html += `<tr class="total-row"><td colspan="3">Totalt</td><td>${total}</td></tr></table>`;
+      html += `</div>`;
     };
     rows.forEach(r => {
       if (r.user_id !== currentUser) { flushUser(); currentUser = r.user_id; personItems = []; }
