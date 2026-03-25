@@ -36,7 +36,8 @@ export default function History() {
   const { user, roles, profile } = useAuth();
   const { isOwner: isModuleOwner } = useModulePermission("history");
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabKey>("mine");
+  const isAdmin = roles.includes("admin") || roles.includes("it");
+  const [activeTab, setActiveTab] = useState<TabKey>(isAdmin ? "all" : "mine");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingMore, setLoadingMore] = useState(false);
