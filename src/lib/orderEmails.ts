@@ -1,11 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getAppBaseUrl } from "@/lib/utils";
 import { FALLBACK_IT_EMAIL } from "@/lib/constants";
-import {
-  emailLayout, emailGreeting, emailText, emailHeading,
-  emailItemsList, emailButton, emailWarningCallout, escapeHtml,
-} from "@/lib/emailTemplates";
 
 /** Fetch the IT contact email from org_chart_settings, fallback to constant default */
 export async function getItContactEmail(): Promise<string> {
@@ -15,6 +10,28 @@ export async function getItContactEmail(): Promise<string> {
     .eq("setting_key", "it_contact_email")
     .single();
   return data?.setting_value || FALLBACK_IT_EMAIL;
+}
+
+// ─── Helper: invoke send-transactional-email Edge Function ───
+
+async function sendTransactionalEmail(params: {
+  templateName: string;
+  recipientEmail: string;
+  idempotencyKey: string;
+  templateData: Record<string, any>;
+}) {
+  const { error } = await supabase.functions.invoke("send-transactional-email", {
+    body: {
+      templateName: params.templateName,
+      recipientEmail: params.recipientEmail,
+      idempotencyKey: params.idempotencyKey,
+      templateData: params.templateData,
+    },
+  });
+  if (error) {
+    console.error(`Failed to send ${params.templateName}:`, error);
+    throw error;
+  }
 }
 
 // ─── Email to approver when a new order is created ───
@@ -32,28 +49,30 @@ interface NewOrderEmailParams {
 }
 
 export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
-  const { orderId, title, description, requesterName, requesterEmail, approverName, approverEmail, items, recipientName } = params;
+  const { orderId, title, description, requesterName, approverName, approverEmail, items, recipientName } = params;
   const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
-  const recipientLine = recipientName
-    ? emailText(`Mottagare: <strong>${escapeHtml(recipientName)}</strong>`)
-    : "";
-
-  const html = emailLayout("Ny beställning att attestera", "📋", `
-    ${emailGreeting(approverName)}
-    ${emailText(`<strong>${escapeHtml(requesterName)}</strong> har skickat en beställning som behöver din attestering:`)}
-    ${emailText(`<strong>&ldquo;${escapeHtml(title)}&rdquo;</strong>`)}
-    ${recipientLine}
-    ${description ? emailText(`<em style="color:#6b7685;">${escapeHtml(description)}</em>`) : ""}
-    ${emailHeading("Utrustning")}
-    ${emailItemsList(items)}
-    ${emailButton(orderUrl, "Granska och attestera")}
-  `);
-
   try {
-    await enqueueEmail({ to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html, from_name: requesterName, reply_to: requesterEmail });
+    await sendTransactionalEmail({
+      templateName: "new-order-approval",
+      recipientEmail: approverEmail,
+      idempotencyKey: `new-order-approval-${orderId}`,
+      templateData: {
+        approverName,
+        requesterName,
+        title,
+        description: description || undefined,
+        recipientName: recipientName || undefined,
+        items: items.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          description: i.description || undefined,
+        })),
+        orderUrl,
+      },
+    });
   } catch (err) {
-    console.error("Failed to enqueue new order email to approver:", err);
+    console.error("Failed to send new order email to approver:", err);
   }
 }
 
@@ -72,73 +91,86 @@ export async function sendRejectionEmail(params: RejectionEmailParams) {
   const { orderId, title, requesterName, requesterEmail, approverName, rejectionReason } = params;
   const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
-  const reasonHtml = rejectionReason
-    ? emailWarningCallout("Motivering", rejectionReason)
-    : "";
-
-  const html = emailLayout("Beställning avslagen", "❌", `
-    ${emailGreeting(requesterName)}
-    ${emailText(`Din beställning <strong>&ldquo;${escapeHtml(title)}&rdquo;</strong> har avslagits av <strong>${escapeHtml(approverName)}</strong>.`)}
-    ${reasonHtml}
-    ${emailButton(orderUrl, "Visa beställning")}
-  `);
-
   try {
-    await enqueueEmail({ to: requesterEmail, subject: `[SHF IT] Din beställning har avslagits: ${title}`, html });
+    await sendTransactionalEmail({
+      templateName: "order-rejected",
+      recipientEmail: requesterEmail,
+      idempotencyKey: `order-rejected-${orderId}`,
+      templateData: {
+        requesterName,
+        title,
+        approverName,
+        rejectionReason: rejectionReason || undefined,
+        orderUrl,
+      },
+    });
   } catch (err) {
-    console.error("Failed to enqueue rejection email:", err);
+    console.error("Failed to send rejection email:", err);
   }
 }
 
 // ─── Approval confirmation email to requester ───
 
-export function buildApprovalEmailHtml(params: {
+export async function sendApprovalEmail(params: {
+  orderId: string;
   recipientName: string;
+  recipientEmail: string;
   title: string;
   approverName?: string;
   items: { name: string; quantity?: number }[];
-  orderUrl: string;
   isAutoApproved?: boolean;
-}): string {
-  const { recipientName, title, approverName, items, orderUrl, isAutoApproved } = params;
-  const approvalText = isAutoApproved
-    ? `Din beställning <strong>&ldquo;${escapeHtml(title)}&rdquo;</strong> har godkänts automatiskt och skickats vidare till IT för hantering.`
-    : `Din beställning <strong>&ldquo;${escapeHtml(title)}&rdquo;</strong> har godkänts av <strong>${escapeHtml(approverName ?? "")}</strong> och skickats vidare till IT för hantering.`;
+}) {
+  const orderUrl = `${getAppBaseUrl()}/orders/${params.orderId}`;
 
-  return emailLayout("Beställning godkänd", "✅", `
-    ${emailGreeting(recipientName)}
-    ${emailText(approvalText)}
-    ${emailHeading("Beställd utrustning")}
-    ${emailItemsList(items)}
-    ${emailButton(orderUrl, "Visa din beställning")}
-  `);
+  try {
+    await sendTransactionalEmail({
+      templateName: "order-approved",
+      recipientEmail: params.recipientEmail,
+      idempotencyKey: `order-approved-${params.orderId}`,
+      templateData: {
+        recipientName: params.recipientName,
+        title: params.title,
+        approverName: params.approverName,
+        isAutoApproved: params.isAutoApproved || false,
+        items: params.items,
+        orderUrl,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to send approval email:", err);
+  }
 }
 
 // ─── Delivery confirmation email to requester ───
 
-export function buildDeliveryEmailHtml(params: {
+export async function sendDeliveryEmail(params: {
+  orderId: string;
   recipientName: string;
+  recipientEmail: string;
   title: string;
   orderRecipientName?: string | null;
   comment?: string | null;
-  orderUrl: string;
-}): string {
-  const { recipientName, title, orderRecipientName, comment, orderUrl } = params;
-  const recipientLine = orderRecipientName
-    ? emailText(`Mottagare: <strong>${escapeHtml(orderRecipientName)}</strong>`)
-    : "";
-  const commentHtml = comment
-    ? `<div style="margin:16px 0;padding:14px 18px;background:#f4f5f7;border-left:4px solid #2e4a62;border-radius:0 8px 8px 0;">
-         <p style="margin:0 0 4px;font-size:11px;color:#6b7685;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Kommentar från IT</p>
-         <p style="margin:0;font-size:14px;color:#1a2332;line-height:1.5;">${escapeHtml(comment)}</p>
-       </div>`
-    : "";
+}) {
+  const orderUrl = `${getAppBaseUrl()}/orders/${params.orderId}`;
 
-  return emailLayout("Beställning levererad", "📦", `
-    ${emailGreeting(recipientName)}
-    ${emailText(`Din beställning <strong>&ldquo;${escapeHtml(title)}&rdquo;</strong> har nu markerats som levererad.`)}
-    ${recipientLine}
-    ${commentHtml}
-    ${emailButton(orderUrl, "Visa beställning")}
-  `);
+  try {
+    await sendTransactionalEmail({
+      templateName: "order-delivered",
+      recipientEmail: params.recipientEmail,
+      idempotencyKey: `order-delivered-${params.orderId}`,
+      templateData: {
+        recipientName: params.recipientName,
+        title: params.title,
+        orderRecipientName: params.orderRecipientName || undefined,
+        comment: params.comment || undefined,
+        orderUrl,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to send delivery email:", err);
+  }
 }
+
+// ─── Legacy HTML builders (kept for backward compatibility) ───
+
+export { buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmailsLegacy";
