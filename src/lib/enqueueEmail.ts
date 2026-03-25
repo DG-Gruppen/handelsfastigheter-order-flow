@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const SENDER_DOMAIN = "notify.saminfra.se";
+const FROM_DOMAIN = "saminfra.se";
+
 /**
  * Enqueues an email through pgmq instead of calling send-email directly.
  * This ensures retry/DLQ behaviour per Domain Rules Global Invariant #4.
@@ -10,12 +13,20 @@ export async function enqueueEmail(params: {
   html: string;
   reply_to?: string;
 }) {
+  const messageId = crypto.randomUUID();
   const { error } = await supabase.rpc("enqueue_email", {
     queue_name: "transactional_emails",
     payload: {
       to: params.to,
+      from: `SHF Intra <noreply@${FROM_DOMAIN}>`,
+      sender_domain: SENDER_DOMAIN,
       subject: params.subject,
       html: params.html,
+      purpose: "transactional",
+      label: "transactional_emails",
+      message_id: messageId,
+      idempotency_key: `txn-${messageId}`,
+      queued_at: new Date().toISOString(),
       ...(params.reply_to ? { reply_to: params.reply_to } : {}),
     },
   });
