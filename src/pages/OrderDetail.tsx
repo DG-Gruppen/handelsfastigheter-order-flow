@@ -92,7 +92,7 @@ export default function OrderDetail() {
     queryKey,
     queryFn: () => fetchOrderDetail(id!),
     enabled: !!id && !!user,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const order = data?.order ?? null;
