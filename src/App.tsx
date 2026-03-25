@@ -32,6 +32,7 @@ const Passwords = lazy(() => import("./pages/Passwords"));
 const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -64,6 +65,7 @@ const App = () => (
               <ModulesProvider>
                 <Routes>
                     <Route path="/login" element={<Suspense fallback={<LoginFallback />}><Login /></Suspense>} />
+                    <Route path="/unsubscribe" element={<Suspense fallback={<LoginFallback />}><Unsubscribe /></Suspense>} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
