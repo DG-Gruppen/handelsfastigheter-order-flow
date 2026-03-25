@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey)
 
   // Verify JWT and extract user
   const authHeader = req.headers.get('authorization') ?? ''
@@ -60,7 +61,6 @@ Deno.serve(async (req) => {
     }
 
     // Role check: only admin, it, or manager can send emails
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey)
     const [adminCheck, itCheck, managerCheck] = await Promise.all([
       adminClient.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
       adminClient.rpc('has_role', { _user_id: user.id, _role: 'it' }),
@@ -76,7 +76,6 @@ Deno.serve(async (req) => {
     rateLimitKey = user.id
   }
 
-  if (!checkRateLimit(rateLimitKey)) {
   if (!checkRateLimit(rateLimitKey)) {
     return new Response(
       JSON.stringify({ error: 'För många förfrågningar. Försök igen om en stund.' }),
