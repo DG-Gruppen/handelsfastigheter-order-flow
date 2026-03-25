@@ -246,6 +246,10 @@ Deno.serve(async (req) => {
       }
 
       try {
+        // Default purpose based on queue name if not explicitly set in payload.
+        // Older enqueued messages may lack this field.
+        const effectivePurpose = payload.purpose || (queue === 'auth_emails' ? 'auth' : 'transactional')
+
         await sendLovableEmail(
           {
             run_id: payload.run_id,
@@ -255,7 +259,7 @@ Deno.serve(async (req) => {
             subject: payload.subject,
             html: payload.html,
             text: payload.text,
-            purpose: payload.purpose,
+            purpose: effectivePurpose,
             label: payload.label,
             idempotency_key: payload.idempotency_key,
             unsubscribe_token: payload.unsubscribe_token,
