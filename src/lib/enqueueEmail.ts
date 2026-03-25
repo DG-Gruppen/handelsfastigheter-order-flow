@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const SENDER_DOMAIN = "it.handelsfastigheter.se";
+const SENDER_DOMAIN = "notify.handelsfastigheter.se";
 const FROM_DOMAIN = "handelsfastigheter.se";
 
 /**
