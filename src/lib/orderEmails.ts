@@ -171,6 +171,3 @@ export async function sendDeliveryEmail(params: {
   }
 }
 
-// ─── Legacy HTML builders (kept for backward compatibility) ───
-
-export { buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmailsLegacy";
