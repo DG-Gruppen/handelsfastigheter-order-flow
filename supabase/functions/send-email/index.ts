@@ -76,8 +76,7 @@ Deno.serve(async (req) => {
     rateLimitKey = user.id
   }
 
-  // Rate limiting using user ID
-  const rateLimitKey = user.id
+  if (!checkRateLimit(rateLimitKey)) {
   if (!checkRateLimit(rateLimitKey)) {
     return new Response(
       JSON.stringify({ error: 'För många förfrågningar. Försök igen om en stund.' }),
