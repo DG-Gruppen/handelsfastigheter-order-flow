@@ -22,22 +22,30 @@ export const MagicLinkEmail = ({
   siteName,
   confirmationUrl,
 }: MagicLinkEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="sv" dir="ltr">
     <Head />
-    <Preview>Your login link for {siteName}</Preview>
+    <Preview>Din inloggningslänk för {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Your login link</Heading>
-        <Text style={text}>
-          Click the button below to log in to {siteName}. This link will expire
-          shortly.
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Log In
-        </Button>
-        <Text style={footer}>
-          If you didn't request this link, you can safely ignore this email.
-        </Text>
+        <div style={header}>
+          <Heading style={headerTitle}>🔗 Inloggningslänk</Heading>
+        </div>
+        <div style={content}>
+          <Heading style={h1}>Din inloggningslänk</Heading>
+          <Text style={text}>
+            Klicka på knappen nedan för att logga in på {siteName}. Länken upphör att gälla inom kort.
+          </Text>
+          <Button style={button} href={confirmationUrl}>
+            Logga in
+          </Button>
+          <Text style={footer}>
+            Om du inte begärde denna länk kan du ignorera detta meddelande.
+          </Text>
+        </div>
+        <div style={brandFooter}>
+          <Text style={brandName}>SHF Intra</Text>
+          <Text style={brandSub}>Svensk Handelsfastigheter · intra.handelsfastigheter.se</Text>
+        </div>
       </Container>
     </Body>
   </Html>
@@ -45,26 +53,15 @@ export const MagicLinkEmail = ({
 
 export default MagicLinkEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Segoe UI', system-ui, Arial, sans-serif" }
+const container = { maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }
+const header = { background: 'linear-gradient(135deg, #2e4a62 0%, #3a5f7c 100%)', padding: '28px 32px', borderRadius: '12px 12px 0 0' }
+const headerTitle = { margin: '0', fontFamily: "Georgia, 'Times New Roman', serif", fontSize: '20px', fontWeight: '600' as const, color: '#ffffff', letterSpacing: '-0.3px' }
+const content = { backgroundColor: '#ffffff', padding: '32px', border: '1px solid #dde1e6', borderTop: 'none', borderRadius: '0 0 12px 12px' }
+const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#1a2332', margin: '0 0 20px' }
+const text = { fontSize: '14px', color: '#3a4553', lineHeight: '1.6', margin: '0 0 20px' }
+const button = { background: 'linear-gradient(135deg, #2e4a62 0%, #3a5f7c 100%)', color: '#ffffff', fontSize: '14px', fontWeight: '700' as const, borderRadius: '8px', padding: '12px 32px', textDecoration: 'none', letterSpacing: '0.2px' }
+const footer = { fontSize: '12px', color: '#6b7685', margin: '30px 0 0' }
+const brandFooter = { padding: '24px 16px', textAlign: 'center' as const }
+const brandName = { margin: '0 0 8px', fontSize: '13px', fontWeight: '500' as const, color: '#6b7685', fontFamily: "Georgia, 'Times New Roman', serif" }
+const brandSub = { margin: '0', fontSize: '11px', color: '#6b7685' }
