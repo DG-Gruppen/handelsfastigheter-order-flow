@@ -55,17 +55,26 @@ export default function History() {
 
     let data: HistoryOrder[] = [];
 
+    // Helper to resolve requester names from profiles
+    const resolveNames = async (rows: any[]): Promise<HistoryOrder[]> => {
+      if (!rows.length) return [];
+      const uniqueIds = [...new Set(rows.map((r) => r.requester_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", uniqueIds);
+      const nameMap = new Map((profiles ?? []).map((p) => [p.user_id, p.full_name]));
+      return rows.map((o) => ({ ...o, requester_name: nameMap.get(o.requester_id) ?? "Okänd" }));
+    };
+
     if (canSeeAll) {
       const { data: rows } = await supabase
         .from("orders")
-        .select("*, requester:profiles!requester_id(full_name)")
+        .select("*")
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      data = (rows ?? []).map((o: any) => ({
-        ...o,
-        requester_name: o.requester?.full_name ?? "Okänd",
-      }));
+      data = await resolveNames(rows ?? []);
     } else if (isManager) {
       const { data: subRows } = await supabase.rpc("get_subordinate_user_ids", {
         _manager_profile_id: profile.id,
@@ -75,15 +84,12 @@ export default function History() {
 
       const { data: rows } = await supabase
         .from("orders")
-        .select("*, requester:profiles!requester_id(full_name)")
+        .select("*")
         .in("requester_id", allUserIds)
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      data = (rows ?? []).map((o: any) => ({
-        ...o,
-        requester_name: o.requester?.full_name ?? "Okänd",
-      }));
+      data = await resolveNames(rows ?? []);
     } else {
       const { data: rows } = await supabase
         .from("orders")
