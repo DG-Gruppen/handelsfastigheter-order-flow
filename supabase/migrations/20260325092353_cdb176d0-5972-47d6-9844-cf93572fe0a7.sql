@@ -1,0 +1,1 @@
+DELETE FROM public.email_send_log WHERE recipient_email = 'helpdesk@dggruppen.se' AND status IN ('failed', 'dlq');
