@@ -192,10 +192,28 @@ Deno.serve(async (req) => {
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i]
       const payload = msg.message
+
+      // Generate message_id and idempotency_key for legacy messages that lack them
+      if (!payload.message_id) {
+        payload.message_id = crypto.randomUUID()
+      }
+      if (!payload.idempotency_key) {
+        payload.idempotency_key = payload.message_id
+      }
+
       const failedAttempts =
         payload?.message_id && typeof payload.message_id === 'string'
           ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
           : 0
+
+      // Safety net: if read_ct is very high, the message is stuck — move to DLQ
+      if (msg.read_ct > 50) {
+        console.warn('Message stuck with high read count, moving to DLQ', {
+          queue, msg_id: msg.msg_id, read_ct: msg.read_ct,
+        })
+        await moveToDlq(supabase, queue, msg, `Stuck message (read_ct=${msg.read_ct})`)
+        continue
+      }
 
       // Drop expired messages (TTL exceeded)
       if (payload.queued_at) {
