@@ -12,13 +12,17 @@ export async function enqueueEmail(params: {
   subject: string;
   html: string;
   reply_to?: string;
+  from_name?: string;
 }) {
   const messageId = crypto.randomUUID();
+  const displayFrom = params.from_name
+    ? `${params.from_name} via SHF Intra <noreply@${FROM_DOMAIN}>`
+    : `SHF Intra <noreply@${FROM_DOMAIN}>`;
   const { error } = await supabase.rpc("enqueue_email", {
     queue_name: "transactional_emails",
     payload: {
       to: params.to,
-      from: `SHF Intra <noreply@${FROM_DOMAIN}>`,
+      from: displayFrom,
       sender_domain: SENDER_DOMAIN,
       subject: params.subject,
       html: params.html,

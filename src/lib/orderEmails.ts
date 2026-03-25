@@ -24,6 +24,7 @@ interface NewOrderEmailParams {
   title: string;
   description?: string | null;
   requesterName: string;
+  requesterEmail: string;
   approverName: string;
   approverEmail: string;
   items: { name: string; quantity: number; description?: string | null }[];
@@ -31,7 +32,7 @@ interface NewOrderEmailParams {
 }
 
 export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
-  const { orderId, title, description, requesterName, approverName, approverEmail, items, recipientName } = params;
+  const { orderId, title, description, requesterName, requesterEmail, approverName, approverEmail, items, recipientName } = params;
   const orderUrl = `${getAppBaseUrl()}/orders/${orderId}`;
 
   const recipientLine = recipientName
@@ -50,7 +51,7 @@ export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   `);
 
   try {
-    await enqueueEmail({ to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html });
+    await enqueueEmail({ to: approverEmail, subject: `[SHF IT] Ny beställning att attestera: ${title}`, html, from_name: requesterName, reply_to: requesterEmail });
   } catch (err) {
     console.error("Failed to enqueue new order email to approver:", err);
   }
