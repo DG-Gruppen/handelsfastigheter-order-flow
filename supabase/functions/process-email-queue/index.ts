@@ -2,7 +2,6 @@ import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const MAX_RETRIES = 5
-const MAX_READ_CT = 50
 const DEFAULT_BATCH_SIZE = 10
 const DEFAULT_SEND_DELAY_MS = 200
 const DEFAULT_AUTH_TTL_MINUTES = 15
@@ -214,16 +213,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Safeguard: if a message has been read too many times (e.g. repeated
-      // failures that weren't properly logged), move it to DLQ to unblock the queue.
-      if (msg.read_ct > MAX_READ_CT) {
-        console.warn('Message exceeded max read count, moving to DLQ', {
-          queue, msg_id: msg.msg_id, read_ct: msg.read_ct,
-        })
-        await moveToDlq(supabase, queue, msg, `Max read count (${MAX_READ_CT}) exceeded (read_ct=${msg.read_ct})`)
-        continue
-      }
-
       // Move to DLQ if max failed send attempts reached.
       if (failedAttempts >= MAX_RETRIES) {
         await moveToDlq(supabase, queue, msg, `Max retries (${MAX_RETRIES}) exceeded (attempted ${failedAttempts} times)`)
@@ -266,7 +255,7 @@ Deno.serve(async (req) => {
             subject: payload.subject,
             html: payload.html,
             text: payload.text,
-            purpose: payload.purpose || 'transactional',
+            purpose: payload.purpose,
             label: payload.label,
             idempotency_key: payload.idempotency_key,
             unsubscribe_token: payload.unsubscribe_token,
