@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type Platform = "ios" | "android-chrome" | "android-samsung" | "desktop";
 
-const APP_URL = "handelsfastigheter.lovable.app";
+const APP_URL = "intra.handelsfastigheter.se";
 
 const IOS_STEPS = [
   { icon: "🌐", text: `Öppna ${APP_URL} i Safari — det fungerar inte i Chrome eller andra webbläsare på iPhone/iPad` },
