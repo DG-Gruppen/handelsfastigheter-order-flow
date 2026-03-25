@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendRejectionEmail, sendApprovalEmail, sendDeliveryEmail } from "@/lib/orderEmails";
-import { getAppBaseUrl } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";

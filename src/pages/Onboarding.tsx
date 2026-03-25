@@ -7,7 +7,6 @@ import { useRegions } from "@/hooks/useRegions";
 import { useOrderFormData, resolveApprovalRouting, type ProfileOption } from "@/hooks/useOrderFormData";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
 import { sendNewOrderEmailToApprover, sendApprovalEmail } from "@/lib/orderEmails";
-import { getAppBaseUrl } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
