@@ -174,6 +174,9 @@ export default function WorkwearAdminPanel() {
       p.variants.forEach((v) => {
         lookup.set(`${p.name}||${v.colorLabel}`, v.url);
         lookup.set(`${p.name}||${v.color}`, v.url);
+        // Also key by parsed color (without parentheses) since itemStats uses parseColor
+        const parsed = v.colorLabel.replace(/\s*\([^)]*\)/, "").trim();
+        lookup.set(`${p.name}||${parsed}`, v.url);
       });
     });
     return lookup;
