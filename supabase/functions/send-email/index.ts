@@ -42,31 +42,38 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Create a client with the user's token to get their identity
-  const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  })
-  const { data: { user }, error: userError } = await userClient.auth.getUser()
-  if (userError || !user) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid or expired token' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
+  // Allow service-role calls (system/internal) without user role check
+  const isServiceRole = token === supabaseServiceKey
+  let rateLimitKey = 'service-role'
 
-  // Role check: only admin, it, or manager can send emails
-  const adminClient = createClient(supabaseUrl, supabaseServiceKey)
-  const [adminCheck, itCheck, managerCheck] = await Promise.all([
-    adminClient.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
-    adminClient.rpc('has_role', { _user_id: user.id, _role: 'it' }),
-    adminClient.rpc('has_role', { _user_id: user.id, _role: 'manager' }),
-  ])
-  const isAllowed = adminCheck.data === true || itCheck.data === true || managerCheck.data === true
-  if (!isAllowed) {
-    return new Response(
-      JSON.stringify({ error: 'Forbidden: insufficient permissions' }),
-      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  if (!isServiceRole) {
+    // Create a client with the user's token to get their identity
+    const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
+    const { data: { user }, error: userError } = await userClient.auth.getUser()
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Role check: only admin, it, or manager can send emails
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey)
+    const [adminCheck, itCheck, managerCheck] = await Promise.all([
+      adminClient.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
+      adminClient.rpc('has_role', { _user_id: user.id, _role: 'it' }),
+      adminClient.rpc('has_role', { _user_id: user.id, _role: 'manager' }),
+    ])
+    const isAllowed = adminCheck.data === true || itCheck.data === true || managerCheck.data === true
+    if (!isAllowed) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: insufficient permissions' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    rateLimitKey = user.id
   }
 
   // Rate limiting using user ID
