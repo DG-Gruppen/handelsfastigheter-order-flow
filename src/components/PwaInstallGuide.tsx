@@ -5,8 +5,10 @@ import { cn } from "@/lib/utils";
 
 type Platform = "ios" | "android-chrome" | "android-samsung" | "desktop";
 
+const APP_URL = "handelsfastigheter.lovable.app";
+
 const IOS_STEPS = [
-  { icon: "🌐", text: "Öppna SHF i Safari — det fungerar inte i Chrome eller andra webbläsare på iPhone/iPad" },
+  { icon: "🌐", text: `Öppna ${APP_URL} i Safari — det fungerar inte i Chrome eller andra webbläsare på iPhone/iPad` },
   { icon: "⬆️", text: "Tryck på Dela-ikonen (fyrkant med pil uppåt) längst ner i Safari" },
   { icon: "📲", text: "Scrolla ner i menyn och tryck på \"Lägg till på hemskärmen\"" },
   { icon: "✏️", text: "Skriv \"SHF\" som namn och tryck \"Lägg till\" uppe till höger" },
@@ -14,14 +16,14 @@ const IOS_STEPS = [
 ];
 
 const ANDROID_CHROME_STEPS = [
-  { icon: "🌐", text: "Öppna SHF i Google Chrome" },
+  { icon: "🌐", text: `Öppna ${APP_URL} i Google Chrome` },
   { icon: "⋮", text: "Tryck på de tre prickarna (⋮) uppe till höger i Chrome" },
   { icon: "📲", text: "Välj \"Installera app\" eller \"Lägg till på startskärmen\"" },
   { icon: "✅", text: "Tryck \"Installera\" i dialogrutan — appen finns nu i din applista!" },
 ];
 
 const ANDROID_SAMSUNG_STEPS = [
-  { icon: "🌐", text: "Öppna SHF i Samsung Internet" },
+  { icon: "🌐", text: `Öppna ${APP_URL} i Samsung Internet` },
   { icon: "☰", text: "Tryck på hamburgermenyn (tre streck ☰) längst ner" },
   { icon: "📲", text: "Välj \"Lägg till sida på\" → \"Startskärm\"" },
   { icon: "✏️", text: "Namnge genvägen \"SHF\" och tryck \"Lägg till\"" },
@@ -29,7 +31,7 @@ const ANDROID_SAMSUNG_STEPS = [
 ];
 
 const DESKTOP_STEPS = [
-  { icon: "🌐", text: "Öppna SHF i Chrome eller Edge på din dator" },
+  { icon: "🌐", text: `Öppna ${APP_URL} i Chrome eller Edge på din dator` },
   { icon: "📥", text: "Klicka på installationsikonen i adressfältet (liten datorskärm med nedåtpil)" },
   { icon: "✅", text: "Klicka \"Installera\" — appen öppnas som ett eget fönster och kan startas från aktivitetsfältet" },
 ];
