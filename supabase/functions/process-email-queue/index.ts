@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
             subject: payload.subject,
             html: payload.html,
             text: payload.text,
-            purpose: payload.purpose,
+            purpose: payload.purpose || 'transactional',
             label: payload.label,
             idempotency_key: payload.idempotency_key,
             unsubscribe_token: payload.unsubscribe_token,
