@@ -211,14 +211,7 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
-                  {unread.slice(0, 5).map(renderNotification)}
-                  {unread.length > 5 && (
-                    <div className="px-4 py-2 text-center">
-                      <p className="text-xs text-muted-foreground">
-                        +{unread.length - 5} olästa till
-                      </p>
-                    </div>
-                  )}
+                  {unread.map(renderNotification)}
                 </div>
               )}
 
