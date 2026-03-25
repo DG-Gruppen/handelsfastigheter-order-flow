@@ -4,8 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrderFormData, resolveApprovalRouting } from "@/hooks/useOrderFormData";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
-import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
-import { enqueueEmail } from "@/lib/enqueueEmail";
+import { sendNewOrderEmailToApprover, sendApprovalEmail } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -221,23 +220,14 @@ export default function NewOrder() {
       });
 
       if (requesterEmail) {
-        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
-        const confirmHtml = buildApprovalEmailHtml({
+        await sendApprovalEmail({
+          orderId: order.id,
           recipientName: requesterProfile?.full_name || "du",
+          recipientEmail: requesterEmail,
           title,
           items: orderItemsToInsert.map((i) => ({ name: i.name, quantity: i.quantity })),
-          orderUrl,
           isAutoApproved: true,
         });
-        try {
-          await enqueueEmail({
-            to: requesterEmail,
-            subject: `[SHF IT] Din beställning har godkänts: ${title}`,
-            html: confirmHtml,
-          });
-        } catch (err) {
-          console.error("Failed to enqueue approval confirmation email:", err);
-        }
       }
     }
 
