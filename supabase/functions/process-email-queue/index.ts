@@ -214,6 +214,16 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Safeguard: if a message has been read too many times (e.g. repeated
+      // failures that weren't properly logged), move it to DLQ to unblock the queue.
+      if (msg.read_ct > MAX_READ_CT) {
+        console.warn('Message exceeded max read count, moving to DLQ', {
+          queue, msg_id: msg.msg_id, read_ct: msg.read_ct,
+        })
+        await moveToDlq(supabase, queue, msg, `Max read count (${MAX_READ_CT}) exceeded (read_ct=${msg.read_ct})`)
+        continue
+      }
+
       // Move to DLQ if max failed send attempts reached.
       if (failedAttempts >= MAX_RETRIES) {
         await moveToDlq(supabase, queue, msg, `Max retries (${MAX_RETRIES}) exceeded (attempted ${failedAttempts} times)`)
