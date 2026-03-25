@@ -11,7 +11,7 @@ import { useRegions } from "@/hooks/useRegions";
 import { ShoppingBag, Users, Package, MapPin, TrendingUp, CalendarClock, Download, StickyNote, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
-import { SEASON_LABELS, ALL_SEASONS, type Season } from "./workwearProducts";
+import { SEASON_LABELS, ALL_SEASONS, PRODUCTS_BY_SEASON, type Season } from "./workwearProducts";
 import {
   SortableHeader,
   SortConfig,
