@@ -187,8 +187,8 @@ export default function NotificationBell() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[340px] p-0 glass-surface" sideOffset={8}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+      <PopoverContent align="end" className="w-[340px] p-0 glass-surface max-h-[min(500px,70vh)] flex flex-col" sideOffset={8}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0">
           <h3 className="text-sm font-semibold text-foreground">Notiser</h3>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={markAllRead}>
@@ -197,7 +197,7 @@ export default function NotificationBell() {
           )}
         </div>
 
-        <ScrollArea className="max-h-[min(420px,60vh)] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
           {unread.length === 0 && archived.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
@@ -220,7 +220,7 @@ export default function NotificationBell() {
                   <Separator />
                   <button
                     onClick={() => setShowArchive((v) => !v)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-secondary/30 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-secondary/30 transition-colors sticky top-0 bg-background/95 backdrop-blur-sm z-10"
                   >
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Archive className="h-3.5 w-3.5" />
@@ -241,7 +241,7 @@ export default function NotificationBell() {
               )}
             </>
           )}
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );
