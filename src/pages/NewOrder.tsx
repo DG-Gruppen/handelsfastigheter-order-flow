@@ -186,6 +186,7 @@ export default function NewOrder() {
             title,
             description: description.trim(),
             requesterName,
+            requesterEmail: allProfiles.find(p => p.user_id === user.id)?.email || "",
             approverName: approverProfileData.full_name,
             approverEmail: approverEmailData.email,
             items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),

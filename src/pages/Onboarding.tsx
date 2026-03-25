@@ -317,6 +317,7 @@ export default function Onboarding() {
             title,
             description: description.trim(),
             requesterName: requesterName2,
+            requesterEmail: allProfiles.find(p => p.user_id === user.id)?.email || "",
             approverName: approverProfileData.full_name,
             approverEmail: approverEmailData.email,
             items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
