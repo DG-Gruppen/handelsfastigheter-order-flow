@@ -197,7 +197,7 @@ export default function NotificationBell() {
           )}
         </div>
 
-        <ScrollArea className="max-h-[420px] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
+        <ScrollArea className="max-h-[min(420px,60vh)] overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
           {unread.length === 0 && archived.length === 0 ? (
             <div className="py-10 text-center">
               <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
