@@ -167,24 +167,38 @@ export default function WorkwearAdminPanel() {
   }, [filteredOrders, profileMap, regionMap]);
 
   // Supplier list grouped by product
+  // Build a lookup: productName+color → url from workwearProducts
+  const productUrlLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    Object.values(PRODUCTS_BY_SEASON).flat().forEach((p) => {
+      p.variants.forEach((v) => {
+        lookup.set(`${p.name}||${v.colorLabel}`, v.url);
+        lookup.set(`${p.name}||${v.color}`, v.url);
+      });
+    });
+    return lookup;
+  }, []);
+
   const supplierGroups = useMemo(() => {
-    const groups = new Map<string, { name: string; totalQty: number; logo: string; sizes: { color: string; size: string; qty: number; logo: string }[] }>();
+    const groups = new Map<string, { name: string; totalQty: number; logo: string; sizes: { color: string; size: string; qty: number; logo: string; url: string }[] }>();
     itemStats.forEach((item) => {
+      // Try to find URL for this product+color combo
+      const url = productUrlLookup.get(`${item.name}||${item.color}`) || "";
       const existing = groups.get(item.name);
       if (existing) {
         existing.totalQty += item.qty;
-        existing.sizes.push({ color: item.color, size: item.size, qty: item.qty, logo: item.logo });
+        existing.sizes.push({ color: item.color, size: item.size, qty: item.qty, logo: item.logo, url });
       } else {
         groups.set(item.name, {
           name: item.name,
           totalQty: item.qty,
           logo: item.logo,
-          sizes: [{ color: item.color, size: item.size, qty: item.qty, logo: item.logo }],
+          sizes: [{ color: item.color, size: item.size, qty: item.qty, logo: item.logo, url }],
         });
       }
     });
     return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, "sv"));
-  }, [itemStats]);
+  }, [itemStats, productUrlLookup]);
 
   const supplierRows = useMemo(() => {
     const sorted = applySortString(itemStats, sortSupplier);
