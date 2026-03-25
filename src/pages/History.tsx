@@ -169,7 +169,7 @@ export default function History() {
       return data;
     },
     enabled: !!user && !!profile,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const orders = useMemo(() => [...firstPageOrders, ...extraOrders], [firstPageOrders, extraOrders]);
