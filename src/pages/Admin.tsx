@@ -18,13 +18,14 @@ const ITContent = lazy(() => import("@/components/admin/ITContent"));
 const DatabaseBackup = lazy(() => import("@/components/admin/DatabaseBackup"));
 const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
 const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
+const EmailLogDashboard = lazy(() => import("@/components/admin/EmailLogDashboard"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log";
 
 interface AdminGroup {
   label: string;
@@ -86,6 +87,7 @@ const adminGroups: AdminGroup[] = [
       { id: "it", label: "IT", description: "Navigationslänkar och utseende", icon: Wrench, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary", roles: ["it", "admin"] },
       { id: "backup", label: "Backup", description: "Exportera och säkerhetskopiera databasen", icon: Database, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
       { id: "integrations", label: "Integrationer", description: "Status för externa system och API:er", icon: Plug, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
+      { id: "email-log", label: "E-postlogg", description: "Övervakning av skickade e-postmeddelanden", icon: Mail, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent", roles: ["it", "admin"] },
     ],
   },
 ];
@@ -145,6 +147,7 @@ export default function Admin() {
       case "backup": content = <DatabaseBackup />; break;
       case "workwear": content = <WorkwearAdminPanel />; break;
       case "integrations": content = <IntegrationsStatus />; break;
+      case "email-log": content = <EmailLogDashboard />; break;
     }
     return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
