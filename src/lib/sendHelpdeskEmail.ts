@@ -57,7 +57,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   const subject = `[SHF IT Beställning] ${typeLabel}: ${title}`;
 
   try {
-    await enqueueEmail({ to: itEmail, subject, html, reply_to: requesterEmail });
+    await enqueueEmail({ to: itEmail, subject, html, reply_to: requesterEmail, from_name: requesterName });
   } catch (err) {
     console.error("Failed to enqueue helpdesk email:", err);
   }
