@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const SENDER_DOMAIN = "notify.saminfra.se";
-const FROM_DOMAIN = "saminfra.se";
+const SENDER_DOMAIN = "it.handelsfastigheter.se";
+const FROM_DOMAIN = "handelsfastigheter.se";
 
 /**
  * Enqueues an email through pgmq instead of calling send-email directly.
