@@ -556,7 +556,9 @@ export default function WorkwearAdminPanel() {
                 )}>
                   <Download className="w-3.5 h-3.5" /> CSV
                 </Button>
-              </div>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={handlePrintSupplierList}>
+                  <Printer className="w-3.5 h-3.5" /> Skriv ut
+                </Button>
             </CardHeader>
             <CardContent className="p-0">
               {supplierGroups.length === 0 ? (
