@@ -1,11 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { enqueueEmail } from "@/lib/enqueueEmail";
 import { getItContactEmail } from "@/lib/orderEmails";
 import { getAppBaseUrl } from "@/lib/utils";
-import {
-  emailLayout, emailText, emailHeading,
-  emailItemsList, emailSystemsList, emailRecipientInfo, emailButton, escapeHtml,
-} from "@/lib/emailTemplates";
 
 interface HelpdeskEmailParams {
   orderId: string;
@@ -24,7 +19,7 @@ interface HelpdeskEmailParams {
 export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   const {
     orderId, title, description, recipientName, recipientDepartment,
-    recipientStartDate, orderReason, requesterName, requesterEmail,
+    recipientStartDate, orderReason, requesterName,
     items, systems = [],
   } = params;
 
@@ -34,31 +29,47 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   const isOnboarding = orderReason === "new_employee";
   const isOffboarding = orderReason === "end_of_employment";
   const typeLabel = isOffboarding ? "Offboarding" : isOnboarding ? "Onboarding" : "Utrustningsbeställning";
+  const dateLabel = isOffboarding ? "Slutdatum" : "Startdatum";
 
-  const recipientHtml = recipientName
-    ? emailRecipientInfo({
-        name: recipientName,
-        department: recipientDepartment,
-        date: recipientStartDate,
-        dateLabel: isOffboarding ? "Slutdatum" : "Startdatum",
-      })
-    : "";
-
-  const html = emailLayout(`${escapeHtml(typeLabel)}: ${escapeHtml(title)}`, "🎫", `
-    ${emailText(`En ny godkänd beställning har inkommit från <strong>${escapeHtml(requesterName)}</strong>.`)}
-    ${recipientHtml}
-    ${emailHeading("Utrustning")}
-    ${emailItemsList(items)}
-    ${emailSystemsList(systems)}
-    ${description ? `${emailHeading("Kommentar")}${emailText(escapeHtml(description))}` : ""}
-    ${emailButton(orderUrl, "Visa beställning i systemet")}
-  `);
-
-  const subject = `[SHF IT Beställning] ${typeLabel}: ${title}`;
+  const recipientDate = recipientStartDate
+    ? new Date(recipientStartDate).toLocaleDateString("sv-SE")
+    : undefined;
 
   try {
-    await enqueueEmail({ to: itEmail, subject, html, reply_to: requesterEmail, from_name: requesterName });
+    const { error } = await supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "helpdesk-order",
+        recipientEmail: itEmail,
+        idempotencyKey: `helpdesk-order-${orderId}`,
+        templateData: {
+          typeLabel,
+          title,
+          requesterName,
+          recipientName: recipientName || undefined,
+          recipientDepartment: recipientDepartment || undefined,
+          recipientDate,
+          dateLabel,
+          description: description || undefined,
+          items: items.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            description: i.description || undefined,
+          })),
+          systems: systems
+            .filter((s) => s.name)
+            .map((s) => ({
+              name: s.name,
+              description: s.description || undefined,
+            })),
+          orderUrl,
+        },
+      },
+    });
+
+    if (error) {
+      console.error("Failed to send helpdesk email:", error);
+    }
   } catch (err) {
-    console.error("Failed to enqueue helpdesk email:", err);
+    console.error("Failed to send helpdesk email:", err);
   }
 }

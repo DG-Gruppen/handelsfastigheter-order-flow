@@ -6,9 +6,7 @@ import { useModulePermission } from "@/hooks/useModulePermission";
 import { useRegions } from "@/hooks/useRegions";
 import { useOrderFormData, resolveApprovalRouting, type ProfileOption } from "@/hooks/useOrderFormData";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
-import { sendNewOrderEmailToApprover, buildApprovalEmailHtml } from "@/lib/orderEmails";
-import { enqueueEmail } from "@/lib/enqueueEmail";
-import { getAppBaseUrl } from "@/lib/utils";
+import { sendNewOrderEmailToApprover, sendApprovalEmail } from "@/lib/orderEmails";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -358,23 +356,14 @@ export default function Onboarding() {
 
       // Send confirmation email to requester (auto-approved)
       if (reqEmail?.email) {
-        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
-        const confirmHtml = buildApprovalEmailHtml({
+        await sendApprovalEmail({
+          orderId: order.id,
           recipientName: requesterProfile?.full_name || "du",
+          recipientEmail: reqEmail.email,
           title,
           items: orderItemsToInsert.map((i) => ({ name: i.name, quantity: 1 })),
-          orderUrl,
           isAutoApproved: true,
         });
-        try {
-          await enqueueEmail({
-            to: reqEmail.email,
-            subject: `[SHF IT] Din beställning har godkänts: ${title}`,
-            html: confirmHtml,
-          });
-        } catch (err) {
-          console.error("Failed to enqueue approval confirmation email:", err);
-        }
       }
     }
 

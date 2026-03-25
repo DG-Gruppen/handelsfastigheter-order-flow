@@ -4,9 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
-import { sendRejectionEmail, buildApprovalEmailHtml, buildDeliveryEmailHtml } from "@/lib/orderEmails";
-import { enqueueEmail } from "@/lib/enqueueEmail";
-import { getAppBaseUrl } from "@/lib/utils";
+import { sendRejectionEmail, sendApprovalEmail, sendDeliveryEmail } from "@/lib/orderEmails";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -150,16 +148,14 @@ export default function OrderDetail() {
       });
 
       if (requesterProfile?.email) {
-        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
-        const html = buildDeliveryEmailHtml({
+        await sendDeliveryEmail({
+          orderId: order.id,
           recipientName: requesterProfile.full_name,
+          recipientEmail: requesterProfile.email,
           title: order.title,
           orderRecipientName: order.recipient_name,
           comment,
-          orderUrl,
         });
-        try { await enqueueEmail({ to: requesterProfile.email, subject: `[SHF IT Beställning] Levererad: ${order.title}`, html }); }
-        catch (err) { console.error("Failed to enqueue delivery email:", err); }
       }
     }
     setMarking(false);
@@ -183,16 +179,14 @@ export default function OrderDetail() {
       }
 
       if (requesterProfile?.email) {
-        const orderUrl = `${getAppBaseUrl()}/orders/${order.id}`;
-        const approvalHtml = buildApprovalEmailHtml({
+        await sendApprovalEmail({
+          orderId: order.id,
           recipientName: requesterProfile.full_name,
+          recipientEmail: requesterProfile.email,
           title: order.title,
           approverName: approverProfile?.full_name || "Attestanten",
           items: items.map((i) => ({ name: i.name, quantity: i.quantity })),
-          orderUrl,
         });
-        try { await enqueueEmail({ to: requesterProfile.email, subject: `[SHF IT] Din beställning har godkänts: ${order.title}`, html: approvalHtml }); }
-        catch (err) { console.error("Failed to enqueue approval confirmation email:", err); }
       }
 
       const systemsList = orderSystems.map((os) => ({ name: os.system?.name || "", description: os.system?.description || null }));
