@@ -69,7 +69,7 @@ export default function WorkwearOrder() {
   }, []);
 
   const products = PRODUCTS_BY_SEASON[activeSeason] || [];
-  const isExpired = deadline ? isPast(parseISO(deadline)) : false;
+  const isExpired = deadline ? isPast(new Date(deadline + "T23:59:59")) : false;
 
   const upsertSetting = async (key: string, value: string) => {
     await supabase
