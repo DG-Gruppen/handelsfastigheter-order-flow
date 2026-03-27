@@ -12,6 +12,9 @@ interface HelpdeskEmailParams {
   orderReason?: string | null;
   requesterName: string;
   requesterEmail: string;
+  requesterDepartment?: string | null;
+  requesterRegion?: string | null;
+  requesterPhone?: string | null;
   items: { name: string; description?: string | null; quantity: number }[];
   systems?: { name: string; description?: string | null }[];
 }
@@ -20,6 +23,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
   const {
     orderId, title, description, recipientName, recipientDepartment,
     recipientStartDate, orderReason, requesterName,
+    requesterDepartment, requesterRegion, requesterPhone,
     items, systems = [],
   } = params;
 
@@ -45,6 +49,9 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
           typeLabel,
           title,
           requesterName,
+          requesterDepartment: requesterDepartment || undefined,
+          requesterRegion: requesterRegion || undefined,
+          requesterPhone: requesterPhone || undefined,
           recipientName: recipientName || undefined,
           recipientDepartment: recipientDepartment || undefined,
           recipientDate,

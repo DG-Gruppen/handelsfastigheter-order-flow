@@ -11,6 +11,9 @@ interface Props {
   typeLabel?: string
   title?: string
   requesterName?: string
+  requesterDepartment?: string
+  requesterRegion?: string
+  requesterPhone?: string
   recipientName?: string
   recipientDepartment?: string
   recipientDate?: string
@@ -25,6 +28,9 @@ const HelpdeskOrderEmail = ({
   typeLabel = 'Utrustningsbeställning',
   title = 'Beställning',
   requesterName = 'Medarbetare',
+  requesterDepartment,
+  requesterRegion,
+  requesterPhone,
   recipientName,
   recipientDepartment,
   recipientDate,
@@ -46,6 +52,38 @@ const HelpdeskOrderEmail = ({
           <Text style={text}>
             En ny godkänd beställning har inkommit från <strong>{requesterName}</strong>.
           </Text>
+
+          {(requesterDepartment || requesterRegion || requesterPhone) && (
+            <>
+              <Heading style={sectionHeading}>Beställare</Heading>
+              <table cellPadding="0" cellSpacing="0">
+                <tbody>
+                  <tr>
+                    <td style={infoLabel}>Namn:</td>
+                    <td style={infoValue}>{requesterName}</td>
+                  </tr>
+                  {requesterDepartment && (
+                    <tr>
+                      <td style={infoLabel}>Avdelning:</td>
+                      <td style={infoValue}>{requesterDepartment}</td>
+                    </tr>
+                  )}
+                  {requesterRegion && (
+                    <tr>
+                      <td style={infoLabel}>Region:</td>
+                      <td style={infoValue}>{requesterRegion}</td>
+                    </tr>
+                  )}
+                  {requesterPhone && (
+                    <tr>
+                      <td style={infoLabel}>Telefon:</td>
+                      <td style={infoValue}>{requesterPhone}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          )}
 
           {recipientName && (
             <>
@@ -145,6 +183,9 @@ export const template = {
     typeLabel: 'Onboarding',
     title: 'Onboarding: Erik Svensson',
     requesterName: 'Knud Lauridsen',
+    requesterDepartment: 'Ekonomi',
+    requesterRegion: 'Region Söder',
+    requesterPhone: '070-123 45 67',
     recipientName: 'Erik Svensson',
     recipientDepartment: 'Ekonomi',
     recipientDate: '2026-04-01',

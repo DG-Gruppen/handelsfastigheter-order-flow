@@ -31,7 +31,7 @@ interface Order {
 }
 
 interface OrderItem { id: string; name: string; description: string | null; quantity: number; category_id: string | null; order_type_id: string | null; }
-interface Profile { full_name: string; email: string; }
+interface Profile { full_name: string; email: string; department?: string | null; phone?: string | null; region_id?: string | null; }
 interface OrderSystem { id: string; system: { id: string; name: string; description: string; icon: string; }; }
 
 const ORDER_COLUMNS = "id,title,description,status,category,created_at,approved_at,requester_id,approver_id,order_reason,recipient_type,recipient_name,recipient_department,recipient_start_date,rejection_reason,delivery_comment,updated_at";
@@ -52,22 +52,29 @@ async function fetchOrderDetail(id: string) {
   // Fetch profiles in parallel (not sequentially after order)
   let requesterProfile: Profile | null = null;
   let approverProfile: Profile | null = null;
+  let requesterRegionName: string | null = null;
 
   if (order) {
     const ids = [order.requester_id, order.approver_id].filter(Boolean) as string[];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, full_name, email")
+      .select("user_id, full_name, email, department, phone, region_id")
       .in("user_id", ids);
     if (profiles) {
       const req = profiles.find((p: any) => p.user_id === order.requester_id);
       const app = profiles.find((p: any) => p.user_id === order.approver_id);
-      if (req) requesterProfile = { full_name: req.full_name, email: req.email };
+      if (req) {
+        requesterProfile = { full_name: req.full_name, email: req.email, department: req.department, phone: req.phone, region_id: req.region_id };
+        if (req.region_id) {
+          const { data: region } = await supabase.from("regions").select("name").eq("id", req.region_id).single();
+          requesterRegionName = region?.name || null;
+        }
+      }
       if (app) approverProfile = { full_name: app.full_name, email: app.email };
     }
   }
 
-  return { order, items, orderSystems, requesterProfile, approverProfile };
+  return { order, items, orderSystems, requesterProfile, approverProfile, requesterRegionName };
 }
 
 export default function OrderDetail() {
@@ -100,6 +107,7 @@ export default function OrderDetail() {
   const orderSystems = data?.orderSystems ?? [];
   const requesterProfile = data?.requesterProfile ?? null;
   const approverProfile = data?.approverProfile ?? null;
+  const requesterRegionName = data?.requesterRegionName ?? null;
 
   const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
 
@@ -195,6 +203,9 @@ export default function OrderDetail() {
         recipientName: order.recipient_name, recipientDepartment: order.recipient_department,
         recipientStartDate: order.recipient_start_date, orderReason: order.order_reason,
         requesterName: requesterProfile?.full_name || "Okänd", requesterEmail: requesterProfile?.email || "",
+        requesterDepartment: requesterProfile?.department,
+        requesterRegion: requesterRegionName,
+        requesterPhone: requesterProfile?.phone,
         items: items.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
         systems: systemsList,
       });
