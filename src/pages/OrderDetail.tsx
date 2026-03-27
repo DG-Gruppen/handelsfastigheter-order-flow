@@ -31,7 +31,7 @@ interface Order {
 }
 
 interface OrderItem { id: string; name: string; description: string | null; quantity: number; category_id: string | null; order_type_id: string | null; }
-interface Profile { full_name: string; email: string; }
+interface Profile { full_name: string; email: string; department?: string | null; phone?: string | null; region_id?: string | null; }
 interface OrderSystem { id: string; system: { id: string; name: string; description: string; icon: string; }; }
 
 const ORDER_COLUMNS = "id,title,description,status,category,created_at,approved_at,requester_id,approver_id,order_reason,recipient_type,recipient_name,recipient_department,recipient_start_date,rejection_reason,delivery_comment,updated_at";
@@ -57,12 +57,12 @@ async function fetchOrderDetail(id: string) {
     const ids = [order.requester_id, order.approver_id].filter(Boolean) as string[];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, full_name, email")
+      .select("user_id, full_name, email, department, phone, region_id")
       .in("user_id", ids);
     if (profiles) {
       const req = profiles.find((p: any) => p.user_id === order.requester_id);
       const app = profiles.find((p: any) => p.user_id === order.approver_id);
-      if (req) requesterProfile = { full_name: req.full_name, email: req.email };
+      if (req) requesterProfile = { full_name: req.full_name, email: req.email, department: req.department, phone: req.phone, region_id: req.region_id };
       if (app) approverProfile = { full_name: app.full_name, email: app.email };
     }
   }
