@@ -52,6 +52,7 @@ async function fetchOrderDetail(id: string) {
   // Fetch profiles in parallel (not sequentially after order)
   let requesterProfile: Profile | null = null;
   let approverProfile: Profile | null = null;
+  let requesterRegionName: string | null = null;
 
   if (order) {
     const ids = [order.requester_id, order.approver_id].filter(Boolean) as string[];
@@ -62,12 +63,18 @@ async function fetchOrderDetail(id: string) {
     if (profiles) {
       const req = profiles.find((p: any) => p.user_id === order.requester_id);
       const app = profiles.find((p: any) => p.user_id === order.approver_id);
-      if (req) requesterProfile = { full_name: req.full_name, email: req.email, department: req.department, phone: req.phone, region_id: req.region_id };
+      if (req) {
+        requesterProfile = { full_name: req.full_name, email: req.email, department: req.department, phone: req.phone, region_id: req.region_id };
+        if (req.region_id) {
+          const { data: region } = await supabase.from("regions").select("name").eq("id", req.region_id).single();
+          requesterRegionName = region?.name || null;
+        }
+      }
       if (app) approverProfile = { full_name: app.full_name, email: app.email };
     }
   }
 
-  return { order, items, orderSystems, requesterProfile, approverProfile };
+  return { order, items, orderSystems, requesterProfile, approverProfile, requesterRegionName };
 }
 
 export default function OrderDetail() {
