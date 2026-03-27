@@ -107,6 +107,7 @@ export default function OrderDetail() {
   const orderSystems = data?.orderSystems ?? [];
   const requesterProfile = data?.requesterProfile ?? null;
   const approverProfile = data?.approverProfile ?? null;
+  const requesterRegionName = data?.requesterRegionName ?? null;
 
   const canApprove = order?.status === "pending" && order?.approver_id === user?.id;
 
