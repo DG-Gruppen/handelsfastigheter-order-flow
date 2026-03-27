@@ -37,7 +37,8 @@ interface HistoryOrder {
 
 export default function History() {
   const { user, roles, profile, loading: authLoading } = useAuth();
-  const { isOwner: isModuleOwner, loading: modulePermLoading } = useModulePermission("history");
+  const { isOwner: isModuleOwner } = useModulePermission("history");
+  const { loading: modulesLoading } = useModules();
   const queryClient = useQueryClient();
   const isAdmin = roles.includes("admin") || roles.includes("it");
   const isManager = roles.includes("manager");
