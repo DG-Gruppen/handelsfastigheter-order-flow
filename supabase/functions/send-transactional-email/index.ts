@@ -286,10 +286,16 @@ Deno.serve(async (req) => {
   const html = await renderAsync(
     React.createElement(template.component, templateData)
   )
-  const plainText = await renderAsync(
+  let plainText = await renderAsync(
     React.createElement(template.component, templateData),
     { plainText: true }
   )
+  // The email API requires a non-empty `text` field. Some templates with
+  // complex markup (tables, divs) produce an empty plain-text render.
+  // Fall back to the subject line so the API never rejects the payload.
+  if (!plainText || !plainText.trim()) {
+    plainText = resolvedSubject
+  }
 
   // Resolve subject — supports static string or dynamic function
   const resolvedSubject =
