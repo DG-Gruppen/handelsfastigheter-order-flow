@@ -198,12 +198,18 @@ export default function NewOrder() {
     // Helpdesk email + confirmation for auto-approved orders
     if (autoApprove) {
       const requesterProfile = allProfiles.find(p => p.user_id === user.id);
-      const { data: reqEmail } = await supabase
+      const { data: reqFullProfile } = await supabase
         .from("profiles")
-        .select("email")
+        .select("email, department, phone, region_id")
         .eq("user_id", user.id)
         .single();
-      const requesterEmail = reqEmail?.email || "";
+      const requesterEmail = reqFullProfile?.email || "";
+
+      let requesterRegion: string | null = null;
+      if (reqFullProfile?.region_id) {
+        const { data: region } = await supabase.from("regions").select("name").eq("id", reqFullProfile.region_id).single();
+        requesterRegion = region?.name || null;
+      }
 
       await sendHelpdeskEmail({
         orderId: order.id,
@@ -215,6 +221,9 @@ export default function NewOrder() {
         orderReason: "broken_equipment",
         requesterName: requesterProfile?.full_name || "Okänd",
         requesterEmail,
+        requesterDepartment: reqFullProfile?.department,
+        requesterRegion,
+        requesterPhone: reqFullProfile?.phone,
         items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
       });
 
