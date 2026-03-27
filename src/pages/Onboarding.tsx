@@ -364,11 +364,11 @@ export default function Onboarding() {
       });
 
       // Send confirmation email to requester (auto-approved)
-      if (reqEmail?.email) {
+      if (reqFullProfile?.email) {
         await sendApprovalEmail({
           orderId: order.id,
           recipientName: requesterProfile?.full_name || "du",
-          recipientEmail: reqEmail.email,
+          recipientEmail: reqFullProfile.email,
           title,
           items: orderItemsToInsert.map((i) => ({ name: i.name, quantity: 1 })),
           isAutoApproved: true,
