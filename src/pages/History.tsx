@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
+import { useModules } from "@/hooks/useModules";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,7 @@ export default function History() {
   });
 
   // Wait for all role/permission data before determining tabs
-  const rolesReady = !authLoading && !modulePermLoading && !isStaffLoading;
+  const rolesReady = !authLoading && !modulesLoading && !isStaffLoading;
 
   // Set initial tab once roles are ready
   useEffect(() => {
