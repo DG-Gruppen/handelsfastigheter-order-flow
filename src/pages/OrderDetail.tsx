@@ -203,6 +203,9 @@ export default function OrderDetail() {
         recipientName: order.recipient_name, recipientDepartment: order.recipient_department,
         recipientStartDate: order.recipient_start_date, orderReason: order.order_reason,
         requesterName: requesterProfile?.full_name || "Okänd", requesterEmail: requesterProfile?.email || "",
+        requesterDepartment: requesterProfile?.department,
+        requesterRegion: requesterRegionName,
+        requesterPhone: requesterProfile?.phone,
         items: items.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
         systems: systemsList,
       });
