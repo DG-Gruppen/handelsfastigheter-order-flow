@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
+import { useModules } from "@/hooks/useModules";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,9 @@ import { MessageSquare, Clock, CheckCircle2, XCircle, Package, Zap, LogOut, User
 import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 
 const PAGE_SIZE = 50;
+
+const ORDER_COLUMNS =
+  "id,title,status,created_at,approved_at,requester_id,approver_id,order_reason,recipient_type,recipient_name,delivery_comment" as const;
 
 type TabKey = "mine" | "all" | "stab" | "org";
 
@@ -33,14 +37,15 @@ interface HistoryOrder {
 }
 
 export default function History() {
-  const { user, roles, profile } = useAuth();
+  const { user, roles, profile, loading: authLoading } = useAuth();
   const { isOwner: isModuleOwner } = useModulePermission("history");
+  const { loading: modulesLoading } = useModules();
   const queryClient = useQueryClient();
   const isAdmin = roles.includes("admin") || roles.includes("it");
   const isManager = roles.includes("manager");
   const canSeeAll = isAdmin || isModuleOwner;
 
-  const [activeTab, setActiveTab] = useState<TabKey>(canSeeAll ? "all" : "mine");
+  const [activeTab, setActiveTab] = useState<TabKey | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -51,22 +56,32 @@ export default function History() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Check if user is STAB (is_staff)
-  const { data: isStaff = false } = useQuery({
+  const { data: isStaff = false, isLoading: isStaffLoading } = useQuery({
     queryKey: ["profile-is-staff", user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
         .select("is_staff")
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
       return data?.is_staff === true;
     },
     enabled: !!user,
     staleTime: 10 * 60 * 1000,
   });
 
+  // Wait for all role/permission data before determining tabs
+  const rolesReady = !authLoading && !modulesLoading && !isStaffLoading;
+
+  // Set initial tab once roles are ready
+  useEffect(() => {
+    if (!rolesReady || activeTab !== null) return;
+    setActiveTab(canSeeAll ? "all" : "mine");
+  }, [rolesReady, canSeeAll, activeTab]);
+
   // Determine available tabs
   const availableTabs = useMemo(() => {
+    if (!rolesReady) return [];
     const tabs: { key: TabKey; label: string; icon: typeof HistoryIcon }[] = [
       { key: "mine", label: "Mina", icon: HistoryIcon },
     ];
@@ -80,7 +95,7 @@ export default function History() {
       tabs.push({ key: "org", label: "Min organisation", icon: Users });
     }
     return tabs;
-  }, [canSeeAll, isStaff, isManager]);
+  }, [canSeeAll, isStaff, isManager, rolesReady]);
 
   // Helper to resolve requester names from profiles
   const resolveNames = useCallback(async (rows: any[]): Promise<HistoryOrder[]> => {
@@ -101,10 +116,9 @@ export default function History() {
     const to = from + PAGE_SIZE - 1;
 
     if (tab === "mine") {
-      // Own orders + orders where user is approver
       const { data: rows } = await supabase
         .from("orders")
-        .select("*")
+        .select(ORDER_COLUMNS)
         .or(`requester_id.eq.${user.id},approver_id.eq.${user.id}`)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -112,17 +126,15 @@ export default function History() {
     }
 
     if (tab === "all") {
-      // Admin/VD: all orders (RLS allows)
       const { data: rows } = await supabase
         .from("orders")
-        .select("*")
+        .select(ORDER_COLUMNS)
         .order("created_at", { ascending: false })
         .range(from, to);
       return resolveNames(rows ?? []);
     }
 
     if (tab === "stab") {
-      // Get all STAB user IDs
       const { data: staffProfiles } = await supabase
         .from("profiles")
         .select("user_id")
@@ -132,7 +144,7 @@ export default function History() {
 
       const { data: rows } = await supabase
         .from("orders")
-        .select("*")
+        .select(ORDER_COLUMNS)
         .in("requester_id", staffIds)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -140,7 +152,6 @@ export default function History() {
     }
 
     if (tab === "org") {
-      // Manager: subordinate orders (recursive via RPC)
       const { data: subRows } = await supabase.rpc("get_subordinate_user_ids", {
         _manager_profile_id: profile.id,
       });
@@ -149,7 +160,7 @@ export default function History() {
 
       const { data: rows } = await supabase
         .from("orders")
-        .select("*")
+        .select(ORDER_COLUMNS)
         .in("requester_id", subordinateIds)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -159,27 +170,26 @@ export default function History() {
     return [];
   }, [user, profile, resolveNames]);
 
-  const { data: firstPageOrders = [], isLoading: loading } = useQuery({
+  const { data: firstPageOrders = [], isLoading: queryLoading } = useQuery({
     queryKey: ["history-orders", user?.id, activeTab, profile?.id],
     queryFn: async () => {
-      const data = await fetchPage(0, activeTab);
-      setHasMore(data.length === PAGE_SIZE);
-      setExtraOrders([]);
-      setPage(0);
-      return data;
+      return fetchPage(0, activeTab!);
     },
-    enabled: !!user && !!profile,
+    enabled: !!user && !!profile && !!activeTab && rolesReady,
     staleTime: 30 * 1000,
   });
 
-  const orders = useMemo(() => [...firstPageOrders, ...extraOrders], [firstPageOrders, extraOrders]);
+  // Derive hasMore from first page data (no side-effects in queryFn)
+  const firstPageHasMore = firstPageOrders.length === PAGE_SIZE;
 
-  // Reset pagination on tab change
+  // Reset pagination on tab change or when first page data changes
   useEffect(() => {
     setExtraOrders([]);
     setPage(0);
-    setHasMore(false);
-  }, [activeTab]);
+    setHasMore(firstPageHasMore);
+  }, [activeTab, firstPageHasMore]);
+
+  const orders = useMemo(() => [...firstPageOrders, ...extraOrders], [firstPageOrders, extraOrders]);
 
   // Realtime subscription
   useEffect(() => {
@@ -203,6 +213,7 @@ export default function History() {
   }, [user, profile, queryClient]);
 
   const handleLoadMore = async () => {
+    if (!activeTab) return;
     const nextPage = page + 1;
     setPage(nextPage);
     setLoadingMore(true);
@@ -237,6 +248,8 @@ export default function History() {
 
   const showRequester = activeTab !== "mine" || canSeeAll || isManager;
 
+  const loading = !rolesReady || queryLoading || !activeTab;
+
   const tabDescriptions: Record<TabKey, string> = {
     mine: "Dina beställningar och de du attesterar",
     all: "Samtliga beställningar i systemet",
@@ -248,11 +261,13 @@ export default function History() {
     <div className="space-y-5 md:space-y-8">
       <div>
         <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">Historik</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{tabDescriptions[activeTab]}</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {activeTab ? tabDescriptions[activeTab] : "Laddar..."}
+        </p>
       </div>
 
       {/* Tabs */}
-      {availableTabs.length > 1 && (
+      {availableTabs.length > 1 && activeTab && (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
           <TabsList className="w-full sm:w-auto">
             {availableTabs.map((tab) => (
@@ -295,7 +310,7 @@ export default function History() {
         <CardHeader className="px-4 md:px-6">
           <CardTitle className="font-heading text-base md:text-lg flex items-center gap-2">
             <HistoryIcon className="h-5 w-5 text-primary" />
-            {filtered.length} beställning{filtered.length !== 1 ? "ar" : ""}
+            {loading ? "Laddar..." : `${filtered.length} beställning${filtered.length !== 1 ? "ar" : ""}`}
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 md:px-6">
