@@ -329,11 +329,17 @@ export default function Onboarding() {
     // Send helpdesk email + confirmation for auto-approved orders
     if (autoApprove) {
       const requesterProfile = allProfiles.find(p => p.user_id === user.id);
-      const { data: reqEmail } = await supabase
+      const { data: reqFullProfile } = await supabase
         .from("profiles")
-        .select("email")
+        .select("email, department, phone, region_id")
         .eq("user_id", user.id)
         .single();
+
+      let requesterRegion: string | null = null;
+      if (reqFullProfile?.region_id) {
+        const { data: region } = await supabase.from("regions").select("name").eq("id", reqFullProfile.region_id).single();
+        requesterRegion = region?.name || null;
+      }
 
       // Fetch system names for the email
       const selectedSystemDetails = systems
@@ -349,7 +355,10 @@ export default function Onboarding() {
         recipientStartDate: isOffboarding ? recipientEndDate : recipientStartDate,
         orderReason: isOffboarding ? "end_of_employment" : "new_employee",
         requesterName: requesterProfile?.full_name || "Okänd",
-        requesterEmail: reqEmail?.email || "",
+        requesterEmail: reqFullProfile?.email || "",
+        requesterDepartment: reqFullProfile?.department,
+        requesterRegion,
+        requesterPhone: reqFullProfile?.phone,
         items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
         systems: selectedSystemDetails,
       });
