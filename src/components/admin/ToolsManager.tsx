@@ -164,15 +164,17 @@ export default function ToolsManager() {
   const handleSave = async () => {
     if (!name.trim() || !url.trim()) return;
     if (editing) {
-      await supabase.from("tools" as any).update({
+      const { error } = await supabase.from("tools" as any).update({
         name: name.trim(), description: description.trim(), emoji: emoji.trim(), url: url.trim(),
       }).eq("id", editing.id);
+      if (error) { toast.error("Kunde inte uppdatera: " + error.message); return; }
       toast.success("Verktyg uppdaterat");
     } else {
-      await supabase.from("tools" as any).insert({
+      const { error } = await supabase.from("tools" as any).insert({
         name: name.trim(), description: description.trim(), emoji: emoji.trim(), url: url.trim(),
         sort_order: tools.length,
       });
+      if (error) { toast.error("Kunde inte skapa: " + error.message); return; }
       toast.success("Verktyg skapat");
     }
     setDialogOpen(false);
