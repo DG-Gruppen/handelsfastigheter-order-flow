@@ -26,7 +26,6 @@ export default function AiChatBubble() {
     });
   }, []);
 
-  if (enabled === null || !enabled) return null;
 
   useEffect(() => {
     if (scrollRef.current) {
