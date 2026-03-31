@@ -125,6 +125,8 @@ export default function AiChatBubble() {
     }
   }, [input, isLoading, messages, toast]);
 
+  if (!enabled) return null;
+
   return (
     <>
       {/* Floating button */}
