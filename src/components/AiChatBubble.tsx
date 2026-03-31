@@ -15,9 +15,18 @@ export default function AiChatBubble() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    supabase.from("org_chart_settings").select("setting_value").eq("setting_key", "ai_assistant_enabled").maybeSingle().then(({ data }) => {
+      setEnabled(data?.setting_value !== "false");
+    });
+  }, []);
+
+  if (enabled === null || !enabled) return null;
 
   useEffect(() => {
     if (scrollRef.current) {
