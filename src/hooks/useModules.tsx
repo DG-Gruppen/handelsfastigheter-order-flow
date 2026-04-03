@@ -76,7 +76,7 @@ async function fetchModulesData(userId: string) {
 }
 
 export function ModulesProvider({ children }: { children: ReactNode }) {
-  const { user, roles } = useAuth();
+  const { user, roles, profile } = useAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
