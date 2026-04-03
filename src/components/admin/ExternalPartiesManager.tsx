@@ -198,129 +198,154 @@ export default function ExternalPartiesManager() {
         </Dialog>
       </div>
 
-      {/* Active external users */}
-      {externalProfiles.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Aktiva externa användare</CardTitle>
-            <CardDescription>{externalProfiles.length} externa konton</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="divide-y">
-              {externalProfiles.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="font-medium text-sm">{p.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{p.email}</p>
-                  </div>
-                  <Badge variant="outline" className="text-accent border-accent/30">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Aktiv
-                  </Badge>
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="users" className="gap-2">
+            <Users className="h-4 w-4" />
+            Aktiva användare
+            {externalProfiles.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{externalProfiles.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="invites" className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Inbjudningar
+            {invites.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">{invites.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Aktiva externa användare</CardTitle>
+              <CardDescription>{externalProfiles.length} externa konton</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {externalProfiles.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Inga aktiva externa användare ännu
+                </p>
+              ) : (
+                <div className="divide-y">
+                  {externalProfiles.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                      <div>
+                        <p className="font-medium text-sm">{p.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{p.email}</p>
+                      </div>
+                      <Badge variant="outline" className="text-accent border-accent/30">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Aktiv
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Invites */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Inbjudningar</CardTitle>
-          <CardDescription className="flex items-center justify-between">
-            <span>Skapa en inbjudan och skicka länken till den externa parten</span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs shrink-0 ml-4"
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/extern`);
-                toast.success("Inloggningslänk kopierad!");
-              }}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Kopiera inloggningslänk
-            </Button>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {invites.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Inga inbjudningar ännu
-            </p>
-          ) : (
-            <div className="divide-y">
-              {invites.map((inv) => {
-                const isExpired = new Date(inv.expires_at) < new Date();
-                const isAccepted = !!inv.accepted_at;
+        <TabsContent value="invites" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Inbjudningar</CardTitle>
+              <CardDescription className="flex items-center justify-between">
+                <span>Skapa en inbjudan och skicka länken till den externa parten</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs shrink-0 ml-4"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/extern`);
+                    toast.success("Inloggningslänk kopierad!");
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Kopiera inloggningslänk
+                </Button>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {invites.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Inga inbjudningar ännu
+                </p>
+              ) : (
+                <div className="divide-y">
+                  {invites.map((inv) => {
+                    const isExpired = new Date(inv.expires_at) < new Date();
+                    const isAccepted = !!inv.accepted_at;
 
-                return (
-                  <div key={inv.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0 gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">{inv.email}</p>
-                        {inv.company_name && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {inv.company_name}
-                          </Badge>
-                        )}
+                    return (
+                      <div key={inv.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0 gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm truncate">{inv.email}</p>
+                            {inv.company_name && (
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                {inv.company_name}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {isAccepted ? (
+                              <Badge variant="outline" className="text-accent border-accent/30 text-xs">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Accepterad
+                              </Badge>
+                            ) : isExpired ? (
+                              <Badge variant="outline" className="text-destructive border-destructive/30 text-xs">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Utgången
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-warning border-warning/30 text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Väntar
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(inv.created_at), "d MMM yyyy", { locale: sv })}
+                            </span>
+                            {inv.module_slugs?.length > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                · {inv.module_slugs.length} moduler
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {!isAccepted && !isExpired && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => copyInviteLink(inv.token)}
+                              title="Kopiera inbjudningslänk"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => deleteInvite.mutate(inv.id)}
+                            title="Ta bort"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {isAccepted ? (
-                          <Badge variant="outline" className="text-accent border-accent/30 text-xs">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Accepterad
-                          </Badge>
-                        ) : isExpired ? (
-                          <Badge variant="outline" className="text-destructive border-destructive/30 text-xs">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Utgången
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-warning border-warning/30 text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Väntar
-                          </Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(inv.created_at), "d MMM yyyy", { locale: sv })}
-                        </span>
-                        {inv.module_slugs?.length > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            · {inv.module_slugs.length} moduler
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {!isAccepted && !isExpired && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => copyInviteLink(inv.token)}
-                          title="Kopiera inbjudningslänk"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => deleteInvite.mutate(inv.id)}
-                        title="Ta bort"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
