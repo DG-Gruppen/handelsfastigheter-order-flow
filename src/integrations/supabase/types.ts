@@ -374,6 +374,45 @@ export type Database = {
         }
         Relationships: []
       }
+      external_invites: {
+        Row: {
+          accepted_at: string | null
+          company_name: string
+          created_at: string
+          email: string
+          expires_at: string
+          group_ids: string[]
+          id: string
+          invited_by: string
+          module_slugs: string[]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_name?: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          group_ids?: string[]
+          id?: string
+          invited_by: string
+          module_slugs?: string[]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_name?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          group_ids?: string[]
+          id?: string
+          invited_by?: string
+          module_slugs?: string[]
+          token?: string
+        }
+        Relationships: []
+      }
       group_members: {
         Row: {
           created_at: string | null
@@ -1512,6 +1551,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_external: boolean
           is_hidden: boolean
           is_staff: boolean | null
           manager_id: string | null
@@ -1531,6 +1571,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_external?: boolean
           is_hidden?: boolean
           is_staff?: boolean | null
           manager_id?: string | null
@@ -1550,6 +1591,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_external?: boolean
           is_hidden?: boolean
           is_staff?: boolean | null
           manager_id?: string | null
