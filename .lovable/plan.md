@@ -1,27 +1,29 @@
+## Extern åtkomst – Implementeringsplan
 
+### Steg 1: Databasändringar
+- Lägg till `is_external` boolean på `profiles`
+- Skapa `external_invites` tabell (token, email, invited_by, expires_at, accepted_at, group_ids[])
+- RLS: admins kan hantera inbjudningar, externa kan bara läsa sin egen profil
 
-## Fix sidebar jump when opening celebration comment dialog
+### Steg 2: Edge Function – Acceptera inbjudan
+- `/accept-external-invite` – validerar token, skapar konto (auto-confirm), sätter `is_external = true`, lägger till i rätt grupper
 
-### Problem
-When opening the chat bubble dialog for "Veckans jubilarer", Radix Dialog's scroll-locking (`RemoveScroll`) applies inline styles to `<html>` and `<body>` that shift the page layout, causing the sidebar to jump. The existing CSS overrides in `index.css` aren't fully preventing this.
+### Steg 3: Dedikerad extern inloggningssida
+- `/extern` – ren inloggningssida utan Google SSO, bara e-post/lösenord
+- `/extern/invite/:token` – landing page för inbjudningslänk, visar info + "Skapa konto"-formulär
+- Separat design/branding som signalerar "extern portal"
 
-### Solution
-Two changes to make the fix robust:
+### Steg 4: Filtrerad navigation för externa
+- Sidebaren visar bara moduler de har `can_view` på
+- Dölja admin-panel, org-chart, lösenord, kultur-sidor etc.
+- Lägg till "Extern"-badge i headern
 
-**1. `src/components/ui/dialog.tsx`** — Disable Radix's built-in scroll-locking by passing `modal={false}` to `DialogPrimitive.Content` and manually adding the overlay click-to-close behavior. This prevents `RemoveScroll` from injecting inline styles entirely.
+### Steg 5: Admin-vy för hantering
+- Ny sektion i admin-panelen: "Externa parter"
+- Bjud in via e-post, välj grupp/moduler
+- Lista aktiva externa med möjlighet att revokera åtkomst
 
-Alternatively (simpler): Add `onOpenAutoFocus={(e) => e.preventDefault()}` to prevent focus-triggered scroll jumps, and keep `modal` mode but override the `DialogPrimitive.Content` with `data-vaul-no-drag`.
-
-**Recommended approach**: The cleanest fix is to make `Dialog` pass through a `modal` prop and set `modal={false}` specifically in `CelebrationComments.tsx`. This avoids affecting all other dialogs in the app.
-
-**2. `src/components/CelebrationComments.tsx`** — Pass `modal={false}` to the Dialog:
-```tsx
-<Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-```
-
-This disables Radix's `RemoveScroll` wrapper for this specific dialog, preventing the sidebar jump while keeping the dialog functional with the existing overlay.
-
-### Scope
-- 1 file changed: `src/components/CelebrationComments.tsx` (1 line)
-- No database changes
-
+### Tekniska detaljer
+- E-postdomänrestriktionen i Login.tsx behöver utökas eller bypassa för externa konton
+- Auto-confirm aktiveras INTE globalt – bara via edge function med service role
+- Externa konton exkluderas från interna listor (som `is_hidden`-profiler gör idag)
