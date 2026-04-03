@@ -19,6 +19,7 @@ const DatabaseBackup = lazy(() => import("@/components/admin/DatabaseBackup"));
 const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
 const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
 const EmailLogDashboard = lazy(() => import("@/components/admin/EmailLogDashboard"));
+const ExternalPartiesManager = lazy(() => import("@/components/admin/ExternalPartiesManager"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
