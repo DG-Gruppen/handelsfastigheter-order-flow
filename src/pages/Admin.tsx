@@ -26,7 +26,7 @@ import {
   Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external";
 
 interface AdminGroup {
   label: string;
