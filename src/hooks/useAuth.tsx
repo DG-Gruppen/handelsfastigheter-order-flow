@@ -11,6 +11,7 @@ interface Profile {
   phone: string;
   manager_id: string | null;
   theme_preference: string | null;
+  is_external: boolean;
 }
 
 interface UserRoleRow {
