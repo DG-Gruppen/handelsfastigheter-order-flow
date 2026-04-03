@@ -33,6 +33,8 @@ const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const ExternalLogin = lazy(() => import("./pages/ExternalLogin"));
+const ExternalInvite = lazy(() => import("./pages/ExternalInvite"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
