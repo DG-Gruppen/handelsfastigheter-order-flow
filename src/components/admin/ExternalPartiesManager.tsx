@@ -227,8 +227,20 @@ export default function ExternalPartiesManager() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Inbjudningar</CardTitle>
-          <CardDescription>
-            Skapa en inbjudan och skicka länken till den externa parten
+          <CardDescription className="flex items-center justify-between">
+            <span>Skapa en inbjudan och skicka länken till den externa parten</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs shrink-0 ml-4"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/extern`);
+                toast.success("Inloggningslänk kopierad!");
+              }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Kopiera inloggningslänk
+            </Button>
           </CardDescription>
         </CardHeader>
         <CardContent>
