@@ -33,6 +33,8 @@ const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const ExternalLogin = lazy(() => import("./pages/ExternalLogin"));
+const ExternalInvite = lazy(() => import("./pages/ExternalInvite"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -65,6 +67,8 @@ const App = () => (
               <ModulesProvider>
                 <Routes>
                     <Route path="/login" element={<Suspense fallback={<LoginFallback />}><Login /></Suspense>} />
+                    <Route path="/extern" element={<Suspense fallback={<LoginFallback />}><ExternalLogin /></Suspense>} />
+                    <Route path="/extern/invite/:token" element={<Suspense fallback={<LoginFallback />}><ExternalInvite /></Suspense>} />
                     <Route path="/unsubscribe" element={<Suspense fallback={<LoginFallback />}><Unsubscribe /></Suspense>} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route element={<ProtectedRoute><LayoutRoute /></ProtectedRoute>}>

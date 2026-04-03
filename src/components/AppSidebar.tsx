@@ -35,6 +35,7 @@ const SLUG_NAME_OVERRIDES: Record<string, string> = {
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
   const { profile, roles, signOut } = useAuth();
+  const isExternal = profile?.is_external === true;
   const { hasAnyEditAccess: canViewAdmin } = useAdminAccess();
   const location = useLocation();
   const navigate = useNavigate();
@@ -320,7 +321,14 @@ export default function AppSidebar() {
                 </Avatar>
                 {!collapsed && (
                   <div className="min-w-0 flex-1 text-left">
-                    <div className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || "Användare"}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || "Användare"}</span>
+                      {isExternal && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-accent/20 text-accent shrink-0">
+                          Extern
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-sidebar-foreground/50 truncate">{profile?.email}</div>
                   </div>
                 )}
@@ -335,7 +343,7 @@ export default function AppSidebar() {
                   <User className="w-4 h-4" />
                   Min profil
                 </button>
-                {canViewAdmin && (
+                {canViewAdmin && !isExternal && (
                   <button
                     onClick={() => { setProfileOpen(false); navigate("/admin"); }}
                     className="flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
