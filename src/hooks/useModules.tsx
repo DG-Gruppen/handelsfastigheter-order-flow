@@ -76,7 +76,7 @@ async function fetchModulesData(userId: string) {
 }
 
 export function ModulesProvider({ children }: { children: ReactNode }) {
-  const { user, roles } = useAuth();
+  const { user, roles, profile } = useAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -128,6 +128,8 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   // Memoize accessible modules to prevent unnecessary re-renders downstream
+  const isExternal = profile?.is_external === true;
+
   const accessibleModules = useMemo(() => {
     return modules.filter((m) => {
       if (!m.is_active) return false;
@@ -140,6 +142,9 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
         return false;
       });
       if (hasExplicitPermission) return true;
+
+      // External users ONLY get modules with explicit permissions – no fallback
+      if (isExternal) return false;
 
       // Fall back to role-based access
       const moduleRules = allAccess.filter((a) => a.module_id === m.id);
@@ -154,7 +159,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
         return rule ? rule.has_access : false;
       });
     });
-  }, [modules, allAccess, permissions, userGroupIds, roles, user?.id]);
+  }, [modules, allAccess, permissions, userGroupIds, roles, user?.id, isExternal]);
 
   return (
     <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, allPermissions: fullPermissions, userGroupIds, loading, refresh }}>
