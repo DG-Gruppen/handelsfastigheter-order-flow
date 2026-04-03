@@ -35,6 +35,7 @@ const SLUG_NAME_OVERRIDES: Record<string, string> = {
 export default function AppSidebar() {
   const { accessibleModules } = useModules();
   const { profile, roles, signOut } = useAuth();
+  const isExternal = profile?.is_external === true;
   const { hasAnyEditAccess: canViewAdmin } = useAdminAccess();
   const location = useLocation();
   const navigate = useNavigate();
