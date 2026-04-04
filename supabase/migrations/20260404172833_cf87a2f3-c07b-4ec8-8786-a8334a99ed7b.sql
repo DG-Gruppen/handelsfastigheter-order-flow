@@ -1,0 +1,2 @@
+INSERT INTO public.modules (name, slug, route, icon, description, sort_order, is_active)
+VALUES ('Externa parter', 'externa-parter', '/admin', 'building-2', 'Hantera externa samarbetspartners och inbjudningar', 90, true);
