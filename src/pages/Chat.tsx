@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft, UserPlus, Settings, UserMinus, Check } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft, UserPlus, Settings, UserMinus, Check, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -354,6 +354,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
                 <ChannelMembersManager
                   channelId={activeChannel.id}
                   isCreator={activeChannel.created_by === user?.id}
+                  channelCreatedBy={activeChannel.created_by}
                   profiles={profiles}
                   currentMembers={channelMembers}
                   onChanged={() => { qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] }); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
@@ -744,12 +745,22 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
   );
 }
 
-function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers, onChanged }: {
-  channelId: string; isCreator: boolean; profiles: Profile[]; currentMembers: string[]; onChanged: () => void;
+function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers, onChanged, channelCreatedBy }: {
+  channelId: string; isCreator: boolean; profiles: Profile[]; currentMembers: string[]; onChanged: () => void; channelCreatedBy: string;
 }) {
   const [open, setOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
+  const [transferring, setTransferring] = useState(false);
   const { toast } = useToast();
+
+  const transferOwnership = async (newOwnerId: string) => {
+    setTransferring(true);
+    const { error } = await supabase.from("chat_channels").update({ created_by: newOwnerId }).eq("id", channelId);
+    setTransferring(false);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    onChanged();
+    toast({ title: "Ägare bytt" });
+  };
 
   const filteredProfiles = profiles.filter(p => {
     if (memberSearch && !p.full_name.toLowerCase().includes(memberSearch.toLowerCase())) return false;
@@ -805,16 +816,22 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
             <div className="space-y-0.5">
               {currentMembers.map(uid => {
                 const p = profiles.find(pr => pr.user_id === uid);
+                const isOwner = uid === channelCreatedBy;
                 return (
                   <div key={uid} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm">
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p?.full_name || "?")}</AvatarFallback>
                     </Avatar>
-                    <span className="flex-1">{p?.full_name || "Okänd"}</span>
-                    {isCreator && (
-                      <button onClick={() => removeMember(uid)} className="text-muted-foreground hover:text-destructive">
-                        <UserMinus className="h-4 w-4" />
-                      </button>
+                    <span className="flex-1">{p?.full_name || "Okänd"}{isOwner && <span className="ml-1 text-xs text-muted-foreground">(ägare)</span>}</span>
+                    {isCreator && !isOwner && (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => transferOwnership(uid)} disabled={transferring} title="Gör till ägare" className="text-muted-foreground hover:text-primary">
+                          <Crown className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => removeMember(uid)} className="text-muted-foreground hover:text-destructive">
+                          <UserMinus className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
