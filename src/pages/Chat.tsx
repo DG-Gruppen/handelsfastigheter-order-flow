@@ -310,7 +310,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
               <>
                 <div className="px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Kanaler</div>
                 {groupChannels.map(c => (
-                  <ChannelItem key={c.id} channel={c} isActive={c.id === activeChannelId} isMember={memberships.includes(c.id)} onClick={() => handleSelectChannel(c.id)} />
+                  <ChannelItem key={c.id} channel={c} isActive={c.id === activeChannelId} isMember={true} onClick={() => handleSelectChannel(c.id)} />
                 ))}
               </>
             )}
