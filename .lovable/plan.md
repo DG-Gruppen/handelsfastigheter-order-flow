@@ -1,29 +1,34 @@
-## Extern åtkomst – Implementeringsplan
+## Chattmodul för intranätet
 
-### Steg 1: Databasändringar
-- Lägg till `is_external` boolean på `profiles`
-- Skapa `external_invites` tabell (token, email, invited_by, expires_at, accepted_at, group_ids[])
-- RLS: admins kan hantera inbjudningar, externa kan bara läsa sin egen profil
+### Fas 1: Databas & backend
+1. **Tabeller** (migration):
+   - `chat_channels` – kanaler (namn, beskrivning, typ: group/dm, ikon, skapad av)
+   - `chat_channel_members` – kopplar användare till kanaler (för DM + ev. framtida begränsningar)
+   - `chat_messages` – meddelanden (kanal, avsändare, innehåll, parent_message_id för trådar)
+   - `chat_reactions` – emoji-reaktioner på meddelanden (user_id, message_id, emoji)
+   - `chat_read_status` – spårar senast läst per kanal/användare (för oläst-räknare)
+2. **RLS-policyer**: Alla autentiserade kan läsa/skriva i kanaler de är medlem i
+3. **Realtime**: Aktivera realtime på `chat_messages` och `chat_reactions`
 
-### Steg 2: Edge Function – Acceptera inbjudan
-- `/accept-external-invite` – validerar token, skapar konto (auto-confirm), sätter `is_external = true`, lägger till i rätt grupper
+### Fas 2: Frontend – kanalvy
+4. **Ny sida `/chatt`** med sidopanel (kanaler + DM-lista) och huvudvy (meddelandeflöde)
+5. **Kanalhantering**: Skapa/redigera kanaler, söka kanaler
+6. **DM**: Starta direktmeddelande med en kollega
 
-### Steg 3: Dedikerad extern inloggningssida
-- `/extern` – ren inloggningssida utan Google SSO, bara e-post/lösenord
-- `/extern/invite/:token` – landing page för inbjudningslänk, visar info + "Skapa konto"-formulär
-- Separat design/branding som signalerar "extern portal"
+### Fas 3: Meddelandeflöde
+7. **Meddelandevy**: Scrollbar lista med meddelanden, avsändarens namn/avatar, tidsstämpel
+8. **Skicka meddelande**: Textfält med Enter-skicka, emoji-picker
+9. **Trådar**: Klicka på meddelande → öppna tråd-panel till höger
+10. **Emoji-reaktioner**: Reagera på meddelanden med emoji
 
-### Steg 4: Filtrerad navigation för externa
-- Sidebaren visar bara moduler de har `can_view` på
-- Dölja admin-panel, org-chart, lösenord, kultur-sidor etc.
-- Lägg till "Extern"-badge i headern
+### Fas 4: Notiser & polish
+11. **Oläst-räknare**: Visa antal olästa per kanal i sidopanelen
+12. **Notiser**: Skapa notifikation vid omnämnande eller DM
+13. **Modul-registrering**: Registrera som modul i `modules`-tabellen
+14. **Route & navigation**: Lägg till i sidebar-navigationen
 
-### Steg 5: Admin-vy för hantering
-- Ny sektion i admin-panelen: "Externa parter"
-- Bjud in via e-post, välj grupp/moduler
-- Lista aktiva externa med möjlighet att revokera åtkomst
-
-### Tekniska detaljer
-- E-postdomänrestriktionen i Login.tsx behöver utökas eller bypassa för externa konton
-- Auto-confirm aktiveras INTE globalt – bara via edge function med service role
-- Externa konton exkluderas från interna listor (som `is_hidden`-profiler gör idag)
+### Tekniska val
+- Supabase Realtime för live-uppdateringar
+- Markdown-rendering (react-markdown) för meddelanden
+- Emoji-picker via befintliga `@emoji-mart/*`-paket
+- Befintligt notifikationssystem för push-notiser
