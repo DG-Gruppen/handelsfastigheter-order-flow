@@ -374,7 +374,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
             />
 
             {/* Compose */}
-            <ComposeBar onSend={(content) => sendMsg.mutate({ content })} disabled={!memberships.includes(activeChannelId!)} />
+            <ComposeBar onSend={(content) => sendMsg.mutate({ content })} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
