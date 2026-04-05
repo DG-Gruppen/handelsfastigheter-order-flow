@@ -36,7 +36,7 @@ interface ExternalProfile {
   created_at: string;
 }
 
-export default function ExternalPartiesManager() {
+export default function ExternalPartiesManager() { // rebuild
   const { user } = useAuth();
   const { modules } = useModules();
   const queryClient = useQueryClient();
