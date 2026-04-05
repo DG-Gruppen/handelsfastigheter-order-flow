@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft, UserPlus, Settings, UserMinus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const { data: channels = [] } = useQuery({
     queryKey: ["chat-channels"],
     queryFn: async () => {
+      // Only fetch channels the user is a member of (RLS enforces this)
       const { data } = await supabase.from("chat_channels").select("*").eq("is_archived", false).order("name");
       return (data ?? []) as Channel[];
     },
@@ -99,6 +100,15 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       return (data ?? []).map(m => m.channel_id);
     },
     enabled: !!user,
+  });
+
+  const { data: channelMembers = [] } = useQuery({
+    queryKey: ["chat-channel-members", activeChannelId],
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_channel_members").select("user_id").eq("channel_id", activeChannelId!);
+      return (data ?? []).map(m => m.user_id);
+    },
+    enabled: !!activeChannelId,
   });
 
   const { data: profiles = [] } = useQuery({
@@ -202,12 +212,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   }, [activeChannelId, threadParent?.id, qc]);
 
   // ─── Mutations ───
-  const joinChannel = useMutation({
-    mutationFn: async (channelId: string) => {
-      await supabase.from("chat_channel_members").insert({ channel_id: channelId, user_id: user!.id });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["chat-memberships"] }),
-  });
 
   const sendMsg = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
@@ -264,14 +268,11 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const filteredChannels = useMemo(() => {
     const s = search.toLowerCase();
     return channels.filter(c => {
-      if (c.type === "dm") {
-        // Show DM only if member
-        if (!memberships.includes(c.id)) return false;
-      }
+      // RLS already filters to only member channels, but double-check memberships for UI
       if (s && !c.name.toLowerCase().includes(s)) return false;
       return true;
     });
-  }, [channels, search, memberships]);
+  }, [channels, search]);
 
   const groupChannels = filteredChannels.filter(c => c.type === "group");
   const dmChannels = filteredChannels.filter(c => c.type === "dm");
@@ -280,11 +281,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     setActiveChannelId(id);
     setThreadParent(null);
     setMobileShowChat(true);
-    // Auto-join group channels
-    if (!memberships.includes(id)) {
-      const ch = channels.find(c => c.id === id);
-      if (ch?.type === "group") joinChannel.mutate(id);
-    }
   };
 
   return (
@@ -298,7 +294,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg">Chatt</h2>
             <div className="flex gap-1">
-              <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); setShowNewChannel(false); }} />
+              <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
               <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
             </div>
           </div>
@@ -314,7 +310,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
               <>
                 <div className="px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Kanaler</div>
                 {groupChannels.map(c => (
-                  <ChannelItem key={c.id} channel={c} isActive={c.id === activeChannelId} isMember={memberships.includes(c.id)} onClick={() => handleSelectChannel(c.id)} />
+                  <ChannelItem key={c.id} channel={c} isActive={c.id === activeChannelId} isMember={true} onClick={() => handleSelectChannel(c.id)} />
                 ))}
               </>
             )}
@@ -350,10 +346,19 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
                 <ArrowLeft className="h-5 w-5" />
               </button>
               {activeChannel.type === "group" ? <Hash className="h-5 w-5 text-muted-foreground" /> : <MessageCircle className="h-5 w-5 text-muted-foreground" />}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
                 {activeChannel.description && <p className="text-xs text-muted-foreground truncate">{activeChannel.description}</p>}
               </div>
+              {activeChannel.type === "group" && (
+                <ChannelMembersManager
+                  channelId={activeChannel.id}
+                  isCreator={activeChannel.created_by === user?.id}
+                  profiles={profiles}
+                  currentMembers={channelMembers}
+                  onChanged={() => { qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] }); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
+                />
+              )}
             </div>
 
             {/* Messages */}
@@ -369,7 +374,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
             />
 
             {/* Compose */}
-            <ComposeBar onSend={(content) => sendMsg.mutate({ content })} disabled={!memberships.includes(activeChannelId!)} />
+            <ComposeBar onSend={(content) => sendMsg.mutate({ content })} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -614,19 +619,31 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
 
 // ─── Dialogs ───
 
-function NewChannelDialog({ open, onOpenChange, userId, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; userId?: string; onCreated: () => void }) {
+function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; userId?: string; profiles: Profile[]; onCreated: () => void }) {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
   const { toast } = useToast();
+
+  const toggleMember = (uid: string) => {
+    setSelectedMembers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+  };
+
+  const filteredProfiles = profiles.filter(p => {
+    if (p.user_id === userId) return false;
+    if (memberSearch && !p.full_name.toLowerCase().includes(memberSearch.toLowerCase())) return false;
+    return true;
+  });
 
   const create = async () => {
     if (!name.trim() || !userId) return;
-    const { error } = await supabase.from("chat_channels").insert({ name: name.trim(), description: desc.trim(), type: "group", created_by: userId });
-    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
-    // Auto-join
-    const { data: ch } = await supabase.from("chat_channels").select("id").eq("name", name.trim()).eq("created_by", userId).order("created_at", { ascending: false }).limit(1).single();
-    if (ch) await supabase.from("chat_channel_members").insert({ channel_id: ch.id, user_id: userId });
-    setName(""); setDesc("");
+    const { data: ch, error } = await supabase.from("chat_channels").insert({ name: name.trim(), description: desc.trim(), type: "group", created_by: userId }).select("id").single();
+    if (error || !ch) { toast({ title: "Fel", description: error?.message || "Kunde inte skapa kanal", variant: "destructive" }); return; }
+    // Add creator + selected members
+    const members = [userId, ...selectedMembers].map(uid => ({ channel_id: ch.id, user_id: uid }));
+    await supabase.from("chat_channel_members").insert(members);
+    setName(""); setDesc(""); setSelectedMembers([]); setMemberSearch("");
     onCreated();
   };
 
@@ -640,6 +657,36 @@ function NewChannelDialog({ open, onOpenChange, userId, onCreated }: { open: boo
         <div className="space-y-3">
           <Input placeholder="Kanalnamn" value={name} onChange={e => setName(e.target.value)} />
           <Input placeholder="Beskrivning (valfritt)" value={desc} onChange={e => setDesc(e.target.value)} />
+          <div>
+            <label className="text-sm font-medium mb-1 block">Bjud in medlemmar</label>
+            <Input placeholder="Sök kollega..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="mb-2" />
+            {selectedMembers.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {selectedMembers.map(uid => {
+                  const p = profiles.find(pr => pr.user_id === uid);
+                  return (
+                    <Badge key={uid} variant="secondary" className="gap-1 cursor-pointer" onClick={() => toggleMember(uid)}>
+                      {p?.full_name || "Okänd"}
+                      <X className="h-3 w-3" />
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+            <ScrollArea className="max-h-40">
+              <div className="space-y-0.5">
+                {filteredProfiles.map(p => (
+                  <button key={p.user_id} onClick={() => toggleMember(p.user_id)} className={cn("w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-left transition-colors", selectedMembers.includes(p.user_id) ? "bg-primary/10 text-primary" : "hover:bg-accent")}>
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{p.full_name}</span>
+                    {selectedMembers.includes(p.user_id) && <Check className="h-4 w-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
           <Button onClick={create} disabled={!name.trim()} className="w-full">Skapa</Button>
         </div>
       </DialogContent>
@@ -692,6 +739,89 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
             ))}
           </div>
         </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers, onChanged }: {
+  channelId: string; isCreator: boolean; profiles: Profile[]; currentMembers: string[]; onChanged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const { toast } = useToast();
+
+  const filteredProfiles = profiles.filter(p => {
+    if (memberSearch && !p.full_name.toLowerCase().includes(memberSearch.toLowerCase())) return false;
+    return true;
+  });
+
+  const addMember = async (uid: string) => {
+    const { error } = await supabase.from("chat_channel_members").insert({ channel_id: channelId, user_id: uid });
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    onChanged();
+    toast({ title: "Medlem tillagd" });
+  };
+
+  const removeMember = async (uid: string) => {
+    const { error } = await supabase.from("chat_channel_members").delete().eq("channel_id", channelId).eq("user_id", uid);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    onChanged();
+    toast({ title: "Medlem borttagen" });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-1.5 h-8">
+          <Users className="h-4 w-4" />
+          <span className="text-xs">{currentMembers.length}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Kanalmedlemmar</DialogTitle></DialogHeader>
+        {isCreator && (
+          <>
+            <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+            <ScrollArea className="max-h-40">
+              <div className="space-y-0.5">
+                {filteredProfiles.filter(p => !currentMembers.includes(p.user_id)).slice(0, 20).map(p => (
+                  <button key={p.user_id} onClick={() => addMember(p.user_id)} className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent text-sm text-left">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{p.full_name}</span>
+                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+            <Separator />
+          </>
+        )}
+        <div>
+          <label className="text-sm font-medium mb-1 block">Nuvarande medlemmar ({currentMembers.length})</label>
+          <ScrollArea className="max-h-48">
+            <div className="space-y-0.5">
+              {currentMembers.map(uid => {
+                const p = profiles.find(pr => pr.user_id === uid);
+                return (
+                  <div key={uid} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p?.full_name || "?")}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{p?.full_name || "Okänd"}</span>
+                    {isCreator && (
+                      <button onClick={() => removeMember(uid)} className="text-muted-foreground hover:text-destructive">
+                        <UserMinus className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
