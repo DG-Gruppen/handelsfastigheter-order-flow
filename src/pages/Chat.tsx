@@ -663,29 +663,13 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
 
   const startDm = async (targetUserId: string) => {
     if (!userId) return;
-    const targetProfile = profiles.find(p => p.user_id === targetUserId);
-    // Check if DM already exists
-    const existingDm = channels.find(c => c.type === "dm" && memberships.includes(c.id));
-    // For simplicity, check by fetching members
-    const { data: existingMembers } = await supabase.from("chat_channel_members").select("channel_id, user_id");
-    const myDmChannels = (existingMembers ?? []).filter(m => m.user_id === userId).map(m => m.channel_id);
-    const theirDmChannels = (existingMembers ?? []).filter(m => m.user_id === targetUserId).map(m => m.channel_id);
-    const commonDm = myDmChannels.find(c => theirDmChannels.includes(c) && channels.find(ch => ch.id === c && ch.type === "dm"));
-
-    if (commonDm) {
-      onSelect(commonDm);
+    // Use RPC to create/find DM atomically (handles member insertion securely)
+    const { data: channelId, error } = await supabase.rpc("create_dm_channel", { _target_user_id: targetUserId });
+    if (error || !channelId) {
+      toast({ title: "Fel", description: error?.message || "Kunde inte skapa DM", variant: "destructive" });
       return;
     }
-
-    // Create new DM
-    const dmName = targetProfile?.full_name || "DM";
-    const { data: ch, error } = await supabase.from("chat_channels").insert({ name: dmName, type: "dm", created_by: userId }).select("id").single();
-    if (error || !ch) { toast({ title: "Fel", description: error?.message || "Kunde inte skapa DM", variant: "destructive" }); return; }
-    await supabase.from("chat_channel_members").insert([
-      { channel_id: ch.id, user_id: userId },
-      { channel_id: ch.id, user_id: targetUserId },
-    ]);
-    onCreated(ch.id);
+    onCreated(channelId);
   };
 
   return (
