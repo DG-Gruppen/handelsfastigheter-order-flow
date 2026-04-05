@@ -274,14 +274,11 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const filteredChannels = useMemo(() => {
     const s = search.toLowerCase();
     return channels.filter(c => {
-      if (c.type === "dm") {
-        // Show DM only if member
-        if (!memberships.includes(c.id)) return false;
-      }
+      // RLS already filters to only member channels, but double-check memberships for UI
       if (s && !c.name.toLowerCase().includes(s)) return false;
       return true;
     });
-  }, [channels, search, memberships]);
+  }, [channels, search]);
 
   const groupChannels = filteredChannels.filter(c => c.type === "group");
   const dmChannels = filteredChannels.filter(c => c.type === "dm");
@@ -290,11 +287,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     setActiveChannelId(id);
     setThreadParent(null);
     setMobileShowChat(true);
-    // Auto-join group channels
-    if (!memberships.includes(id)) {
-      const ch = channels.find(c => c.id === id);
-      if (ch?.type === "group") joinChannel.mutate(id);
-    }
   };
 
   return (
