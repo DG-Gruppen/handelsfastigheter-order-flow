@@ -749,3 +749,86 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
     </Dialog>
   );
 }
+
+function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers, onChanged }: {
+  channelId: string; isCreator: boolean; profiles: Profile[]; currentMembers: string[]; onChanged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const { toast } = useToast();
+
+  const filteredProfiles = profiles.filter(p => {
+    if (memberSearch && !p.full_name.toLowerCase().includes(memberSearch.toLowerCase())) return false;
+    return true;
+  });
+
+  const addMember = async (uid: string) => {
+    const { error } = await supabase.from("chat_channel_members").insert({ channel_id: channelId, user_id: uid });
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    onChanged();
+    toast({ title: "Medlem tillagd" });
+  };
+
+  const removeMember = async (uid: string) => {
+    const { error } = await supabase.from("chat_channel_members").delete().eq("channel_id", channelId).eq("user_id", uid);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    onChanged();
+    toast({ title: "Medlem borttagen" });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-1.5 h-8">
+          <Users className="h-4 w-4" />
+          <span className="text-xs">{currentMembers.length}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Kanalmedlemmar</DialogTitle></DialogHeader>
+        {isCreator && (
+          <>
+            <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+            <ScrollArea className="max-h-40">
+              <div className="space-y-0.5">
+                {filteredProfiles.filter(p => !currentMembers.includes(p.user_id)).slice(0, 20).map(p => (
+                  <button key={p.user_id} onClick={() => addMember(p.user_id)} className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent text-sm text-left">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{p.full_name}</span>
+                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+            <Separator />
+          </>
+        )}
+        <div>
+          <label className="text-sm font-medium mb-1 block">Nuvarande medlemmar ({currentMembers.length})</label>
+          <ScrollArea className="max-h-48">
+            <div className="space-y-0.5">
+              {currentMembers.map(uid => {
+                const p = profiles.find(pr => pr.user_id === uid);
+                return (
+                  <div key={uid} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p?.full_name || "?")}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{p?.full_name || "Okänd"}</span>
+                    {isCreator && (
+                      <button onClick={() => removeMember(uid)} className="text-muted-foreground hover:text-destructive">
+                        <UserMinus className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
