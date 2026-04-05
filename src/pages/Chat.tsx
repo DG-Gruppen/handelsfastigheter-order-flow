@@ -71,7 +71,7 @@ function formatMsgTime(dateStr: string) {
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "👀"];
 
 // ─── Main ───
-export default function Chat() {
+export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
