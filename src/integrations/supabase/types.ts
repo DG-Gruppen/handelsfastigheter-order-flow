@@ -2084,6 +2084,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_dm_channel: { Args: { _target_user_id: string }; Returns: string }
       create_notification: {
         Args: {
           _message?: string
