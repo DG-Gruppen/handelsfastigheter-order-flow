@@ -352,10 +352,19 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
                 <ArrowLeft className="h-5 w-5" />
               </button>
               {activeChannel.type === "group" ? <Hash className="h-5 w-5 text-muted-foreground" /> : <MessageCircle className="h-5 w-5 text-muted-foreground" />}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
                 {activeChannel.description && <p className="text-xs text-muted-foreground truncate">{activeChannel.description}</p>}
               </div>
+              {activeChannel.type === "group" && (
+                <ChannelMembersManager
+                  channelId={activeChannel.id}
+                  isCreator={activeChannel.created_by === user?.id}
+                  profiles={profiles}
+                  currentMembers={channelMembers}
+                  onChanged={() => { qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] }); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
+                />
+              )}
             </div>
 
             {/* Messages */}
