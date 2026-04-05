@@ -616,19 +616,31 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
 
 // ─── Dialogs ───
 
-function NewChannelDialog({ open, onOpenChange, userId, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; userId?: string; onCreated: () => void }) {
+function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; userId?: string; profiles: Profile[]; onCreated: () => void }) {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
   const { toast } = useToast();
+
+  const toggleMember = (uid: string) => {
+    setSelectedMembers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+  };
+
+  const filteredProfiles = profiles.filter(p => {
+    if (p.user_id === userId) return false;
+    if (memberSearch && !p.full_name.toLowerCase().includes(memberSearch.toLowerCase())) return false;
+    return true;
+  });
 
   const create = async () => {
     if (!name.trim() || !userId) return;
-    const { error } = await supabase.from("chat_channels").insert({ name: name.trim(), description: desc.trim(), type: "group", created_by: userId });
-    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
-    // Auto-join
-    const { data: ch } = await supabase.from("chat_channels").select("id").eq("name", name.trim()).eq("created_by", userId).order("created_at", { ascending: false }).limit(1).single();
-    if (ch) await supabase.from("chat_channel_members").insert({ channel_id: ch.id, user_id: userId });
-    setName(""); setDesc("");
+    const { data: ch, error } = await supabase.from("chat_channels").insert({ name: name.trim(), description: desc.trim(), type: "group", created_by: userId }).select("id").single();
+    if (error || !ch) { toast({ title: "Fel", description: error?.message || "Kunde inte skapa kanal", variant: "destructive" }); return; }
+    // Add creator + selected members
+    const members = [userId, ...selectedMembers].map(uid => ({ channel_id: ch.id, user_id: uid }));
+    await supabase.from("chat_channel_members").insert(members);
+    setName(""); setDesc(""); setSelectedMembers([]); setMemberSearch("");
     onCreated();
   };
 
@@ -642,6 +654,36 @@ function NewChannelDialog({ open, onOpenChange, userId, onCreated }: { open: boo
         <div className="space-y-3">
           <Input placeholder="Kanalnamn" value={name} onChange={e => setName(e.target.value)} />
           <Input placeholder="Beskrivning (valfritt)" value={desc} onChange={e => setDesc(e.target.value)} />
+          <div>
+            <label className="text-sm font-medium mb-1 block">Bjud in medlemmar</label>
+            <Input placeholder="Sök kollega..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="mb-2" />
+            {selectedMembers.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {selectedMembers.map(uid => {
+                  const p = profiles.find(pr => pr.user_id === uid);
+                  return (
+                    <Badge key={uid} variant="secondary" className="gap-1 cursor-pointer" onClick={() => toggleMember(uid)}>
+                      {p?.full_name || "Okänd"}
+                      <X className="h-3 w-3" />
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+            <ScrollArea className="max-h-40">
+              <div className="space-y-0.5">
+                {filteredProfiles.map(p => (
+                  <button key={p.user_id} onClick={() => toggleMember(p.user_id)} className={cn("w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-left transition-colors", selectedMembers.includes(p.user_id) ? "bg-primary/10 text-primary" : "hover:bg-accent")}>
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1">{p.full_name}</span>
+                    {selectedMembers.includes(p.user_id) && <Check className="h-4 w-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
           <Button onClick={create} disabled={!name.trim()} className="w-full">Skapa</Button>
         </div>
       </DialogContent>
