@@ -29,7 +29,7 @@ export default function ChatBubble() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-14 md:right-[4.25rem] z-50 h-10 w-10 md:h-11 md:w-11 rounded-full bg-accent text-accent-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105 border border-border"
+          className="fixed bottom-20 md:bottom-6 right-8 md:right-12 z-50 h-10 w-10 md:h-11 md:w-11 rounded-full bg-accent text-accent-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center hover:scale-105 border border-border"
           aria-label="Öppna chatt"
         >
           <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
