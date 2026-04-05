@@ -354,6 +354,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
                 <ChannelMembersManager
                   channelId={activeChannel.id}
                   isCreator={activeChannel.created_by === user?.id}
+                  channelCreatedBy={activeChannel.created_by}
                   profiles={profiles}
                   currentMembers={channelMembers}
                   onChanged={() => { qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] }); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
