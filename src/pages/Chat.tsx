@@ -300,7 +300,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-lg">Chatt</h2>
             <div className="flex gap-1">
-              <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); setShowNewChannel(false); }} />
+              <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
               <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
             </div>
           </div>
