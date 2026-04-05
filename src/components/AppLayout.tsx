@@ -45,6 +45,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <Suspense fallback={null}>
+          <ChatBubble />
+        </Suspense>
+
+        <Suspense fallback={null}>
           <AiChatBubble />
         </Suspense>
       </div>
