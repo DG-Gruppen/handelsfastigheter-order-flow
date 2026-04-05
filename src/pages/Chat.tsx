@@ -744,12 +744,22 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
   );
 }
 
-function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers, onChanged }: {
-  channelId: string; isCreator: boolean; profiles: Profile[]; currentMembers: string[]; onChanged: () => void;
+function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers, onChanged, channelCreatedBy }: {
+  channelId: string; isCreator: boolean; profiles: Profile[]; currentMembers: string[]; onChanged: () => void; channelCreatedBy: string;
 }) {
   const [open, setOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
+  const [transferring, setTransferring] = useState(false);
   const { toast } = useToast();
+
+  const transferOwnership = async (newOwnerId: string) => {
+    setTransferring(true);
+    const { error } = await supabase.from("chat_channels").update({ created_by: newOwnerId }).eq("id", channelId);
+    setTransferring(false);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    onChanged();
+    toast({ title: "Ägare bytt" });
+  };
 
   const filteredProfiles = profiles.filter(p => {
     if (memberSearch && !p.full_name.toLowerCase().includes(memberSearch.toLowerCase())) return false;
