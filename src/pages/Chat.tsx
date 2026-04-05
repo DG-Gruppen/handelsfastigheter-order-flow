@@ -71,7 +71,7 @@ function formatMsgTime(dateStr: string) {
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "👀"];
 
 // ─── Main ───
-export default function Chat() {
+export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -288,7 +288,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] rounded-xl border border-border bg-card overflow-hidden">
+    <div className={cn("flex rounded-xl border border-border bg-card overflow-hidden", embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]")}>
       {/* ─── Sidebar ─── */}
       <div className={cn(
         "w-full md:w-72 shrink-0 border-r border-border flex flex-col bg-muted/30",

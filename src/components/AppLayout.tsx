@@ -7,6 +7,7 @@ import AppSidebar from "@/components/AppSidebar";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 const AiChatBubble = lazy(() => import("@/components/AiChatBubble"));
+const ChatBubble = lazy(() => import("@/components/ChatBubble"));
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
@@ -42,6 +43,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {children}
           </main>
         </div>
+
+        <Suspense fallback={null}>
+          <ChatBubble />
+        </Suspense>
 
         <Suspense fallback={null}>
           <AiChatBubble />
