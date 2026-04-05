@@ -212,12 +212,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   }, [activeChannelId, threadParent?.id, qc]);
 
   // ─── Mutations ───
-  const joinChannel = useMutation({
-    mutationFn: async (channelId: string) => {
-      await supabase.from("chat_channel_members").insert({ channel_id: channelId, user_id: user!.id });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["chat-memberships"] }),
-  });
 
   const sendMsg = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
