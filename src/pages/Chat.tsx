@@ -816,16 +816,22 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
             <div className="space-y-0.5">
               {currentMembers.map(uid => {
                 const p = profiles.find(pr => pr.user_id === uid);
+                const isOwner = uid === channelCreatedBy;
                 return (
                   <div key={uid} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm">
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p?.full_name || "?")}</AvatarFallback>
                     </Avatar>
-                    <span className="flex-1">{p?.full_name || "Okänd"}</span>
-                    {isCreator && (
-                      <button onClick={() => removeMember(uid)} className="text-muted-foreground hover:text-destructive">
-                        <UserMinus className="h-4 w-4" />
-                      </button>
+                    <span className="flex-1">{p?.full_name || "Okänd"}{isOwner && <span className="ml-1 text-xs text-muted-foreground">(ägare)</span>}</span>
+                    {isCreator && !isOwner && (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => transferOwnership(uid)} disabled={transferring} title="Gör till ägare" className="text-muted-foreground hover:text-primary">
+                          <Crown className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => removeMember(uid)} className="text-muted-foreground hover:text-destructive">
+                          <UserMinus className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
