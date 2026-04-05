@@ -86,6 +86,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const { data: channels = [] } = useQuery({
     queryKey: ["chat-channels"],
     queryFn: async () => {
+      // Only fetch channels the user is a member of (RLS enforces this)
       const { data } = await supabase.from("chat_channels").select("*").eq("is_archived", false).order("name");
       return (data ?? []) as Channel[];
     },
@@ -99,6 +100,15 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       return (data ?? []).map(m => m.channel_id);
     },
     enabled: !!user,
+  });
+
+  const { data: channelMembers = [] } = useQuery({
+    queryKey: ["chat-channel-members", activeChannelId],
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_channel_members").select("user_id").eq("channel_id", activeChannelId!);
+      return (data ?? []).map(m => m.user_id);
+    },
+    enabled: !!activeChannelId,
   });
 
   const { data: profiles = [] } = useQuery({
