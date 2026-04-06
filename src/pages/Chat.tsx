@@ -457,7 +457,7 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
           <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
           <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id: string) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id: string) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
           {onClose && (
-            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/10 rounded-md" aria-label="Stäng chatt">
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:bg-muted rounded-md" aria-label="Stäng chatt">
               <X className="h-4 w-4" />
             </button>
           )}
