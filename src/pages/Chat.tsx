@@ -616,8 +616,8 @@ function MessageBubble({
 
           {/* Action buttons on hover */}
           <div className={cn(
-            "absolute -top-3 hidden group-hover:flex bg-card text-foreground border border-border rounded-md shadow-sm z-10",
-            isOwn ? "left-0" : "right-0"
+            "absolute bottom-full mb-1 hidden group-hover:inline-flex bg-card text-foreground border border-border rounded-md shadow-sm z-10 whitespace-nowrap",
+            isOwn ? "right-0" : "left-0"
           )}>
             {QUICK_EMOJIS.slice(0, 3).map(e => (
               <button key={e} onClick={() => onReact?.(e)} className="px-1.5 py-1 hover:bg-accent text-sm">{e}</button>
