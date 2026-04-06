@@ -842,10 +842,53 @@ function MessageBubble({
 }
 
 // ─── Compose Bar (WhatsApp style) ───
-function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string }) {
+function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[] }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const mentionRef = useRef<number | null>(null); // cursor position of '@'
+
+  const mentionSuggestions = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return mentionProfiles.filter(p => p.full_name.toLowerCase().includes(q)).slice(0, 6);
+  }, [mentionQuery, mentionProfiles]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    const cursor = e.target.selectionStart || 0;
+    setText(val);
+
+    // Detect @mention trigger
+    const textBefore = val.slice(0, cursor);
+    const atMatch = textBefore.match(/@([^\s@]*)$/);
+    if (atMatch) {
+      mentionRef.current = cursor - atMatch[0].length;
+      setMentionQuery(atMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+      mentionRef.current = null;
+    }
+  };
+
+  const insertMention = (profile: Profile) => {
+    const start = mentionRef.current ?? 0;
+    const cursor = inputRef.current?.selectionStart ?? text.length;
+    const before = text.slice(0, start);
+    const after = text.slice(cursor);
+    const mention = `@${profile.full_name} `;
+    setText(before + mention + after);
+    setMentionQuery(null);
+    mentionRef.current = null;
+    setTimeout(() => {
+      const newPos = start + mention.length;
+      inputRef.current?.setSelectionRange(newPos, newPos);
+      inputRef.current?.focus();
+    }, 0);
+  };
 
   const handleSend = () => {
     const t = text.trim();
@@ -853,11 +896,43 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
     onSend(t);
     setText("");
     setShowEmoji(false);
+    setMentionQuery(null);
     inputRef.current?.focus();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionSuggestions.length > 0 && mentionQuery !== null) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionSuggestions.length - 1)); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); insertMention(mentionSuggestions[mentionIndex]); return; }
+      if (e.key === "Escape") { e.preventDefault(); setMentionQuery(null); return; }
+    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
   return (
-    <div className="bg-muted/50 border-t border-border px-3 py-2 flex items-end gap-2">
+    <div className="bg-muted/50 border-t border-border px-3 py-2 flex items-end gap-2 relative">
+      {/* Mention autocomplete dropdown */}
+      {mentionSuggestions.length > 0 && mentionQuery !== null && (
+        <div className="absolute bottom-full left-3 right-3 mb-1 bg-card border border-border rounded-lg shadow-lg z-30 max-h-48 overflow-y-auto">
+          {mentionSuggestions.map((p, i) => (
+            <button
+              key={p.user_id}
+              onMouseDown={(e) => { e.preventDefault(); insertMention(p); }}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors",
+                i === mentionIndex ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
+              )}
+            >
+              <Avatar className="h-6 w-6 shrink-0">
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p.full_name)}</AvatarFallback>
+              </Avatar>
+              <span className="truncate font-medium">{p.full_name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <Popover open={showEmoji} onOpenChange={setShowEmoji}>
         <PopoverTrigger asChild>
           <button className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
@@ -872,8 +947,8 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
       <textarea
         ref={inputRef}
         value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder={disabled ? "Gå med i gruppen för att skriva..." : (placeholder || "Skriv ett meddelande")}
         disabled={disabled}
         rows={1}
