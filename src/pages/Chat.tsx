@@ -414,6 +414,7 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
           setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
           sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
           activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+          onLeaveChannel={() => { setActiveChannelId(null); setThreadParent(null); setMobileShowChat(false); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
         />
       </div>
 
