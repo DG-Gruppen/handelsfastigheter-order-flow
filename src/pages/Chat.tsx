@@ -595,9 +595,16 @@ function MessageBubble({
             </div>
           )}
           {!grouped && isOwn && (
-            <div className="flex items-baseline gap-2 mb-0.5 justify-end">
+            <div className="flex items-center gap-1.5 mb-0.5 justify-end">
               <span className="text-[10px] text-primary-foreground/60">{formatMsgTime(msg.created_at)}</span>
               {msg.is_edited && <span className="text-[10px] text-primary-foreground/50">(redigerad)</span>}
+              {readReceipt && (
+                readReceipt === "read_all"
+                  ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" />
+                  : readReceipt === "read_some"
+                  ? <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/50" />
+                  : <Check className="h-3.5 w-3.5 text-primary-foreground/50" />
+              )}
             </div>
           )}
           <div className={cn(
