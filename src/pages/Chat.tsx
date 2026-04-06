@@ -884,7 +884,7 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ny kanal"><Plus className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ny grupp"><Plus className="h-4 w-4" /></Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Skapa kanal</DialogTitle></DialogHeader>
