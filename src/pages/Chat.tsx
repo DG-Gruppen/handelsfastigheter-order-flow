@@ -540,6 +540,9 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
 
 // ─── Chat Main Area (extracted) ───
 function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, activeChannelId, qc, profiles, onLeaveChannel }: any) {
+  const mentionProfiles = useMemo(() => {
+    return profiles.filter((p: Profile) => channelMembers.includes(p.user_id) && p.user_id !== user?.id);
+  }, [profiles, channelMembers, user?.id]);
   return (
     <div className="flex-1 flex min-w-0 h-full">
       <div className="flex-1 flex flex-col min-w-0">
