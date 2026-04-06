@@ -545,8 +545,8 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
-                <p className="text-[11px] text-muted-foreground truncate">
+                <h3 className="font-semibold text-sm truncate text-primary-foreground">{activeChannel.name}</h3>
+                <p className="text-[11px] text-primary-foreground/70 truncate">
                   {activeChannel.type === "group" ? `${channelMembers.length} medlemmar` : activeChannel.description || ""}
                 </p>
               </div>
