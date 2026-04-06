@@ -451,8 +451,8 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
 function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc, onClose }: any) {
   return (
     <>
-      <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10">
-        <h2 className="font-semibold text-base text-primary-foreground">Chatt</h2>
+      <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
+        <h2 className="font-semibold text-base">Chatt</h2>
         <div className="flex gap-0.5">
           <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
           <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id: string) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id: string) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
