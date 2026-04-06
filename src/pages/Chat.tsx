@@ -874,7 +874,7 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
   const create = async () => {
     if (!name.trim() || !userId) return;
     const { data: ch, error } = await supabase.from("chat_channels").insert({ name: name.trim(), description: desc.trim(), type: "group", created_by: userId }).select("id").single();
-    if (error || !ch) { toast({ title: "Fel", description: error?.message || "Kunde inte skapa kanal", variant: "destructive" }); return; }
+    if (error || !ch) { toast({ title: "Fel", description: error?.message || "Kunde inte skapa grupp", variant: "destructive" }); return; }
     const members = [userId, ...selectedMembers].map(uid => ({ channel_id: ch.id, user_id: uid }));
     await supabase.from("chat_channel_members").insert(members);
     setName(""); setDesc(""); setSelectedMembers([]); setMemberSearch("");
