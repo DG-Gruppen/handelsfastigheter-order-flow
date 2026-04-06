@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+const PageDetailView = lazy(() => import("@/components/statistics/PageDetailView"));
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -70,6 +72,7 @@ const tooltipStyle = {
 
 export default function Statistics() {
   const [period, setPeriod] = useState<PeriodKey>("30d");
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
   const since = useMemo(() => startOfDay(subDays(new Date(), days)).toISOString(), [days]);
 
@@ -79,7 +82,7 @@ export default function Statistics() {
     queryFn: async () => {
       const { data } = await supabase
         .from("page_analytics")
-        .select("page_path, module_slug, session_hash, duration_seconds, viewport_width, created_at")
+        .select("page_path, module_slug, session_hash, duration_seconds, viewport_width, created_at, referrer_path")
         .gte("created_at", since)
         .order("created_at", { ascending: true });
       return data ?? [];
@@ -223,15 +226,19 @@ export default function Statistics() {
       }
     });
     const moduleRanking = Object.entries(moduleMap)
-      .map(([slug, d]) => ({
-        slug,
-        name: Object.entries(PAGE_NAMES).find(([, n]) =>
+      .map(([slug, d]) => {
+        const entry = Object.entries(PAGE_NAMES).find(([, n]) =>
           n.toLowerCase().includes(slug.replace(/-/g, " ").toLowerCase())
-        )?.[1] || slug,
-        views: d.views,
-        avgDuration: d.durCount > 0 ? Math.round(d.totalDur / d.durCount) : 0,
-        engagement: d.views + (d.durCount > 0 ? Math.round(d.totalDur / d.durCount) * 0.5 : 0),
-      }))
+        );
+        return {
+          slug,
+          route: entry?.[0] || `/${slug}`,
+          name: entry?.[1] || slug,
+          views: d.views,
+          avgDuration: d.durCount > 0 ? Math.round(d.totalDur / d.durCount) : 0,
+          engagement: d.views + (d.durCount > 0 ? Math.round(d.totalDur / d.durCount) * 0.5 : 0),
+        };
+      })
       .sort((a, b) => b.engagement - a.engagement);
 
     // ─── Module trends (daily views per module for top 5) ───
@@ -302,7 +309,17 @@ export default function Statistics() {
         </Select>
       </div>
 
-      {isLoading ? (
+      {/* Detail view for a specific page */}
+      {selectedPage ? (
+        <Suspense fallback={<div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+          <PageDetailView
+            pagePath={selectedPage}
+            rawData={rawData}
+            onBack={() => setSelectedPage(null)}
+            onNavigate={(path) => setSelectedPage(path)}
+          />
+        </Suspense>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
@@ -461,7 +478,7 @@ export default function Statistics() {
                       {metrics.topPages.slice(0, 15).map((page, i) => {
                         const pct = metrics.totalViews > 0 ? (page.views / metrics.totalViews) * 100 : 0;
                         return (
-                          <tr key={page.path} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                          <tr key={page.path} className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setSelectedPage(page.path)}>
                             <td className="py-2.5 pr-4 text-muted-foreground font-medium">{i + 1}</td>
                             <td className="py-2.5 pr-4">
                               <span className="font-medium">{page.name}</span>
@@ -501,7 +518,7 @@ export default function Statistics() {
                       const maxEng = metrics.moduleRanking[0]?.engagement || 1;
                       const pct = (m.engagement / maxEng) * 100;
                       return (
-                        <div key={m.slug} className="flex items-center gap-3">
+                        <div key={m.slug} className="flex items-center gap-3 cursor-pointer hover:bg-muted/30 rounded-lg p-1 -mx-1 transition-colors" onClick={() => setSelectedPage(m.route)}>
                           <span className="text-xs text-muted-foreground w-5 text-right font-medium">{i + 1}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-0.5">
