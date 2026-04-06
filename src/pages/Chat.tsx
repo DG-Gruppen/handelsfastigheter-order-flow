@@ -392,11 +392,8 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       "flex rounded-xl border border-border overflow-hidden shadow-lg",
       embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]"
     )}>
-      {/* ─── Conversation List (WhatsApp sidebar) ─── */}
-      <div className={cn(
-        "w-full md:w-[340px] shrink-0 border-r border-border flex flex-col bg-card",
-        mobileShowChat && "hidden md:flex"
-      )}>
+      {/* Mobile: show either list or chat */}
+      <div className={cn("w-full flex flex-col bg-card md:hidden", mobileShowChat && "hidden")}>
         {/* Sidebar header */}
         <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
           <h2 className="font-semibold text-base">Chatt</h2>
