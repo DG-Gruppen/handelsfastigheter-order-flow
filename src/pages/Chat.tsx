@@ -449,8 +449,8 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
 function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc }: any) {
   return (
     <>
-      <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
-        <h2 className="font-semibold text-base">Chatt</h2>
+      <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10">
+        <h2 className="font-semibold text-base text-primary-foreground">Chatt</h2>
         <div className="flex gap-0.5">
           <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
           <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id: string) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id: string) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
@@ -511,7 +511,7 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
                     )}
                   </p>
                   {unread > 0 && (
-                    <span className="ml-auto shrink-0 bg-accent text-accent-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
+                    <span className="ml-auto shrink-0 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
                       {unread}
                     </span>
                   )}
@@ -535,18 +535,18 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
       <div className="flex-1 flex flex-col min-w-0">
         {activeChannel ? (
           <>
-            <div className="h-14 px-3 flex items-center gap-3 bg-muted/50 border-b border-border shrink-0">
+            <div className="h-14 px-3 flex items-center gap-3 gradient-primary border-b border-primary-foreground/10 shrink-0">
               <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <Avatar className="h-10 w-10 shrink-0">
-                <AvatarFallback className={cn("text-sm", activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
+              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary-foreground/20">
+                <AvatarFallback className={cn("text-sm font-medium", activeChannel.type === "dm" ? "bg-accent text-accent-foreground" : "bg-primary-foreground/20 text-primary-foreground")}>
                   {activeChannel.type === "dm" ? <MessageCircle className="h-4 w-4" /> : initials(activeChannel.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
-                <p className="text-[11px] text-muted-foreground truncate">
+                <h3 className="font-semibold text-sm truncate text-primary-foreground">{activeChannel.name}</h3>
+                <p className="text-[11px] text-primary-foreground/70 truncate">
                   {activeChannel.type === "group" ? `${channelMembers.length} medlemmar` : activeChannel.description || ""}
                 </p>
               </div>
@@ -581,22 +581,22 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
             <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-muted/20">
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
             <div className="text-center space-y-3 max-w-sm px-4">
-              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <MessageCircle className="h-8 w-8 text-primary/50" />
+              <div className="mx-auto w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-lg">
+                <MessageCircle className="h-10 w-10 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-light text-muted-foreground">SHF Chatt</h3>
-              <p className="text-sm text-muted-foreground/70">Välj en konversation eller starta en ny chatt</p>
+              <h3 className="text-xl font-semibold text-primary font-[var(--font-heading)]">SHF Chatt</h3>
+              <p className="text-sm text-muted-foreground">Välj en konversation eller starta en ny chatt</p>
             </div>
           </div>
         )}
       </div>
       {threadParent && (
         <div className="hidden md:flex w-80 border-l border-border flex-col bg-card">
-          <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border shrink-0">
-            <h4 className="font-semibold text-sm">Tråd</h4>
-            <button onClick={() => setThreadParent(null)} className="p-1 hover:bg-muted rounded-full">
+          <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10 shrink-0">
+            <h4 className="font-semibold text-sm text-primary-foreground">Tråd</h4>
+            <button onClick={() => setThreadParent(null)} className="p-1 hover:bg-primary-foreground/10 rounded-full text-primary-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -735,8 +735,8 @@ function MessageBubble({
       <div className={cn(
         "relative rounded-lg px-2.5 pt-1.5 pb-1 shadow-sm",
         isOwn
-          ? "bg-[hsl(162_31%_90%)] dark:bg-[hsl(162_20%_20%)] rounded-tr-none"
-          : "bg-card rounded-tl-none",
+          ? "bg-accent/15 dark:bg-accent/20 rounded-tr-none border border-accent/20"
+          : "bg-card rounded-tl-none border border-border/50",
         grouped && "rounded-lg",
         compact && "px-2 py-1"
       )}>
@@ -869,7 +869,7 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
         className={cn(
           "p-2.5 rounded-full shrink-0 self-end transition-colors",
           text.trim()
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            ? "gradient-primary text-primary-foreground shadow-md hover:opacity-90"
             : "text-muted-foreground"
         )}
       >
@@ -911,7 +911,7 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ny grupp"><Plus className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10" title="Ny grupp"><Plus className="h-4 w-4" /></Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Skapa grupp</DialogTitle></DialogHeader>
@@ -982,7 +982,7 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Nytt DM"><Users className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10" title="Nytt DM"><Users className="h-4 w-4" /></Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Nytt direktmeddelande</DialogTitle></DialogHeader>
