@@ -428,6 +428,7 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
             showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
             showNewDm={showNewDm} setShowNewDm={setShowNewDm}
             profiles={profiles} memberships={memberships} channels={channels} qc={qc}
+            onClose={onClose}
           />
         </div>
         <div className="flex-1 flex flex-col min-w-0">
