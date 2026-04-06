@@ -511,7 +511,7 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
                     )}
                   </p>
                   {unread > 0 && (
-                    <span className="ml-auto shrink-0 bg-accent text-accent-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
+                    <span className="ml-auto shrink-0 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
                       {unread}
                     </span>
                   )}
