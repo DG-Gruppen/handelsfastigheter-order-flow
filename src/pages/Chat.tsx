@@ -102,7 +102,7 @@ function formatConversationTime(dateStr: string) {
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "👀"];
 
 // ─── Main ───
-export default function Chat({ embedded }: { embedded?: boolean } = {}) {
+export default function Chat({ embedded, onClose }: { embedded?: boolean; onClose?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
