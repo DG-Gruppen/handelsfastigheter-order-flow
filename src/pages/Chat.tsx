@@ -626,7 +626,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
               <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} />
             ))}
           </ScrollArea>
-          <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." />
+          <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} />
         </div>
       )}
     </div>
