@@ -869,7 +869,7 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
         className={cn(
           "p-2.5 rounded-full shrink-0 self-end transition-colors",
           text.trim()
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            ? "gradient-primary text-primary-foreground shadow-md hover:opacity-90"
             : "text-muted-foreground"
         )}
       >
