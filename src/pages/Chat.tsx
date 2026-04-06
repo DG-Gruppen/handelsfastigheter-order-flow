@@ -363,13 +363,14 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
   const sortedChannels = useMemo(() => {
     const s = search.toLowerCase();
     return channels
+      .filter(c => memberships.includes(c.id))
       .filter(c => !s || c.name.toLowerCase().includes(s))
       .sort((a, b) => {
         const aTime = lastMessages[a.id]?.created_at || a.created_at;
         const bTime = lastMessages[b.id]?.created_at || b.created_at;
         return new Date(bTime).getTime() - new Date(aTime).getTime();
       });
-  }, [channels, search, lastMessages]);
+  }, [channels, memberships, search, lastMessages]);
 
   const handleSelectChannel = (id: string) => {
     setActiveChannelId(id);
