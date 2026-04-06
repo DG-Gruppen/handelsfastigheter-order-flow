@@ -535,7 +535,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
       <div className="flex-1 flex flex-col min-w-0">
         {activeChannel ? (
           <>
-            <div className="h-14 px-3 flex items-center gap-3 bg-muted/50 border-b border-border shrink-0">
+            <div className="h-14 px-3 flex items-center gap-3 gradient-primary border-b border-primary-foreground/10 shrink-0">
               <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
