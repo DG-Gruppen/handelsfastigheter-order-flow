@@ -532,7 +532,7 @@ function MessageList({
 }
 
 function MessageBubble({
-  msg, profile, userId, reactions = [], grouped, compact, replyCount, onReply, onReact, onDelete
+  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, onReply, onReact, onDelete
 }: {
   msg: Message;
   profile?: Profile;
@@ -541,6 +541,7 @@ function MessageBubble({
   grouped?: boolean;
   compact?: boolean;
   replyCount?: number;
+  readReceipt?: "sent" | "read_some" | "read_all";
   onReply?: () => void;
   onReact?: (emoji: string) => void;
   onDelete?: () => void;
