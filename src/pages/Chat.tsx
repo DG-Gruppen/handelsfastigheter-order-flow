@@ -570,13 +570,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
               <ChannelActionMenu
                 channel={activeChannel}
                 userId={user?.id}
-                onLeft={() => {
-                  setActiveChannelId(null);
-                  setThreadParent(null);
-                  setMobileShowChat(false);
-                  qc.invalidateQueries({ queryKey: ["chat-channels"] });
-                  qc.invalidateQueries({ queryKey: ["chat-memberships"] });
-                }}
+                onLeft={onLeaveChannel}
               />
             </div>
             <div className="flex-1 flex flex-col min-h-0 relative">
