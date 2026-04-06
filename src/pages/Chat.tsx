@@ -567,6 +567,17 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                   onChanged={() => { qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] }); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
                 />
               )}
+              <ChannelActionMenu
+                channel={activeChannel}
+                userId={user?.id}
+                onLeft={() => {
+                  setActiveChannelId(null);
+                  setThreadParent(null);
+                  setMobileShowChat(false);
+                  qc.invalidateQueries({ queryKey: ["chat-channels"] });
+                  qc.invalidateQueries({ queryKey: ["chat-memberships"] });
+                }}
+              />
             </div>
             <div className="flex-1 flex flex-col min-h-0 relative">
               <div className="absolute inset-0" style={{
