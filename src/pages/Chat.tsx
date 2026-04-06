@@ -61,6 +61,25 @@ function initials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+const NAME_COLORS = [
+  "text-rose-600 dark:text-rose-400",
+  "text-blue-600 dark:text-blue-400",
+  "text-emerald-600 dark:text-emerald-400",
+  "text-violet-600 dark:text-violet-400",
+  "text-amber-600 dark:text-amber-400",
+  "text-cyan-600 dark:text-cyan-400",
+  "text-pink-600 dark:text-pink-400",
+  "text-teal-600 dark:text-teal-400",
+  "text-orange-600 dark:text-orange-400",
+  "text-indigo-600 dark:text-indigo-400",
+];
+
+function nameColor(userId: string) {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = ((hash << 5) - hash + userId.charCodeAt(i)) | 0;
+  return NAME_COLORS[Math.abs(hash) % NAME_COLORS.length];
+}
+
 function formatMsgTime(dateStr: string) {
   const d = new Date(dateStr);
   if (isToday(d)) return format(d, "HH:mm");
@@ -455,20 +474,23 @@ function MessageList({
         const grouped = sameUser && timeDiff < 5 * 60 * 1000;
         const msgReactions = reactions.filter(r => r.message_id === msg.id);
         const replyCount = replyCounts[msg.id] || 0;
+        const isOwn = msg.user_id === userId;
 
         return (
-          <div key={msg.id} className={cn("group", !grouped && i > 0 && "mt-4")}>
-            <MessageBubble
-              msg={msg}
-              profile={profileMap.get(msg.user_id)}
-              userId={userId}
-              reactions={msgReactions}
-              grouped={grouped}
-              replyCount={replyCount}
-              onReply={() => onReply(msg)}
-              onReact={(emoji) => onReact(msg.id, emoji)}
-              onDelete={() => onDelete(msg.id)}
-            />
+          <div key={msg.id} className={cn("flex", isOwn ? "justify-end" : "justify-start", !grouped && i > 0 && "mt-4")}>
+            <div className={cn("max-w-[75%]", isOwn ? "items-end" : "items-start")}>
+              <MessageBubble
+                msg={msg}
+                profile={profileMap.get(msg.user_id)}
+                userId={userId}
+                reactions={msgReactions}
+                grouped={grouped}
+                replyCount={replyCount}
+                onReply={() => onReply(msg)}
+                onReact={(emoji) => onReact(msg.id, emoji)}
+                onDelete={() => onDelete(msg.id)}
+              />
+            </div>
           </div>
         );
       })}
@@ -513,29 +535,52 @@ function MessageBubble({
   }, [reactions, userId]);
 
   return (
-    <div className={cn("flex gap-3", compact && "gap-2")}>
-      {!grouped ? (
-        <Avatar className={cn("h-8 w-8 shrink-0 mt-0.5", compact && "h-6 w-6")}>
-          <AvatarFallback className="text-xs bg-primary/10 text-primary">{initials(name)}</AvatarFallback>
+    <div className={cn(
+      "flex gap-2 group",
+      compact && "gap-1.5",
+      isOwn ? "flex-row-reverse" : "flex-row"
+    )}>
+      {!grouped && !compact ? (
+        <Avatar className={cn("h-7 w-7 shrink-0 mt-1", compact && "h-6 w-6")}>
+          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(name)}</AvatarFallback>
         </Avatar>
-      ) : (
-        <div className="w-8 shrink-0" />
-      )}
-      <div className="flex-1 min-w-0">
-        {!grouped && (
-          <div className="flex items-baseline gap-2 mb-0.5">
-            <span className="text-sm font-semibold">{name}</span>
-            <span className="text-[11px] text-muted-foreground">{formatMsgTime(msg.created_at)}</span>
-            {msg.is_edited && <span className="text-[10px] text-muted-foreground">(redigerad)</span>}
-          </div>
-        )}
-        <div className="relative group/msg">
-          <div className="prose prose-sm dark:prose-invert max-w-none text-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0.5">
+      ) : !compact ? (
+        <div className="w-7 shrink-0" />
+      ) : null}
+      <div className={cn("min-w-0", isOwn ? "items-end" : "items-start")}>
+        <div className={cn(
+          "relative rounded-2xl px-3 py-2 shadow-sm",
+          isOwn
+            ? "bg-primary text-primary-foreground rounded-tr-sm"
+            : "bg-muted rounded-tl-sm",
+          grouped && isOwn && "rounded-tr-2xl",
+          grouped && !isOwn && "rounded-tl-2xl"
+        )}>
+          {!grouped && !isOwn && (
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className={cn("text-xs font-semibold", nameColor(msg.user_id))}>{name}</span>
+              <span className={cn("text-[10px]", isOwn ? "text-primary-foreground/60" : "text-muted-foreground")}>{formatMsgTime(msg.created_at)}</span>
+              {msg.is_edited && <span className={cn("text-[10px]", isOwn ? "text-primary-foreground/50" : "text-muted-foreground")}>(redigerad)</span>}
+            </div>
+          )}
+          {!grouped && isOwn && (
+            <div className="flex items-baseline gap-2 mb-0.5 justify-end">
+              <span className="text-[10px] text-primary-foreground/60">{formatMsgTime(msg.created_at)}</span>
+              {msg.is_edited && <span className="text-[10px] text-primary-foreground/50">(redigerad)</span>}
+            </div>
+          )}
+          <div className={cn(
+            "prose prose-sm max-w-none text-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0.5",
+            isOwn ? "prose-invert [&_a]:text-primary-foreground/90" : "dark:prose-invert"
+          )}>
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
 
           {/* Action buttons on hover */}
-          <div className="absolute -top-3 right-0 hidden group-hover/msg:flex bg-card border border-border rounded-md shadow-sm">
+          <div className={cn(
+            "absolute -top-3 hidden group-hover:flex bg-card border border-border rounded-md shadow-sm z-10",
+            isOwn ? "left-0" : "right-0"
+          )}>
             {QUICK_EMOJIS.slice(0, 3).map(e => (
               <button key={e} onClick={() => onReact?.(e)} className="px-1.5 py-1 hover:bg-accent text-sm">{e}</button>
             ))}
@@ -558,7 +603,7 @@ function MessageBubble({
 
         {/* Reactions */}
         {groupedReactions.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
+          <div className={cn("flex flex-wrap gap-1 mt-1", isOwn && "justify-end")}>
             {groupedReactions.map(r => (
               <button
                 key={r.emoji}
@@ -577,7 +622,7 @@ function MessageBubble({
 
         {/* Thread reply count */}
         {!!replyCount && replyCount > 0 && (
-          <button onClick={onReply} className="flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
+          <button onClick={onReply} className={cn("flex items-center gap-1 mt-1 text-xs text-primary hover:underline", isOwn && "justify-end")}>
             <Reply className="h-3 w-3" />
             {replyCount} {replyCount === 1 ? "svar" : "svar"}
           </button>
