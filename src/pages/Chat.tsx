@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -363,13 +363,14 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
   const sortedChannels = useMemo(() => {
     const s = search.toLowerCase();
     return channels
+      .filter(c => memberships.includes(c.id))
       .filter(c => !s || c.name.toLowerCase().includes(s))
       .sort((a, b) => {
         const aTime = lastMessages[a.id]?.created_at || a.created_at;
         const bTime = lastMessages[b.id]?.created_at || b.created_at;
         return new Date(bTime).getTime() - new Date(aTime).getTime();
       });
-  }, [channels, search, lastMessages]);
+  }, [channels, memberships, search, lastMessages]);
 
   const handleSelectChannel = (id: string) => {
     setActiveChannelId(id);
@@ -414,6 +415,7 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
           setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
           sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
           activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+          onLeaveChannel={() => { setActiveChannelId(null); setThreadParent(null); setMobileShowChat(false); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
         />
       </div>
 
@@ -440,6 +442,7 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
             setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
             sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
             activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+            onLeaveChannel={() => { setActiveChannelId(null); setThreadParent(null); setMobileShowChat(false); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
           />
         </div>
       </div>
@@ -536,7 +539,7 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
 }
 
 // ─── Chat Main Area (extracted) ───
-function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, activeChannelId, qc, profiles }: any) {
+function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, activeChannelId, qc, profiles, onLeaveChannel }: any) {
   return (
     <div className="flex-1 flex min-w-0 h-full">
       <div className="flex-1 flex flex-col min-w-0">
@@ -567,6 +570,11 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                   onChanged={() => { qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] }); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
                 />
               )}
+              <ChannelActionMenu
+                channel={activeChannel}
+                userId={user?.id}
+                onLeft={onLeaveChannel}
+              />
             </div>
             <div className="flex-1 flex flex-col min-h-0 relative">
               <div className="absolute inset-0" style={{
@@ -1107,5 +1115,41 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ChannelActionMenu({ channel, userId, onLeft }: { channel: Channel; userId?: string; onLeft: () => void }) {
+  const { toast } = useToast();
+  const isOwner = channel.created_by === userId;
+  const isGroup = channel.type === "group";
+
+  const handleLeave = async () => {
+    if (!userId) return;
+    if (isGroup && isOwner) {
+      toast({ title: "Du är ägare", description: "Överför ägarskapet till en annan medlem innan du lämnar gruppen.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("chat_channel_members").delete().eq("channel_id", channel.id).eq("user_id", userId);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    // Also remove read status
+    await supabase.from("chat_read_status").delete().eq("channel_id", channel.id).eq("user_id", userId);
+    toast({ title: isGroup ? "Du lämnade gruppen" : "Konversation stängd" });
+    onLeft();
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleLeave} className="text-destructive focus:text-destructive">
+          {isGroup ? <LogOut className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+          {isGroup ? "Lämna grupp" : "Stäng konversation"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
