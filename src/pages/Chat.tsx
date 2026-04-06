@@ -476,13 +476,14 @@ function ChannelItem({ channel, isActive, isMember, onClick, isDm }: { channel: 
 }
 
 function MessageList({
-  messages, reactions, profileMap, userId, replyCounts, onReply, onReact, onDelete
+  messages, reactions, profileMap, userId, replyCounts, readReceipts, onReply, onReact, onDelete
 }: {
   messages: Message[];
   reactions: Reaction[];
   profileMap: Map<string, Profile>;
   userId?: string;
   replyCounts: Record<string, number>;
+  readReceipts: Record<string, "sent" | "read_some" | "read_all">;
   onReply: (msg: Message) => void;
   onReact: (msgId: string, emoji: string) => void;
   onDelete: (msgId: string) => void;
@@ -514,6 +515,7 @@ function MessageList({
                 reactions={msgReactions}
                 grouped={grouped}
                 replyCount={replyCount}
+                readReceipt={readReceipts[msg.id]}
                 onReply={() => onReply(msg)}
                 onReact={(emoji) => onReact(msg.id, emoji)}
                 onDelete={() => onDelete(msg.id)}
