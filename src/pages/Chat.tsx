@@ -1022,7 +1022,7 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Kanalmedlemmar</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Gruppmedlemmar</DialogTitle></DialogHeader>
         {isCreator && (
           <>
             <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
