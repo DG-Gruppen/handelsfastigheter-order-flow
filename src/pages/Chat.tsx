@@ -539,8 +539,8 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
               <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <Avatar className="h-10 w-10 shrink-0">
-                <AvatarFallback className={cn("text-sm", activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
+              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary-foreground/20">
+                <AvatarFallback className={cn("text-sm font-medium", activeChannel.type === "dm" ? "bg-accent text-accent-foreground" : "bg-primary-foreground/20 text-primary-foreground")}>
                   {activeChannel.type === "dm" ? <MessageCircle className="h-4 w-4" /> : initials(activeChannel.name)}
                 </AvatarFallback>
               </Avatar>
