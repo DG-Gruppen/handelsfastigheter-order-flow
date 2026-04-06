@@ -1116,3 +1116,39 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
     </Dialog>
   );
 }
+
+function ChannelActionMenu({ channel, userId, onLeft }: { channel: Channel; userId?: string; onLeft: () => void }) {
+  const { toast } = useToast();
+  const isOwner = channel.created_by === userId;
+  const isGroup = channel.type === "group";
+
+  const handleLeave = async () => {
+    if (!userId) return;
+    if (isGroup && isOwner) {
+      toast({ title: "Du är ägare", description: "Överför ägarskapet till en annan medlem innan du lämnar gruppen.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("chat_channel_members").delete().eq("channel_id", channel.id).eq("user_id", userId);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    // Also remove read status
+    await supabase.from("chat_read_status").delete().eq("channel_id", channel.id).eq("user_id", userId);
+    toast({ title: isGroup ? "Du lämnade gruppen" : "Konversation stängd" });
+    onLeft();
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleLeave} className="text-destructive focus:text-destructive">
+          {isGroup ? <LogOut className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+          {isGroup ? "Lämna grupp" : "Stäng konversation"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
