@@ -714,7 +714,7 @@ function MessageList({
 
 // ─── Message Bubble (WhatsApp style) ───
 function MessageBubble({
-  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete
+  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete, allProfileMap
 }: {
   msg: Message;
   profile?: Profile;
@@ -728,6 +728,7 @@ function MessageBubble({
   onReply?: () => void;
   onReact?: (emoji: string) => void;
   onDelete?: () => void;
+  allProfileMap?: Map<string, Profile>;
 }) {
   const name = profile?.full_name || "Okänd";
   const isOwn = msg.user_id === userId;
