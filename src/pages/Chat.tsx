@@ -735,8 +735,8 @@ function MessageBubble({
       <div className={cn(
         "relative rounded-lg px-2.5 pt-1.5 pb-1 shadow-sm",
         isOwn
-          ? "bg-[hsl(162_31%_90%)] dark:bg-[hsl(162_20%_20%)] rounded-tr-none"
-          : "bg-card rounded-tl-none",
+          ? "bg-accent/15 dark:bg-accent/20 rounded-tr-none border border-accent/20"
+          : "bg-card rounded-tl-none border border-border/50",
         grouped && "rounded-lg",
         compact && "px-2 py-1"
       )}>
