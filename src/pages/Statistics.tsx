@@ -305,7 +305,17 @@ export default function Statistics() {
         </Select>
       </div>
 
-      {isLoading ? (
+      {/* Detail view for a specific page */}
+      {selectedPage ? (
+        <Suspense fallback={<div className="flex justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+          <PageDetailView
+            pagePath={selectedPage}
+            rawData={rawData}
+            onBack={() => setSelectedPage(null)}
+            onNavigate={(path) => setSelectedPage(path)}
+          />
+        </Suspense>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
