@@ -392,123 +392,167 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       "flex rounded-xl border border-border overflow-hidden shadow-lg",
       embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]"
     )}>
-      {/* Mobile: show either list or chat */}
+      {/* ─── Mobile layout (no resize) ─── */}
       <div className={cn("w-full flex flex-col bg-card md:hidden", mobileShowChat && "hidden")}>
-        {/* Sidebar header */}
-        <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
-          <h2 className="font-semibold text-base">Chatt</h2>
-          <div className="flex gap-0.5">
-            <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
-            <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="px-2 py-1.5">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Sök eller starta en ny chatt" className="pl-9 h-9 text-sm rounded-lg bg-muted/40 border-0 focus-visible:ring-1" />
-          </div>
-        </div>
-
-        {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto">
-          {sortedChannels.map(c => {
-            const lastMsg = lastMessages[c.id];
-            const lastMsgProfile = lastMsg ? profileMap.get(lastMsg.user_id) : null;
-            const isActive = c.id === activeChannelId;
-            const unread = unreadCounts[c.id] || 0;
-            const isDm = c.type === "dm";
-
-            return (
-              <button
-                key={c.id}
-                onClick={() => handleSelectChannel(c.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors border-b border-border/40",
-                  isActive ? "bg-primary/8" : "hover:bg-muted/50"
-                )}
-              >
-                {/* Avatar */}
-                <Avatar className="h-12 w-12 shrink-0">
-                  <AvatarFallback className={cn(
-                    "text-sm font-medium",
-                    isDm ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary"
-                  )}>
-                    {isDm ? <MessageCircle className="h-5 w-5" /> : initials(c.name)}
-                  </AvatarFallback>
-                </Avatar>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>{c.name}</span>
-                    {lastMsg && (
-                      <span className={cn("text-[11px] shrink-0", unread > 0 ? "text-accent font-medium" : "text-muted-foreground")}>
-                        {formatConversationTime(lastMsg.created_at)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    {lastMsg && lastMsg.user_id === user?.id && (
-                      <CheckCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    )}
-                    <p className={cn("text-xs truncate", unread > 0 ? "text-foreground font-medium" : "text-muted-foreground")}>
-                      {lastMsg ? (
-                        <>
-                          {c.type === "group" && lastMsg.user_id !== user?.id && (
-                            <span className={cn("font-medium", nameColor(lastMsg.user_id))}>
-                              {lastMsgProfile?.full_name?.split(" ")[0] || ""}:{" "}
-                            </span>
-                          )}
-                          {lastMsg.content.length > 50 ? lastMsg.content.slice(0, 50) + "..." : lastMsg.content}
-                        </>
-                      ) : (
-                        <span className="italic">Inga meddelanden</span>
-                      )}
-                    </p>
-                    {unread > 0 && (
-                      <span className="ml-auto shrink-0 bg-accent text-accent-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
-                        {unread}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-          {sortedChannels.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">Inga konversationer</p>
-          )}
-        </div>
+        <ConversationSidebar
+          search={search} setSearch={setSearch}
+          sortedChannels={sortedChannels} lastMessages={lastMessages} profileMap={profileMap}
+          activeChannelId={activeChannelId} unreadCounts={unreadCounts}
+          user={user} handleSelectChannel={handleSelectChannel}
+          showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
+          showNewDm={showNewDm} setShowNewDm={setShowNewDm}
+          profiles={profiles} memberships={memberships} channels={channels} qc={qc}
+        />
+      </div>
+      <div className={cn("w-full flex flex-col min-w-0 md:hidden", !mobileShowChat && "hidden")}>
+        <ChatMainArea
+          activeChannel={activeChannel} user={user} channelMembers={channelMembers}
+          messages={messages} reactions={reactions} profileMap={profileMap}
+          replyCounts={replyCounts as Record<string, number>} readReceipts={readReceipts}
+          threadParent={threadParent} threadMessages={threadMessages}
+          setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
+          sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
+          activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+        />
       </div>
 
-      {/* ─── Main chat area ─── */}
-      <div className={cn(
-        "flex-1 flex flex-col min-w-0",
-        !mobileShowChat && "hidden md:flex"
-      )}>
+      {/* ─── Desktop layout (resizable) ─── */}
+      <div className="hidden md:flex flex-1 min-w-0 h-full">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+            <div className="flex flex-col h-full bg-card border-r border-border">
+              <ConversationSidebar
+                search={search} setSearch={setSearch}
+                sortedChannels={sortedChannels} lastMessages={lastMessages} profileMap={profileMap}
+                activeChannelId={activeChannelId} unreadCounts={unreadCounts}
+                user={user} handleSelectChannel={handleSelectChannel}
+                showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
+                showNewDm={showNewDm} setShowNewDm={setShowNewDm}
+                profiles={profiles} memberships={memberships} channels={channels} qc={qc}
+              />
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={70} minSize={40}>
+            <ChatMainArea
+              activeChannel={activeChannel} user={user} channelMembers={channelMembers}
+              messages={messages} reactions={reactions} profileMap={profileMap}
+              replyCounts={replyCounts as Record<string, number>} readReceipts={readReceipts}
+              threadParent={threadParent} threadMessages={threadMessages}
+              setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
+              sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
+              activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    </div>
+  );
+}
+
+// ─── Conversation Sidebar (extracted) ───
+function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc }: any) {
+  return (
+    <>
+      <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
+        <h2 className="font-semibold text-base">Chatt</h2>
+        <div className="flex gap-0.5">
+          <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
+          <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id: string) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id: string) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
+        </div>
+      </div>
+      <div className="px-2 py-1.5">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Sök eller starta en ny chatt" className="pl-9 h-9 text-sm rounded-lg bg-muted/40 border-0 focus-visible:ring-1" />
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {sortedChannels.map((c: any) => {
+          const lastMsg = lastMessages[c.id];
+          const lastMsgProfile = lastMsg ? profileMap.get(lastMsg.user_id) : null;
+          const isActive = c.id === activeChannelId;
+          const unread = unreadCounts[c.id] || 0;
+          const isDm = c.type === "dm";
+          return (
+            <button
+              key={c.id}
+              onClick={() => handleSelectChannel(c.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors border-b border-border/40",
+                isActive ? "bg-primary/8" : "hover:bg-muted/50"
+              )}
+            >
+              <Avatar className="h-12 w-12 shrink-0">
+                <AvatarFallback className={cn("text-sm font-medium", isDm ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
+                  {isDm ? <MessageCircle className="h-5 w-5" /> : initials(c.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>{c.name}</span>
+                  {lastMsg && (
+                    <span className={cn("text-[11px] shrink-0", unread > 0 ? "text-accent font-medium" : "text-muted-foreground")}>
+                      {formatConversationTime(lastMsg.created_at)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {lastMsg && lastMsg.user_id === user?.id && (
+                    <CheckCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  <p className={cn("text-xs truncate", unread > 0 ? "text-foreground font-medium" : "text-muted-foreground")}>
+                    {lastMsg ? (
+                      <>
+                        {c.type === "group" && lastMsg.user_id !== user?.id && (
+                          <span className={cn("font-medium", nameColor(lastMsg.user_id))}>
+                            {lastMsgProfile?.full_name?.split(" ")[0] || ""}:{" "}
+                          </span>
+                        )}
+                        {lastMsg.content.length > 50 ? lastMsg.content.slice(0, 50) + "..." : lastMsg.content}
+                      </>
+                    ) : (
+                      <span className="italic">Inga meddelanden</span>
+                    )}
+                  </p>
+                  {unread > 0 && (
+                    <span className="ml-auto shrink-0 bg-accent text-accent-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
+                      {unread}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+        {sortedChannels.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">Inga konversationer</p>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── Chat Main Area (extracted) ───
+function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, activeChannelId, qc, profiles }: any) {
+  return (
+    <div className="flex-1 flex min-w-0 h-full">
+      <div className="flex-1 flex flex-col min-w-0">
         {activeChannel ? (
           <>
-            {/* Chat header (WhatsApp style) */}
             <div className="h-14 px-3 flex items-center gap-3 bg-muted/50 border-b border-border shrink-0">
               <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <Avatar className="h-10 w-10 shrink-0">
-                <AvatarFallback className={cn(
-                  "text-sm",
-                  activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary"
-                )}>
+                <AvatarFallback className={cn("text-sm", activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
                   {activeChannel.type === "dm" ? <MessageCircle className="h-4 w-4" /> : initials(activeChannel.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
                 <p className="text-[11px] text-muted-foreground truncate">
-                  {activeChannel.type === "group"
-                    ? `${channelMembers.length} medlemmar`
-                    : activeChannel.description || ""}
+                  {activeChannel.type === "group" ? `${channelMembers.length} medlemmar` : activeChannel.description || ""}
                 </p>
               </div>
               {activeChannel.type === "group" && (
@@ -522,31 +566,24 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
                 />
               )}
             </div>
-
-            {/* Messages area with wallpaper */}
             <div className="flex-1 flex flex-col min-h-0 relative">
-              {/* Wallpaper pattern */}
-              <div className="absolute inset-0 bg-[hsl(var(--background))] opacity-60" />
               <div className="absolute inset-0" style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
               }} />
-              
               <MessageList
                 messages={messages}
                 reactions={reactions}
                 profileMap={profileMap}
                 userId={user?.id}
-                replyCounts={replyCounts as Record<string, number>}
+                replyCounts={replyCounts}
                 readReceipts={readReceipts}
                 isGroupChat={activeChannel.type === "group"}
                 onReply={setThreadParent}
-                onReact={(msgId, emoji) => toggleReaction.mutate({ messageId: msgId, emoji })}
-                onDelete={(msgId) => deleteMsg.mutate(msgId)}
+                onReact={(msgId: string, emoji: string) => toggleReaction.mutate({ messageId: msgId, emoji })}
+                onDelete={(msgId: string) => deleteMsg.mutate(msgId)}
               />
             </div>
-
-            {/* Compose bar (WhatsApp style) */}
-            <ComposeBar onSend={(content) => sendMsg.mutate({ content })} />
+            <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-muted/20">
@@ -560,8 +597,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
           </div>
         )}
       </div>
-
-      {/* ─── Thread panel ─── */}
       {threadParent && (
         <div className="hidden md:flex w-80 border-l border-border flex-col bg-card">
           <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border shrink-0">
@@ -571,14 +606,14 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
             </button>
           </div>
           <div className="p-3 border-b border-border bg-muted/20">
-            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter(r => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} />
+            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter((r: any) => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji: string) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} />
           </div>
           <ScrollArea className="flex-1 p-3 space-y-2">
-            {threadMessages.map(m => (
+            {threadMessages.map((m: any) => (
               <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} />
             ))}
           </ScrollArea>
-          <ComposeBar onSend={(content) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." />
+          <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." />
         </div>
       )}
     </div>
