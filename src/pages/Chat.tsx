@@ -540,6 +540,9 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
 
 // ─── Chat Main Area (extracted) ───
 function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, activeChannelId, qc, profiles, onLeaveChannel }: any) {
+  const mentionProfiles = useMemo(() => {
+    return profiles.filter((p: Profile) => channelMembers.includes(p.user_id) && p.user_id !== user?.id);
+  }, [profiles, channelMembers, user?.id]);
   return (
     <div className="flex-1 flex min-w-0 h-full">
       <div className="flex-1 flex flex-col min-w-0">
@@ -593,7 +596,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                 onDelete={(msgId: string) => deleteMsg.mutate(msgId)}
               />
             </div>
-            <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} />
+            <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} mentionProfiles={mentionProfiles} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -616,14 +619,14 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
             </button>
           </div>
           <div className="p-3 border-b border-border bg-muted/20">
-            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter((r: any) => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji: string) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} />
+            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter((r: any) => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji: string) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} allProfileMap={profileMap} />
           </div>
           <ScrollArea className="flex-1 p-3 space-y-2">
             {threadMessages.map((m: any) => (
-              <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} />
+              <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} allProfileMap={profileMap} />
             ))}
           </ScrollArea>
-          <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." />
+          <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} />
         </div>
       )}
     </div>
@@ -692,6 +695,7 @@ function MessageList({
                   onReply={() => onReply(msg)}
                   onReact={(emoji) => onReact(msg.id, emoji)}
                   onDelete={() => onDelete(msg.id)}
+                  allProfileMap={profileMap}
                 />
               </div>
             </div>
@@ -711,7 +715,7 @@ function MessageList({
 
 // ─── Message Bubble (WhatsApp style) ───
 function MessageBubble({
-  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete
+  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete, allProfileMap
 }: {
   msg: Message;
   profile?: Profile;
@@ -725,6 +729,7 @@ function MessageBubble({
   onReply?: () => void;
   onReact?: (emoji: string) => void;
   onDelete?: () => void;
+  allProfileMap?: Map<string, Profile>;
 }) {
   const name = profile?.full_name || "Okänd";
   const isOwn = msg.user_id === userId;
@@ -766,7 +771,7 @@ function MessageBubble({
             "prose prose-sm dark:prose-invert max-w-none text-[13.5px] leading-[1.35] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0",
             isOwn && "dark:prose-invert"
           )}>
-            <ReactMarkdown>{msg.content}</ReactMarkdown>
+            <MentionRenderer content={msg.content} profileMap={allProfileMap} currentUserId={userId} />
           </div>
 
           {/* Inline time + read receipt (WhatsApp style) */}
@@ -838,11 +843,109 @@ function MessageBubble({
   );
 }
 
+// ─── Mention Renderer ───
+function MentionRenderer({ content, profileMap, currentUserId }: { content: string; profileMap?: Map<string, Profile>; currentUserId?: string }) {
+  const parts = useMemo(() => {
+    if (!profileMap || profileMap.size === 0) return [{ type: "text" as const, value: content }];
+    
+    const names = Array.from(profileMap.values()).map(p => p.full_name).filter(Boolean);
+    if (names.length === 0) return [{ type: "text" as const, value: content }];
+    
+    const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`(@(?:${escaped.join("|")}))`, "gi");
+    
+    const result: { type: "text" | "mention"; value: string; isSelf?: boolean }[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        result.push({ type: "text", value: content.slice(lastIndex, match.index) });
+      }
+      const mentionName = match[1].slice(1);
+      const mentionedProfile = Array.from(profileMap.values()).find(p => p.full_name.toLowerCase() === mentionName.toLowerCase());
+      const isSelf = mentionedProfile?.user_id === currentUserId;
+      result.push({ type: "mention", value: match[1], isSelf });
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < content.length) {
+      result.push({ type: "text", value: content.slice(lastIndex) });
+    }
+    return result.length > 0 ? result : [{ type: "text" as const, value: content }];
+  }, [content, profileMap, currentUserId]);
+
+  const hasMentions = parts.some(p => p.type === "mention");
+  
+  if (!hasMentions) {
+    return <ReactMarkdown>{content}</ReactMarkdown>;
+  }
+
+  return (
+    <p className="my-0">
+      {parts.map((part, i) => 
+        part.type === "mention" ? (
+          <span key={i} className={cn(
+            "font-semibold rounded px-0.5",
+            part.isSelf ? "bg-primary/20 text-primary" : "text-primary"
+          )}>
+            {part.value}
+          </span>
+        ) : (
+          <span key={i}>{part.value}</span>
+        )
+      )}
+    </p>
+  );
+}
+
 // ─── Compose Bar (WhatsApp style) ───
-function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string }) {
+function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[] }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const mentionRef = useRef<number | null>(null); // cursor position of '@'
+
+  const mentionSuggestions = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return mentionProfiles.filter(p => p.full_name.toLowerCase().includes(q)).slice(0, 6);
+  }, [mentionQuery, mentionProfiles]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    const cursor = e.target.selectionStart || 0;
+    setText(val);
+
+    // Detect @mention trigger
+    const textBefore = val.slice(0, cursor);
+    const atMatch = textBefore.match(/@([^\s@]*)$/);
+    if (atMatch) {
+      mentionRef.current = cursor - atMatch[0].length;
+      setMentionQuery(atMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+      mentionRef.current = null;
+    }
+  };
+
+  const insertMention = (profile: Profile) => {
+    const start = mentionRef.current ?? 0;
+    const cursor = inputRef.current?.selectionStart ?? text.length;
+    const before = text.slice(0, start);
+    const after = text.slice(cursor);
+    const mention = `@${profile.full_name} `;
+    setText(before + mention + after);
+    setMentionQuery(null);
+    mentionRef.current = null;
+    setTimeout(() => {
+      const newPos = start + mention.length;
+      inputRef.current?.setSelectionRange(newPos, newPos);
+      inputRef.current?.focus();
+    }, 0);
+  };
 
   const handleSend = () => {
     const t = text.trim();
@@ -850,11 +953,43 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
     onSend(t);
     setText("");
     setShowEmoji(false);
+    setMentionQuery(null);
     inputRef.current?.focus();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionSuggestions.length > 0 && mentionQuery !== null) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionSuggestions.length - 1)); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); insertMention(mentionSuggestions[mentionIndex]); return; }
+      if (e.key === "Escape") { e.preventDefault(); setMentionQuery(null); return; }
+    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
   return (
-    <div className="bg-muted/50 border-t border-border px-3 py-2 flex items-end gap-2">
+    <div className="bg-muted/50 border-t border-border px-3 py-2 flex items-end gap-2 relative">
+      {/* Mention autocomplete dropdown */}
+      {mentionSuggestions.length > 0 && mentionQuery !== null && (
+        <div className="absolute bottom-full left-3 right-3 mb-1 bg-card border border-border rounded-lg shadow-lg z-30 max-h-48 overflow-y-auto">
+          {mentionSuggestions.map((p, i) => (
+            <button
+              key={p.user_id}
+              onMouseDown={(e) => { e.preventDefault(); insertMention(p); }}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors",
+                i === mentionIndex ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
+              )}
+            >
+              <Avatar className="h-6 w-6 shrink-0">
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(p.full_name)}</AvatarFallback>
+              </Avatar>
+              <span className="truncate font-medium">{p.full_name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <Popover open={showEmoji} onOpenChange={setShowEmoji}>
         <PopoverTrigger asChild>
           <button className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
@@ -869,8 +1004,8 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
       <textarea
         ref={inputRef}
         value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder={disabled ? "Gå med i gruppen för att skriva..." : (placeholder || "Skriv ett meddelande")}
         disabled={disabled}
         rows={1}
