@@ -226,13 +226,16 @@ export default function Statistics() {
       }
     });
     const moduleRanking = Object.entries(moduleMap)
-      .map(([slug, d]) => ({
-        slug,
-        name: Object.entries(PAGE_NAMES).find(([, n]) =>
+      .map(([slug, d]) => {
+        const entry = Object.entries(PAGE_NAMES).find(([, n]) =>
           n.toLowerCase().includes(slug.replace(/-/g, " ").toLowerCase())
-        )?.[1] || slug,
-        views: d.views,
-        avgDuration: d.durCount > 0 ? Math.round(d.totalDur / d.durCount) : 0,
+        );
+        return {
+          slug,
+          route: entry?.[0] || `/${slug}`,
+          name: entry?.[1] || slug,
+          views: d.views,
+          avgDuration: d.durCount > 0 ? Math.round(d.totalDur / d.durCount) : 0,
         engagement: d.views + (d.durCount > 0 ? Math.round(d.totalDur / d.durCount) * 0.5 : 0),
       }))
       .sort((a, b) => b.engagement - a.engagement);
