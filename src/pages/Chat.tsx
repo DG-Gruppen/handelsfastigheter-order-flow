@@ -594,7 +594,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
       </div>
       {threadParent && (
         <div className="hidden md:flex w-80 border-l border-border flex-col bg-card">
-          <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border shrink-0">
+          <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10 shrink-0">
             <h4 className="font-semibold text-sm">Tråd</h4>
             <button onClick={() => setThreadParent(null)} className="p-1 hover:bg-muted rounded-full">
               <X className="h-4 w-4" />
