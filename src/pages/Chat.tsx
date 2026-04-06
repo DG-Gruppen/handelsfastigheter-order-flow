@@ -415,6 +415,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
               profileMap={profileMap}
               userId={user?.id}
               replyCounts={replyCounts as Record<string, number>}
+              readReceipts={readReceipts}
               onReply={setThreadParent}
               onReact={(msgId, emoji) => toggleReaction.mutate({ messageId: msgId, emoji })}
               onDelete={(msgId) => deleteMsg.mutate(msgId)}
