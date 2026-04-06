@@ -194,6 +194,33 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     enabled: !!user,
   });
 
+  // Read status for ALL members in the active channel (for read receipts)
+  const { data: allReadStatus = [] } = useQuery({
+    queryKey: ["chat-all-read-status", activeChannelId],
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_read_status").select("user_id, last_read_at").eq("channel_id", activeChannelId!);
+      return (data ?? []) as { user_id: string; last_read_at: string }[];
+    },
+    enabled: !!activeChannelId,
+  });
+
+  // For each message, compute read receipt status: 'sent' | 'read_some' | 'read_all'
+  const readReceipts = useMemo(() => {
+    if (!activeChannelId || channelMembers.length === 0) return {};
+    const otherMembers = allReadStatus.filter(rs => rs.user_id !== user?.id);
+    const receipts: Record<string, "sent" | "read_some" | "read_all"> = {};
+    messages.forEach(msg => {
+      if (msg.user_id !== user?.id) return; // only show on own messages
+      if (otherMembers.length === 0) { receipts[msg.id] = "sent"; return; }
+      const msgTime = new Date(msg.created_at).getTime();
+      const readBy = otherMembers.filter(rs => new Date(rs.last_read_at).getTime() >= msgTime);
+      if (readBy.length === 0) receipts[msg.id] = "sent";
+      else if (readBy.length >= otherMembers.length) receipts[msg.id] = "read_all";
+      else receipts[msg.id] = "read_some";
+    });
+    return receipts;
+  }, [messages, allReadStatus, channelMembers, user?.id, activeChannelId]);
+
   // Thread reply counts
   const { data: replyCounts = {} } = useQuery({
     queryKey: ["chat-reply-counts", activeChannelId, messages.length],
