@@ -451,13 +451,13 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
 function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc, onClose }: any) {
   return (
     <>
-      <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10">
-        <h2 className="font-semibold text-base text-primary-foreground">Chatt</h2>
+      <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
+        <h2 className="font-semibold text-base">Chatt</h2>
         <div className="flex gap-0.5">
           <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
           <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id: string) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id: string) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
           {onClose && (
-            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/10 rounded-md" aria-label="Stäng chatt">
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:bg-muted rounded-md" aria-label="Stäng chatt">
               <X className="h-4 w-4" />
             </button>
           )}
@@ -542,18 +542,18 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
       <div className="flex-1 flex flex-col min-w-0">
         {activeChannel ? (
           <>
-            <div className="h-14 px-3 flex items-center gap-3 gradient-primary border-b border-primary-foreground/10 shrink-0">
+            <div className="h-14 px-3 flex items-center gap-3 bg-muted/50 border-b border-border shrink-0">
               <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary-foreground/20">
-                <AvatarFallback className={cn("text-sm font-medium", activeChannel.type === "dm" ? "bg-accent text-accent-foreground" : "bg-primary-foreground/20 text-primary-foreground")}>
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarFallback className={cn("text-sm font-medium", activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
                   {activeChannel.type === "dm" ? <MessageCircle className="h-4 w-4" /> : initials(activeChannel.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm truncate text-primary-foreground">{activeChannel.name}</h3>
-                <p className="text-[11px] text-primary-foreground/70 truncate">
+                <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
+                <p className="text-[11px] text-muted-foreground truncate">
                   {activeChannel.type === "group" ? `${channelMembers.length} medlemmar` : activeChannel.description || ""}
                 </p>
               </div>
@@ -601,9 +601,9 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
       </div>
       {threadParent && (
         <div className="hidden md:flex w-80 border-l border-border flex-col bg-card">
-          <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10 shrink-0">
-            <h4 className="font-semibold text-sm text-primary-foreground">Tråd</h4>
-            <button onClick={() => setThreadParent(null)} className="p-1 hover:bg-primary-foreground/10 rounded-full text-primary-foreground">
+          <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border shrink-0">
+            <h4 className="font-semibold text-sm">Tråd</h4>
+            <button onClick={() => setThreadParent(null)} className="p-1 hover:bg-muted rounded-full">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -918,7 +918,7 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10" title="Ny grupp"><Plus className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ny grupp"><Plus className="h-4 w-4" /></Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Skapa grupp</DialogTitle></DialogHeader>
@@ -989,7 +989,7 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10" title="Nytt DM"><Users className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title="Nytt DM"><Users className="h-4 w-4" /></Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Nytt direktmeddelande</DialogTitle></DialogHeader>
