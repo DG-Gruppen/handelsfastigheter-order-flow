@@ -887,7 +887,7 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
         <Button variant="ghost" size="icon" className="h-8 w-8" title="Ny grupp"><Plus className="h-4 w-4" /></Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Skapa kanal</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Skapa grupp</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <Input placeholder="Kanalnamn" value={name} onChange={e => setName(e.target.value)} />
           <Input placeholder="Beskrivning (valfritt)" value={desc} onChange={e => setDesc(e.target.value)} />
