@@ -770,7 +770,7 @@ function MessageBubble({
             "prose prose-sm dark:prose-invert max-w-none text-[13.5px] leading-[1.35] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0",
             isOwn && "dark:prose-invert"
           )}>
-            <MentionRenderer content={msg.content} profileMap={profileMap} currentUserId={userId} />
+            <MentionRenderer content={msg.content} profileMap={allProfileMap} currentUserId={userId} />
           </div>
 
           {/* Inline time + read receipt (WhatsApp style) */}
