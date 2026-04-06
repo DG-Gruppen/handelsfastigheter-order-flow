@@ -578,7 +578,7 @@ function MessageBubble({
 
           {/* Action buttons on hover */}
           <div className={cn(
-            "absolute -top-3 hidden group-hover:flex bg-card border border-border rounded-md shadow-sm z-10",
+            "absolute -top-3 hidden group-hover:flex bg-card text-foreground border border-border rounded-md shadow-sm z-10",
             isOwn ? "left-0" : "right-0"
           )}>
             {QUICK_EMOJIS.slice(0, 3).map(e => (
@@ -586,14 +586,14 @@ function MessageBubble({
             ))}
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
-                <button className="px-1.5 py-1 hover:bg-accent"><SmilePlus className="h-3.5 w-3.5" /></button>
+                <button className="px-1.5 py-1 hover:bg-accent text-foreground"><SmilePlus className="h-3.5 w-3.5" /></button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 border-0" side="top">
                 <Picker data={data} onEmojiSelect={(e: any) => { onReact?.(e.native); setShowEmojiPicker(false); }} theme="auto" previewPosition="none" skinTonePosition="none" />
               </PopoverContent>
             </Popover>
             {onReply && (
-              <button onClick={onReply} className="px-1.5 py-1 hover:bg-accent"><Reply className="h-3.5 w-3.5" /></button>
+              <button onClick={onReply} className="px-1.5 py-1 hover:bg-accent text-foreground"><Reply className="h-3.5 w-3.5" /></button>
             )}
             {isOwn && onDelete && (
               <button onClick={onDelete} className="px-1.5 py-1 hover:bg-destructive/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
