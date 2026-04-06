@@ -596,7 +596,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                 onDelete={(msgId: string) => deleteMsg.mutate(msgId)}
               />
             </div>
-            <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} />
+            <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} mentionProfiles={mentionProfiles} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
