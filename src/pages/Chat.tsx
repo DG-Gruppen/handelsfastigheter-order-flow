@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft, UserPlus, Settings, UserMinus, Check, CheckCheck, Crown } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import { format, isToday, isYesterday } from "date-fns";
+import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
@@ -56,7 +56,7 @@ interface Profile {
   email: string;
 }
 
-// ─── Helper ───
+// ─── Helpers ───
 function initials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
@@ -81,10 +81,21 @@ function nameColor(userId: string) {
 }
 
 function formatMsgTime(dateStr: string) {
+  return format(new Date(dateStr), "HH:mm");
+}
+
+function formatDateSeparator(dateStr: string) {
+  const d = new Date(dateStr);
+  if (isToday(d)) return "Idag";
+  if (isYesterday(d)) return "Igår";
+  return format(d, "d MMMM yyyy", { locale: sv });
+}
+
+function formatConversationTime(dateStr: string) {
   const d = new Date(dateStr);
   if (isToday(d)) return format(d, "HH:mm");
-  if (isYesterday(d)) return "Igår " + format(d, "HH:mm");
-  return format(d, "d MMM HH:mm", { locale: sv });
+  if (isYesterday(d)) return "Igår";
+  return format(d, "dd/MM/yy");
 }
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "👀"];
@@ -105,8 +116,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const { data: channels = [] } = useQuery({
     queryKey: ["chat-channels"],
     queryFn: async () => {
-      // Only fetch channels the user is a member of (RLS enforces this)
-      const { data } = await supabase.from("chat_channels").select("*").eq("is_archived", false).order("name");
+      const { data } = await supabase.from("chat_channels").select("*").eq("is_archived", false).order("updated_at", { ascending: false });
       return (data ?? []) as Channel[];
     },
     enabled: !!user,
@@ -144,6 +154,29 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     profiles.forEach(p => m.set(p.user_id, p));
     return m;
   }, [profiles]);
+
+  // Fetch last message for each channel (for sidebar preview)
+  const { data: lastMessages = {} } = useQuery({
+    queryKey: ["chat-last-messages", channels.map(c => c.id).join(",")],
+    queryFn: async () => {
+      if (channels.length === 0) return {};
+      const result: Record<string, Message> = {};
+      // Fetch last message per channel in parallel
+      const promises = channels.map(async (ch) => {
+        const { data } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .eq("channel_id", ch.id)
+          .is("parent_message_id", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) result[ch.id] = data[0] as Message;
+      });
+      await Promise.all(promises);
+      return result;
+    },
+    enabled: channels.length > 0,
+  });
 
   const activeChannel = channels.find(c => c.id === activeChannelId);
 
@@ -194,7 +227,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     enabled: !!user,
   });
 
-  // Read status for ALL members in the active channel (for read receipts)
   const { data: allReadStatus = [] } = useQuery({
     queryKey: ["chat-all-read-status", activeChannelId],
     queryFn: async () => {
@@ -204,13 +236,12 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     enabled: !!activeChannelId,
   });
 
-  // For each message, compute read receipt status: 'sent' | 'read_some' | 'read_all'
   const readReceipts = useMemo(() => {
     if (!activeChannelId || channelMembers.length === 0) return {};
     const otherMembers = allReadStatus.filter(rs => rs.user_id !== user?.id);
     const receipts: Record<string, "sent" | "read_some" | "read_all"> = {};
     messages.forEach(msg => {
-      if (msg.user_id !== user?.id) return; // only show on own messages
+      if (msg.user_id !== user?.id) return;
       if (otherMembers.length === 0) { receipts[msg.id] = "sent"; return; }
       const msgTime = new Date(msg.created_at).getTime();
       const readBy = otherMembers.filter(rs => new Date(rs.last_read_at).getTime() >= msgTime);
@@ -221,7 +252,6 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     return receipts;
   }, [messages, allReadStatus, channelMembers, user?.id, activeChannelId]);
 
-  // Thread reply counts
   const { data: replyCounts = {} } = useQuery({
     queryKey: ["chat-reply-counts", activeChannelId, messages.length],
     queryFn: async () => {
@@ -240,6 +270,19 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     enabled: messages.length > 0,
   });
 
+  // Unread counts per channel
+  const unreadCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    channels.forEach(ch => {
+      const rs = readStatus.find(r => r.channel_id === ch.id);
+      const lastMsg = lastMessages[ch.id];
+      if (!lastMsg) { counts[ch.id] = 0; return; }
+      if (!rs) { counts[ch.id] = 1; return; } // never read = at least 1
+      counts[ch.id] = new Date(lastMsg.created_at) > new Date(rs.last_read_at) ? 1 : 0;
+    });
+    return counts;
+  }, [channels, readStatus, lastMessages]);
+
   // ─── Realtime ───
   useEffect(() => {
     if (!activeChannelId) return;
@@ -248,17 +291,20 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages", filter: `channel_id=eq.${activeChannelId}` }, () => {
         qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
         qc.invalidateQueries({ queryKey: ["chat-reply-counts", activeChannelId] });
+        qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
         if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "chat_reactions" }, () => {
         qc.invalidateQueries({ queryKey: ["chat-reactions", activeChannelId] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_read_status", filter: `channel_id=eq.${activeChannelId}` }, () => {
+        qc.invalidateQueries({ queryKey: ["chat-all-read-status", activeChannelId] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [activeChannelId, threadParent?.id, qc]);
 
   // ─── Mutations ───
-
   const sendMsg = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
       await supabase.from("chat_messages").insert({
@@ -270,6 +316,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
+      qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
       if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
     },
   });
@@ -280,6 +327,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
+      qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
       if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
     },
   });
@@ -303,25 +351,24 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       { onConflict: "channel_id,user_id" }
     );
     qc.invalidateQueries({ queryKey: ["chat-read-status"] });
+    qc.invalidateQueries({ queryKey: ["chat-all-read-status", channelId] });
   }, [user, qc]);
 
-  // Mark as read when switching channels
   useEffect(() => {
     if (activeChannelId) updateReadStatus(activeChannelId);
   }, [activeChannelId, messages.length]);
 
-  // ─── Filtered channels ───
-  const filteredChannels = useMemo(() => {
+  // ─── Sorted channels (by last message time) ───
+  const sortedChannels = useMemo(() => {
     const s = search.toLowerCase();
-    return channels.filter(c => {
-      // RLS already filters to only member channels, but double-check memberships for UI
-      if (s && !c.name.toLowerCase().includes(s)) return false;
-      return true;
-    });
-  }, [channels, search]);
-
-  const groupChannels = filteredChannels.filter(c => c.type === "group");
-  const dmChannels = filteredChannels.filter(c => c.type === "dm");
+    return channels
+      .filter(c => !s || c.name.toLowerCase().includes(s))
+      .sort((a, b) => {
+        const aTime = lastMessages[a.id]?.created_at || a.created_at;
+        const bTime = lastMessages[b.id]?.created_at || b.created_at;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
+  }, [channels, search, lastMessages]);
 
   const handleSelectChannel = (id: string) => {
     setActiveChannelId(id);
@@ -329,54 +376,113 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     setMobileShowChat(true);
   };
 
+  // Get display name for channel (for DMs, show other person)
+  const getChannelDisplayName = (ch: Channel) => {
+    if (ch.type === "dm") {
+      const otherMemberId = channelMembers.find(uid => uid !== user?.id) || "";
+      const otherProfile = profileMap.get(otherMemberId);
+      return otherProfile?.full_name || ch.name;
+    }
+    return ch.name;
+  };
+
   return (
-    <div className={cn("flex rounded-xl border border-border bg-card overflow-hidden", embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]")}>
-      {/* ─── Sidebar ─── */}
+    <div className={cn(
+      "flex rounded-xl border border-border overflow-hidden shadow-lg",
+      embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]"
+    )}>
+      {/* ─── Conversation List (WhatsApp sidebar) ─── */}
       <div className={cn(
-        "w-full md:w-72 shrink-0 border-r border-border flex flex-col bg-muted/30",
+        "w-full md:w-[340px] shrink-0 border-r border-border flex flex-col bg-card",
         mobileShowChat && "hidden md:flex"
       )}>
-        <div className="p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Chatt</h2>
-            <div className="flex gap-1">
-              <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
-              <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
-            </div>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Sök kanal..." className="pl-8 h-8 text-sm" />
+        {/* Sidebar header */}
+        <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
+          <h2 className="font-semibold text-base">Chatt</h2>
+          <div className="flex gap-0.5">
+            <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
+            <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="px-2 pb-2 space-y-1">
-            {groupChannels.length > 0 && (
-              <>
-                <div className="px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Kanaler</div>
-                {groupChannels.map(c => (
-                  <ChannelItem key={c.id} channel={c} isActive={c.id === activeChannelId} isMember={true} onClick={() => handleSelectChannel(c.id)} />
-                ))}
-              </>
-            )}
-            {dmChannels.length > 0 && (
-              <>
-                <div className="px-2 py-1 mt-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Direktmeddelanden</div>
-                {dmChannels.map(c => {
-                  // For DM, show other person's name
-                  const otherName = c.name;
-                  return (
-                    <ChannelItem key={c.id} channel={{ ...c, name: otherName }} isActive={c.id === activeChannelId} isMember={true} onClick={() => handleSelectChannel(c.id)} isDm />
-                  );
-                })}
-              </>
-            )}
-            {filteredChannels.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">Inga kanaler hittades</p>
-            )}
+        {/* Search */}
+        <div className="px-2 py-1.5">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Sök eller starta en ny chatt" className="pl-9 h-9 text-sm rounded-lg bg-muted/40 border-0 focus-visible:ring-1" />
           </div>
-        </ScrollArea>
+        </div>
+
+        {/* Conversation list */}
+        <div className="flex-1 overflow-y-auto">
+          {sortedChannels.map(c => {
+            const lastMsg = lastMessages[c.id];
+            const lastMsgProfile = lastMsg ? profileMap.get(lastMsg.user_id) : null;
+            const isActive = c.id === activeChannelId;
+            const unread = unreadCounts[c.id] || 0;
+            const isDm = c.type === "dm";
+
+            return (
+              <button
+                key={c.id}
+                onClick={() => handleSelectChannel(c.id)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors border-b border-border/40",
+                  isActive ? "bg-primary/8" : "hover:bg-muted/50"
+                )}
+              >
+                {/* Avatar */}
+                <Avatar className="h-12 w-12 shrink-0">
+                  <AvatarFallback className={cn(
+                    "text-sm font-medium",
+                    isDm ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary"
+                  )}>
+                    {isDm ? <MessageCircle className="h-5 w-5" /> : initials(c.name)}
+                  </AvatarFallback>
+                </Avatar>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>{c.name}</span>
+                    {lastMsg && (
+                      <span className={cn("text-[11px] shrink-0", unread > 0 ? "text-accent font-medium" : "text-muted-foreground")}>
+                        {formatConversationTime(lastMsg.created_at)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {lastMsg && lastMsg.user_id === user?.id && (
+                      <CheckCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    <p className={cn("text-xs truncate", unread > 0 ? "text-foreground font-medium" : "text-muted-foreground")}>
+                      {lastMsg ? (
+                        <>
+                          {c.type === "group" && lastMsg.user_id !== user?.id && (
+                            <span className={cn("font-medium", nameColor(lastMsg.user_id))}>
+                              {lastMsgProfile?.full_name?.split(" ")[0] || ""}:{" "}
+                            </span>
+                          )}
+                          {lastMsg.content.length > 50 ? lastMsg.content.slice(0, 50) + "..." : lastMsg.content}
+                        </>
+                      ) : (
+                        <span className="italic">Inga meddelanden</span>
+                      )}
+                    </p>
+                    {unread > 0 && (
+                      <span className="ml-auto shrink-0 bg-accent text-accent-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
+                        {unread}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+          {sortedChannels.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">Inga konversationer</p>
+          )}
+        </div>
       </div>
 
       {/* ─── Main chat area ─── */}
@@ -386,15 +492,26 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
       )}>
         {activeChannel ? (
           <>
-            {/* Header */}
-            <div className="h-14 px-4 flex items-center gap-3 border-b border-border shrink-0">
-              <button className="md:hidden" onClick={() => setMobileShowChat(false)}>
+            {/* Chat header (WhatsApp style) */}
+            <div className="h-14 px-3 flex items-center gap-3 bg-muted/50 border-b border-border shrink-0">
+              <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              {activeChannel.type === "group" ? <Hash className="h-5 w-5 text-muted-foreground" /> : <MessageCircle className="h-5 w-5 text-muted-foreground" />}
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarFallback className={cn(
+                  "text-sm",
+                  activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary"
+                )}>
+                  {activeChannel.type === "dm" ? <MessageCircle className="h-4 w-4" /> : initials(activeChannel.name)}
+                </AvatarFallback>
+              </Avatar>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
-                {activeChannel.description && <p className="text-xs text-muted-foreground truncate">{activeChannel.description}</p>}
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {activeChannel.type === "group"
+                    ? `${channelMembers.length} medlemmar`
+                    : activeChannel.description || ""}
+                </p>
               </div>
               {activeChannel.type === "group" && (
                 <ChannelMembersManager
@@ -408,27 +525,39 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
               )}
             </div>
 
-            {/* Messages */}
-            <MessageList
-              messages={messages}
-              reactions={reactions}
-              profileMap={profileMap}
-              userId={user?.id}
-              replyCounts={replyCounts as Record<string, number>}
-              readReceipts={readReceipts}
-              onReply={setThreadParent}
-              onReact={(msgId, emoji) => toggleReaction.mutate({ messageId: msgId, emoji })}
-              onDelete={(msgId) => deleteMsg.mutate(msgId)}
-            />
+            {/* Messages area with wallpaper */}
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              {/* Wallpaper pattern */}
+              <div className="absolute inset-0 bg-[hsl(var(--background))] opacity-60" />
+              <div className="absolute inset-0" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }} />
+              
+              <MessageList
+                messages={messages}
+                reactions={reactions}
+                profileMap={profileMap}
+                userId={user?.id}
+                replyCounts={replyCounts as Record<string, number>}
+                readReceipts={readReceipts}
+                isGroupChat={activeChannel.type === "group"}
+                onReply={setThreadParent}
+                onReact={(msgId, emoji) => toggleReaction.mutate({ messageId: msgId, emoji })}
+                onDelete={(msgId) => deleteMsg.mutate(msgId)}
+              />
+            </div>
 
-            {/* Compose */}
+            {/* Compose bar (WhatsApp style) */}
             <ComposeBar onSend={(content) => sendMsg.mutate({ content })} />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center space-y-2">
-              <MessageCircle className="h-12 w-12 mx-auto opacity-30" />
-              <p className="text-sm">Välj en kanal för att börja chatta</p>
+          <div className="flex-1 flex items-center justify-center bg-muted/20">
+            <div className="text-center space-y-3 max-w-sm px-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="h-8 w-8 text-primary/50" />
+              </div>
+              <h3 className="text-xl font-light text-muted-foreground">SHF Chatt</h3>
+              <p className="text-sm text-muted-foreground/70">Välj en konversation eller starta en ny chatt</p>
             </div>
           </div>
         )}
@@ -436,18 +565,19 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
 
       {/* ─── Thread panel ─── */}
       {threadParent && (
-        <div className="hidden md:flex w-80 border-l border-border flex-col bg-muted/20">
-          <div className="h-14 px-4 flex items-center justify-between border-b border-border shrink-0">
+        <div className="hidden md:flex w-80 border-l border-border flex-col bg-card">
+          <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border shrink-0">
             <h4 className="font-semibold text-sm">Tråd</h4>
-            <button onClick={() => setThreadParent(null)}><X className="h-4 w-4" /></button>
+            <button onClick={() => setThreadParent(null)} className="p-1 hover:bg-muted rounded-full">
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          {/* Parent message */}
-          <div className="p-3 border-b border-border">
-            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter(r => r.message_id === threadParent.id)} compact onReact={(emoji) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} />
+          <div className="p-3 border-b border-border bg-muted/20">
+            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter(r => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} />
           </div>
           <ScrollArea className="flex-1 p-3 space-y-2">
             {threadMessages.map(m => (
-              <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact onDelete={() => deleteMsg.mutate(m.id)} />
+              <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} />
             ))}
           </ScrollArea>
           <ComposeBar onSend={(content) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." />
@@ -457,26 +587,9 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   );
 }
 
-// ─── Sub-components ───
-
-function ChannelItem({ channel, isActive, isMember, onClick, isDm }: { channel: Channel; isActive: boolean; isMember: boolean; onClick: () => void; isDm?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left",
-        isActive ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent/50 text-foreground",
-        !isMember && "opacity-60"
-      )}
-    >
-      {isDm ? <MessageCircle className="h-4 w-4 shrink-0" /> : <Hash className="h-4 w-4 shrink-0" />}
-      <span className="truncate">{channel.name}</span>
-    </button>
-  );
-}
-
+// ─── Message List with date separators ───
 function MessageList({
-  messages, reactions, profileMap, userId, replyCounts, readReceipts, onReply, onReact, onDelete
+  messages, reactions, profileMap, userId, replyCounts, readReceipts, isGroupChat, onReply, onReact, onDelete
 }: {
   messages: Message[];
   reactions: Reaction[];
@@ -484,6 +597,7 @@ function MessageList({
   userId?: string;
   replyCounts: Record<string, number>;
   readReceipts: Record<string, "sent" | "read_some" | "read_all">;
+  isGroupChat: boolean;
   onReply: (msg: Message) => void;
   onReact: (msgId: string, emoji: string) => void;
   onDelete: (msgId: string) => void;
@@ -495,44 +609,66 @@ function MessageList({
   }, [messages.length]);
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 relative z-10">
       {messages.map((msg, i) => {
         const prev = messages[i - 1];
         const sameUser = prev && prev.user_id === msg.user_id;
         const timeDiff = prev ? new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() : Infinity;
-        const grouped = sameUser && timeDiff < 5 * 60 * 1000;
+        const grouped = sameUser && timeDiff < 2 * 60 * 1000; // 2 min grouping
         const msgReactions = reactions.filter(r => r.message_id === msg.id);
         const replyCount = replyCounts[msg.id] || 0;
         const isOwn = msg.user_id === userId;
 
+        // Date separator
+        const showDate = !prev || !isSameDay(new Date(msg.created_at), new Date(prev.created_at));
+
         return (
-          <div key={msg.id} className={cn("flex", isOwn ? "justify-end" : "justify-start", !grouped && i > 0 && "mt-4")}>
-            <div className={cn("max-w-[75%]", isOwn ? "items-end" : "items-start")}>
-              <MessageBubble
-                msg={msg}
-                profile={profileMap.get(msg.user_id)}
-                userId={userId}
-                reactions={msgReactions}
-                grouped={grouped}
-                replyCount={replyCount}
-                readReceipt={readReceipts[msg.id]}
-                onReply={() => onReply(msg)}
-                onReact={(emoji) => onReact(msg.id, emoji)}
-                onDelete={() => onDelete(msg.id)}
-              />
+          <div key={msg.id}>
+            {showDate && (
+              <div className="flex items-center justify-center py-3">
+                <span className="bg-card/90 backdrop-blur-sm text-muted-foreground text-[11px] font-medium px-3 py-1 rounded-lg shadow-sm border border-border/50">
+                  {formatDateSeparator(msg.created_at)}
+                </span>
+              </div>
+            )}
+            <div className={cn(
+              "flex mb-0.5",
+              isOwn ? "justify-end" : "justify-start",
+              !grouped && i > 0 && !showDate && "mt-3"
+            )}>
+              <div className="max-w-[80%] md:max-w-[65%]">
+                <MessageBubble
+                  msg={msg}
+                  profile={profileMap.get(msg.user_id)}
+                  userId={userId}
+                  reactions={msgReactions}
+                  grouped={grouped}
+                  replyCount={replyCount}
+                  readReceipt={readReceipts[msg.id]}
+                  isGroupChat={isGroupChat}
+                  onReply={() => onReply(msg)}
+                  onReact={(emoji) => onReact(msg.id, emoji)}
+                  onDelete={() => onDelete(msg.id)}
+                />
+              </div>
             </div>
           </div>
         );
       })}
       {messages.length === 0 && (
-        <p className="text-center text-muted-foreground text-sm py-8">Inga meddelanden ännu. Skriv det första!</p>
+        <div className="flex items-center justify-center py-12">
+          <span className="bg-card/90 backdrop-blur-sm text-muted-foreground text-xs px-4 py-2 rounded-lg shadow-sm border border-border/50">
+            Inga meddelanden ännu – skriv det första! 💬
+          </span>
+        </div>
       )}
     </div>
   );
 }
 
+// ─── Message Bubble (WhatsApp style) ───
 function MessageBubble({
-  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, onReply, onReact, onDelete
+  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete
 }: {
   msg: Message;
   profile?: Profile;
@@ -542,6 +678,7 @@ function MessageBubble({
   compact?: boolean;
   replyCount?: number;
   readReceipt?: "sent" | "read_some" | "read_all";
+  isGroupChat?: boolean;
   onReply?: () => void;
   onReact?: (emoji: string) => void;
   onDelete?: () => void;
@@ -550,7 +687,6 @@ function MessageBubble({
   const isOwn = msg.user_id === userId;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // Group reactions by emoji
   const groupedReactions = useMemo(() => {
     const map = new Map<string, { emoji: string; count: number; hasOwn: boolean }>();
     reactions.forEach(r => {
@@ -565,138 +701,152 @@ function MessageBubble({
     return Array.from(map.values());
   }, [reactions, userId]);
 
+  // WhatsApp-style bubble with tail
   return (
-    <div className={cn(
-      "flex gap-2 group",
-      compact && "gap-1.5",
-      isOwn ? "flex-row-reverse" : "flex-row"
-    )}>
-      {!grouped && !compact ? (
-        <Avatar className={cn("h-7 w-7 shrink-0 mt-1", compact && "h-6 w-6")}>
-          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(name)}</AvatarFallback>
-        </Avatar>
-      ) : !compact ? (
-        <div className="w-7 shrink-0" />
-      ) : null}
-      <div className={cn("min-w-0", isOwn ? "items-end" : "items-start")}>
-        <div className={cn(
-          "relative rounded-2xl px-3 py-2 shadow-sm",
-          isOwn
-            ? "bg-primary text-primary-foreground rounded-tr-sm"
-            : "bg-muted rounded-tl-sm",
-          grouped && isOwn && "rounded-tr-2xl",
-          grouped && !isOwn && "rounded-tl-2xl"
-        )}>
-          {!grouped && !isOwn && (
-            <div className="flex items-baseline gap-2 mb-0.5">
-              <span className={cn("text-xs font-semibold", nameColor(msg.user_id))}>{name}</span>
-              <span className={cn("text-[10px]", isOwn ? "text-primary-foreground/60" : "text-muted-foreground")}>{formatMsgTime(msg.created_at)}</span>
-              {msg.is_edited && <span className={cn("text-[10px]", isOwn ? "text-primary-foreground/50" : "text-muted-foreground")}>(redigerad)</span>}
-            </div>
-          )}
-          {!grouped && isOwn && (
-            <div className="flex items-center gap-1.5 mb-0.5 justify-end">
-              <span className="text-[10px] text-primary-foreground/60">{formatMsgTime(msg.created_at)}</span>
-              {msg.is_edited && <span className="text-[10px] text-primary-foreground/50">(redigerad)</span>}
-              {readReceipt && (
-                readReceipt === "read_all"
-                  ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" />
-                  : readReceipt === "read_some"
-                  ? <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/50" />
-                  : <Check className="h-3.5 w-3.5 text-primary-foreground/50" />
-              )}
-            </div>
-          )}
+    <div className="group relative">
+      <div className={cn(
+        "relative rounded-lg px-2.5 pt-1.5 pb-1 shadow-sm",
+        isOwn
+          ? "bg-[hsl(162_31%_90%)] dark:bg-[hsl(162_20%_20%)] rounded-tr-none"
+          : "bg-card rounded-tl-none",
+        grouped && "rounded-lg",
+        compact && "px-2 py-1"
+      )}>
+        {/* Sender name (group chats only, not own) */}
+        {!grouped && !isOwn && isGroupChat && !compact && (
+          <p className={cn("text-[12px] font-semibold mb-0.5 leading-tight", nameColor(msg.user_id))}>{name}</p>
+        )}
+
+        {/* Message content + inline time */}
+        <div className="flex items-end gap-2">
           <div className={cn(
-            "prose prose-sm max-w-none text-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0.5",
-            isOwn ? "prose-invert [&_a]:text-primary-foreground/90" : "dark:prose-invert"
+            "prose prose-sm dark:prose-invert max-w-none text-[13.5px] leading-[1.35] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0",
+            isOwn && "dark:prose-invert"
           )}>
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
 
-          {/* Action buttons on hover */}
-          <div className={cn(
-            "absolute bottom-full mb-1 hidden group-hover:inline-flex bg-card text-foreground border border-border rounded-md shadow-sm z-10 whitespace-nowrap",
-            isOwn ? "right-0" : "left-0"
-          )}>
-            {QUICK_EMOJIS.slice(0, 3).map(e => (
-              <button key={e} onClick={() => onReact?.(e)} className="px-1.5 py-1 hover:bg-accent text-sm">{e}</button>
-            ))}
-            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-              <PopoverTrigger asChild>
-                <button className="px-1.5 py-1 hover:bg-accent text-foreground"><SmilePlus className="h-3.5 w-3.5" /></button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-0" side="top">
-                <Picker data={data} onEmojiSelect={(e: any) => { onReact?.(e.native); setShowEmojiPicker(false); }} theme="auto" previewPosition="none" skinTonePosition="none" />
-              </PopoverContent>
-            </Popover>
-            {onReply && (
-              <button onClick={onReply} className="px-1.5 py-1 hover:bg-accent text-foreground"><Reply className="h-3.5 w-3.5" /></button>
+          {/* Inline time + read receipt (WhatsApp style) */}
+          <span className="inline-flex items-center gap-0.5 shrink-0 self-end translate-y-0.5 ml-1">
+            {msg.is_edited && <span className="text-[10px] text-muted-foreground/60 italic mr-0.5">redigerad</span>}
+            <span className={cn("text-[10px] leading-none", isOwn ? "text-muted-foreground/60" : "text-muted-foreground/60")}>{formatMsgTime(msg.created_at)}</span>
+            {isOwn && readReceipt && (
+              readReceipt === "read_all"
+                ? <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                : readReceipt === "read_some"
+                ? <CheckCheck className="h-3.5 w-3.5 text-muted-foreground/50" />
+                : <Check className="h-3.5 w-3.5 text-muted-foreground/50" />
             )}
-            {isOwn && onDelete && (
-              <button onClick={onDelete} className="px-1.5 py-1 hover:bg-destructive/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-            )}
-          </div>
+          </span>
         </div>
+      </div>
 
-        {/* Reactions */}
-        {groupedReactions.length > 0 && (
-          <div className={cn("flex flex-wrap gap-1 mt-1", isOwn && "justify-end")}>
-            {groupedReactions.map(r => (
-              <button
-                key={r.emoji}
-                onClick={() => onReact?.(r.emoji)}
-                className={cn(
-                  "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors",
-                  r.hasOwn ? "bg-primary/10 border-primary/30" : "bg-muted border-border hover:bg-accent"
-                )}
-              >
-                <span>{r.emoji}</span>
-                <span className="font-medium">{r.count}</span>
-              </button>
-            ))}
-          </div>
+      {/* Hover action bar */}
+      <div className={cn(
+        "absolute top-0 hidden group-hover:inline-flex bg-card text-foreground border border-border rounded-md shadow-md z-20 -translate-y-1/2",
+        isOwn ? "right-1" : "left-1"
+      )}>
+        {QUICK_EMOJIS.slice(0, 3).map(e => (
+          <button key={e} onClick={() => onReact?.(e)} className="px-1.5 py-1 hover:bg-accent text-sm">{e}</button>
+        ))}
+        <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+          <PopoverTrigger asChild>
+            <button className="px-1.5 py-1 hover:bg-accent text-foreground"><SmilePlus className="h-3.5 w-3.5" /></button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 border-0" side="top">
+            <Picker data={data} onEmojiSelect={(e: any) => { onReact?.(e.native); setShowEmojiPicker(false); }} theme="auto" previewPosition="none" skinTonePosition="none" />
+          </PopoverContent>
+        </Popover>
+        {onReply && (
+          <button onClick={onReply} className="px-1.5 py-1 hover:bg-accent text-foreground"><Reply className="h-3.5 w-3.5" /></button>
         )}
-
-        {/* Thread reply count */}
-        {!!replyCount && replyCount > 0 && (
-          <button onClick={onReply} className={cn("flex items-center gap-1 mt-1 text-xs text-primary hover:underline", isOwn && "justify-end")}>
-            <Reply className="h-3 w-3" />
-            {replyCount} {replyCount === 1 ? "svar" : "svar"}
-          </button>
+        {isOwn && onDelete && (
+          <button onClick={onDelete} className="px-1.5 py-1 hover:bg-destructive/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
         )}
       </div>
+
+      {/* Reactions */}
+      {groupedReactions.length > 0 && (
+        <div className={cn("flex flex-wrap gap-1 mt-0.5", isOwn && "justify-end")}>
+          {groupedReactions.map(r => (
+            <button
+              key={r.emoji}
+              onClick={() => onReact?.(r.emoji)}
+              className={cn(
+                "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border transition-colors shadow-sm",
+                r.hasOwn ? "bg-primary/10 border-primary/30" : "bg-card border-border hover:bg-accent"
+              )}
+            >
+              <span>{r.emoji}</span>
+              <span className="font-medium">{r.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Thread reply count */}
+      {!!replyCount && replyCount > 0 && (
+        <button onClick={onReply} className={cn("flex items-center gap-1 mt-0.5 text-[11px] text-primary hover:underline", isOwn && "justify-end")}>
+          <Reply className="h-3 w-3" />
+          {replyCount} svar
+        </button>
+      )}
     </div>
   );
 }
 
+// ─── Compose Bar (WhatsApp style) ───
 function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
 
   const handleSend = () => {
     const t = text.trim();
     if (!t) return;
     onSend(t);
     setText("");
+    setShowEmoji(false);
     inputRef.current?.focus();
   };
 
   return (
-    <div className="border-t border-border p-3 flex gap-2">
+    <div className="bg-muted/50 border-t border-border px-3 py-2 flex items-end gap-2">
+      <Popover open={showEmoji} onOpenChange={setShowEmoji}>
+        <PopoverTrigger asChild>
+          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
+            <Smile className="h-5 w-5" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 border-0" side="top" align="start">
+          <Picker data={data} onEmojiSelect={(e: any) => { setText(prev => prev + e.native); setShowEmoji(false); inputRef.current?.focus(); }} theme="auto" previewPosition="none" skinTonePosition="none" />
+        </PopoverContent>
+      </Popover>
+
       <textarea
         ref={inputRef}
         value={text}
         onChange={e => setText(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-        placeholder={disabled ? "Gå med i kanalen för att skriva..." : (placeholder || "Skriv ett meddelande...")}
+        placeholder={disabled ? "Gå med i kanalen för att skriva..." : (placeholder || "Skriv ett meddelande")}
         disabled={disabled}
         rows={1}
-        className="flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground disabled:opacity-50"
+        className="flex-1 resize-none rounded-lg border-0 bg-card px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground disabled:opacity-50 shadow-sm max-h-28"
+        style={{ minHeight: "40px" }}
       />
-      <Button size="icon" onClick={handleSend} disabled={!text.trim() || disabled} className="rounded-xl shrink-0">
-        <Send className="h-4 w-4" />
-      </Button>
+
+      <button
+        onClick={handleSend}
+        disabled={!text.trim() || disabled}
+        className={cn(
+          "p-2.5 rounded-full shrink-0 self-end transition-colors",
+          text.trim()
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            : "text-muted-foreground"
+        )}
+      >
+        <Send className="h-5 w-5" />
+      </button>
     </div>
   );
 }
@@ -724,7 +874,6 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
     if (!name.trim() || !userId) return;
     const { data: ch, error } = await supabase.from("chat_channels").insert({ name: name.trim(), description: desc.trim(), type: "group", created_by: userId }).select("id").single();
     if (error || !ch) { toast({ title: "Fel", description: error?.message || "Kunde inte skapa kanal", variant: "destructive" }); return; }
-    // Add creator + selected members
     const members = [userId, ...selectedMembers].map(uid => ({ channel_id: ch.id, user_id: uid }));
     await supabase.from("chat_channel_members").insert(members);
     setName(""); setDesc(""); setSelectedMembers([]); setMemberSearch("");
@@ -794,7 +943,6 @@ function NewDmDialog({ open, onOpenChange, userId, profiles, memberships, channe
 
   const startDm = async (targetUserId: string) => {
     if (!userId) return;
-    // Use RPC to create/find DM atomically (handles member insertion securely)
     const { data: channelId, error } = await supabase.rpc("create_dm_channel", { _target_user_id: targetUserId });
     if (error || !channelId) {
       toast({ title: "Fel", description: error?.message || "Kunde inte skapa DM", variant: "destructive" });
