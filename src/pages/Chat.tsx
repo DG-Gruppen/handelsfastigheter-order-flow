@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft, UserPlus, Settings, UserMinus, Check, Crown } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, MoreHorizontal, Pencil, Trash2, X, ArrowLeft, UserPlus, Settings, UserMinus, Check, CheckCheck, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,6 +193,33 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
     },
     enabled: !!user,
   });
+
+  // Read status for ALL members in the active channel (for read receipts)
+  const { data: allReadStatus = [] } = useQuery({
+    queryKey: ["chat-all-read-status", activeChannelId],
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_read_status").select("user_id, last_read_at").eq("channel_id", activeChannelId!);
+      return (data ?? []) as { user_id: string; last_read_at: string }[];
+    },
+    enabled: !!activeChannelId,
+  });
+
+  // For each message, compute read receipt status: 'sent' | 'read_some' | 'read_all'
+  const readReceipts = useMemo(() => {
+    if (!activeChannelId || channelMembers.length === 0) return {};
+    const otherMembers = allReadStatus.filter(rs => rs.user_id !== user?.id);
+    const receipts: Record<string, "sent" | "read_some" | "read_all"> = {};
+    messages.forEach(msg => {
+      if (msg.user_id !== user?.id) return; // only show on own messages
+      if (otherMembers.length === 0) { receipts[msg.id] = "sent"; return; }
+      const msgTime = new Date(msg.created_at).getTime();
+      const readBy = otherMembers.filter(rs => new Date(rs.last_read_at).getTime() >= msgTime);
+      if (readBy.length === 0) receipts[msg.id] = "sent";
+      else if (readBy.length >= otherMembers.length) receipts[msg.id] = "read_all";
+      else receipts[msg.id] = "read_some";
+    });
+    return receipts;
+  }, [messages, allReadStatus, channelMembers, user?.id, activeChannelId]);
 
   // Thread reply counts
   const { data: replyCounts = {} } = useQuery({
@@ -388,6 +415,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
               profileMap={profileMap}
               userId={user?.id}
               replyCounts={replyCounts as Record<string, number>}
+              readReceipts={readReceipts}
               onReply={setThreadParent}
               onReact={(msgId, emoji) => toggleReaction.mutate({ messageId: msgId, emoji })}
               onDelete={(msgId) => deleteMsg.mutate(msgId)}
@@ -448,13 +476,14 @@ function ChannelItem({ channel, isActive, isMember, onClick, isDm }: { channel: 
 }
 
 function MessageList({
-  messages, reactions, profileMap, userId, replyCounts, onReply, onReact, onDelete
+  messages, reactions, profileMap, userId, replyCounts, readReceipts, onReply, onReact, onDelete
 }: {
   messages: Message[];
   reactions: Reaction[];
   profileMap: Map<string, Profile>;
   userId?: string;
   replyCounts: Record<string, number>;
+  readReceipts: Record<string, "sent" | "read_some" | "read_all">;
   onReply: (msg: Message) => void;
   onReact: (msgId: string, emoji: string) => void;
   onDelete: (msgId: string) => void;
@@ -486,6 +515,7 @@ function MessageList({
                 reactions={msgReactions}
                 grouped={grouped}
                 replyCount={replyCount}
+                readReceipt={readReceipts[msg.id]}
                 onReply={() => onReply(msg)}
                 onReact={(emoji) => onReact(msg.id, emoji)}
                 onDelete={() => onDelete(msg.id)}
@@ -502,7 +532,7 @@ function MessageList({
 }
 
 function MessageBubble({
-  msg, profile, userId, reactions = [], grouped, compact, replyCount, onReply, onReact, onDelete
+  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, onReply, onReact, onDelete
 }: {
   msg: Message;
   profile?: Profile;
@@ -511,6 +541,7 @@ function MessageBubble({
   grouped?: boolean;
   compact?: boolean;
   replyCount?: number;
+  readReceipt?: "sent" | "read_some" | "read_all";
   onReply?: () => void;
   onReact?: (emoji: string) => void;
   onDelete?: () => void;
@@ -564,9 +595,16 @@ function MessageBubble({
             </div>
           )}
           {!grouped && isOwn && (
-            <div className="flex items-baseline gap-2 mb-0.5 justify-end">
+            <div className="flex items-center gap-1.5 mb-0.5 justify-end">
               <span className="text-[10px] text-primary-foreground/60">{formatMsgTime(msg.created_at)}</span>
               {msg.is_edited && <span className="text-[10px] text-primary-foreground/50">(redigerad)</span>}
+              {readReceipt && (
+                readReceipt === "read_all"
+                  ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" />
+                  : readReceipt === "read_some"
+                  ? <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/50" />
+                  : <Check className="h-3.5 w-3.5 text-primary-foreground/50" />
+              )}
             </div>
           )}
           <div className={cn(
