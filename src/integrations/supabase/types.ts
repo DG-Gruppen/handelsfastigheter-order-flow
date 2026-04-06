@@ -1876,6 +1876,33 @@ export type Database = {
         }
         Relationships: []
       }
+      search_log: {
+        Row: {
+          created_at: string
+          id: string
+          query_text: string
+          result_count: number
+          session_hash: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query_text: string
+          result_count?: number
+          session_hash?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query_text?: string
+          result_count?: number
+          session_hash?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       shared_password_groups: {
         Row: {
           group_id: string
@@ -2143,6 +2170,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_anonymous_chat_stats: { Args: { _since: string }; Returns: Json }
       get_manager_user_ids: {
         Args: never
         Returns: {
