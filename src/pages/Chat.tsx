@@ -581,13 +581,13 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
             <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-muted/20">
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
             <div className="text-center space-y-3 max-w-sm px-4">
-              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <MessageCircle className="h-8 w-8 text-primary/50" />
+              <div className="mx-auto w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-lg">
+                <MessageCircle className="h-10 w-10 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-light text-muted-foreground">SHF Chatt</h3>
-              <p className="text-sm text-muted-foreground/70">Välj en konversation eller starta en ny chatt</p>
+              <h3 className="text-xl font-semibold text-primary font-[var(--font-heading)]">SHF Chatt</h3>
+              <p className="text-sm text-muted-foreground">Välj en konversation eller starta en ny chatt</p>
             </div>
           </div>
         )}
