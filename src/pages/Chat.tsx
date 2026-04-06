@@ -102,7 +102,7 @@ function formatConversationTime(dateStr: string) {
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "👀"];
 
 // ─── Main ───
-export default function Chat({ embedded }: { embedded?: boolean } = {}) {
+export default function Chat({ embedded, onClose }: { embedded?: boolean; onClose?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -402,6 +402,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
           showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
           showNewDm={showNewDm} setShowNewDm={setShowNewDm}
           profiles={profiles} memberships={memberships} channels={channels} qc={qc}
+          onClose={onClose}
         />
       </div>
       <div className={cn("w-full flex flex-col min-w-0 md:hidden", !mobileShowChat && "hidden")}>
@@ -427,6 +428,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
             showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
             showNewDm={showNewDm} setShowNewDm={setShowNewDm}
             profiles={profiles} memberships={memberships} channels={channels} qc={qc}
+            onClose={onClose}
           />
         </div>
         <div className="flex-1 flex flex-col min-w-0">
@@ -446,7 +448,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
 }
 
 // ─── Conversation Sidebar (extracted) ───
-function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc }: any) {
+function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc, onClose }: any) {
   return (
     <>
       <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10">
@@ -454,6 +456,11 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
         <div className="flex gap-0.5">
           <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
           <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} userId={user?.id} profiles={profiles} memberships={memberships} channels={channels} onSelect={(id: string) => { handleSelectChannel(id); setShowNewDm(false); }} onCreated={(id: string) => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); handleSelectChannel(id); setShowNewDm(false); }} />
+          {onClose && (
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/10 rounded-md" aria-label="Stäng chatt">
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
       <div className="px-2 py-1.5">
