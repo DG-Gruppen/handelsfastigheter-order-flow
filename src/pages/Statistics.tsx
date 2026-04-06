@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+const PageDetailView = lazy(() => import("@/components/statistics/PageDetailView"));
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
