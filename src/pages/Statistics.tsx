@@ -236,8 +236,9 @@ export default function Statistics() {
           name: entry?.[1] || slug,
           views: d.views,
           avgDuration: d.durCount > 0 ? Math.round(d.totalDur / d.durCount) : 0,
-        engagement: d.views + (d.durCount > 0 ? Math.round(d.totalDur / d.durCount) * 0.5 : 0),
-      }))
+          engagement: d.views + (d.durCount > 0 ? Math.round(d.totalDur / d.durCount) * 0.5 : 0),
+        };
+      })
       .sort((a, b) => b.engagement - a.engagement);
 
     // ─── Module trends (daily views per module for top 5) ───
