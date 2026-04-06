@@ -449,7 +449,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
 function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc }: any) {
   return (
     <>
-      <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
+      <div className="h-14 px-4 flex items-center justify-between gradient-primary border-b border-primary-foreground/10">
         <h2 className="font-semibold text-base">Chatt</h2>
         <div className="flex gap-0.5">
           <NewChannelDialog open={showNewChannel} onOpenChange={setShowNewChannel} userId={user?.id} profiles={profiles} onCreated={() => { qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); setShowNewChannel(false); }} />
