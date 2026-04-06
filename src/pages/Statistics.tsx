@@ -72,6 +72,7 @@ const tooltipStyle = {
 
 export default function Statistics() {
   const [period, setPeriod] = useState<PeriodKey>("30d");
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
   const since = useMemo(() => startOfDay(subDays(new Date(), days)).toISOString(), [days]);
 
