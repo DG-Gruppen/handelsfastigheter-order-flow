@@ -518,7 +518,7 @@ export default function Statistics() {
                       const maxEng = metrics.moduleRanking[0]?.engagement || 1;
                       const pct = (m.engagement / maxEng) * 100;
                       return (
-                        <div key={m.slug} className="flex items-center gap-3">
+                        <div key={m.slug} className="flex items-center gap-3 cursor-pointer hover:bg-muted/30 rounded-lg p-1 -mx-1 transition-colors" onClick={() => setSelectedPage(m.route)}>
                           <span className="text-xs text-muted-foreground w-5 text-right font-medium">{i + 1}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-0.5">
