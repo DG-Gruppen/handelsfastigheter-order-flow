@@ -1364,6 +1364,39 @@ export type Database = {
         }
         Relationships: []
       }
+      page_analytics: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          module_slug: string | null
+          page_path: string
+          referrer_path: string | null
+          session_hash: string
+          viewport_width: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          module_slug?: string | null
+          page_path: string
+          referrer_path?: string | null
+          session_hash: string
+          viewport_width?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          module_slug?: string | null
+          page_path?: string
+          referrer_path?: string | null
+          session_hash?: string
+          viewport_width?: number | null
+        }
+        Relationships: []
+      }
       password_access_log: {
         Row: {
           action: string
