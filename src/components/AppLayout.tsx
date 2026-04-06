@@ -17,6 +17,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const themeLoaded = useRef(false);
   const { settings } = useNavSettings();
 
+  usePageTracking();
+
   useEffect(() => {
     if (!themeLoaded.current) {
       const savedTheme = profile?.theme_preference;
