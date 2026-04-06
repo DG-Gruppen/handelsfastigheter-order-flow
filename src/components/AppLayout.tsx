@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
 import { useNavSettings } from "@/hooks/useNavSettings";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import AppSidebar from "@/components/AppSidebar";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 
