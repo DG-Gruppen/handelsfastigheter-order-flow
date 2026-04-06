@@ -61,6 +61,25 @@ function initials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+const NAME_COLORS = [
+  "text-rose-600 dark:text-rose-400",
+  "text-blue-600 dark:text-blue-400",
+  "text-emerald-600 dark:text-emerald-400",
+  "text-violet-600 dark:text-violet-400",
+  "text-amber-600 dark:text-amber-400",
+  "text-cyan-600 dark:text-cyan-400",
+  "text-pink-600 dark:text-pink-400",
+  "text-teal-600 dark:text-teal-400",
+  "text-orange-600 dark:text-orange-400",
+  "text-indigo-600 dark:text-indigo-400",
+];
+
+function nameColor(userId: string) {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = ((hash << 5) - hash + userId.charCodeAt(i)) | 0;
+  return NAME_COLORS[Math.abs(hash) % NAME_COLORS.length];
+}
+
 function formatMsgTime(dateStr: string) {
   const d = new Date(dateStr);
   if (isToday(d)) return format(d, "HH:mm");
