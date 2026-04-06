@@ -82,7 +82,7 @@ export default function Statistics() {
     queryFn: async () => {
       const { data } = await supabase
         .from("page_analytics")
-        .select("page_path, module_slug, session_hash, duration_seconds, viewport_width, created_at")
+        .select("page_path, module_slug, session_hash, duration_seconds, viewport_width, created_at, referrer_path")
         .gte("created_at", since)
         .order("created_at", { ascending: true });
       return data ?? [];
