@@ -843,6 +843,61 @@ function MessageBubble({
   );
 }
 
+// ─── Mention Renderer ───
+function MentionRenderer({ content, profileMap, currentUserId }: { content: string; profileMap?: Map<string, Profile>; currentUserId?: string }) {
+  const parts = useMemo(() => {
+    if (!profileMap || profileMap.size === 0) return [{ type: "text" as const, value: content }];
+    
+    const names = Array.from(profileMap.values()).map(p => p.full_name).filter(Boolean);
+    if (names.length === 0) return [{ type: "text" as const, value: content }];
+    
+    const escaped = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`(@(?:${escaped.join("|")}))`, "gi");
+    
+    const result: { type: "text" | "mention"; value: string; isSelf?: boolean }[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        result.push({ type: "text", value: content.slice(lastIndex, match.index) });
+      }
+      const mentionName = match[1].slice(1);
+      const mentionedProfile = Array.from(profileMap.values()).find(p => p.full_name.toLowerCase() === mentionName.toLowerCase());
+      const isSelf = mentionedProfile?.user_id === currentUserId;
+      result.push({ type: "mention", value: match[1], isSelf });
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < content.length) {
+      result.push({ type: "text", value: content.slice(lastIndex) });
+    }
+    return result.length > 0 ? result : [{ type: "text" as const, value: content }];
+  }, [content, profileMap, currentUserId]);
+
+  const hasMentions = parts.some(p => p.type === "mention");
+  
+  if (!hasMentions) {
+    return <ReactMarkdown>{content}</ReactMarkdown>;
+  }
+
+  return (
+    <p className="my-0">
+      {parts.map((part, i) => 
+        part.type === "mention" ? (
+          <span key={i} className={cn(
+            "font-semibold rounded px-0.5",
+            part.isSelf ? "bg-primary/20 text-primary" : "text-primary"
+          )}>
+            {part.value}
+          </span>
+        ) : (
+          <span key={i}>{part.value}</span>
+        )
+      )}
+    </p>
+  );
+}
+
 // ─── Compose Bar (WhatsApp style) ───
 function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[] }) {
   const [text, setText] = useState("");
