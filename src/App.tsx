@@ -32,6 +32,7 @@ const Passwords = lazy(() => import("./pages/Passwords"));
 const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
+const Statistics = lazy(() => import("./pages/Statistics"));
 
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ExternalLogin = lazy(() => import("./pages/ExternalLogin"));
@@ -92,6 +93,7 @@ const App = () => (
                       <Route path="/kulturen" element={<Culture />} />
                       <Route path="/nyheter" element={<News />} />
                       <Route path="/arbetsklader" element={<Workwear />} />
+                      <Route path="/statistik" element={<Statistics />} />
                       
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
