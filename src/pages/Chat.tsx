@@ -829,7 +829,7 @@ function ComposeBar({ onSend, disabled, placeholder }: { onSend: (content: strin
         value={text}
         onChange={e => setText(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-        placeholder={disabled ? "Gå med i kanalen för att skriva..." : (placeholder || "Skriv ett meddelande")}
+        placeholder={disabled ? "Gå med i gruppen för att skriva..." : (placeholder || "Skriv ett meddelande")}
         disabled={disabled}
         rows={1}
         className="flex-1 resize-none rounded-lg border-0 bg-card px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground disabled:opacity-50 shadow-sm max-h-28"
