@@ -695,6 +695,7 @@ function MessageList({
                   onReply={() => onReply(msg)}
                   onReact={(emoji) => onReact(msg.id, emoji)}
                   onDelete={() => onDelete(msg.id)}
+                  allProfileMap={profileMap}
                 />
               </div>
             </div>
