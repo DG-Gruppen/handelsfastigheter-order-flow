@@ -114,7 +114,7 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
   const { data: profiles = [] } = useQuery({
     queryKey: ["chat-profiles"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name, email").eq("is_hidden", false);
+      const { data } = await supabase.from("profiles").select("user_id, full_name, email");
       return (data ?? []) as Profile[];
     },
     enabled: !!user,
