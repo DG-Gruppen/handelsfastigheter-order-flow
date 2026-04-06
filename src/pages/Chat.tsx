@@ -474,20 +474,23 @@ function MessageList({
         const grouped = sameUser && timeDiff < 5 * 60 * 1000;
         const msgReactions = reactions.filter(r => r.message_id === msg.id);
         const replyCount = replyCounts[msg.id] || 0;
+        const isOwn = msg.user_id === userId;
 
         return (
-          <div key={msg.id} className={cn("group", !grouped && i > 0 && "mt-4")}>
-            <MessageBubble
-              msg={msg}
-              profile={profileMap.get(msg.user_id)}
-              userId={userId}
-              reactions={msgReactions}
-              grouped={grouped}
-              replyCount={replyCount}
-              onReply={() => onReply(msg)}
-              onReact={(emoji) => onReact(msg.id, emoji)}
-              onDelete={() => onDelete(msg.id)}
-            />
+          <div key={msg.id} className={cn("flex", isOwn ? "justify-end" : "justify-start", !grouped && i > 0 && "mt-4")}>
+            <div className={cn("max-w-[75%]", isOwn ? "items-end" : "items-start")}>
+              <MessageBubble
+                msg={msg}
+                profile={profileMap.get(msg.user_id)}
+                userId={userId}
+                reactions={msgReactions}
+                grouped={grouped}
+                replyCount={replyCount}
+                onReply={() => onReply(msg)}
+                onReact={(emoji) => onReact(msg.id, emoji)}
+                onDelete={() => onDelete(msg.id)}
+              />
+            </div>
           </div>
         );
       })}
