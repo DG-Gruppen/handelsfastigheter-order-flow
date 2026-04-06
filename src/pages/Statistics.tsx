@@ -478,7 +478,7 @@ export default function Statistics() {
                       {metrics.topPages.slice(0, 15).map((page, i) => {
                         const pct = metrics.totalViews > 0 ? (page.views / metrics.totalViews) * 100 : 0;
                         return (
-                          <tr key={page.path} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                          <tr key={page.path} className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setSelectedPage(page.path)}>
                             <td className="py-2.5 pr-4 text-muted-foreground font-medium">{i + 1}</td>
                             <td className="py-2.5 pr-4">
                               <span className="font-medium">{page.name}</span>
