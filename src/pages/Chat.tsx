@@ -416,35 +416,30 @@ export default function Chat({ embedded }: { embedded?: boolean } = {}) {
         />
       </div>
 
-      {/* ─── Desktop layout (resizable) ─── */}
+      {/* ─── Desktop layout (resizable sidebar) ─── */}
       <div className="hidden md:flex flex-1 min-w-0 h-full">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-            <div className="flex flex-col h-full bg-card border-r border-border">
-              <ConversationSidebar
-                search={search} setSearch={setSearch}
-                sortedChannels={sortedChannels} lastMessages={lastMessages} profileMap={profileMap}
-                activeChannelId={activeChannelId} unreadCounts={unreadCounts}
-                user={user} handleSelectChannel={handleSelectChannel}
-                showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
-                showNewDm={showNewDm} setShowNewDm={setShowNewDm}
-                profiles={profiles} memberships={memberships} channels={channels} qc={qc}
-              />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={70} minSize={40}>
-            <ChatMainArea
-              activeChannel={activeChannel} user={user} channelMembers={channelMembers}
-              messages={messages} reactions={reactions} profileMap={profileMap}
-              replyCounts={replyCounts as Record<string, number>} readReceipts={readReceipts}
-              threadParent={threadParent} threadMessages={threadMessages}
-              setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
-              sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
-              activeChannelId={activeChannelId} qc={qc} profiles={profiles}
-            />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <div className="flex flex-col bg-card border-r border-border overflow-hidden" style={{ width: 340, minWidth: 200, maxWidth: '50%', resize: 'horizontal', overflow: 'auto' }}>
+          <ConversationSidebar
+            search={search} setSearch={setSearch}
+            sortedChannels={sortedChannels} lastMessages={lastMessages} profileMap={profileMap}
+            activeChannelId={activeChannelId} unreadCounts={unreadCounts}
+            user={user} handleSelectChannel={handleSelectChannel}
+            showNewChannel={showNewChannel} setShowNewChannel={setShowNewChannel}
+            showNewDm={showNewDm} setShowNewDm={setShowNewDm}
+            profiles={profiles} memberships={memberships} channels={channels} qc={qc}
+          />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <ChatMainArea
+            activeChannel={activeChannel} user={user} channelMembers={channelMembers}
+            messages={messages} reactions={reactions} profileMap={profileMap}
+            replyCounts={replyCounts as Record<string, number>} readReceipts={readReceipts}
+            threadParent={threadParent} threadMessages={threadMessages}
+            setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
+            sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
+            activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+          />
+        </div>
       </div>
     </div>
   );
