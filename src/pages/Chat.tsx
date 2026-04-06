@@ -619,7 +619,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
             </button>
           </div>
           <div className="p-3 border-b border-border bg-muted/20">
-            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter((r: any) => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji: string) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} />
+            <MessageBubble msg={threadParent} profile={profileMap.get(threadParent.user_id)} userId={user?.id} reactions={reactions.filter((r: any) => r.message_id === threadParent.id)} compact isGroupChat={true} onReact={(emoji: string) => toggleReaction.mutate({ messageId: threadParent.id, emoji })} allProfileMap={profileMap} />
           </div>
           <ScrollArea className="flex-1 p-3 space-y-2">
             {threadMessages.map((m: any) => (
