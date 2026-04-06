@@ -623,7 +623,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
           </div>
           <ScrollArea className="flex-1 p-3 space-y-2">
             {threadMessages.map((m: any) => (
-              <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} />
+              <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} allProfileMap={profileMap} />
             ))}
           </ScrollArea>
           <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} />
