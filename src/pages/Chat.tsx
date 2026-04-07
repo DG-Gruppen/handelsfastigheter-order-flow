@@ -1253,10 +1253,13 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
   );
 }
 
-function ChannelActionMenu({ channel, userId, onLeft }: { channel: Channel; userId?: string; onLeft: () => void }) {
+function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Channel; userId?: string; onLeft: () => void; onRenamed?: () => void }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const isOwner = channel.created_by === userId;
   const isGroup = channel.type === "group";
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState(channel.name);
 
   const handleLeave = async () => {
     if (!userId) return;
@@ -1266,25 +1269,56 @@ function ChannelActionMenu({ channel, userId, onLeft }: { channel: Channel; user
     }
     const { error } = await supabase.from("chat_channel_members").delete().eq("channel_id", channel.id).eq("user_id", userId);
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
-    // Also remove read status
     await supabase.from("chat_read_status").delete().eq("channel_id", channel.id).eq("user_id", userId);
     toast({ title: isGroup ? "Du lämnade gruppen" : "Konversation stängd" });
     onLeft();
   };
 
+  const handleRename = async () => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === channel.name) { setRenaming(false); return; }
+    const { error } = await supabase.from("chat_channels").update({ name: trimmed }).eq("id", channel.id);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Gruppen omdöpt" });
+    queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
+    setRenaming(false);
+    onRenamed?.();
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleLeave} className="text-destructive focus:text-destructive">
-          {isGroup ? <LogOut className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
-          {isGroup ? "Lämna grupp" : "Stäng konversation"}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {isGroup && isOwner && (
+            <DropdownMenuItem onClick={() => { setNewName(channel.name); setRenaming(true); }}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Byt namn
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={handleLeave} className="text-destructive focus:text-destructive">
+            {isGroup ? <LogOut className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+            {isGroup ? "Lämna grupp" : "Stäng konversation"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={renaming} onOpenChange={setRenaming}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Byt namn på grupp</DialogTitle>
+          </DialogHeader>
+          <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nytt gruppnamn" onKeyDown={e => e.key === "Enter" && handleRename()} autoFocus />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => setRenaming(false)}>Avbryt</Button>
+            <Button size="sm" onClick={handleRename} disabled={!newName.trim() || newName.trim() === channel.name}>Spara</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
