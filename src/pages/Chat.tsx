@@ -284,26 +284,39 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
     return counts;
   }, [channels, readStatus, lastMessages]);
 
-  // ─── Realtime ───
+  // ─── Realtime: global subscription for sidebar (all channels) ───
   useEffect(() => {
-    if (!activeChannelId) return;
-    const channel = supabase
-      .channel(`chat-${activeChannelId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages", filter: `channel_id=eq.${activeChannelId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
-        qc.invalidateQueries({ queryKey: ["chat-reply-counts", activeChannelId] });
+    if (!user) return;
+    const globalChannel = supabase
+      .channel("chat-global")
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, (payload: any) => {
+        const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
+        // Always refresh sidebar data
         qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
-        if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
+        qc.invalidateQueries({ queryKey: ["chat-read-status"] });
+        qc.invalidateQueries({ queryKey: ["chat-channels"] });
+        // Also update bubble unread
+        qc.invalidateQueries({ queryKey: ["chat-bubble-unread"] });
+        // If the change is for the active channel, update messages too
+        if (changedChannelId && changedChannelId === activeChannelId) {
+          qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
+          qc.invalidateQueries({ queryKey: ["chat-reply-counts", activeChannelId] });
+          if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
+        }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "chat_reactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["chat-reactions", activeChannelId] });
+        if (activeChannelId) qc.invalidateQueries({ queryKey: ["chat-reactions", activeChannelId] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_read_status", filter: `channel_id=eq.${activeChannelId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["chat-all-read-status", activeChannelId] });
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_read_status" }, (payload: any) => {
+        const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
+        qc.invalidateQueries({ queryKey: ["chat-read-status"] });
+        if (changedChannelId && changedChannelId === activeChannelId) {
+          qc.invalidateQueries({ queryKey: ["chat-all-read-status", activeChannelId] });
+        }
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [activeChannelId, threadParent?.id, qc]);
+    return () => { supabase.removeChannel(globalChannel); };
+  }, [user, activeChannelId, threadParent?.id, qc]);
 
   // ─── Mutations ───
   const sendMsg = useMutation({
