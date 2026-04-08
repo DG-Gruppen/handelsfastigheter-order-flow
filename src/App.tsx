@@ -33,6 +33,7 @@ const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
 const Statistics = lazy(() => import("./pages/Statistics"));
+const ExternalDashboard = lazy(() => import("./pages/ExternalDashboard"));
 
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ExternalLogin = lazy(() => import("./pages/ExternalLogin"));
