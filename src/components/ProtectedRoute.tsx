@@ -30,7 +30,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     return <>{children}</>;
   }
 
-  if (!hasModuleAccess) {
+  // Allow external users to reach /dashboard so Dashboard can redirect them to their first module
+  if (!hasModuleAccess && !(location.pathname === "/dashboard")) {
     return <Navigate to="/dashboard" replace />;
   }
 
