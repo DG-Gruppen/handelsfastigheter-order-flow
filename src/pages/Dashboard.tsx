@@ -72,21 +72,12 @@ async function fetchLatestNews() {
 /* ── Component ── */
 export default function Dashboard() {
   const { user, profile, roles } = useAuth();
-  const { accessibleModules, loading: modulesLoading } = useModules();
   const isIT = roles.includes("it");
   const isExternal = profile?.is_external === true;
 
-  // External users have no dashboard access – redirect to their first permitted module
-  if (isExternal && !modulesLoading && accessibleModules.length > 0) {
-    const first = accessibleModules[0];
-    return <Navigate to={first.route} replace />;
-  }
-  if (isExternal && !modulesLoading && accessibleModules.length === 0) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">Du har ingen åtkomst till några moduler. Kontakta administratören.</p>
-      </div>
-    );
+  // External users get their own dashboard
+  if (isExternal) {
+    return <Navigate to="/extern/dashboard" replace />;
   }
 
   const { data: recognitions = [] } = useQuery({
