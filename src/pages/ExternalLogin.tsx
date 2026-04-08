@@ -17,10 +17,15 @@ export default function ExternalLogin() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate("/dashboard");
+    if (!loading && user && profile) {
+      if (profile.is_external) {
+        // External users go to a dedicated redirect that picks their first accessible module
+        navigate("/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, profile, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
