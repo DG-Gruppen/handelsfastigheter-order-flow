@@ -316,6 +316,20 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
           qc.invalidateQueries({ queryKey: ["chat-all-read-status", activeChannelId] });
         }
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_channel_members" }, (payload: any) => {
+        const memberUserId = payload.new?.user_id || payload.old?.user_id;
+        if (memberUserId === user.id || !memberUserId) {
+          qc.invalidateQueries({ queryKey: ["chat-channels"] });
+          qc.invalidateQueries({ queryKey: ["chat-memberships"] });
+          qc.invalidateQueries({ queryKey: ["chat-bubble-unread"] });
+        }
+        if (activeChannelId) {
+          const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
+          if (changedChannelId === activeChannelId) {
+            qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] });
+          }
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(globalChannel); };
   }, [user, activeChannelId, threadParent?.id, qc]);
