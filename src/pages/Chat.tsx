@@ -785,13 +785,13 @@ function MessageBubble({
         {msg.image_url && (
           <Dialog>
             <DialogTrigger asChild>
-              <button type="button" className="block mb-1 w-full max-w-[260px] cursor-pointer">
+              <button type="button" className="block mb-1 cursor-pointer overflow-hidden rounded-md" style={{ maxWidth: 'min(260px, 100%)' }}>
                 <img src={msg.image_url} alt="Bifogad bild" className="rounded-md w-full max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
               </button>
             </DialogTrigger>
-            <DialogContent className="!w-auto !max-w-[90vw] max-h-[90vh] p-0 border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-black/60 [&>button]:rounded-full [&>button]:p-1">
+            <DialogContent className="!w-auto !max-w-[90vw] !max-h-[90vh] p-2 border-none bg-black/95 shadow-2xl [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:z-10">
               <DialogTitle className="sr-only">Bifogad bild</DialogTitle>
-              <img src={msg.image_url} alt="Bifogad bild" className="max-w-[90vw] max-h-[85vh] object-contain rounded-md" />
+              <img src={msg.image_url} alt="Bifogad bild" className="block max-w-[85vw] max-h-[80vh] object-contain rounded-md mx-auto" />
             </DialogContent>
           </Dialog>
         )}
