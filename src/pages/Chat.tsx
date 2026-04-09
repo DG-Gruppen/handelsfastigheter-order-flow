@@ -783,9 +783,16 @@ function MessageBubble({
 
         {/* Image attachment */}
         {msg.image_url && (
-          <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mb-1">
-            <img src={msg.image_url} alt="Bifogad bild" className="rounded-md max-w-[260px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity" />
-          </a>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button type="button" className="block mb-1 w-full max-w-[260px] cursor-pointer">
+                <img src={msg.image_url} alt="Bifogad bild" className="rounded-md w-full max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[90vw] max-h-[90vh] p-2 flex items-center justify-center bg-black/95 border-none">
+              <img src={msg.image_url} alt="Bifogad bild" className="max-w-full max-h-[85vh] object-contain rounded-md" />
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Message content + inline time */}
