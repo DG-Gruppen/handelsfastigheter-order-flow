@@ -789,9 +789,11 @@ function MessageBubble({
                 <img src={msg.image_url} alt="Bifogad bild" className="rounded-md w-full max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
               </button>
             </DialogTrigger>
-            <DialogContent className="!w-auto !max-w-[90vw] !max-h-[90vh] p-2 border-none bg-black/95 shadow-2xl [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:z-10">
+            <DialogContent className="!w-auto !max-w-[calc(100vw-1rem)] !bg-transparent !p-0 !shadow-none !border-0 [&>button]:right-2 [&>button]:top-2 [&>button]:z-10 [&>button]:rounded-full [&>button]:bg-background/90 [&>button]:text-foreground [&>button]:opacity-100 [&>button]:hover:bg-muted">
               <DialogTitle className="sr-only">Bifogad bild</DialogTitle>
-              <img src={msg.image_url} alt="Bifogad bild" className="block max-w-[85vw] max-h-[80vh] object-contain rounded-md mx-auto" />
+              <div className="flex max-h-[calc(100vh-2rem)] max-w-[calc(100vw-1rem)] items-center justify-center overflow-hidden rounded-xl border border-border bg-card p-2 shadow-2xl sm:p-3">
+                <img src={msg.image_url} alt="Bifogad bild" className="block h-auto max-h-[calc(100vh-4rem)] w-auto max-w-[calc(100vw-2rem)] rounded-md object-contain" />
+              </div>
             </DialogContent>
           </Dialog>
         )}
