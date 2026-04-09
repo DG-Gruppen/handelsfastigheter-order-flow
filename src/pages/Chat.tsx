@@ -1309,6 +1309,8 @@ function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Ch
   const isGroup = channel.type === "group";
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState(channel.name);
+  const [confirmDisband, setConfirmDisband] = useState(false);
+  const [disbanding, setDisbanding] = useState(false);
 
   const handleLeave = async () => {
     if (!userId) return;
@@ -1320,6 +1322,25 @@ function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Ch
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     await supabase.from("chat_read_status").delete().eq("channel_id", channel.id).eq("user_id", userId);
     toast({ title: isGroup ? "Du lämnade gruppen" : "Konversation stängd" });
+    onLeft();
+  };
+
+  const handleDisband = async () => {
+    if (!userId) return;
+    setDisbanding(true);
+    // Delete all messages, reactions, read statuses, members, then the channel
+    await supabase.from("chat_reactions").delete().in("message_id",
+      (await supabase.from("chat_messages").select("id").eq("channel_id", channel.id)).data?.map(m => m.id) || []
+    );
+    await supabase.from("chat_messages").delete().eq("channel_id", channel.id);
+    await supabase.from("chat_read_status").delete().eq("channel_id", channel.id);
+    await supabase.from("chat_channel_members").delete().eq("channel_id", channel.id);
+    const { error } = await supabase.from("chat_channels").delete().eq("id", channel.id);
+    setDisbanding(false);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Gruppen har stängts ner" });
+    queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
+    queryClient.invalidateQueries({ queryKey: ["chat-memberships"] });
     onLeft();
   };
 
@@ -1349,12 +1370,43 @@ function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Ch
               Byt namn
             </DropdownMenuItem>
           )}
+          {isGroup && isOwner && (
+            <DropdownMenuItem onClick={() => setConfirmDisband(true)} className="text-destructive focus:text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Stäng ner grupp
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleLeave} className="text-destructive focus:text-destructive">
             {isGroup ? <LogOut className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
             {isGroup ? "Lämna grupp" : "Stäng konversation"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Confirm disband */}
+      <AlertDialog open={confirmDisband} onOpenChange={setConfirmDisband}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Stäng ner gruppen?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Detta tar bort <span className="font-semibold">alla meddelanden, medlemmar och gruppen "{channel.name}"</span> permanent. Åtgärden kan inte ångras.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disbanding}>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisband}
+              disabled={disbanding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disbanding ? "Tar bort..." : "Ja, stäng ner gruppen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={renaming} onOpenChange={setRenaming}>
         <DialogContent className="max-w-sm">
