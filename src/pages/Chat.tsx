@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff, Pencil, UsersRound, AlertTriangle } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff, Pencil, UsersRound, AlertTriangle, ImagePlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,7 @@ interface Message {
   channel_id: string;
   user_id: string;
   content: string;
+  image_url: string | null;
   parent_message_id: string | null;
   is_edited: boolean;
   created_at: string;
@@ -321,13 +322,14 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
 
   // ─── Mutations ───
   const sendMsg = useMutation({
-    mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
+    mutationFn: async ({ content, parentId, imageUrl }: { content: string; parentId?: string; imageUrl?: string }) => {
       await supabase.from("chat_messages").insert({
         channel_id: activeChannelId!,
         user_id: user!.id,
         content,
         parent_message_id: parentId ?? null,
-      });
+        image_url: imageUrl ?? null,
+      } as any);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
@@ -610,7 +612,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                 onDelete={(msgId: string) => deleteMsg.mutate(msgId)}
               />
             </div>
-            <ComposeBar onSend={(content: string) => sendMsg.mutate({ content })} mentionProfiles={mentionProfiles} />
+            <ComposeBar onSend={(content: string, imageUrl?: string) => sendMsg.mutate({ content, imageUrl })} userId={user?.id} mentionProfiles={mentionProfiles} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -640,7 +642,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
               <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} allProfileMap={profileMap} />
             ))}
           </ScrollArea>
-          <ComposeBar onSend={(content: string) => sendMsg.mutate({ content, parentId: threadParent.id })} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} />
+          <ComposeBar onSend={(content: string, imageUrl?: string) => sendMsg.mutate({ content, parentId: threadParent.id, imageUrl })} userId={user?.id} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} />
         </div>
       )}
     </div>
@@ -779,14 +781,23 @@ function MessageBubble({
           <p className={cn("text-[12px] font-semibold mb-0.5 leading-tight", nameColor(msg.user_id))}>{name}</p>
         )}
 
+        {/* Image attachment */}
+        {msg.image_url && (
+          <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mb-1">
+            <img src={msg.image_url} alt="Bifogad bild" className="rounded-md max-w-[260px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+          </a>
+        )}
+
         {/* Message content + inline time */}
         <div className="flex items-end gap-2">
-          <div className={cn(
-            "prose prose-sm dark:prose-invert max-w-none text-[13.5px] leading-[1.35] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0",
-            isOwn && "dark:prose-invert"
-          )}>
-            <MentionRenderer content={msg.content} profileMap={allProfileMap} currentUserId={userId} />
-          </div>
+          {msg.content && (
+            <div className={cn(
+              "prose prose-sm dark:prose-invert max-w-none text-[13.5px] leading-[1.35] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0",
+              isOwn && "dark:prose-invert"
+            )}>
+              <MentionRenderer content={msg.content} profileMap={allProfileMap} currentUserId={userId} />
+            </div>
+          )}
 
           {/* Inline time + read receipt (WhatsApp style) */}
           <span className="inline-flex items-center gap-0.5 shrink-0 self-end translate-y-0.5 ml-1">
@@ -913,13 +924,16 @@ function MentionRenderer({ content, profileMap, currentUserId }: { content: stri
 }
 
 // ─── Compose Bar (WhatsApp style) ───
-function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { onSend: (content: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[] }) {
+function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userId }: { onSend: (content: string, imageUrl?: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[]; userId?: string }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
-  const mentionRef = useRef<number | null>(null); // cursor position of '@'
+  const mentionRef = useRef<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
 
   const mentionSuggestions = useMemo(() => {
     if (mentionQuery === null) return [];
@@ -931,8 +945,6 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { o
     const val = e.target.value;
     const cursor = e.target.selectionStart || 0;
     setText(val);
-
-    // Detect @mention trigger
     const textBefore = val.slice(0, cursor);
     const atMatch = textBefore.match(/@([^\s@]*)$/);
     if (atMatch) {
@@ -961,11 +973,29 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { o
     }, 0);
   };
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    e.target.value = "";
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    const path = `${userId}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from("chat-images").upload(path, file);
+    if (error) {
+      setUploading(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("chat-images").getPublicUrl(path);
+    setPendingImage(urlData.publicUrl);
+    setUploading(false);
+  };
+
   const handleSend = () => {
     const t = text.trim();
-    if (!t) return;
-    onSend(t);
+    if (!t && !pendingImage) return;
+    onSend(t || "📷", pendingImage ?? undefined);
     setText("");
+    setPendingImage(null);
     setShowEmoji(false);
     setMentionQuery(null);
     inputRef.current?.focus();
@@ -982,7 +1012,17 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { o
   };
 
   return (
-    <div className="bg-muted/50 border-t border-border px-3 py-2 flex items-end gap-2 relative">
+    <div className="bg-muted/50 border-t border-border px-3 py-2 flex flex-col gap-1 relative">
+      {/* Pending image preview */}
+      {pendingImage && (
+        <div className="relative inline-block mb-1">
+          <img src={pendingImage} alt="Förhandsgranskning" className="rounded-md max-h-24 max-w-[160px] object-cover border border-border" />
+          <button onClick={() => setPendingImage(null)} className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5 shadow-md">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Mention autocomplete dropdown */}
       {mentionSuggestions.length > 0 && mentionQuery !== null && (
         <div className="absolute bottom-full left-3 right-3 mb-1 bg-card border border-border rounded-lg shadow-lg z-30 max-h-48 overflow-y-auto">
@@ -1004,41 +1044,53 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [] }: { o
         </div>
       )}
 
-      <Popover open={showEmoji} onOpenChange={setShowEmoji}>
-        <PopoverTrigger asChild>
-          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
-            <Smile className="h-5 w-5" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 border-0" side="top" align="start">
-          <Picker data={data} onEmojiSelect={(e: any) => { setText(prev => prev + e.native); setShowEmoji(false); inputRef.current?.focus(); }} theme="auto" previewPosition="none" skinTonePosition="none" />
-        </PopoverContent>
-      </Popover>
+      <div className="flex items-end gap-2">
+        <Popover open={showEmoji} onOpenChange={setShowEmoji}>
+          <PopoverTrigger asChild>
+            <button className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end">
+              <Smile className="h-5 w-5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 border-0" side="top" align="start">
+            <Picker data={data} onEmojiSelect={(e: any) => { setText(prev => prev + e.native); setShowEmoji(false); inputRef.current?.focus(); }} theme="auto" previewPosition="none" skinTonePosition="none" />
+          </PopoverContent>
+        </Popover>
 
-      <textarea
-        ref={inputRef}
-        value={text}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder={disabled ? "Gå med i gruppen för att skriva..." : (placeholder || "Skriv ett meddelande")}
-        disabled={disabled}
-        rows={1}
-        className="flex-1 resize-none rounded-lg border-0 bg-card px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground disabled:opacity-50 shadow-sm max-h-28"
-        style={{ minHeight: "40px" }}
-      />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled || uploading}
+          className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end"
+          title="Bifoga bild"
+        >
+          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
-      <button
-        onClick={handleSend}
-        disabled={!text.trim() || disabled}
-        className={cn(
-          "p-2.5 rounded-full shrink-0 self-end transition-colors",
-          text.trim()
-            ? "gradient-primary text-primary-foreground shadow-md hover:opacity-90"
-            : "text-muted-foreground"
-        )}
-      >
-        <Send className="h-5 w-5" />
-      </button>
+        <textarea
+          ref={inputRef}
+          value={text}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder={disabled ? "Gå med i gruppen för att skriva..." : (placeholder || "Skriv ett meddelande")}
+          disabled={disabled}
+          rows={1}
+          className="flex-1 resize-none rounded-lg border-0 bg-card px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground disabled:opacity-50 shadow-sm max-h-28"
+          style={{ minHeight: "40px" }}
+        />
+
+        <button
+          onClick={handleSend}
+          disabled={(!text.trim() && !pendingImage) || disabled}
+          className={cn(
+            "p-2.5 rounded-full shrink-0 self-end transition-colors",
+            (text.trim() || pendingImage)
+              ? "gradient-primary text-primary-foreground shadow-md hover:opacity-90"
+              : "text-muted-foreground"
+          )}
+        >
+          <Send className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 }
