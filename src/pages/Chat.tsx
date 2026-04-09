@@ -1371,7 +1371,7 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
