@@ -1344,9 +1344,9 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
             <Separator />
           </>
         )}
-        <div className="overflow-hidden">
-          <label className="text-sm font-medium mb-1 block">Nuvarande medlemmar ({currentMembers.length})</label>
-          <ScrollArea className="max-h-[50vh]">
+        <div className="flex flex-col min-h-0 flex-1">
+          <label className="text-sm font-medium mb-1 block shrink-0">Nuvarande medlemmar ({currentMembers.length})</label>
+          <div className="min-h-0 flex-1 overflow-y-auto max-h-[50vh]">
             <div className="space-y-0.5">
               {currentMembers.map(uid => {
                 const p = profiles.find(pr => pr.user_id === uid);
