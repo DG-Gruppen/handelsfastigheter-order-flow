@@ -1083,7 +1083,22 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
           <Input placeholder="Gruppnamn" value={name} onChange={e => setName(e.target.value)} />
           <Input placeholder="Beskrivning (valfritt)" value={desc} onChange={e => setDesc(e.target.value)} />
           <div>
-            <label className="text-sm font-medium mb-1 block">Bjud in medlemmar</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium">Bjud in medlemmar</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  const allIds = filteredProfiles.map(p => p.user_id);
+                  setSelectedMembers(prev => prev.length === allIds.length ? [] : allIds);
+                }}
+              >
+                <UsersRound className="h-3.5 w-3.5" />
+                {selectedMembers.length === filteredProfiles.length ? "Avmarkera alla" : "Lägg till alla"}
+              </Button>
+            </div>
             <Input placeholder="Sök kollega..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="mb-2" />
             {selectedMembers.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
