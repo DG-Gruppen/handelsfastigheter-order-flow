@@ -1279,7 +1279,7 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
           <span className="text-xs">{currentMembers.length}</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader><DialogTitle>Gruppmedlemmar</DialogTitle></DialogHeader>
         {isCreator && (
           <>
@@ -1322,7 +1322,7 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
         )}
         <div>
           <label className="text-sm font-medium mb-1 block">Nuvarande medlemmar ({currentMembers.length})</label>
-          <ScrollArea className="max-h-48">
+          <ScrollArea className="max-h-[50vh]">
             <div className="space-y-0.5">
               {currentMembers.map(uid => {
                 const p = profiles.find(pr => pr.user_id === uid);
