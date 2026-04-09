@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff, Pencil } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff, Pencil, UsersRound, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
@@ -1082,7 +1083,22 @@ function NewChannelDialog({ open, onOpenChange, userId, profiles, onCreated }: {
           <Input placeholder="Gruppnamn" value={name} onChange={e => setName(e.target.value)} />
           <Input placeholder="Beskrivning (valfritt)" value={desc} onChange={e => setDesc(e.target.value)} />
           <div>
-            <label className="text-sm font-medium mb-1 block">Bjud in medlemmar</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium">Bjud in medlemmar</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  const allIds = filteredProfiles.map(p => p.user_id);
+                  setSelectedMembers(prev => prev.length === allIds.length ? [] : allIds);
+                }}
+              >
+                <UsersRound className="h-3.5 w-3.5" />
+                {selectedMembers.length === filteredProfiles.length ? "Avmarkera alla" : "Lägg till alla"}
+              </Button>
+            </div>
             <Input placeholder="Sök kollega..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="mb-2" />
             {selectedMembers.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-2">
@@ -1215,7 +1231,27 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
         <DialogHeader><DialogTitle>Gruppmedlemmar</DialogTitle></DialogHeader>
         {isCreator && (
           <>
-            <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+            <div className="flex items-center gap-2">
+              <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="flex-1" />
+              {filteredProfiles.filter(p => !currentMembers.includes(p.user_id)).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 h-9 text-xs gap-1"
+                  onClick={async () => {
+                    const toAdd = filteredProfiles.filter(p => !currentMembers.includes(p.user_id));
+                    const rows = toAdd.map(p => ({ channel_id: channelId, user_id: p.user_id }));
+                    const { error } = await supabase.from("chat_channel_members").insert(rows);
+                    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+                    onChanged();
+                    toast({ title: `${toAdd.length} medlemmar tillagda` });
+                  }}
+                >
+                  <UsersRound className="h-3.5 w-3.5" />
+                  Alla
+                </Button>
+              )}
+            </div>
             <ScrollArea className="max-h-40">
               <div className="space-y-0.5">
                 {filteredProfiles.filter(p => !currentMembers.includes(p.user_id)).slice(0, 20).map(p => (
@@ -1273,6 +1309,8 @@ function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Ch
   const isGroup = channel.type === "group";
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState(channel.name);
+  const [confirmDisband, setConfirmDisband] = useState(false);
+  const [disbanding, setDisbanding] = useState(false);
 
   const handleLeave = async () => {
     if (!userId) return;
@@ -1284,6 +1322,25 @@ function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Ch
     if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
     await supabase.from("chat_read_status").delete().eq("channel_id", channel.id).eq("user_id", userId);
     toast({ title: isGroup ? "Du lämnade gruppen" : "Konversation stängd" });
+    onLeft();
+  };
+
+  const handleDisband = async () => {
+    if (!userId) return;
+    setDisbanding(true);
+    // Delete all messages, reactions, read statuses, members, then the channel
+    await supabase.from("chat_reactions").delete().in("message_id",
+      (await supabase.from("chat_messages").select("id").eq("channel_id", channel.id)).data?.map(m => m.id) || []
+    );
+    await supabase.from("chat_messages").delete().eq("channel_id", channel.id);
+    await supabase.from("chat_read_status").delete().eq("channel_id", channel.id);
+    await supabase.from("chat_channel_members").delete().eq("channel_id", channel.id);
+    const { error } = await supabase.from("chat_channels").delete().eq("id", channel.id);
+    setDisbanding(false);
+    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Gruppen har stängts ner" });
+    queryClient.invalidateQueries({ queryKey: ["chat-channels"] });
+    queryClient.invalidateQueries({ queryKey: ["chat-memberships"] });
     onLeft();
   };
 
@@ -1313,12 +1370,43 @@ function ChannelActionMenu({ channel, userId, onLeft, onRenamed }: { channel: Ch
               Byt namn
             </DropdownMenuItem>
           )}
+          {isGroup && isOwner && (
+            <DropdownMenuItem onClick={() => setConfirmDisband(true)} className="text-destructive focus:text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Stäng ner grupp
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleLeave} className="text-destructive focus:text-destructive">
             {isGroup ? <LogOut className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
             {isGroup ? "Lämna grupp" : "Stäng konversation"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Confirm disband */}
+      <AlertDialog open={confirmDisband} onOpenChange={setConfirmDisband}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Stäng ner gruppen?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Detta tar bort <span className="font-semibold">alla meddelanden, medlemmar och gruppen "{channel.name}"</span> permanent. Åtgärden kan inte ångras.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disbanding}>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisband}
+              disabled={disbanding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disbanding ? "Tar bort..." : "Ja, stäng ner gruppen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={renaming} onOpenChange={setRenaming}>
         <DialogContent className="max-w-sm">
