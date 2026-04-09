@@ -1231,7 +1231,27 @@ function ChannelMembersManager({ channelId, isCreator, profiles, currentMembers,
         <DialogHeader><DialogTitle>Gruppmedlemmar</DialogTitle></DialogHeader>
         {isCreator && (
           <>
-            <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+            <div className="flex items-center gap-2">
+              <Input placeholder="Sök för att lägga till..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} className="flex-1" />
+              {filteredProfiles.filter(p => !currentMembers.includes(p.user_id)).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 h-9 text-xs gap-1"
+                  onClick={async () => {
+                    const toAdd = filteredProfiles.filter(p => !currentMembers.includes(p.user_id));
+                    const rows = toAdd.map(p => ({ channel_id: channelId, user_id: p.user_id }));
+                    const { error } = await supabase.from("chat_channel_members").insert(rows);
+                    if (error) { toast({ title: "Fel", description: error.message, variant: "destructive" }); return; }
+                    onChanged();
+                    toast({ title: `${toAdd.length} medlemmar tillagda` });
+                  }}
+                >
+                  <UsersRound className="h-3.5 w-3.5" />
+                  Alla
+                </Button>
+              )}
+            </div>
             <ScrollArea className="max-h-40">
               <div className="space-y-0.5">
                 {filteredProfiles.filter(p => !currentMembers.includes(p.user_id)).slice(0, 20).map(p => (
