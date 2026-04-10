@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   FolderOpen, FileText, Search, Upload, FolderPlus, FolderUp, X, Trash2,
   FolderInput, Download, ChevronRight, Home, Shield, MoreHorizontal, Pencil, Palette,
