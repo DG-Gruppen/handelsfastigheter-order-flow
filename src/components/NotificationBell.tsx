@@ -33,7 +33,7 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; route: (ref
   order_rejected: { icon: XCircle, color: "text-destructive", route: (id) => id ? `/orders/${id}` : "/history" },
   order_delivered: { icon: Truck, color: "text-primary", route: (id) => id ? `/orders/${id}` : "/history" },
   order_pending: { icon: ShoppingCart, color: "text-amber-500", route: (id) => id ? `/orders/${id}` : "/history" },
-  document_new: { icon: FileText, color: "text-sky-500", route: () => "/documents" },
+  document_new: { icon: FileText, color: "text-sky-500", route: (id) => id ? `/documents?folder=${id}` : "/documents" },
   kb_article: { icon: BookOpen, color: "text-violet-500", route: () => "/kunskapsbanken" },
   kb_video: { icon: Video, color: "text-rose-500", route: () => "/kunskapsbanken" },
   info: { icon: Info, color: "text-muted-foreground", route: () => null },
