@@ -31,8 +31,18 @@ export default function Documents() {
     refresh,
   } = useDocuments();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  // Open folder from URL query param (e.g. from notification link)
+  useEffect(() => {
+    const folderFromUrl = searchParams.get("folder");
+    if (folderFromUrl && folders.length > 0) {
+      setCurrentFolderId(folderFromUrl);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, folders]);
 
   // Dialogs
   const [newFolderDialog, setNewFolderDialog] = useState<{ parentId: string | null } | null>(null);
