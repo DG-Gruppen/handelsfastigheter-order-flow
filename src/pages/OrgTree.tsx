@@ -202,19 +202,32 @@ export default function OrgTree() {
     };
   }, [isAdmin]);
 
-  const fetchData = async () => {
-    const [profilesRes, rolesRes, settingsRes, deptsRes] = await Promise.all([
+   const fetchData = async () => {
+    const [profilesRes, rolesRes, settingsRes, deptsRes, itGroupRes] = await Promise.all([
       supabase.from("profiles").select("id, user_id, full_name, email, department, manager_id, title_override, is_staff, sort_order"),
       supabase.rpc("get_all_user_roles"),
       supabase.from("org_chart_settings").select("setting_key, setting_value"),
       supabase.from("departments").select("id, name, parent_id, color").order("name"),
+      supabase.from("groups").select("id").eq("role_equivalent", "it").limit(1),
     ]);
-    // Build role map first to filter IT users
-    const rm: RoleMap = {};
+
+    // Build set of IT group members to exclude from org chart
     const itUserIds = new Set<string>();
+    const itGroupIds = (itGroupRes.data ?? []).map((g: any) => g.id);
+    if (itGroupIds.length > 0) {
+      const { data: itMembers } = await supabase
+        .from("group_members")
+        .select("user_id")
+        .in("group_id", itGroupIds);
+      for (const m of (itMembers ?? []) as { user_id: string }[]) {
+        itUserIds.add(m.user_id);
+      }
+    }
+
+    // Build role map (prefer highest role: admin > manager > staff > employee)
+    const rm: RoleMap = {};
     for (const r of (rolesRes.data ?? []) as { user_id: string; role: string }[]) {
       rm[r.user_id] = r.role;
-      if (r.role === "it") itUserIds.add(r.user_id);
     }
     setRoleMap(rm);
 
