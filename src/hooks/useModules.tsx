@@ -98,29 +98,22 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries({ queryKey: ["modules-data", user?.id] });
   };
 
-  // Realtime: refresh only when permissions affecting THIS user change.
+  // Realtime: refresh on any permission/membership change.
+  // We can't filter on the server because group-level permissions use
+  // `grantee_id = group_id`, which doesn't match the user's id directly.
+  // The query is cheap and only re-runs when something actually changed.
   useEffect(() => {
     if (!user) return;
     const channel = supabase
       .channel("module-permissions-realtime")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "module_permissions",
-          filter: `grantee_id=eq.${user.id}`,
-        },
+        { event: "*", schema: "public", table: "module_permissions" },
         () => refresh()
       )
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "group_members",
-          filter: `user_id=eq.${user.id}`,
-        },
+        { event: "*", schema: "public", table: "group_members" },
         () => refresh()
       )
       .subscribe();
