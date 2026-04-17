@@ -77,20 +77,34 @@ Deno.serve(async (req) => {
   let allowed = hasAccess === true || hasItRole === true;
 
   if (!allowed) {
-    // Check if user belongs to any group linked to a shared password
-    const { count } = await adminClient
-      .from("shared_password_groups")
-      .select("id", { count: "exact", head: true })
-      .in(
-        "group_id",
-        (await adminClient
-          .from("group_members")
-          .select("group_id")
-          .eq("user_id", user.id)
-        ).data?.map((gm: any) => gm.group_id) ?? []
-      );
+    // Check if user has view permission on the "losenord" module
+    // (either directly as user, or via group membership)
+    const { data: hasModuleView } = await adminClient.rpc("has_module_slug_permission", {
+      _user_id: user.id,
+      _slug: "losenord",
+      _permission: "view",
+    });
 
-    allowed = (count ?? 0) > 0;
+    if (hasModuleView === true) {
+      allowed = true;
+    }
+  }
+
+  if (!allowed) {
+    // Fallback: user belongs to a group directly linked to a shared password
+    const { data: groupRows } = await adminClient
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+    const groupIds = (groupRows ?? []).map((gm: any) => gm.group_id);
+
+    if (groupIds.length > 0) {
+      const { count } = await adminClient
+        .from("shared_password_groups")
+        .select("id", { count: "exact", head: true })
+        .in("group_id", groupIds);
+      allowed = (count ?? 0) > 0;
+    }
   }
 
   if (!allowed) {
