@@ -27,3 +27,5 @@ project_id = "zafzwayqhlnxpsumfjps"
     verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
+[functions.test-google-workspace]
+verify_jwt = false
