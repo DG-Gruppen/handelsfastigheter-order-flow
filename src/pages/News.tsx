@@ -377,14 +377,30 @@ export default function News() {
                 <DialogTitle className="font-heading text-xl">{selectedArticle.title}</DialogTitle>
               </DialogHeader>
               {(() => {
-                const hasCustomStyles = /style\s*=|<table|<style/i.test(selectedArticle.body);
-                const sanitized = DOMPurify.sanitize(selectedArticle.body, {
-                  ADD_TAGS: ["style"],
+                const body = selectedArticle.body || "";
+                const isFullDoc = /<!DOCTYPE|<html[\s>]|<head[\s>]/i.test(body);
+                const hasStyleBlock = /<style[\s>]/i.test(body);
+                // Full HTML-dokument eller inbäddad <style>: rendera i iframe (isolerad CSS)
+                if (isFullDoc || hasStyleBlock) {
+                  const srcDoc = isFullDoc
+                    ? body
+                    : `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0">${body}</body></html>`;
+                  return (
+                    <iframe
+                      srcDoc={srcDoc}
+                      sandbox="allow-same-origin allow-popups"
+                      className="w-full min-h-[70vh] border-0 rounded-md bg-white"
+                      title={selectedArticle.title}
+                    />
+                  );
+                }
+                const hasInlineStyles = /style\s*=|<table/i.test(body);
+                const sanitized = DOMPurify.sanitize(body, {
                   ADD_ATTR: ["style", "class", "target", "rel", "colspan", "rowspan", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border", "src", "alt"],
                 });
                 return (
                   <div
-                    className={hasCustomStyles
+                    className={hasInlineStyles
                       ? "news-html-content max-w-none"
                       : "prose prose-sm max-w-none dark:prose-invert prose-table:border prose-th:border prose-td:border prose-th:p-2 prose-td:p-2"}
                     dangerouslySetInnerHTML={{ __html: sanitized }}
