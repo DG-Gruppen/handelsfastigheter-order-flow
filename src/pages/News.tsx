@@ -358,7 +358,7 @@ export default function News() {
 
       {/* ── Article Detail Dialog ── */}
       <Dialog open={!!selectedArticle} onOpenChange={(v) => !v && setSelectedArticle(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedArticle && (
             <>
               <DialogHeader>
