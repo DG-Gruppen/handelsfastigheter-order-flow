@@ -382,9 +382,36 @@ export default function News() {
                 const hasStyleBlock = /<style[\s>]/i.test(body);
                 // Full HTML-dokument eller inbäddad <style>: rendera i iframe (isolerad CSS)
                 if (isFullDoc || hasStyleBlock) {
-                  const srcDoc = isFullDoc
-                    ? body
-                    : `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0">${body}</body></html>`;
+                  // Responsiv CSS som injiceras för att garantera mobilanpassning
+                  const responsiveCss = `
+                    <style>
+                      html, body { margin: 0 !important; padding: 0 !important; max-width: 100% !important; overflow-x: hidden !important; -webkit-text-size-adjust: 100%; }
+                      body { width: 100% !important; }
+                      img, video, iframe, table { max-width: 100% !important; height: auto !important; }
+                      table { width: 100% !important; table-layout: auto !important; word-break: break-word; }
+                      td, th { word-break: break-word; }
+                      * { box-sizing: border-box; max-width: 100%; }
+                      .container, [class*="container"], [style*="width:"][style*="px"] { max-width: 100% !important; }
+                      @media (max-width: 640px) {
+                        body { font-size: 15px !important; }
+                        h1 { font-size: 1.5rem !important; }
+                        h2 { font-size: 1.25rem !important; }
+                        td, th { display: block !important; width: 100% !important; }
+                        table[role="presentation"] td, table[role="presentation"] th { display: table-cell !important; }
+                      }
+                    </style>`;
+                  const viewportMeta = `<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">`;
+                  let srcDoc: string;
+                  if (isFullDoc) {
+                    // Injicera viewport + responsiv CSS i befintligt <head>
+                    srcDoc = body.replace(/<head[^>]*>/i, (m) => `${m}${viewportMeta}${responsiveCss}`);
+                    // Om ingen <head> hittades, lägg till
+                    if (!/<head[^>]*>/i.test(body)) {
+                      srcDoc = body.replace(/<html[^>]*>/i, (m) => `${m}<head>${viewportMeta}${responsiveCss}</head>`);
+                    }
+                  } else {
+                    srcDoc = `<!DOCTYPE html><html><head><meta charset="UTF-8">${viewportMeta}${responsiveCss}</head><body>${body}</body></html>`;
+                  }
                   return (
                     <iframe
                       srcDoc={srcDoc}
