@@ -376,15 +376,21 @@ export default function News() {
                 </div>
                 <DialogTitle className="font-heading text-xl">{selectedArticle.title}</DialogTitle>
               </DialogHeader>
-              <div
-                className="prose prose-sm max-w-none dark:prose-invert prose-table:border prose-th:border prose-td:border prose-th:p-2 prose-td:p-2"
-                dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(selectedArticle.body, {
-                    ADD_TAGS: ["style"],
-                    ADD_ATTR: ["style", "class", "target", "rel", "colspan", "rowspan", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border"],
-                  }),
-                }}
-              />
+              {(() => {
+                const hasCustomStyles = /style\s*=|<table|<style/i.test(selectedArticle.body);
+                const sanitized = DOMPurify.sanitize(selectedArticle.body, {
+                  ADD_TAGS: ["style"],
+                  ADD_ATTR: ["style", "class", "target", "rel", "colspan", "rowspan", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border", "src", "alt"],
+                });
+                return (
+                  <div
+                    className={hasCustomStyles
+                      ? "news-html-content max-w-none"
+                      : "prose prose-sm max-w-none dark:prose-invert prose-table:border prose-th:border prose-td:border prose-th:p-2 prose-td:p-2"}
+                    dangerouslySetInnerHTML={{ __html: sanitized }}
+                  />
+                );
+              })()}
               {selectedArticle.source === "cision" && selectedArticle.source_url && (
                 <a
                   href={selectedArticle.source_url}
