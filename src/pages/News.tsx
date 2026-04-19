@@ -377,8 +377,13 @@ export default function News() {
                 <DialogTitle className="font-heading text-xl">{selectedArticle.title}</DialogTitle>
               </DialogHeader>
               <div
-                className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedArticle.body) }}
+                className="prose prose-sm max-w-none dark:prose-invert prose-table:border prose-th:border prose-td:border prose-th:p-2 prose-td:p-2"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(selectedArticle.body, {
+                    ADD_TAGS: ["style"],
+                    ADD_ATTR: ["style", "class", "target", "rel", "colspan", "rowspan", "align", "valign", "width", "height", "bgcolor", "cellpadding", "cellspacing", "border"],
+                  }),
+                }}
               />
               {selectedArticle.source === "cision" && selectedArticle.source_url && (
                 <a
