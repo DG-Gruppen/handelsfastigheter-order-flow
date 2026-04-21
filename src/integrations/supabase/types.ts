@@ -857,6 +857,102 @@ export type Database = {
           },
         ]
       }
+      kpi_data: {
+        Row: {
+          actual: number | null
+          budget: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kpi_type_id: string
+          notes: string | null
+          quarter: number
+          region_id: string | null
+          region_name: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          actual?: number | null
+          budget?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kpi_type_id: string
+          notes?: string | null
+          quarter: number
+          region_id?: string | null
+          region_name?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          actual?: number | null
+          budget?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kpi_type_id?: string
+          notes?: string | null
+          quarter?: number
+          region_id?: string | null
+          region_name?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_data_kpi_type_id_fkey"
+            columns: ["kpi_type_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_data_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_types: {
+        Row: {
+          created_at: string
+          format: string
+          higher_is_better: boolean
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          format?: string
+          higher_is_better?: boolean
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          format?: string
+          higher_is_better?: boolean
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          unit?: string
+        }
+        Relationships: []
+      }
       module_activity_log: {
         Row: {
           action: string
