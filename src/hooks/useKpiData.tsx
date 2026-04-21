@@ -108,9 +108,14 @@ export function useKpiDashboardSummary() {
         supabase.from("kpi_data" as any).select("*"),
       ]);
 
-      const kpiTypes = ((types as any[]) ?? []) as KpiType[];
+      // Dashboard visar exakt dessa 4 KPI:er (i ordning) från senaste kvartalet
+      const DASHBOARD_SLUGS = ["driftnetto", "hyresintakter", "vakansgrad", "fastighetsvarde"];
+      const allTypes = ((types as any[]) ?? []) as KpiType[];
+      const kpiTypes = DASHBOARD_SLUGS
+        .map((slug) => allTypes.find((t) => t.slug === slug))
+        .filter((t): t is KpiType => !!t);
       const rows = ((allData as any[]) ?? []) as KpiRow[];
-      if (rows.length === 0) return [];
+      if (rows.length === 0 || kpiTypes.length === 0) return [];
 
       const latest = rows.reduce((acc, r) => {
         if (!acc) return r;
