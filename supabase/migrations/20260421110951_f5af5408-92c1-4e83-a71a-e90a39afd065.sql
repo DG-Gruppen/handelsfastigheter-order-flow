@@ -1,0 +1,1 @@
+UPDATE public.modules SET icon='bar-chart-3' WHERE slug='kpi';
