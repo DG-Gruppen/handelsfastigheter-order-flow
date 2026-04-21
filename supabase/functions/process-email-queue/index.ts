@@ -66,6 +66,13 @@ async function moveToDlq(
     recipient_email: payload.to,
     status: 'dlq',
     error_message: reason,
+    metadata: {
+      step: 'moved_to_dlq',
+      queue,
+      msg_id: msg.msg_id,
+      read_ct: msg.read_ct,
+      reason,
+    },
   })
   const { error } = await supabase.rpc('move_to_dlq', {
     source_queue: queue,
