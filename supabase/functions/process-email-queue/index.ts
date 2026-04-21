@@ -66,6 +66,13 @@ async function moveToDlq(
     recipient_email: payload.to,
     status: 'dlq',
     error_message: reason,
+    metadata: {
+      step: 'moved_to_dlq',
+      queue,
+      msg_id: msg.msg_id,
+      read_ct: msg.read_ct,
+      reason,
+    },
   })
   const { error } = await supabase.rpc('move_to_dlq', {
     source_queue: queue,
@@ -263,12 +270,22 @@ Deno.serve(async (req) => {
         }
       }
 
+      const sendStartedAt = Date.now()
       try {
         // Default purpose based on queue name if not explicitly set in payload.
         // Older enqueued messages may lack this field.
         const effectivePurpose = payload.purpose || (queue === 'auth_emails' ? 'auth' : 'transactional')
 
-        await sendLovableEmail(
+        console.log('[email] →provider send', {
+          queue,
+          msg_id: msg.msg_id,
+          message_id: payload.message_id,
+          to: payload.to,
+          template: payload.label,
+          attempt: failedAttempts + 1,
+        })
+
+        const providerResp = await sendLovableEmail(
           {
             run_id: payload.run_id,
             to: payload.to,
@@ -289,12 +306,32 @@ Deno.serve(async (req) => {
           { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
         )
 
+        const sendDurationMs = Date.now() - sendStartedAt
+        console.log('[email] ✓ provider ok', {
+          queue,
+          msg_id: msg.msg_id,
+          message_id: payload.message_id,
+          to: payload.to,
+          duration_ms: sendDurationMs,
+          provider_response: providerResp ?? null,
+        })
+
         // Log success
         await supabase.from('email_send_log').insert({
           message_id: payload.message_id,
           template_name: payload.label || queue,
           recipient_email: payload.to,
           status: 'sent',
+          metadata: {
+            step: 'provider_sent',
+            queue,
+            attempt: failedAttempts + 1,
+            duration_ms: sendDurationMs,
+            provider_response: providerResp ?? null,
+            sender_domain: payload.sender_domain,
+            from: payload.from,
+            subject: payload.subject,
+          },
         })
 
         // Delete from queue
@@ -307,14 +344,36 @@ Deno.serve(async (req) => {
         }
         totalProcessed++
       } catch (error) {
+        const sendDurationMs = Date.now() - sendStartedAt
         const errorMsg = error instanceof Error ? error.message : String(error)
-        console.error('Email send failed', {
+        const errorStatus = error && typeof error === 'object' && 'status' in error
+          ? (error as { status: number }).status
+          : null
+        const errorBody = error && typeof error === 'object' && 'body' in error
+          ? (error as { body: unknown }).body
+          : null
+        console.error('[email] ✗ provider failed', {
           queue,
           msg_id: msg.msg_id,
+          message_id: payload.message_id,
+          to: payload.to,
           read_ct: msg.read_ct,
           failed_attempts: failedAttempts,
+          duration_ms: sendDurationMs,
+          status: errorStatus,
           error: errorMsg,
+          body: errorBody,
         })
+
+        const failureMetadata = {
+          step: 'provider_failed',
+          queue,
+          attempt: failedAttempts + 1,
+          duration_ms: sendDurationMs,
+          provider_status: errorStatus,
+          provider_body: errorBody,
+          read_ct: msg.read_ct,
+        }
 
         if (isRateLimited(error)) {
           await supabase.from('email_send_log').insert({
@@ -323,6 +382,7 @@ Deno.serve(async (req) => {
             recipient_email: payload.to,
             status: 'rate_limited',
             error_message: errorMsg.slice(0, 1000),
+            metadata: { ...failureMetadata, retry_after_seconds: getRetryAfterSeconds(error) },
           })
 
           const retryAfterSecs = getRetryAfterSeconds(error)
@@ -360,6 +420,7 @@ Deno.serve(async (req) => {
           recipient_email: payload.to,
           status: 'failed',
           error_message: errorMsg.slice(0, 1000),
+          metadata: failureMetadata,
         })
         if (payload?.message_id && typeof payload.message_id === 'string') {
           failedAttemptsByMessageId.set(payload.message_id, failedAttempts + 1)

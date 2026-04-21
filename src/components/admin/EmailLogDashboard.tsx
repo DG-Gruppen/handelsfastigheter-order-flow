@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, CheckCircle, XCircle, AlertTriangle, Clock, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Mail, CheckCircle, XCircle, AlertTriangle, Clock, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, ChevronRightIcon } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 
@@ -19,6 +19,7 @@ interface EmailLogRow {
   recipient_email: string;
   status: string;
   error_message: string | null;
+  metadata: any;
   created_at: string;
 }
 
@@ -33,6 +34,15 @@ const STATUS_BADGE: Record<string, { label: string; variant: "default" | "second
   complained: { label: "Klagomål", variant: "destructive" },
 };
 
+const STEP_LABELS: Record<string, string> = {
+  client_invoke: "Klient → Edge Function",
+  enqueue_pending: "Edge Function → Köad",
+  enqueue_failed: "Köläggning misslyckades",
+  provider_sent: "Provider → Skickat",
+  provider_failed: "Provider misslyckades",
+  moved_to_dlq: "Flyttat till DLQ",
+};
+
 const PAGE_SIZE = 25;
 
 export default function EmailLogDashboard() {
@@ -43,6 +53,8 @@ export default function EmailLogDashboard() {
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [stats, setStats] = useState<Record<string, number>>({});
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [trail, setTrail] = useState<Record<string, EmailLogRow[]>>({});
 
   const getTimeFilter = useCallback(() => {
     const now = new Date();
@@ -75,7 +87,7 @@ export default function EmailLogDashboard() {
 
     let query = supabase
       .from("email_send_log")
-      .select("id, message_id, template_name, recipient_email, status, error_message, created_at", { count: "exact" })
+      .select("id, message_id, template_name, recipient_email, status, error_message, metadata, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -83,10 +95,31 @@ export default function EmailLogDashboard() {
     if (statusFilter !== "all") query = query.eq("status", statusFilter);
 
     const { data, count } = await query;
-    setLogs(data ?? []);
+    setLogs((data ?? []) as EmailLogRow[]);
     setTotalCount(count ?? 0);
     setLoading(false);
   }, [getTimeFilter, statusFilter, page]);
+
+  const toggleExpand = useCallback(async (row: EmailLogRow) => {
+    const next = new Set(expanded);
+    if (next.has(row.id)) {
+      next.delete(row.id);
+      setExpanded(next);
+      return;
+    }
+    next.add(row.id);
+    setExpanded(next);
+
+    // Fetch full trail for this message_id (all rows ordered by time)
+    if (row.message_id && !trail[row.message_id]) {
+      const { data } = await supabase
+        .from("email_send_log")
+        .select("id, message_id, template_name, recipient_email, status, error_message, metadata, created_at")
+        .eq("message_id", row.message_id)
+        .order("created_at", { ascending: true });
+      setTrail((t) => ({ ...t, [row.message_id!]: (data ?? []) as EmailLogRow[] }));
+    }
+  }, [expanded, trail]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { setPage(0); }, [statusFilter, timeRange]);
@@ -112,7 +145,7 @@ export default function EmailLogDashboard() {
               </div>
               <div>
                 <CardTitle className="font-heading text-base md:text-lg">E-postlogg</CardTitle>
-                <CardDescription className="text-xs">Övervakning av alla skickade e-postmeddelanden</CardDescription>
+                <CardDescription className="text-xs">Klicka på en rad för att se hela flödet (klient → kö → provider)</CardDescription>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => { fetchLogs(); fetchStats(); }} className="gap-1.5">
@@ -169,49 +202,147 @@ export default function EmailLogDashboard() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-secondary/30">
+                  <TableHead className="w-8" />
                   <TableHead className="text-xs">Tidpunkt</TableHead>
                   <TableHead className="text-xs">Mall</TableHead>
                   <TableHead className="text-xs">Mottagare</TableHead>
+                  <TableHead className="text-xs">Steg</TableHead>
                   <TableHead className="text-xs">Status</TableHead>
-                  <TableHead className="text-xs">Felmeddelande</TableHead>
+                  <TableHead className="text-xs">Fel</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
                       Inga e-postloggar hittades
                     </TableCell>
                   </TableRow>
                 ) : (
                   logs.map((log) => {
                     const badge = STATUS_BADGE[log.status] ?? { label: log.status, variant: "outline" as const };
+                    const isOpen = expanded.has(log.id);
+                    const step = log.metadata?.step as string | undefined;
+                    const fullTrail = log.message_id ? trail[log.message_id] : null;
                     return (
-                      <TableRow key={log.id} className="group">
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                          {format(new Date(log.created_at), "d MMM HH:mm", { locale: sv })}
-                        </TableCell>
-                        <TableCell className="text-xs font-medium max-w-[140px] truncate">
-                          {log.template_name}
-                        </TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate text-muted-foreground">
-                          {log.recipient_email}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={badge.variant} className="text-[10px]">
-                            {badge.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-destructive/80 max-w-[250px] truncate">
-                          {log.error_message || "—"}
-                        </TableCell>
-                      </TableRow>
+                      <Fragment key={log.id}>
+                        <TableRow
+                          className="group cursor-pointer hover:bg-secondary/30"
+                          onClick={() => toggleExpand(log)}
+                        >
+                          <TableCell className="py-2">
+                            {isOpen
+                              ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                              : <ChevronRightIcon className="h-3.5 w-3.5 text-muted-foreground" />}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {format(new Date(log.created_at), "d MMM HH:mm:ss", { locale: sv })}
+                          </TableCell>
+                          <TableCell className="text-xs font-medium max-w-[140px] truncate">
+                            {log.template_name}
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate text-muted-foreground">
+                            {log.recipient_email}
+                          </TableCell>
+                          <TableCell className="text-[11px] text-muted-foreground">
+                            {step ? (STEP_LABELS[step] ?? step) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={badge.variant} className="text-[10px]">
+                              {badge.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-destructive/80 max-w-[250px] truncate">
+                            {log.error_message || "—"}
+                          </TableCell>
+                        </TableRow>
+                        {isOpen && (
+                          <TableRow className="bg-secondary/10">
+                            <TableCell colSpan={7} className="p-4">
+                              <div className="space-y-4 text-xs">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                  <DetailItem label="Message ID" value={log.message_id ?? "—"} mono />
+                                  <DetailItem label="Idempotency-key" value={log.metadata?.idempotency_key ?? "—"} mono />
+                                  <DetailItem label="Kö" value={log.metadata?.queue ?? "—"} />
+                                  <DetailItem label="Försök" value={log.metadata?.attempt ?? "—"} />
+                                  <DetailItem label="Provider-status" value={log.metadata?.provider_status ?? "—"} />
+                                  <DetailItem label="Varaktighet (ms)" value={log.metadata?.duration_ms ?? "—"} />
+                                  <DetailItem label="Avsändar-domän" value={log.metadata?.sender_domain ?? "—"} />
+                                  <DetailItem label="Från" value={log.metadata?.from ?? "—"} />
+                                  <DetailItem label="Ämne" value={log.metadata?.subject ?? "—"} />
+                                </div>
+
+                                {log.error_message && (
+                                  <div>
+                                    <p className="text-[11px] font-medium text-muted-foreground mb-1">Fullt felmeddelande</p>
+                                    <pre className="bg-destructive/10 text-destructive rounded-md p-2 text-[11px] overflow-auto whitespace-pre-wrap">
+                                      {log.error_message}
+                                    </pre>
+                                  </div>
+                                )}
+
+                                {log.metadata?.provider_body && (
+                                  <div>
+                                    <p className="text-[11px] font-medium text-muted-foreground mb-1">Provider-svar</p>
+                                    <pre className="bg-muted rounded-md p-2 text-[11px] overflow-auto whitespace-pre-wrap max-h-48">
+                                      {JSON.stringify(log.metadata.provider_body, null, 2)}
+                                    </pre>
+                                  </div>
+                                )}
+
+                                {log.metadata && (
+                                  <details className="group">
+                                    <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                                      Hela metadatan
+                                    </summary>
+                                    <pre className="mt-2 bg-muted rounded-md p-2 text-[11px] overflow-auto whitespace-pre-wrap max-h-64">
+                                      {JSON.stringify(log.metadata, null, 2)}
+                                    </pre>
+                                  </details>
+                                )}
+
+                                {fullTrail && fullTrail.length > 1 && (
+                                  <div>
+                                    <p className="text-[11px] font-medium text-muted-foreground mb-2">
+                                      Hela flödet för detta meddelande ({fullTrail.length} steg)
+                                    </p>
+                                    <div className="space-y-1.5">
+                                      {fullTrail.map((t) => {
+                                        const tBadge = STATUS_BADGE[t.status] ?? { label: t.status, variant: "outline" as const };
+                                        const tStep = t.metadata?.step as string | undefined;
+                                        return (
+                                          <div key={t.id} className="flex items-center gap-2 text-[11px] bg-background/50 rounded px-2 py-1.5 border border-border/40">
+                                            <span className="text-muted-foreground tabular-nums whitespace-nowrap">
+                                              {format(new Date(t.created_at), "HH:mm:ss.SSS", { locale: sv })}
+                                            </span>
+                                            <Badge variant={tBadge.variant} className="text-[9px] py-0 h-4">
+                                              {tBadge.label}
+                                            </Badge>
+                                            <span className="text-muted-foreground">
+                                              {tStep ? (STEP_LABELS[tStep] ?? tStep) : "—"}
+                                            </span>
+                                            {t.error_message && (
+                                              <span className="text-destructive truncate flex-1">
+                                                {t.error_message}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
                     );
                   })
                 )}
@@ -235,6 +366,15 @@ export default function EmailLogDashboard() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function DetailItem({ label, value, mono }: { label: string; value: any; mono?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`text-xs ${mono ? "font-mono" : ""} break-all`}>{String(value)}</p>
     </div>
   );
 }

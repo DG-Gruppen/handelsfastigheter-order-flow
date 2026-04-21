@@ -20,7 +20,15 @@ async function sendTransactionalEmail(params: {
   idempotencyKey: string;
   templateData: Record<string, any>;
 }) {
-  const { error } = await supabase.functions.invoke("send-transactional-email", {
+  const startedAt = Date.now();
+  console.log("[email] →invoke send-transactional-email", {
+    template: params.templateName,
+    to: params.recipientEmail,
+    idempotencyKey: params.idempotencyKey,
+    at: new Date().toISOString(),
+  });
+
+  const { data, error } = await supabase.functions.invoke("send-transactional-email", {
     body: {
       templateName: params.templateName,
       recipientEmail: params.recipientEmail,
@@ -28,10 +36,42 @@ async function sendTransactionalEmail(params: {
       templateData: params.templateData,
     },
   });
+
+  const durationMs = Date.now() - startedAt;
+
   if (error) {
-    console.error(`Failed to send ${params.templateName}:`, error);
+    console.error("[email] ✗ invoke failed", {
+      template: params.templateName,
+      to: params.recipientEmail,
+      idempotencyKey: params.idempotencyKey,
+      durationMs,
+      error: error.message ?? String(error),
+      context: (error as any).context ?? null,
+    });
+    // Fire-and-forget client-side log so failures show up in dashboard
+    void supabase.from("email_send_log").insert({
+      message_id: params.idempotencyKey,
+      template_name: params.templateName,
+      recipient_email: params.recipientEmail,
+      status: "failed",
+      error_message: `client.invoke failed: ${error.message ?? String(error)}`.slice(0, 1000),
+      metadata: {
+        step: "client_invoke",
+        idempotency_key: params.idempotencyKey,
+        duration_ms: durationMs,
+        template_data_keys: Object.keys(params.templateData ?? {}),
+      },
+    });
     throw error;
   }
+
+  console.log("[email] ✓ invoke ok", {
+    template: params.templateName,
+    to: params.recipientEmail,
+    idempotencyKey: params.idempotencyKey,
+    durationMs,
+    response: data,
+  });
 }
 
 // ─── Email to approver when a new order is created ───
@@ -72,7 +112,7 @@ export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
       },
     });
   } catch (err) {
-    console.error("Failed to send new order email to approver:", err);
+    console.error("[email] sendNewOrderEmailToApprover failed", { orderId, err });
   }
 }
 
@@ -105,7 +145,7 @@ export async function sendRejectionEmail(params: RejectionEmailParams) {
       },
     });
   } catch (err) {
-    console.error("Failed to send rejection email:", err);
+    console.error("[email] sendRejectionEmail failed", { orderId, err });
   }
 }
 
@@ -137,7 +177,7 @@ export async function sendApprovalEmail(params: {
       },
     });
   } catch (err) {
-    console.error("Failed to send approval email:", err);
+    console.error("[email] sendApprovalEmail failed", { orderId: params.orderId, err });
   }
 }
 
@@ -167,7 +207,6 @@ export async function sendDeliveryEmail(params: {
       },
     });
   } catch (err) {
-    console.error("Failed to send delivery email:", err);
+    console.error("[email] sendDeliveryEmail failed", { orderId: params.orderId, err });
   }
 }
-
