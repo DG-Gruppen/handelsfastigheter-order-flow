@@ -96,8 +96,13 @@ export interface KpiSummary {
 }
 
 /**
- * Aggregates KPI actuals across regions for the latest available period and compares
- * to the same quarter previous year. Used by the dashboard top cards.
+ * Aggregerar KPI-utfall över regioner enligt Excel-definitioner:
+ * - currency / currency_bn / count: SUM över regioner (matchar Excel "Totalt")
+ * - percent: viktat snitt vägt mot Driftnetto-utfall per region om möjligt,
+ *   annars enkelt snitt. Matchar Excel:s viktade snitt för Vakansgrad/Överskottsgrad.
+ *
+ * Hämtar data för senaste tillgängliga (year, quarter) som finns i kpi_data,
+ * och jämför med samma kvartal föregående år.
  */
 export function useKpiDashboardSummary() {
   return useQuery({
@@ -117,21 +122,50 @@ export function useKpiDashboardSummary() {
       const rows = ((allData as any[]) ?? []) as KpiRow[];
       if (rows.length === 0 || kpiTypes.length === 0) return [];
 
-      const latest = rows.reduce((acc, r) => {
-        if (!acc) return r;
-        if (r.year > acc.year || (r.year === acc.year && r.quarter > acc.quarter)) return r;
-        return acc;
-      }, null as KpiRow | null)!;
+      // Hitta senaste kvartal som har minst en utfallsrad
+      const periodsWithActual = rows
+        .filter((r) => r.actual !== null && r.actual !== undefined)
+        .map((r) => ({ year: r.year, quarter: r.quarter }));
+      if (periodsWithActual.length === 0) return [];
+      const latest = periodsWithActual.reduce((acc, p) =>
+        p.year > acc.year || (p.year === acc.year && p.quarter > acc.quarter) ? p : acc
+      );
 
-      const sumFor = (year: number, quarter: number, kpiTypeId: string, field: "actual" | "budget") => {
-        const vals = rows
-          .filter((r) => r.year === year && r.quarter === quarter && r.kpi_type_id === kpiTypeId)
-          .map((r) => r[field])
-          .filter((v): v is number => v !== null && v !== undefined);
-        if (vals.length === 0) return null;
-        const t = kpiTypes.find((k) => k.id === kpiTypeId);
-        if (t?.format === "percent") return vals.reduce((a, b) => a + b, 0) / vals.length;
-        return vals.reduce((a, b) => a + b, 0);
+      // Vikter: Driftnetto-utfall per region används som vikt för procent-KPI:er
+      const driftnettoType = allTypes.find((t) => t.slug === "driftnetto");
+      const weightByRegion = new Map<string, number>();
+      if (driftnettoType) {
+        for (const r of rows) {
+          if (r.kpi_type_id !== driftnettoType.id) continue;
+          if (r.year !== latest.year || r.quarter !== latest.quarter) continue;
+          const k = r.region_id ?? r.region_name ?? "_";
+          if (r.actual !== null && r.actual !== undefined) weightByRegion.set(k, Math.abs(r.actual));
+        }
+      }
+
+      const aggregate = (year: number, quarter: number, kpiType: KpiType, field: "actual" | "budget"): number | null => {
+        const matching = rows.filter(
+          (r) => r.year === year && r.quarter === quarter && r.kpi_type_id === kpiType.id
+        );
+        const valid = matching
+          .map((r) => ({ key: r.region_id ?? r.region_name ?? "_", v: r[field] }))
+          .filter((x): x is { key: string; v: number } => x.v !== null && x.v !== undefined);
+        if (valid.length === 0) return null;
+
+        if (kpiType.format === "percent") {
+          // Viktat snitt om vikter finns, annars enkelt snitt
+          let totalW = 0;
+          let weightedSum = 0;
+          for (const { key, v } of valid) {
+            const w = weightByRegion.get(key) ?? 0;
+            totalW += w;
+            weightedSum += v * w;
+          }
+          if (totalW > 0) return weightedSum / totalW;
+          return valid.reduce((a, b) => a + b.v, 0) / valid.length;
+        }
+        // currency, currency_bn, count → summa
+        return valid.reduce((a, b) => a + b.v, 0);
       };
 
       return kpiTypes.map((t) => ({
@@ -142,9 +176,9 @@ export function useKpiDashboardSummary() {
         higher_is_better: t.higher_is_better,
         year: latest.year,
         quarter: latest.quarter,
-        total: sumFor(latest.year, latest.quarter, t.id, "actual"),
-        budgetTotal: sumFor(latest.year, latest.quarter, t.id, "budget"),
-        prevTotal: sumFor(latest.year - 1, latest.quarter, t.id, "actual"),
+        total: aggregate(latest.year, latest.quarter, t, "actual"),
+        budgetTotal: aggregate(latest.year, latest.quarter, t, "budget"),
+        prevTotal: aggregate(latest.year - 1, latest.quarter, t, "actual"),
       }));
     },
     staleTime: 5 * 60 * 1000,
