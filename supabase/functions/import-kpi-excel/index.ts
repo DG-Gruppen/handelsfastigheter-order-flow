@@ -22,12 +22,10 @@ const KPI_LABEL_MAP: Record<string, string> = {
   "hyresintäkter": "hyresintakter",
   "hyresintakter": "hyresintakter",
   "hyresvärde": "hyresintakter",
-  "vakansgrad": "vakansgrad",
-  "vakans": "vakansgrad",
-  "ekonomisk vakans": "vakansgrad",
-  "fastighetsvärde": "fastighetsvarde",
-  "fastighetsvarde": "fastighetsvarde",
-  "marknadsvärde": "fastighetsvarde",
+  "fastigheter": "antal_fastigheter",
+  "antal fastigheter": "antal_fastigheter",
+  "direktavkastning": "direktavkastning",
+  "yield": "direktavkastning",
 };
 
 function normalize(s: string): string {

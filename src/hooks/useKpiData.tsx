@@ -79,6 +79,7 @@ export function formatKpiValue(v: number | null | undefined, format: string, uni
   if (format === "percent") return `${v.toFixed(1).replace(".", ",")} %`;
   if (format === "currency_bn") return `${v.toFixed(2).replace(".", ",")} ${unit}`;
   if (format === "currency") return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
+  if (format === "count") return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
   return String(v);
 }
 
