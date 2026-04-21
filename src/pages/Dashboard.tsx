@@ -6,16 +6,45 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp, Banknote, Building2, Percent,
-  ArrowUpRight, Award, PartyPopper,
+  ArrowUpRight, ArrowDownRight, Award, PartyPopper,
 } from "lucide-react";
 
-import { kpis, okrs, weeklyWin } from "@/data/dashboard";
+import { kpis as fallbackKpis, okrs, weeklyWin } from "@/data/dashboard";
+import { useKpiDashboardSummary, formatKpiValue, type KpiSummary } from "@/hooks/useKpiData";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 
-const KPI_ICONS = [TrendingUp, Banknote, Building2, Percent];
+const KPI_ICON_BY_SLUG: Record<string, typeof TrendingUp> = {
+  fastighetsvarde: Building2,
+  driftnetto: Banknote,
+  hyresintakter: TrendingUp,
+  vakansgrad: Percent,
+};
+const KPI_FALLBACK_ICONS = [TrendingUp, Banknote, Building2, Percent];
+
+function buildKpiCard(s: KpiSummary, idx: number) {
+  const Icon = KPI_ICON_BY_SLUG[s.slug] ?? KPI_FALLBACK_ICONS[idx % 4];
+  const value = formatKpiValue(s.total, s.format, s.unit);
+  let change = "";
+  let positive = true;
+  if (s.prevTotal !== null && s.total !== null) {
+    const diff = s.total - s.prevTotal;
+    positive = s.higher_is_better ? diff >= 0 : diff <= 0;
+    const diffPct = s.prevTotal !== 0 ? (diff / s.prevTotal) * 100 : 0;
+    const sign = diff > 0 ? "+" : "";
+    change = `${sign}${diffPct.toFixed(1).replace(".", ",")}% vs Q${s.quarter} ${s.year - 1}`;
+  } else if (s.budgetTotal !== null && s.total !== null) {
+    const diff = s.total - s.budgetTotal;
+    positive = s.higher_is_better ? diff >= 0 : diff <= 0;
+    const sign = diff > 0 ? "+" : "";
+    change = `${sign}${formatKpiValue(diff, s.format, s.unit)} vs budget`;
+  } else {
+    change = `Q${s.quarter} ${s.year}`;
+  }
+  return { label: s.name, value, change, positive, Icon };
+}
 
 /* ── Data fetchers ── */
 async function fetchRecognitions() {
@@ -98,6 +127,11 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: kpiSummary = [] } = useKpiDashboardSummary();
+  const kpiCards = kpiSummary.length > 0
+    ? kpiSummary.map((s, i) => buildKpiCard(s, i))
+    : fallbackKpis.map((k, i) => ({ ...k, Icon: KPI_FALLBACK_ICONS[i] }));
+
   function getGreeting(): string {
     const h = new Date().getHours();
     if (h < 12) return "God morgon";
@@ -119,26 +153,30 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {kpis.map((kpi, i) => {
-          const Icon = KPI_ICONS[i];
-          return (
-            <Card key={kpi.label} className="glass-card border-t-2 border-t-primary/20">
-              <CardContent className="p-4 md:p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{kpi.label}</span>
-                  <Icon className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="text-xl md:text-2xl font-heading font-bold text-foreground">{kpi.value}</div>
-                <div className="flex items-center gap-1 mt-1 text-xs text-primary font-medium">
-                  <ArrowUpRight className="w-3 h-3" />
-                  {kpi.change}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <Link to="/kpi" className="block">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {kpiCards.map((kpi: any) => {
+            const Icon = kpi.Icon;
+            const ChangeIcon = kpi.positive ? ArrowUpRight : ArrowDownRight;
+            const changeColor = kpi.positive ? "text-primary" : "text-destructive";
+            return (
+              <Card key={kpi.label} className="glass-card border-t-2 border-t-primary/20 hover:border-t-primary/50 transition-colors">
+                <CardContent className="p-4 md:p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{kpi.label}</span>
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-xl md:text-2xl font-heading font-bold text-foreground">{kpi.value}</div>
+                  <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${changeColor}`}>
+                    <ChangeIcon className="w-3 h-3" />
+                    {kpi.change}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </Link>
 
       {/* ── OKR Snapshot (IT only) ── */}
       {isIT && (
