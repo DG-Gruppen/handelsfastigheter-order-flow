@@ -306,12 +306,32 @@ Deno.serve(async (req) => {
   // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
   // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
 
+  const queuedAt = new Date().toISOString()
+  const baseMetadata = {
+    idempotency_key: idempotencyKey,
+    template_data_keys: Object.keys(templateData),
+    sender_domain: SENDER_DOMAIN,
+    from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+    subject: resolvedSubject,
+    html_length: html.length,
+    text_length: plainText.length,
+    queued_at: queuedAt,
+  }
+
   // Log pending BEFORE enqueue so we have a record even if enqueue crashes
   await supabase.from('email_send_log').insert({
     message_id: messageId,
     template_name: templateName,
     recipient_email: effectiveRecipient,
     status: 'pending',
+    metadata: { ...baseMetadata, step: 'enqueue_pending' },
+  })
+
+  console.log('[email] enqueueing transactional email', {
+    template: templateName,
+    to: effectiveRecipient,
+    message_id: messageId,
+    idempotency_key: idempotencyKey,
   })
 
   const { error: enqueueError } = await supabase.rpc('enqueue_email', {
@@ -328,12 +348,12 @@ Deno.serve(async (req) => {
       label: templateName,
       idempotency_key: idempotencyKey,
       unsubscribe_token: unsubscribeToken,
-      queued_at: new Date().toISOString(),
+      queued_at: queuedAt,
     },
   })
 
   if (enqueueError) {
-    console.error('Failed to enqueue email', {
+    console.error('[email] ✗ failed to enqueue', {
       error: enqueueError,
       templateName,
       effectiveRecipient,
@@ -344,7 +364,8 @@ Deno.serve(async (req) => {
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'failed',
-      error_message: 'Failed to enqueue email',
+      error_message: `enqueue_email RPC failed: ${enqueueError.message ?? String(enqueueError)}`.slice(0, 1000),
+      metadata: { ...baseMetadata, step: 'enqueue_failed', rpc_error: enqueueError },
     })
 
     return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
@@ -353,7 +374,11 @@ Deno.serve(async (req) => {
     })
   }
 
-  console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+  console.log('[email] ✓ enqueued transactional email', {
+    template: templateName,
+    to: effectiveRecipient,
+    message_id: messageId,
+  })
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),
