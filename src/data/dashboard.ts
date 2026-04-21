@@ -1,8 +1,8 @@
 export const kpis = [
-  { label: "Portföljvärde", value: "22 735,9 Mkr", change: "+3 348,6 vs 2024", positive: true },
-  { label: "Hyresintäkter", value: "1 809,9 Mkr", change: "+317 Mkr vs 2024", positive: true },
-  { label: "Fastigheter", value: "314 st", change: "150 kommuner", positive: true },
-  { label: "Direktavkastning", value: "6,60%", change: "Soliditet 42,2%", positive: true },
+  { label: "Fastighetsvärde", value: "24,67 Mdr", change: "+1,9 Mdr vs Q4-25", positive: true },
+  { label: "Driftnetto Q1", value: "376,8 Mkr", change: "+5,2 Mkr vs mål", positive: true },
+  { label: "Hyresvärde", value: "2 077,6 Mkr", change: "+124,1 vs Q4-25", positive: true },
+  { label: "Fastigheter", value: "317 st", change: "1 202 TKVM uthyrbart", positive: true },
 ];
 
 export const okrs = [
