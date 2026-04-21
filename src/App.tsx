@@ -33,6 +33,7 @@ const Culture = lazy(() => import("./pages/Culture"));
 const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
 const Statistics = lazy(() => import("./pages/Statistics"));
+const Kpi = lazy(() => import("./pages/Kpi"));
 const ExternalDashboard = lazy(() => import("./pages/ExternalDashboard"));
 
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
@@ -96,6 +97,7 @@ const App = () => (
                       <Route path="/arbetsklader" element={<Workwear />} />
                       <Route path="/extern/dashboard" element={<ExternalDashboard />} />
                       <Route path="/statistik" element={<Statistics />} />
+                      <Route path="/kpi" element={<Kpi />} />
                       
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
