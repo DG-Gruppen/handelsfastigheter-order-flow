@@ -6,12 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  TrendingUp, Banknote, Building2, Percent,
+  TrendingUp, Banknote, Building2, Percent, LineChart,
   ArrowUpRight, ArrowDownRight, Award, PartyPopper,
 } from "lucide-react";
 
 import { kpis as fallbackKpis, okrs, weeklyWin } from "@/data/dashboard";
-import { useKpiDashboardSummary, formatKpiValue, type KpiSummary } from "@/hooks/useKpiData";
+import { useKpiDashboardSummary, formatKpiValue, OPTIONER_STRIKE_PRICE, type KpiSummary } from "@/hooks/useKpiData";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { format } from "date-fns";
@@ -22,6 +22,7 @@ const KPI_ICON_BY_SLUG: Record<string, typeof TrendingUp> = {
   driftnetto: Banknote,
   hyresintakter: TrendingUp,
   vakansgrad: Percent,
+  optioner: LineChart,
 };
 const KPI_FALLBACK_ICONS = [TrendingUp, Banknote, Building2, Percent];
 
@@ -30,6 +31,17 @@ function buildKpiCard(s: KpiSummary, idx: number) {
   const value = formatKpiValue(s.total, s.format, s.unit);
   let change = "";
   let positive = true;
+
+  // Optioner: jämför aktuell kurs mot lösenpris (295 kr) istället för budget/föregående år
+  if (s.slug === "optioner" && s.total !== null) {
+    const diff = s.total - OPTIONER_STRIKE_PRICE;
+    const diffPct = (diff / OPTIONER_STRIKE_PRICE) * 100;
+    positive = diff >= 0;
+    const sign = diff > 0 ? "+" : "";
+    change = `${sign}${diffPct.toFixed(1).replace(".", ",")}% från lösenpris ${OPTIONER_STRIKE_PRICE} kr`;
+    return { label: s.name, value, change, positive, Icon };
+  }
+
   if (s.prevTotal !== null && s.total !== null) {
     const diff = s.total - s.prevTotal;
     positive = s.higher_is_better ? diff >= 0 : diff <= 0;
@@ -40,7 +52,9 @@ function buildKpiCard(s: KpiSummary, idx: number) {
     const diff = s.total - s.budgetTotal;
     positive = s.higher_is_better ? diff >= 0 : diff <= 0;
     const sign = diff > 0 ? "+" : "";
-    change = `${sign}${formatKpiValue(diff, s.format, s.unit)} vs budget`;
+    const diffPct = s.budgetTotal !== 0 ? (diff / s.budgetTotal) * 100 : 0;
+    const pctStr = s.budgetTotal !== 0 ? ` (${sign}${diffPct.toFixed(1).replace(".", ",")}%)` : "";
+    change = `${sign}${formatKpiValue(diff, s.format, s.unit)}${pctStr} vs budget`;
   } else {
     change = `Q${s.quarter} ${s.year}`;
   }
