@@ -35,7 +35,7 @@ function buildKpiCard(s: KpiSummary, idx: number) {
   // Optioner: jämför aktuell kurs mot lösenpris (295 kr) istället för budget/föregående år
   if (s.slug === "optioner" && s.total !== null) {
     const diff = s.total - OPTIONER_STRIKE_PRICE;
-    const diffPct = OPTIONER_STRIKE_PRICE !== 0 ? (diff / OPTIONER_STRIKE_PRICE) * 100 : 0;
+    const diffPct = (diff / OPTIONER_STRIKE_PRICE) * 100;
     positive = diff >= 0;
     const sign = diff > 0 ? "+" : "";
     change = `${sign}${diffPct.toFixed(1).replace(".", ",")}% från lösenpris ${OPTIONER_STRIKE_PRICE} kr`;
