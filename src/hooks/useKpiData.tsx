@@ -78,9 +78,23 @@ export function formatKpiValue(v: number | null | undefined, format: string, uni
   if (v === null || v === undefined) return "—";
   if (format === "percent") return `${v.toFixed(1).replace(".", ",")} %`;
   if (format === "currency_bn") return `${v.toFixed(2).replace(".", ",")} ${unit}`;
-  if (format === "currency") return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
+  if (format === "currency") {
+    // For low-value currencies (per-share prices), show 2 decimals
+    if (unit === "kr" && Math.abs(v) < 10000) {
+      return `${v.toFixed(2).replace(".", ",")} ${unit}`;
+    }
+    return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
+  }
+  if (format === "count") {
+    // Duration uses 1 decimal (e.g. "4,2 år"), other counts are integers
+    if (unit === "år") return `${v.toFixed(1).replace(".", ",")} ${unit}`;
+    return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
+  }
   return String(v);
 }
+
+// Optioner: lösenpris för aktien (används för att räkna procentuell utveckling)
+export const OPTIONER_STRIKE_PRICE = 295;
 
 export interface KpiSummary {
   slug: string;
@@ -114,7 +128,7 @@ export function useKpiDashboardSummary() {
       ]);
 
       // Dashboard visar exakt dessa 4 KPI:er (i ordning) från senaste kvartalet
-      const DASHBOARD_SLUGS = ["driftnetto", "hyresintakter", "vakansgrad", "fastighetsvarde"];
+      const DASHBOARD_SLUGS = ["driftnetto", "hyresintakter", "vakansgrad", "optioner"];
       const allTypes = ((types as any[]) ?? []) as KpiType[];
       const kpiTypes = DASHBOARD_SLUGS
         .map((slug) => allTypes.find((t) => t.slug === slug))

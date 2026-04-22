@@ -28,6 +28,12 @@ const KPI_LABEL_MAP: Record<string, string> = {
   "fastighetsvärde": "fastighetsvarde",
   "fastighetsvarde": "fastighetsvarde",
   "marknadsvärde": "fastighetsvarde",
+  "optioner": "optioner",
+  "option": "optioner",
+  "aktiekurs": "optioner",
+  "duration": "duration",
+  "avtalslängd": "duration",
+  "avtalslangd": "duration",
 };
 
 function normalize(s: string): string {
