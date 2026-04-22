@@ -180,6 +180,7 @@ export default function Dashboard() {
           })}
         </div>
       </Link>
+      )}
 
       {/* ── OKR Snapshot (IT only) ── */}
       {isIT && (
