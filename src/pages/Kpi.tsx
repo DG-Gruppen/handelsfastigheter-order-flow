@@ -23,7 +23,7 @@ export default function Kpi() {
   const { data: rows = [], isLoading } = useKpiData(year, quarter);
   const { data: compareRows = [] } = useKpiData(compareYear, quarter);
   const { regions } = useRegions();
-  const { canEdit } = useModulePermission("kpi");
+  const { canView, canEdit } = useModulePermission("kpi");
 
   const selectedKpi = kpiTypes.find((k) => k.slug === selectedKpiSlug);
 
@@ -55,6 +55,19 @@ export default function Kpi() {
     }
     return data;
   }, [regionMap, compareRows, selectedKpi, compareYear]);
+
+  if (!canView) {
+    return (
+      <div className="container mx-auto py-10 max-w-3xl">
+        <Card className="glass-card">
+          <CardContent className="p-10 text-center space-y-2">
+            <h1 className="text-xl font-bold font-heading">Ingen åtkomst</h1>
+            <p className="text-sm text-muted-foreground">Du saknar behörighet att se KPI-modulen. Kontakta en administratör om du behöver åtkomst.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-7xl">
