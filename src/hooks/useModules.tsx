@@ -124,8 +124,12 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const isExternal = profile?.is_external === true;
 
   const accessibleModules = useMemo(() => {
+    // Admin role is a superuser override – sees everything active
+    const isAdmin = roles.includes("admin");
+
     return modules.filter((m) => {
       if (!m.is_active) return false;
+      if (isAdmin) return true;
 
       // Check if user has explicit module_permissions (user or group-level)
       const hasExplicitPermission = permissions.some((p) => {
@@ -139,9 +143,16 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
       // External users ONLY get modules with explicit permissions – no fallback
       if (isExternal) return false;
 
+      // If module has ANY explicit permissions defined, it's restricted –
+      // only the listed grantees may access it. Don't fall through to role access.
+      const hasAnyExplicitPermissions = permissions.some(
+        (p) => p.module_id === m.id && p.can_view
+      );
+      if (hasAnyExplicitPermissions) return false;
+
       // Fall back to role-based access
       const moduleRules = allAccess.filter((a) => a.module_id === m.id);
-      // No rules defined → accessible to everyone
+      // No rules defined → accessible to everyone (legacy default)
       if (moduleRules.length === 0) return true;
       // User has no roles → allow if all defined roles have access
       if (roles.length === 0) {
