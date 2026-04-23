@@ -121,6 +121,11 @@ export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
  * Logs every skip-reason (missing profile / missing email / unexpected error)
  * to email_send_log so silent failures become visible in the admin dashboard.
  */
+// Retry configuration: 3 attempts with exponential backoff (1s, 2s, 4s)
+const RETRY_DELAYS_MS = [1000, 2000, 4000];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function notifyApproverOfNewOrder(args: {
   orderId: string;
   approverUserId: string;
@@ -150,6 +155,28 @@ export async function notifyApproverOfNewOrder(args: {
     });
   };
 
+  const logAttempt = async (
+    recipient: string,
+    attempt: number,
+    status: "attempting" | "succeeded" | "failed",
+    errorMessage?: string,
+  ) => {
+    await supabase.from("email_send_log").insert({
+      message_id: idempotencyKey,
+      template_name: "new-order-approval",
+      recipient_email: recipient,
+      status: status === "succeeded" ? "sent" : status === "failed" ? "failed" : "pending",
+      error_message: errorMessage ? errorMessage.slice(0, 1000) : null,
+      metadata: {
+        step: `retry_attempt_${attempt}`,
+        attempt,
+        max_attempts: RETRY_DELAYS_MS.length,
+        order_id: args.orderId,
+        approver_user_id: args.approverUserId,
+      },
+    });
+  };
+
   try {
     if (!args.approverProfile) {
       await logSkip("Approver profile not found in cache");
@@ -171,16 +198,67 @@ export async function notifyApproverOfNewOrder(args: {
       return;
     }
 
-    await sendNewOrderEmailToApprover({
+    const approverEmail = approverEmailData.email;
+    let lastError: any = null;
+
+    // Attempt with exponential backoff
+    for (let attempt = 1; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      try {
+        await logAttempt(approverEmail, attempt, "attempting");
+
+        await sendNewOrderEmailToApprover({
+          orderId: args.orderId,
+          title: args.title,
+          description: args.description ?? undefined,
+          requesterName: args.requesterName,
+          requesterEmail: args.requesterEmail,
+          approverName: args.approverProfile.full_name,
+          approverEmail,
+          items: args.items,
+          recipientName: args.recipientName ?? undefined,
+        });
+
+        await logAttempt(approverEmail, attempt, "succeeded");
+        console.log("[email] notifyApproverOfNewOrder succeeded", {
+          orderId: args.orderId,
+          attempt,
+        });
+        return;
+      } catch (err: any) {
+        lastError = err;
+        const errMsg = err?.message ?? String(err);
+        console.warn("[email] notifyApproverOfNewOrder attempt failed", {
+          orderId: args.orderId,
+          attempt,
+          error: errMsg,
+        });
+        await logAttempt(approverEmail, attempt, "failed", `Attempt ${attempt} failed: ${errMsg}`);
+
+        // Wait before next attempt (unless this was the last)
+        if (attempt < RETRY_DELAYS_MS.length) {
+          await sleep(RETRY_DELAYS_MS[attempt - 1]);
+        }
+      }
+    }
+
+    // All attempts exhausted
+    console.error("[email] notifyApproverOfNewOrder all retries exhausted", {
       orderId: args.orderId,
-      title: args.title,
-      description: args.description ?? undefined,
-      requesterName: args.requesterName,
-      requesterEmail: args.requesterEmail,
-      approverName: args.approverProfile.full_name,
-      approverEmail: approverEmailData.email,
-      items: args.items,
-      recipientName: args.recipientName ?? undefined,
+      attempts: RETRY_DELAYS_MS.length,
+      lastError: lastError?.message ?? String(lastError),
+    });
+    await supabase.from("email_send_log").insert({
+      message_id: idempotencyKey,
+      template_name: "new-order-approval",
+      recipient_email: approverEmail,
+      status: "dlq",
+      error_message: `All ${RETRY_DELAYS_MS.length} attempts failed. Last error: ${lastError?.message ?? String(lastError)}`.slice(0, 1000),
+      metadata: {
+        step: "retries_exhausted",
+        total_attempts: RETRY_DELAYS_MS.length,
+        order_id: args.orderId,
+        approver_user_id: args.approverUserId,
+      },
     });
   } catch (err: any) {
     console.error("[email] notifyApproverOfNewOrder unexpected error", { orderId: args.orderId, err });
