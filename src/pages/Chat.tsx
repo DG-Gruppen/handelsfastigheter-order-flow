@@ -837,6 +837,9 @@ function MessageBubble({
             )}
           </span>
         </div>
+
+        {/* Link preview (WhatsApp-style) for first URL in message */}
+        {msg.content && <LinkPreview content={msg.content} isOwn={isOwn} />}
       </div>
 
       {/* Hover action bar */}
