@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrderFormData, resolveApprovalRouting } from "@/hooks/useOrderFormData";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
-import { sendNewOrderEmailToApprover, sendApprovalEmail } from "@/lib/orderEmails";
+import { notifyApproverOfNewOrder, sendApprovalEmail } from "@/lib/orderEmails";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -173,26 +173,17 @@ export default function NewOrder() {
       });
 
       const approverProfileData = allProfiles.find(p => p.user_id === resolvedApproverId);
-      if (approverProfileData) {
-        const { data: approverEmailData } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("user_id", resolvedApproverId)
-          .single();
-        if (approverEmailData?.email) {
-          await sendNewOrderEmailToApprover({
-            orderId: order.id,
-            title,
-            description: description.trim(),
-            requesterName,
-            requesterEmail: requesterEmailData?.email || "",
-            approverName: approverProfileData.full_name,
-            approverEmail: approverEmailData.email,
-            items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
-            recipientName: existingRecipientName,
-          });
-        }
-      }
+      await notifyApproverOfNewOrder({
+        orderId: order.id,
+        approverUserId: resolvedApproverId,
+        approverProfile: approverProfileData,
+        title,
+        description: description.trim(),
+        requesterName,
+        requesterEmail: requesterEmailData?.email || "",
+        items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+        recipientName: existingRecipientName,
+      });
     }
 
     // Helpdesk email + confirmation for auto-approved orders

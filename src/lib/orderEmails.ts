@@ -116,6 +116,85 @@ export async function sendNewOrderEmailToApprover(params: NewOrderEmailParams) {
   }
 }
 
+/**
+ * Resolve approver email and send the new-order-approval mail.
+ * Logs every skip-reason (missing profile / missing email / unexpected error)
+ * to email_send_log so silent failures become visible in the admin dashboard.
+ */
+export async function notifyApproverOfNewOrder(args: {
+  orderId: string;
+  approverUserId: string;
+  approverProfile: { full_name: string } | undefined;
+  title: string;
+  description?: string | null;
+  requesterName: string;
+  requesterEmail: string;
+  items: { name: string; quantity: number; description?: string | null }[];
+  recipientName?: string | null;
+}) {
+  const idempotencyKey = `new-order-approval-${args.orderId}`;
+
+  const logSkip = async (reason: string, recipient = "unknown@unknown") => {
+    console.warn("[email] notifyApproverOfNewOrder skipped", { orderId: args.orderId, reason });
+    await supabase.from("email_send_log").insert({
+      message_id: idempotencyKey,
+      template_name: "new-order-approval",
+      recipient_email: recipient,
+      status: "failed",
+      error_message: reason.slice(0, 1000),
+      metadata: {
+        step: "pre_send_skip",
+        order_id: args.orderId,
+        approver_user_id: args.approverUserId,
+      },
+    });
+  };
+
+  try {
+    if (!args.approverProfile) {
+      await logSkip("Approver profile not found in cache");
+      return;
+    }
+
+    const { data: approverEmailData, error: emailErr } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("user_id", args.approverUserId)
+      .single();
+
+    if (emailErr) {
+      await logSkip(`Failed to fetch approver email: ${emailErr.message}`);
+      return;
+    }
+    if (!approverEmailData?.email) {
+      await logSkip("Approver profile has no email address");
+      return;
+    }
+
+    await sendNewOrderEmailToApprover({
+      orderId: args.orderId,
+      title: args.title,
+      description: args.description ?? undefined,
+      requesterName: args.requesterName,
+      requesterEmail: args.requesterEmail,
+      approverName: args.approverProfile.full_name,
+      approverEmail: approverEmailData.email,
+      items: args.items,
+      recipientName: args.recipientName ?? undefined,
+    });
+  } catch (err: any) {
+    console.error("[email] notifyApproverOfNewOrder unexpected error", { orderId: args.orderId, err });
+    await supabase.from("email_send_log").insert({
+      message_id: idempotencyKey,
+      template_name: "new-order-approval",
+      recipient_email: "unknown@unknown",
+      status: "failed",
+      error_message: `Unexpected error: ${err?.message ?? String(err)}`.slice(0, 1000),
+      metadata: { step: "pre_send_exception", order_id: args.orderId },
+    });
+  }
+}
+
 // ─── Email to requester when order is rejected ───
 
 interface RejectionEmailParams {
