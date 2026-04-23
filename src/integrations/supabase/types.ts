@@ -953,6 +953,39 @@ export type Database = {
         }
         Relationships: []
       }
+      link_preview_cache: {
+        Row: {
+          description: string | null
+          expires_at: string
+          fetched_at: string
+          id: string
+          image_url: string | null
+          site_name: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          description?: string | null
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+          image_url?: string | null
+          site_name?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          description?: string | null
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+          image_url?: string | null
+          site_name?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       module_activity_log: {
         Row: {
           action: string
