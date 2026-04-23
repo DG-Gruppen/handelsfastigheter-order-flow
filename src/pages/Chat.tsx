@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
+import { LinkPreview } from "@/components/chat/LinkPreview";
 
 import { sv } from "date-fns/locale";
 import data from "@emoji-mart/data";
