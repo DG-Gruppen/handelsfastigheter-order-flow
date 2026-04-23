@@ -892,6 +892,40 @@ function MessageBubble({
   );
 }
 
+// ─── Linkify helper: render text with raw URLs as clickable links ───
+const URL_REGEX = /(\b(?:https?:\/\/|www\.)[^\s<]+[^\s<.,:;!?)\]}'"])/gi;
+
+function linkifyText(text: string, keyPrefix: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  URL_REGEX.lastIndex = 0;
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(<span key={`${keyPrefix}-t-${i++}`}>{text.slice(lastIndex, match.index)}</span>);
+    }
+    const raw = match[1];
+    const href = raw.startsWith("http") ? raw : `https://${raw}`;
+    nodes.push(
+      <a
+        key={`${keyPrefix}-l-${i++}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2 hover:opacity-80 break-all"
+      >
+        {raw}
+      </a>
+    );
+    lastIndex = match.index + raw.length;
+  }
+  if (lastIndex < text.length) {
+    nodes.push(<span key={`${keyPrefix}-t-${i++}`}>{text.slice(lastIndex)}</span>);
+  }
+  return nodes;
+}
+
 // ─── Mention Renderer ───
 function MentionRenderer({ content, profileMap, currentUserId }: { content: string; profileMap?: Map<string, Profile>; currentUserId?: string }) {
   const parts = useMemo(() => {
@@ -924,14 +958,35 @@ function MentionRenderer({ content, profileMap, currentUserId }: { content: stri
   }, [content, profileMap, currentUserId]);
 
   const hasMentions = parts.some(p => p.type === "mention");
-  
+
   if (!hasMentions) {
-    return <ReactMarkdown>{content}</ReactMarkdown>;
+    return (
+      <ReactMarkdown
+        components={{
+          a: ({ node, ...props }) => (
+            <a
+              {...props}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 hover:opacity-80 break-all"
+            />
+          ),
+          p: ({ node, children, ...props }) => {
+            const processed = React.Children.map(children, (child, idx) =>
+              typeof child === "string" ? linkifyText(child, `p-${idx}`) : child
+            );
+            return <p {...props}>{processed}</p>;
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   }
 
   return (
     <p className="my-0">
-      {parts.map((part, i) => 
+      {parts.map((part, i) =>
         part.type === "mention" ? (
           <span key={i} className={cn(
             "font-semibold rounded px-0.5",
@@ -940,7 +995,7 @@ function MentionRenderer({ content, profileMap, currentUserId }: { content: stri
             {part.value}
           </span>
         ) : (
-          <span key={i}>{part.value}</span>
+          <span key={i}>{linkifyText(part.value, `m-${i}`)}</span>
         )
       )}
     </p>
