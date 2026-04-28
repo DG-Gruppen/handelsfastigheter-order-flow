@@ -34,6 +34,7 @@ const News = lazy(() => import("./pages/News"));
 const Workwear = lazy(() => import("./pages/Workwear"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const Kpi = lazy(() => import("./pages/Kpi"));
+const Prompts = lazy(() => import("./pages/Prompts"));
 const ExternalDashboard = lazy(() => import("./pages/ExternalDashboard"));
 
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
