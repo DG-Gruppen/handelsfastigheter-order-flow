@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Search, Sparkles, Copy, Star, Pencil, Trash2, MessageSquarePlus, ArrowUpRight } from "lucide-react";
-import { PROMPT_CATEGORIES, CATEGORY_BADGE } from "@/lib/promptVariables";
+import { Plus, Search, Sparkles, Copy, Star, Pencil, Trash2, MessageSquarePlus, ArrowUpRight, Tags } from "lucide-react";
 import { PromptEditorDialog } from "@/components/prompts/PromptEditorDialog";
 import { PromptUseDialog } from "@/components/prompts/PromptUseDialog";
 import { PromptSuggestDialog } from "@/components/prompts/PromptSuggestDialog";
+import { PromptCategoryManagerDialog } from "@/components/prompts/PromptCategoryManagerDialog";
+import { usePromptCategories } from "@/hooks/usePromptCategories";
+import { useModulePermission } from "@/hooks/useModulePermission";
 
 interface PromptRow {
   id: string;
@@ -64,6 +66,10 @@ export default function Prompts() {
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [useDialog, setUseDialog] = useState<PromptRow | null>(null);
   const [suggestDialog, setSuggestDialog] = useState<PromptRow | null>(null);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+  const { activeNames, badgeMap, fallbackBadge } = usePromptCategories();
+  const { canEdit: canEditPrompts } = useModulePermission("prompts");
 
   const { data, isLoading } = useQuery({
     queryKey: ["prompts-data", user?.id],
@@ -169,7 +175,7 @@ export default function Prompts() {
 
   if (!hasAccess) return <Navigate to="/dashboard" replace />;
 
-  const tabs = [ALL, ...PROMPT_CATEGORIES] as string[];
+  const tabs = [ALL, ...activeNames] as string[];
 
   return (
     <div className="container max-w-6xl px-4 py-6 space-y-6">
@@ -196,6 +202,11 @@ export default function Prompts() {
             className="pl-10 h-11"
           />
         </div>
+        {canEditPrompts && (
+          <Button variant="outline" onClick={() => setCategoriesOpen(true)} className="h-11" title="Redigera kategorier">
+            <Tags className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Kategorier</span>
+          </Button>
+        )}
         <Button onClick={() => { setEditing(null); setCreatorOpen(true); }} className="h-11">
           <Plus className="h-4 w-4 mr-1" /> Lägg till prompt
         </Button>
@@ -259,7 +270,7 @@ export default function Prompts() {
             <Card key={p.id} className="p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold text-foreground leading-tight">{p.title}</h3>
-                <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_BADGE[p.category] ?? CATEGORY_BADGE["Övrigt"]}`}>
+                <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${badgeMap[p.category] ?? fallbackBadge}`}>
                   {p.category}
                 </span>
               </div>
@@ -340,6 +351,7 @@ export default function Prompts() {
         prompt={suggestDialog}
         onOpenChange={(open) => !open && setSuggestDialog(null)}
       />
+      <PromptCategoryManagerDialog open={categoriesOpen} onOpenChange={setCategoriesOpen} />
     </div>
   );
 }
