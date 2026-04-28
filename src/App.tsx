@@ -99,6 +99,7 @@ const App = () => (
                       <Route path="/extern/dashboard" element={<ExternalDashboard />} />
                       <Route path="/statistik" element={<Statistics />} />
                       <Route path="/kpi" element={<Kpi />} />
+                      <Route path="/prompts" element={<Prompts />} />
                       
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
