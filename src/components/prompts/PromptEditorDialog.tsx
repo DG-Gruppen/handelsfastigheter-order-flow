@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { PROMPT_CATEGORIES, extractVariables } from "@/lib/promptVariables";
+import { extractVariables } from "@/lib/promptVariables";
+import { usePromptCategories } from "@/hooks/usePromptCategories";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,7 @@ interface Props {
 
 export function PromptEditorDialog({ open, onOpenChange, prompt, onSaved }: Props) {
   const { user } = useAuth();
+  const { activeNames } = usePromptCategories();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [body, setBody] = useState("");
@@ -83,7 +85,10 @@ export function PromptEditorDialog({ open, onOpenChange, prompt, onSaved }: Prop
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger id="p-cat"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {PROMPT_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {activeNames.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {!activeNames.includes(category) && category && (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
