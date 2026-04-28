@@ -1960,6 +1960,133 @@ export type Database = {
           },
         ]
       }
+      prompt_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_ratings_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_suggestions: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          prompt_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_body: string | null
+          suggested_by: string
+          suggested_category: string | null
+          suggested_description: string | null
+          suggested_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          prompt_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_body?: string | null
+          suggested_by: string
+          suggested_category?: string | null
+          suggested_description?: string | null
+          suggested_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          prompt_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_body?: string | null
+          suggested_by?: string
+          suggested_category?: string | null
+          suggested_description?: string | null
+          suggested_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_suggestions_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompts: {
+        Row: {
+          author_id: string
+          body: string
+          category: string
+          copy_count: number
+          created_at: string
+          description: string
+          id: string
+          title: string
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          author_id: string
+          body?: string
+          category?: string
+          copy_count?: number
+          created_at?: string
+          description?: string
+          id?: string
+          title: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          category?: string
+          copy_count?: number
+          created_at?: string
+          description?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Relationships: []
+      }
       recognitions: {
         Row: {
           created_at: string
@@ -2341,6 +2468,10 @@ export type Database = {
       has_shared_password_access: {
         Args: { _password_id: string; _user_id: string }
         Returns: boolean
+      }
+      increment_prompt_copy: {
+        Args: { _prompt_id: string }
+        Returns: undefined
       }
       is_subordinate_order: {
         Args: { _requester_id: string; _viewer_id: string }
