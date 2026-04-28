@@ -27,11 +27,12 @@ export default function Kpi() {
 
   const selectedKpi = kpiTypes.find((k) => k.slug === selectedKpiSlug);
 
-  // Group rows by region for KPI cards
+  // Group rows by region for KPI cards (exclude rows utan region, t.ex. Optioner som lagras som "Totalt")
   const regionMap = useMemo(() => {
     const map = new Map<string, { name: string; rows: KpiRow[] }>();
     for (const r of rows) {
-      const key = r.region_id ?? r.region_name ?? "Övrigt";
+      if (!r.region_id) continue;
+      const key = r.region_id;
       const name = r.region_name ?? regions.find((reg) => reg.id === r.region_id)?.name ?? "Okänd";
       if (!map.has(key)) map.set(key, { name, rows: [] });
       map.get(key)!.rows.push(r);
