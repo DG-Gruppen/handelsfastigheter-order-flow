@@ -1960,6 +1960,36 @@ export type Database = {
           },
         ]
       }
+      prompt_categories: {
+        Row: {
+          badge_class: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          badge_class?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          badge_class?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prompt_ratings: {
         Row: {
           created_at: string
