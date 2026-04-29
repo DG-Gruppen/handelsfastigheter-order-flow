@@ -27,6 +27,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   roles: string[];
+  realRoles: string[];
+  roleOverride: string[] | null;
+  setRoleOverride: (roles: string[] | null) => void;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -36,9 +39,25 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   profile: null,
   roles: [],
+  realRoles: [],
+  roleOverride: null,
+  setRoleOverride: () => {},
   loading: true,
   signOut: async () => {},
 });
+
+const ROLE_OVERRIDE_KEY = "shf_dev_role_override";
+
+function readRoleOverride(): string[] | null {
+  try {
+    const raw = localStorage.getItem(ROLE_OVERRIDE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.every((x) => typeof x === "string") ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -47,7 +66,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [roleOverride, setRoleOverrideState] = useState<string[] | null>(() => readRoleOverride());
   const [loading, setLoading] = useState(true);
+
+  const setRoleOverride = (next: string[] | null) => {
+    if (next && next.length > 0) {
+      localStorage.setItem(ROLE_OVERRIDE_KEY, JSON.stringify(next));
+    } else {
+      localStorage.removeItem(ROLE_OVERRIDE_KEY);
+    }
+    setRoleOverrideState(next && next.length > 0 ? next : null);
+  };
+
+  const effectiveRoles = roleOverride ?? roles;
 
   useEffect(() => {
     // Track the current fetch so we can abort stale ones (e.g. rapid token refreshes)
@@ -117,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, roles: effectiveRoles, realRoles: roles, roleOverride, setRoleOverride, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

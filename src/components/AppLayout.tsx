@@ -9,6 +9,7 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 const AiChatBubble = lazy(() => import("@/components/AiChatBubble"));
 const ChatBubble = lazy(() => import("@/components/ChatBubble"));
+const RoleSwitcher = lazy(() => import("@/components/dev/RoleSwitcher"));
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
@@ -53,6 +54,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         <Suspense fallback={null}>
           <AiChatBubble />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <RoleSwitcher />
         </Suspense>
       </div>
     </>
