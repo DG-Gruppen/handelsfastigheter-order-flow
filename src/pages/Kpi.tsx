@@ -23,7 +23,7 @@ export default function Kpi() {
   const { data: rows = [], isLoading } = useKpiData(year, quarter);
   const { data: compareRows = [] } = useKpiData(compareYear, quarter);
   const { regions } = useRegions();
-  const { canView, canEdit } = useModulePermission("kpi");
+  const { canView, canEdit, loading: permissionLoading } = useModulePermission("kpi");
 
   const selectedKpi = kpiTypes.find((k) => k.slug === selectedKpiSlug);
 
@@ -56,6 +56,18 @@ export default function Kpi() {
     }
     return data;
   }, [regionMap, compareRows, selectedKpi, compareYear]);
+
+  if (permissionLoading) {
+    return (
+      <div className="container mx-auto py-10 max-w-3xl">
+        <Card className="glass-card">
+          <CardContent className="p-10 text-center space-y-2">
+            <Activity className="h-8 w-8 text-muted-foreground/30 animate-pulse mx-auto" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!canView) {
     return (
