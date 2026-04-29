@@ -85,8 +85,6 @@ export function resolveModuleAccess({
   if (!canView) {
     if (isExternal) {
       canView = false;
-    } else if (moduleHasExplicitAssignments) {
-      canView = false;
     } else {
       const moduleRules = allAccess.filter((accessRule) => accessRule.module_id === moduleId);
 
