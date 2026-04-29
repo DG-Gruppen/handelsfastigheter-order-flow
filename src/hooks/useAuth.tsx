@@ -95,12 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (fetchId !== fetchIdRef.current) return;
 
-    setProfile(profileResult.data as Profile | null);
+    const nextProfile = profileResult.data as Profile | null;
+    setProfile(nextProfile);
     const directRoles = (rolesResult.data as UserRoleRow[] | null)?.map((r) => r.role) ?? [];
     const groupDerivedRoles = ((groupRolesResult.data as GroupMemberRow[] | null) ?? [])
       .map((g) => g.groups?.role_equivalent)
       .filter((r): r is string => !!r);
-    const mergedRoles = [...new Set([...directRoles, ...groupDerivedRoles])];
+    const baseRoles = nextProfile?.is_external === true ? [] : ["employee"];
+    const mergedRoles = [...new Set([...baseRoles, ...directRoles, ...groupDerivedRoles])];
     setRoles(mergedRoles);
     setLoading(false);
   }, []);
