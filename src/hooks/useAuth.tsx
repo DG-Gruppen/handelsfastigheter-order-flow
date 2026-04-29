@@ -66,7 +66,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [roleOverride, setRoleOverrideState] = useState<string[] | null>(() => readRoleOverride());
   const [loading, setLoading] = useState(true);
+
+  const setRoleOverride = (next: string[] | null) => {
+    if (next && next.length > 0) {
+      localStorage.setItem(ROLE_OVERRIDE_KEY, JSON.stringify(next));
+    } else {
+      localStorage.removeItem(ROLE_OVERRIDE_KEY);
+    }
+    setRoleOverrideState(next && next.length > 0 ? next : null);
+  };
+
+  const effectiveRoles = roleOverride ?? roles;
 
   useEffect(() => {
     // Track the current fetch so we can abort stale ones (e.g. rapid token refreshes)
@@ -136,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, roles: effectiveRoles, realRoles: roles, roleOverride, setRoleOverride, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
