@@ -27,6 +27,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   roles: string[];
+  realRoles: string[];
+  roleOverride: string[] | null;
+  setRoleOverride: (roles: string[] | null) => void;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -36,9 +39,25 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   profile: null,
   roles: [],
+  realRoles: [],
+  roleOverride: null,
+  setRoleOverride: () => {},
   loading: true,
   signOut: async () => {},
 });
+
+const ROLE_OVERRIDE_KEY = "shf_dev_role_override";
+
+function readRoleOverride(): string[] | null {
+  try {
+    const raw = localStorage.getItem(ROLE_OVERRIDE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.every((x) => typeof x === "string") ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 export const useAuth = () => useContext(AuthContext);
 
