@@ -33,7 +33,7 @@ export function useModulePermission(slug: string) {
         (p.grantee_type === "group" && userGroupIds.includes(p.grantee_id));
       if (!matches) continue;
 
-      if (p.can_view) canView = true;
+      if (p.can_view || p.can_edit || p.can_delete || p.is_owner) canView = true;
       if (p.can_edit) canEdit = true;
       if (p.can_delete) canDelete = true;
       if (p.is_owner) isOwner = true;
