@@ -56,13 +56,13 @@ async function fetchModulesData(userId: string) {
 }
 
 export function ModulesProvider({ children }: { children: ReactNode }) {
-  const { user, roles, profile, roleOverride } = useAuth();
+  const { user, roles, profile, roleOverride, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["modules-data", user?.id, roleOverride?.join(",") ?? "real"],
     queryFn: () => fetchModulesData(user!.id),
-    enabled: !!user,
+    enabled: !!user && !authLoading,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -72,7 +72,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const permissions = data?.permissions ?? [];
   const fullPermissions = data?.fullPermissions ?? [];
   const userGroupIds = data?.userGroupIds ?? [];
-  const loading = !user ? false : isLoading;
+  const loading = authLoading || (!!user && isLoading);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["modules-data", user?.id] });
