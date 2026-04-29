@@ -142,7 +142,7 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  const { canView: canViewKpi } = useModulePermission("kpi");
+  const { canView: canViewKpi, loading: kpiPermissionLoading } = useModulePermission("kpi");
   const { data: kpiSummary = [] } = useKpiDashboardSummary();
   const kpiCards = kpiSummary.length > 0
     ? kpiSummary.map((s, i) => buildKpiCard(s, i))
@@ -169,7 +169,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI Cards ── */}
-      {canViewKpi && (
+      {!kpiPermissionLoading && canViewKpi && (
       <Link to="/kpi" className="block">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {kpiCards.map((kpi: any) => {

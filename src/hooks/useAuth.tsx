@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<string[]>([]);
   const [roleOverride, setRoleOverrideState] = useState<string[] | null>(() => readRoleOverride());
   const [loading, setLoading] = useState(true);
+  const fetchIdRef = useRef(0);
 
   const setRoleOverride = (next: string[] | null) => {
     if (next && next.length > 0) {
@@ -80,47 +81,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const effectiveRoles = roleOverride ?? roles;
 
+  const fetchUserData = useCallback(async (userId: string) => {
+    const fetchId = ++fetchIdRef.current;
+
+    const [profileResult, rolesResult, groupRolesResult] = await Promise.all([
+      supabase.from("profiles").select("id,user_id,full_name,email,department,phone,manager_id,theme_preference,is_external").eq("user_id", userId).single(),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase
+        .from("group_members")
+        .select("group_id, groups!inner(role_equivalent)")
+        .eq("user_id", userId),
+    ]);
+
+    if (fetchId !== fetchIdRef.current) return;
+
+    setProfile(profileResult.data as Profile | null);
+    const directRoles = (rolesResult.data as UserRoleRow[] | null)?.map((r) => r.role) ?? [];
+    const groupDerivedRoles = ((groupRolesResult.data as GroupMemberRow[] | null) ?? [])
+      .map((g) => g.groups?.role_equivalent)
+      .filter((r): r is string => !!r);
+    const mergedRoles = [...new Set([...directRoles, ...groupDerivedRoles])];
+    setRoles(mergedRoles);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    // Track the current fetch so we can abort stale ones (e.g. rapid token refreshes)
-    let currentFetchId = 0;
-
-    const fetchUserData = async (userId: string) => {
-      const fetchId = ++currentFetchId;
-
-      const [profileResult, rolesResult, groupRolesResult] = await Promise.all([
-        supabase.from("profiles").select("id,user_id,full_name,email,department,phone,manager_id,theme_preference,is_external").eq("user_id", userId).single(),
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase
-          .from("group_members")
-          .select("group_id, groups!inner(role_equivalent)")
-          .eq("user_id", userId),
-      ]);
-
-      // Discard result if a newer fetch has started (e.g. another auth state change)
-      if (fetchId !== currentFetchId) return;
-
-      setProfile(profileResult.data as Profile | null);
-      const directRoles = (rolesResult.data as UserRoleRow[] | null)?.map((r) => r.role) ?? [];
-      const groupDerivedRoles = ((groupRolesResult.data as GroupMemberRow[] | null) ?? [])
-        .map((g) => g.groups?.role_equivalent)
-        .filter((r): r is string => !!r);
-      const mergedRoles = [...new Set([...directRoles, ...groupDerivedRoles])];
-      setRoles(mergedRoles);
-      setLoading(false);
-    };
-
-    // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Defer to avoid Supabase internal deadlock on auth state change
+          setLoading(true);
           setTimeout(() => {
-            fetchUserData(session.user.id);
+            void fetchUserData(session.user.id);
           }, 0);
         } else {
+          fetchIdRef.current++;
           setProfile(null);
           setRoles([]);
           setLoading(false);
@@ -130,18 +127,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Then check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setLoading(true);
+        void fetchUserData(session.user.id);
+      } else {
         setLoading(false);
       }
-      // If session exists, onAuthStateChange will handle it
     });
 
     return () => {
-      // Invalidate any in-flight fetch so its result is discarded
-      currentFetchId++;
+      fetchIdRef.current++;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchUserData]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

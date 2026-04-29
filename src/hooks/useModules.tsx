@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { resolveModuleAccess, type ModuleAccessRule, type ModulePermissionRow } from "@/lib/moduleAccess";
 
 export interface Module {
   id: string;
@@ -15,16 +16,10 @@ export interface Module {
   is_active: boolean;
 }
 
-interface ModuleAccess {
-  module_id: string;
-  role: string;
-  has_access: boolean;
-}
-
 interface ModulesContextType {
   modules: Module[];
   accessibleModules: Module[];
-  allAccess: ModuleAccess[];
+  allAccess: ModuleAccessRule[];
   allPermissions: FullModulePermission[];
   userGroupIds: string[];
   loading: boolean;
@@ -41,22 +36,7 @@ const ModulesContext = createContext<ModulesContextType>({
   refresh: () => {},
 });
 
-interface ModulePermission {
-  module_id: string;
-  grantee_type: string;
-  grantee_id: string;
-  can_view: boolean;
-}
-
-export interface FullModulePermission {
-  module_id: string;
-  grantee_type: string;
-  grantee_id: string;
-  can_view: boolean;
-  can_edit: boolean;
-  can_delete: boolean;
-  is_owner: boolean;
-}
+export interface FullModulePermission extends ModulePermissionRow {}
 
 async function fetchModulesData(userId: string) {
   const [modulesRes, accessRes, permRes, groupRes] = await Promise.all([
@@ -68,8 +48,8 @@ async function fetchModulesData(userId: string) {
 
   return {
     modules: (modulesRes.data as Module[]) ?? [],
-    allAccess: (accessRes.data as ModuleAccess[]) ?? [],
-    permissions: (permRes.data as ModulePermission[]) ?? [],
+    allAccess: (accessRes.data as ModuleAccessRule[]) ?? [],
+    permissions: (permRes.data as ModulePermissionRow[]) ?? [],
     fullPermissions: (permRes.data as FullModulePermission[]) ?? [],
     userGroupIds: (groupRes.data ?? []).map((g: { group_id: string }) => g.group_id),
   };
@@ -116,6 +96,16 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
         { event: "*", schema: "public", table: "group_members" },
         () => refresh()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "module_role_access" },
+        () => refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_roles" },
+        () => refresh()
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
@@ -124,49 +114,24 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const isExternal = profile?.is_external === true;
 
   const accessibleModules = useMemo(() => {
-    // Admin role is a superuser override – sees everything active
     const isAdmin = roles.includes("admin");
 
     return modules.filter((m) => {
       if (!m.is_active) return false;
-      if (isAdmin) return true;
+      if (!user?.id) return false;
 
-      // Check if user has explicit module_permissions (user or group-level)
-      const hasExplicitPermission = permissions.some((p) => {
-        if (p.module_id !== m.id) return false;
-        const grantsAccess = p.can_view || (p as FullModulePermission).can_edit || (p as FullModulePermission).can_delete || (p as FullModulePermission).is_owner;
-        if (!grantsAccess) return false;
-        if (p.grantee_type === "user" && p.grantee_id === user?.id) return true;
-        if (p.grantee_type === "group" && userGroupIds.includes(p.grantee_id)) return true;
-        return false;
-      });
-      if (hasExplicitPermission) return true;
-
-      // External users ONLY get modules with explicit permissions – no fallback
-      if (isExternal) return false;
-
-      // If module has ANY explicit permissions defined, it's restricted –
-      // only the listed grantees may access it. Don't fall through to role access.
-      const hasAnyExplicitPermissions = permissions.some((p) => {
-        if (p.module_id !== m.id) return false;
-        return p.can_view || (p as FullModulePermission).can_edit || (p as FullModulePermission).can_delete || (p as FullModulePermission).is_owner;
-      });
-      if (hasAnyExplicitPermissions) return false;
-
-      // Fall back to role-based access
-      const moduleRules = allAccess.filter((a) => a.module_id === m.id);
-      // No rules defined → accessible to everyone (legacy default)
-      if (moduleRules.length === 0) return true;
-      // User has no roles → allow if all defined roles have access
-      if (roles.length === 0) {
-        return moduleRules.every((a) => a.has_access);
-      }
-      return roles.some((role) => {
-        const rule = moduleRules.find((a) => a.role === role);
-        return rule ? rule.has_access : false;
-      });
+      return resolveModuleAccess({
+        allAccess,
+        isAdmin,
+        isExternal,
+        moduleId: m.id,
+        permissions: fullPermissions,
+        roles,
+        userGroupIds,
+        userId: user.id,
+      }).canView;
     });
-  }, [modules, allAccess, permissions, userGroupIds, roles, user?.id, isExternal]);
+  }, [modules, allAccess, fullPermissions, userGroupIds, roles, user?.id, isExternal]);
 
   return (
     <ModulesContext.Provider value={{ modules, accessibleModules, allAccess, allPermissions: fullPermissions, userGroupIds, loading, refresh }}>
