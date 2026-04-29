@@ -1,51 +1,49 @@
 import { useMemo } from "react";
 import { useModules } from "@/hooks/useModules";
 import { useAuth } from "@/hooks/useAuth";
+import { resolveModuleAccess } from "@/lib/moduleAccess";
 
 /**
  * Check if the current user has specific module-level permissions by module slug.
  * Admin role always grants all permissions (superuser override).
  */
 export function useModulePermission(slug: string) {
-  const { modules, allPermissions, userGroupIds } = useModules();
-  const { user, roles } = useAuth();
+  const { modules, allAccess, allPermissions, userGroupIds, loading: modulesLoading } = useModules();
+  const { user, roles, profile, loading: authLoading } = useAuth();
   const isAdmin = roles.includes("admin");
+  const isExternal = profile?.is_external === true;
 
   return useMemo(() => {
+    if (authLoading || modulesLoading) {
+      return { canView: false, canEdit: false, canDelete: false, isOwner: false, loading: true };
+    }
+
     if (isAdmin) {
-      return { canView: true, canEdit: true, canDelete: true, isOwner: true };
+      return { canView: true, canEdit: true, canDelete: true, isOwner: true, loading: false };
     }
 
     const mod = modules.find((m) => m.slug === slug);
     if (!mod || !user) {
-      return { canView: false, canEdit: false, canDelete: false, isOwner: false };
+      return { canView: false, canEdit: false, canDelete: false, isOwner: false, loading: false };
     }
 
-    let canView = false;
-    let canEdit = false;
-    let canDelete = false;
-    let isOwner = false;
+    const access = resolveModuleAccess({
+      allAccess,
+      isAdmin,
+      isExternal,
+      moduleId: mod.id,
+      permissions: allPermissions,
+      roles,
+      userGroupIds,
+      userId: user.id,
+    });
 
-    for (const p of allPermissions) {
-      if (p.module_id !== mod.id) continue;
-      const matches =
-        (p.grantee_type === "user" && p.grantee_id === user.id) ||
-        (p.grantee_type === "group" && userGroupIds.includes(p.grantee_id));
-      if (!matches) continue;
-
-      if (p.can_view || p.can_edit || p.can_delete || p.is_owner) canView = true;
-      if (p.can_edit) canEdit = true;
-      if (p.can_delete) canDelete = true;
-      if (p.is_owner) isOwner = true;
-    }
-
-    // Owner implies all
-    if (isOwner) {
-      canView = true;
-      canEdit = true;
-      canDelete = true;
-    }
-
-    return { canView, canEdit, canDelete, isOwner };
-  }, [modules, allPermissions, userGroupIds, user?.id, isAdmin, slug]);
+    return {
+      canView: access.canView,
+      canEdit: access.canEdit,
+      canDelete: access.canDelete,
+      isOwner: access.isOwner,
+      loading: false,
+    };
+  }, [modules, allAccess, allPermissions, userGroupIds, user?.id, isAdmin, isExternal, slug, roles, authLoading, modulesLoading]);
 }
