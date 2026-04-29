@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useModules } from "@/hooks/useModules";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -22,7 +23,14 @@ const TEST_ROLES: { key: string; label: string }[] = [
  */
 export default function RoleSwitcher() {
   const { realRoles, roleOverride, setRoleOverride } = useAuth();
+  const { accessibleModules, modules, userGroupIds, allPermissions } = useModules();
   const [open, setOpen] = useState(false);
+  const kpiMod = modules.find((m) => m.slug === "kpi");
+  const kpiAccessible = accessibleModules.some((m) => m.slug === "kpi");
+  const kpiPerms = kpiMod ? allPermissions.filter((p) => p.module_id === kpiMod.id) : [];
+  const kpiMatching = kpiPerms.filter(
+    (p) => p.grantee_type === "group" && userGroupIds.includes(p.grantee_id)
+  );
 
   const isPrivileged = realRoles.includes("admin") || realRoles.includes("it");
   const forceShow = typeof window !== "undefined" && window.location.search.includes("devRoles=1");
@@ -120,6 +128,13 @@ export default function RoleSwitcher() {
               <X className="h-3 w-3" /> Återställ till riktiga roller
             </Button>
 
+            <div className="text-[10px] leading-snug pt-1 border-t space-y-1">
+              <div className="font-semibold text-muted-foreground">KPI-diagnostik</div>
+              <div>Modul finns: <span className={kpiMod ? "text-accent" : "text-destructive"}>{kpiMod ? "ja" : "nej"}</span> · Synlig: <span className={kpiAccessible ? "text-accent" : "text-destructive"}>{kpiAccessible ? "ja" : "nej"}</span></div>
+              <div>Mina grupper: {userGroupIds.length}</div>
+              <div>KPI-grupp-permissions: {kpiPerms.filter((p) => p.grantee_type === "group").length}</div>
+              <div>Matchande grupper: {kpiMatching.length}</div>
+            </div>
             <p className="text-[10px] text-muted-foreground leading-snug pt-1 border-t">
               Endast frontend. RLS i databasen använder fortfarande dina riktiga roller — vissa data kan saknas.
             </p>
