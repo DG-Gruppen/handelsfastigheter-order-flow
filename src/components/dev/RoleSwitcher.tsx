@@ -23,7 +23,14 @@ const TEST_ROLES: { key: string; label: string }[] = [
  */
 export default function RoleSwitcher() {
   const { realRoles, roleOverride, setRoleOverride } = useAuth();
+  const { accessibleModules, modules, userGroupIds, allPermissions } = useModules();
   const [open, setOpen] = useState(false);
+  const kpiMod = modules.find((m) => m.slug === "kpi");
+  const kpiAccessible = accessibleModules.some((m) => m.slug === "kpi");
+  const kpiPerms = kpiMod ? allPermissions.filter((p) => p.module_id === kpiMod.id) : [];
+  const kpiMatching = kpiPerms.filter(
+    (p) => p.grantee_type === "group" && userGroupIds.includes(p.grantee_id)
+  );
 
   const isPrivileged = realRoles.includes("admin") || realRoles.includes("it");
   const forceShow = typeof window !== "undefined" && window.location.search.includes("devRoles=1");
