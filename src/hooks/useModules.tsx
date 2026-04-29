@@ -133,7 +133,9 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
 
       // Check if user has explicit module_permissions (user or group-level)
       const hasExplicitPermission = permissions.some((p) => {
-        if (p.module_id !== m.id || !p.can_view) return false;
+        if (p.module_id !== m.id) return false;
+        const grantsAccess = p.can_view || (p as FullModulePermission).can_edit || (p as FullModulePermission).can_delete || (p as FullModulePermission).is_owner;
+        if (!grantsAccess) return false;
         if (p.grantee_type === "user" && p.grantee_id === user?.id) return true;
         if (p.grantee_type === "group" && userGroupIds.includes(p.grantee_id)) return true;
         return false;
@@ -145,9 +147,10 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
 
       // If module has ANY explicit permissions defined, it's restricted –
       // only the listed grantees may access it. Don't fall through to role access.
-      const hasAnyExplicitPermissions = permissions.some(
-        (p) => p.module_id === m.id && p.can_view
-      );
+      const hasAnyExplicitPermissions = permissions.some((p) => {
+        if (p.module_id !== m.id) return false;
+        return p.can_view || (p as FullModulePermission).can_edit || (p as FullModulePermission).can_delete || (p as FullModulePermission).is_owner;
+      });
       if (hasAnyExplicitPermissions) return false;
 
       // Fall back to role-based access
