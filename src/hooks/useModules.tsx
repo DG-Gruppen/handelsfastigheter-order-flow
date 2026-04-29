@@ -76,11 +76,11 @@ async function fetchModulesData(userId: string) {
 }
 
 export function ModulesProvider({ children }: { children: ReactNode }) {
-  const { user, roles, profile } = useAuth();
+  const { user, roles, profile, roleOverride } = useAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["modules-data", user?.id],
+    queryKey: ["modules-data", user?.id, roleOverride?.join(",") ?? "real"],
     queryFn: () => fetchModulesData(user!.id),
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
