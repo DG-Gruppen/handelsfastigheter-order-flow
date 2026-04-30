@@ -193,7 +193,11 @@ export default function Culture() {
                 <div className="text-sm">
                   <span className="font-medium text-foreground">{r.from_name}</span>
                   <span className="text-muted-foreground"> → </span>
-                  <span className="font-medium text-foreground">{r.to_name}</span>
+                  <span className="font-medium text-foreground">
+                    {r.to_names.length > 2
+                      ? `${r.to_names.slice(0, -1).join(", ")} & ${r.to_names[r.to_names.length - 1]}`
+                      : r.to_names.join(" & ")}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{r.message}</p>
                 <span className="text-[10px] text-muted-foreground/60 mt-1 block">
