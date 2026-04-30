@@ -65,9 +65,9 @@ function buildKpiCard(s: KpiSummary, idx: number) {
 async function fetchRecognitions() {
   const { data } = await supabase
     .from("recognitions")
-    .select("id, icon, message, created_at, from_user_id, to_user_id")
+    .select("id, icon, message, created_at, from_user_id, to_user_id, batch_id")
     .order("created_at", { ascending: false })
-    .limit(3);
+    .limit(30);
   if (!data || data.length === 0) return [];
   const userIds = [...new Set(data.flatMap((r: any) => [r.from_user_id, r.to_user_id]))];
   const { data: profiles } = await supabase
@@ -76,11 +76,28 @@ async function fetchRecognitions() {
     .in("user_id", userIds);
   const nameMap: Record<string, string> = {};
   for (const p of (profiles ?? []) as any[]) nameMap[p.user_id] = p.full_name;
-  return data.map((r: any) => ({
-    ...r,
-    from_name: nameMap[r.from_user_id] || "Okänd",
-    to_name: nameMap[r.to_user_id] || "Okänd",
-  }));
+
+  const groups = new Map<string, any>();
+  for (const r of data as any[]) {
+    const key = r.batch_id ?? r.id;
+    const toName = nameMap[r.to_user_id] || "Okänd";
+    const existing = groups.get(key);
+    if (existing) {
+      if (!existing.to_names.includes(toName)) existing.to_names.push(toName);
+    } else {
+      groups.set(key, {
+        id: key,
+        icon: r.icon,
+        message: r.message,
+        created_at: r.created_at,
+        from_name: nameMap[r.from_user_id] || "Okänd",
+        to_names: [toName],
+      });
+    }
+  }
+  return Array.from(groups.values())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 3);
 }
 
 async function fetchQuickTools(userId: string) {
