@@ -10,7 +10,7 @@ import {
   ArrowUpRight, ArrowDownRight, Award, PartyPopper,
 } from "lucide-react";
 
-import { kpis as fallbackKpis, okrs, weeklyWin } from "@/data/dashboard";
+import { kpis as fallbackKpis } from "@/data/dashboard";
 import { useKpiDashboardSummary, formatKpiValue, OPTIONER_STRIKE_PRICE, type KpiSummary } from "@/hooks/useKpiData";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import WeeklyCelebrations from "@/components/WeeklyCelebrations";
