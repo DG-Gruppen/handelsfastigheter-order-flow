@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp, Banknote, Building2, Percent, LineChart,
-  ArrowUpRight, ArrowDownRight, Award, PartyPopper,
+  ArrowUpRight, ArrowDownRight, PartyPopper,
 } from "lucide-react";
 
 import { kpis as fallbackKpis } from "@/data/dashboard";
