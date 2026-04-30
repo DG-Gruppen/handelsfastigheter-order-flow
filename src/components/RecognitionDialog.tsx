@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -7,9 +7,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ICON_OPTIONS = [
@@ -36,7 +37,8 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [toUserId, setToUserId] = useState("");
+  const [toUserIds, setToUserIds] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
   const [icon, setIcon] = useState("⭐");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -51,26 +53,49 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
       .then(({ data }) => setProfiles((data as Profile[]) ?? []));
   }, [open, user]);
 
+  const selectedProfiles = useMemo(
+    () => profiles.filter((p) => toUserIds.includes(p.user_id)),
+    [profiles, toUserIds]
+  );
+
+  const filteredProfiles = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return profiles;
+    return profiles.filter((p) => (p.full_name ?? "").toLowerCase().includes(q));
+  }, [profiles, search]);
+
+  const toggleUser = (id: string) => {
+    setToUserIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
   const handleSubmit = async () => {
-    if (!user || !toUserId || !message.trim()) {
-      toast.error("Välj en person och skriv ett meddelande");
+    if (!user || toUserIds.length === 0 || !message.trim()) {
+      toast.error("Välj minst en person och skriv ett meddelande");
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("recognitions").insert({
+    const rows = toUserIds.map((to_user_id) => ({
       from_user_id: user.id,
-      to_user_id: toUserId,
+      to_user_id,
       icon,
       message: message.trim(),
-    } as any);
+    }));
+    const { error } = await supabase.from("recognitions").insert(rows as any);
 
     if (error) {
       toast.error("Kunde inte skapa erkännandet");
       console.error(error);
     } else {
-      toast.success("Erkännande skickat! 🎉");
+      toast.success(
+        toUserIds.length > 1
+          ? `Erkännande skickat till ${toUserIds.length} kollegor! 🎉`
+          : "Erkännande skickat! 🎉"
+      );
       setOpen(false);
-      setToUserId("");
+      setToUserIds([]);
+      setSearch("");
       setIcon("⭐");
       setMessage("");
       onCreated();
@@ -86,7 +111,7 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
           <span className="hidden sm:inline ml-1">Ge ett erkännande</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Nytt erkännande</DialogTitle>
         </DialogHeader>
@@ -114,21 +139,61 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
             </div>
           </div>
 
-          {/* Recipient */}
+          {/* Recipients (multi-select) */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Vem vill du uppmärksamma? *</Label>
-            <Select value={toUserId} onValueChange={setToUserId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Välj kollega..." />
-              </SelectTrigger>
-              <SelectContent>
-                {profiles.map((p) => (
-                  <SelectItem key={p.user_id} value={p.user_id}>
+            <Label className="text-sm font-medium">
+              Vem/vilka vill du uppmärksamma? * {toUserIds.length > 0 && (
+                <span className="text-muted-foreground font-normal">({toUserIds.length} valda)</span>
+              )}
+            </Label>
+
+            {selectedProfiles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 p-2 rounded-md border border-border bg-muted/30">
+                {selectedProfiles.map((p) => (
+                  <Badge key={p.user_id} variant="secondary" className="gap-1 pr-1">
                     {p.full_name || p.user_id}
-                  </SelectItem>
+                    <button
+                      type="button"
+                      onClick={() => toggleUser(p.user_id)}
+                      className="ml-0.5 rounded-full hover:bg-background/60 p-0.5"
+                      aria-label="Ta bort"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            )}
+
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Sök kollega..."
+            />
+
+            <div className="max-h-48 overflow-y-auto rounded-md border border-border divide-y divide-border">
+              {filteredProfiles.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Inga träffar</p>
+              ) : (
+                filteredProfiles.map((p) => {
+                  const checked = toUserIds.includes(p.user_id);
+                  return (
+                    <button
+                      key={p.user_id}
+                      type="button"
+                      onClick={() => toggleUser(p.user_id)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-muted transition-colors",
+                        checked && "bg-primary/5"
+                      )}
+                    >
+                      <span>{p.full_name || p.user_id}</span>
+                      {checked && <Check className="h-4 w-4 text-primary" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           {/* Message */}
@@ -137,7 +202,7 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Beskriv varför personen förtjänar erkännandet..."
+              placeholder="Beskriv varför personen/personerna förtjänar erkännandet..."
               rows={3}
               maxLength={300}
               className="resize-none"
@@ -147,10 +212,14 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
 
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !toUserId || !message.trim()}
+            disabled={submitting || toUserIds.length === 0 || !message.trim()}
             className="w-full gap-2 gradient-primary hover:opacity-90"
           >
-            {submitting ? "Skickar..." : "Skicka erkännande"}
+            {submitting
+              ? "Skickar..."
+              : toUserIds.length > 1
+                ? `Skicka till ${toUserIds.length} kollegor`
+                : "Skicka erkännande"}
           </Button>
         </div>
       </DialogContent>
