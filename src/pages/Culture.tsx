@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Award, PartyPopper, Pen, BookOpen, ChevronRight, Pencil, Check, X } from "lucide-react";
+import { PartyPopper, Pen, BookOpen, ChevronRight, Pencil, Check, X } from "lucide-react";
 import WeeklyCelebrations from "@/components/WeeklyCelebrations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,6 @@ import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-
-const veckansVinst = {
-  title: "Region Syd knäcker alla förväntningar",
-  body: "Förvaltningsteam Syd har genomfört omförhandling av samtliga utgående avtal under Q1 med en genomsnittlig hyreshöjning på 4,2%. Detta stärker vår position som Skandinaviens bästa extern-handelsförvaltare. Stort tack till Peter Högberg, Julia Parker och Alexander Bertilsson!",
-  author: "Petra Bondesson",
-  week: "v.11 2026",
-};
 
 interface Recognition {
   id: string;
@@ -158,20 +151,6 @@ export default function Culture() {
 
       {/* Veckans jubilarer */}
       <WeeklyCelebrations />
-
-      {/* Veckans vinst – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
-      {isIT && (
-      <div className="glass-card rounded-2xl border-2 border-warning/40 p-6 md:p-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Award className="w-6 h-6 text-warning" />
-          <h2 className="font-heading text-xl font-semibold text-foreground">Veckans vinst</h2>
-          <span className="text-xs text-muted-foreground ml-auto">{veckansVinst.week}</span>
-        </div>
-        <h3 className="font-heading text-lg font-semibold text-foreground mb-2">{veckansVinst.title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">{veckansVinst.body}</p>
-        <p className="text-xs text-warning font-medium mt-4">Publicerad av {veckansVinst.author}</p>
-      </div>
-      )}
 
       {/* Klapp på axeln */}
       <div>
