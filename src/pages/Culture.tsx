@@ -159,20 +159,6 @@ export default function Culture() {
       {/* Veckans jubilarer */}
       <WeeklyCelebrations />
 
-      {/* Veckans vinst – only visible to IT group (see .lovable/culture-hidden-sections.md) */}
-      {isIT && (
-      <div className="glass-card rounded-2xl border-2 border-warning/40 p-6 md:p-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Award className="w-6 h-6 text-warning" />
-          <h2 className="font-heading text-xl font-semibold text-foreground">Veckans vinst</h2>
-          <span className="text-xs text-muted-foreground ml-auto">{veckansVinst.week}</span>
-        </div>
-        <h3 className="font-heading text-lg font-semibold text-foreground mb-2">{veckansVinst.title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">{veckansVinst.body}</p>
-        <p className="text-xs text-warning font-medium mt-4">Publicerad av {veckansVinst.author}</p>
-      </div>
-      )}
-
       {/* Klapp på axeln */}
       <div>
         <div className="flex items-center justify-between mb-4">
