@@ -7,10 +7,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp, Banknote, Building2, Percent, LineChart,
-  ArrowUpRight, ArrowDownRight, Award, PartyPopper,
+  ArrowUpRight, ArrowDownRight, PartyPopper,
 } from "lucide-react";
 
-import { kpis as fallbackKpis, okrs, weeklyWin } from "@/data/dashboard";
+import { kpis as fallbackKpis } from "@/data/dashboard";
 import { useKpiDashboardSummary, formatKpiValue, OPTIONER_STRIKE_PRICE, type KpiSummary } from "@/hooks/useKpiData";
 import HomepageSuggestion from "@/components/HomepageSuggestion";
 import WeeklyCelebrations from "@/components/WeeklyCelebrations";
@@ -213,47 +213,9 @@ export default function Dashboard() {
       </Link>
       )}
 
-      {/* ── OKR Snapshot (IT only) ── */}
-      {isIT && (
-      <Card className="glass-card">
-        <CardHeader className="pb-2 px-4 md:px-6">
-          <div className="flex items-center justify-between">
-            <CardTitle className="font-heading text-base">OKR-snapshot</CardTitle>
-            <Link to="/strategy" className="text-xs text-primary hover:underline font-medium">Visa alla →</Link>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6 space-y-4">
-          {okrs.map((okr) => (
-            <div key={okr.label}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-medium">{okr.emoji} {okr.label}</span>
-                <span className="text-sm font-bold text-foreground">{okr.progress}%</span>
-              </div>
-              <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-1000 ease-out" style={{ width: `${okr.progress}%` }} />
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-      )}
-
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
-        {/* ── Veckans vinst (IT only) ── */}
-        {isIT && (
-        <Card className="glass-card border-l-4 border-l-accent">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-base flex items-center gap-2">
-              <Award className="w-5 h-5 text-accent" />
-              Veckans vinst
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{weeklyWin.text}</p>
-            <p className="text-xs font-medium text-accent mt-3">Publicerad av {weeklyWin.author} · {weeklyWin.week}</p>
-          </CardContent>
-        </Card>
-        )}
+        {/* ── Veckans jubilarer ── */}
+        <WeeklyCelebrations compact />
 
         {/* ── Erkännanden ── */}
         <Card className="glass-card">
@@ -319,33 +281,28 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
-        {/* ── Jubilarer ── */}
-        <WeeklyCelebrations compact />
-
-        {/* ── Snabbåtkomst ── */}
-        <Card className="glass-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-heading text-base">Snabbåtkomst</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-2">
-              {quickTools.map((tool: any) => (
-                <a
-                  key={tool.id}
-                  href={tool.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                >
-                  <span className="text-xl">{tool.emoji}</span>
-                  <span className="text-[10px] font-medium text-muted-foreground text-center">{tool.name}</span>
-                </a>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ── Snabbåtkomst (full bredd) ── */}
+      <Card className="glass-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="font-heading text-base">Snabbåtkomst</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            {quickTools.map((tool: any) => (
+              <a
+                key={tool.id}
+                href={tool.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+              >
+                <span className="text-xl">{tool.emoji}</span>
+                <span className="text-[10px] font-medium text-muted-foreground text-center">{tool.name}</span>
+              </a>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Manifesto ── */}
       <div className="bg-[hsl(var(--sidebar-background))] rounded-lg p-8 text-center">
