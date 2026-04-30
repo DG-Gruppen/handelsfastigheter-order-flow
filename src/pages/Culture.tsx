@@ -12,13 +12,6 @@ import { sv } from "date-fns/locale";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-const veckansVinst = {
-  title: "Region Syd knäcker alla förväntningar",
-  body: "Förvaltningsteam Syd har genomfört omförhandling av samtliga utgående avtal under Q1 med en genomsnittlig hyreshöjning på 4,2%. Detta stärker vår position som Skandinaviens bästa extern-handelsförvaltare. Stort tack till Peter Högberg, Julia Parker och Alexander Bertilsson!",
-  author: "Petra Bondesson",
-  week: "v.11 2026",
-};
-
 interface Recognition {
   id: string;
   icon: string;
