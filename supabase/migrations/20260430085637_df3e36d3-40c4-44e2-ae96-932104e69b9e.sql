@@ -1,0 +1,1 @@
+UPDATE public.kpi_data SET actual = 379.80 WHERE kpi_type_id = (SELECT id FROM public.kpi_types WHERE slug = 'optioner') AND year = 2026 AND quarter = 1;
