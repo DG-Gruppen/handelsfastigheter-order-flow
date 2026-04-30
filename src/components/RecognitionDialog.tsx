@@ -76,11 +76,13 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
       return;
     }
     setSubmitting(true);
+    const batch_id = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`);
     const rows = toUserIds.map((to_user_id) => ({
       from_user_id: user.id,
       to_user_id,
       icon,
       message: message.trim(),
+      batch_id,
     }));
     const { error } = await supabase.from("recognitions").insert(rows as any);
 

@@ -2119,6 +2119,7 @@ export type Database = {
       }
       recognitions: {
         Row: {
+          batch_id: string | null
           created_at: string
           from_user_id: string
           icon: string
@@ -2127,6 +2128,7 @@ export type Database = {
           to_user_id: string
         }
         Insert: {
+          batch_id?: string | null
           created_at?: string
           from_user_id: string
           icon?: string
@@ -2135,6 +2137,7 @@ export type Database = {
           to_user_id: string
         }
         Update: {
+          batch_id?: string | null
           created_at?: string
           from_user_id?: string
           icon?: string
