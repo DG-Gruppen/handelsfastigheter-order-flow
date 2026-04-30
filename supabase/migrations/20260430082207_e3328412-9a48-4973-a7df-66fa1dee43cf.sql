@@ -1,0 +1,1 @@
+DELETE FROM public.recognitions WHERE batch_id = '8a6828d4-1f4d-4c88-8e89-e47d8ea73cdf';
