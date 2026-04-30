@@ -28,6 +28,14 @@ interface Recognition {
   to_names: string[];
 }
 
+interface CeoBlog {
+  id: string;
+  title: string;
+  excerpt: string;
+  author: string;
+  period: string;
+}
+
 async function fetchRecognitionsData(): Promise<Recognition[]> {
   const { data } = await supabase
     .from("recognitions")
