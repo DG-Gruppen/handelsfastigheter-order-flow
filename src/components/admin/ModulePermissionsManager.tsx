@@ -350,6 +350,9 @@ export default function ModulePermissionsManager() {
                               <Crown className="h-3.5 w-3.5 text-warning" />
                               <Switch checked={perm.is_owner} onCheckedChange={v => handleToggle(perm, "is_owner", v)} />
                             </label>
+                          </>
+                        );
+                      })()}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/50 hover:text-destructive" onClick={() => handleRemovePermission(perm.id)}>
                         <X className="h-3.5 w-3.5" />
                       </Button>
