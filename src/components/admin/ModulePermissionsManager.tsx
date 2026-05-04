@@ -136,14 +136,40 @@ export default function ModulePermissionsManager() {
     refreshSidebar();
   };
 
-  const handleToggle = async (permId: string, field: string, value: boolean) => {
-    const update: any = { [field]: value };
-    if (field === "is_owner" && value) {
-      update.can_view = true;
-      update.can_edit = true;
-      update.can_delete = true;
+  const handleToggle = async (perm: ModulePermission, field: "can_view" | "can_edit" | "can_delete" | "is_owner", value: boolean) => {
+    const update: any = { ...perm, [field]: value };
+    delete update.id;
+    delete update.module_id;
+    delete update.grantee_type;
+    delete update.grantee_id;
+
+    // Hierarkisk logik – matchar databastriggern
+    if (value) {
+      if (field === "is_owner") {
+        update.can_view = true;
+        update.can_edit = true;
+        update.can_delete = true;
+      } else if (field === "can_delete") {
+        update.can_edit = true;
+        update.can_view = true;
+      } else if (field === "can_edit") {
+        update.can_view = true;
+      }
+    } else {
+      // Stänger man av en lägre nivå måste högre också av (annars ger triggern tillbaka det)
+      if (field === "can_view") {
+        update.can_edit = false;
+        update.can_delete = false;
+        update.is_owner = false;
+      } else if (field === "can_edit") {
+        update.can_delete = false;
+        update.is_owner = false;
+      } else if (field === "can_delete") {
+        update.is_owner = false;
+      }
     }
-    const { error } = await supabase.from("module_permissions").update(update).eq("id", permId);
+
+    const { error } = await supabase.from("module_permissions").update(update).eq("id", perm.id);
     if (error) {
       toast.error("Kunde inte uppdatera rättighet");
       return;
@@ -302,22 +328,31 @@ export default function ModulePermissionsManager() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Visa">
-                        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                        <Switch checked={perm.can_view} onCheckedChange={v => handleToggle(perm.id, "can_view", v)} />
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Redigera">
-                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                        <Switch checked={perm.can_edit} onCheckedChange={v => handleToggle(perm.id, "can_edit", v)} />
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Ta bort">
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        <Switch checked={perm.can_delete} onCheckedChange={v => handleToggle(perm.id, "can_delete", v)} />
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Ägare">
-                        <Crown className="h-3.5 w-3.5 text-warning" />
-                        <Switch checked={perm.is_owner} onCheckedChange={v => handleToggle(perm.id, "is_owner", v)} />
-                      </label>
+                      {(() => {
+                        const viewImplied = perm.is_owner || perm.can_edit || perm.can_delete;
+                        const editImplied = perm.is_owner || perm.can_delete;
+                        const deleteImplied = perm.is_owner;
+                        return (
+                          <>
+                            <label className={`flex items-center gap-1.5 text-xs ${viewImplied ? "opacity-60" : "cursor-pointer"}`} title={viewImplied ? "Visa (ingår automatiskt)" : "Visa"}>
+                              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Switch checked={perm.can_view} disabled={viewImplied} onCheckedChange={v => handleToggle(perm, "can_view", v)} />
+                            </label>
+                            <label className={`flex items-center gap-1.5 text-xs ${editImplied ? "opacity-60" : "cursor-pointer"}`} title={editImplied ? "Redigera (ingår automatiskt)" : "Redigera"}>
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Switch checked={perm.can_edit} disabled={editImplied} onCheckedChange={v => handleToggle(perm, "can_edit", v)} />
+                            </label>
+                            <label className={`flex items-center gap-1.5 text-xs ${deleteImplied ? "opacity-60" : "cursor-pointer"}`} title={deleteImplied ? "Ta bort (ingår automatiskt)" : "Ta bort"}>
+                              <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Switch checked={perm.can_delete} disabled={deleteImplied} onCheckedChange={v => handleToggle(perm, "can_delete", v)} />
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Ägare – ger automatiskt visa, redigera och ta bort">
+                              <Crown className="h-3.5 w-3.5 text-warning" />
+                              <Switch checked={perm.is_owner} onCheckedChange={v => handleToggle(perm, "is_owner", v)} />
+                            </label>
+                          </>
+                        );
+                      })()}
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/50 hover:text-destructive" onClick={() => handleRemovePermission(perm.id)}>
                         <X className="h-3.5 w-3.5" />
                       </Button>
