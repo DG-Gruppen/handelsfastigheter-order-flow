@@ -63,8 +63,10 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     queryKey: ["modules-data", user?.id, roleOverride?.join(",") ?? "real"],
     queryFn: () => fetchModulesData(user!.id),
     enabled: !!user && !authLoading,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const modules = data?.modules ?? [];
