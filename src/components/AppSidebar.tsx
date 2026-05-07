@@ -19,10 +19,10 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
-  { label: "Information", slugs: ["nyheter", "strategy", "kpi", "kunskapsbanken", "documents"] },
+  { label: "Information", slugs: ["nyheter", "strategy", "kpi", "kunskapsbanken", "documents", "properties"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "kulturen", "workwear", "pulse"] },
-  { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools", "losenord", "prompts", "statistik"] },
+  { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools", "losenord", "prompts", "statistik", "chatt"] },
   { label: "Personligt", slugs: ["my-shf"] },
   // "admin" removed – accessed via profile menu
 ];
