@@ -99,7 +99,11 @@ export default function Prompts() {
 
   const profileMap = useMemo(() => {
     const m = new Map<string, string>();
-    profiles.forEach((p) => m.set(p.id, p.full_name ?? "Okänd"));
+    profiles.forEach((p) => {
+      const name = p.full_name ?? "Okänd";
+      if (p.user_id) m.set(p.user_id, name);
+      if (p.id) m.set(p.id, name);
+    });
     return m;
   }, [profiles]);
 
