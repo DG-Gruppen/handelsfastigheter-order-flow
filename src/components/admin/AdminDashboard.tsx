@@ -111,7 +111,7 @@ async function fetchAdminStats(): Promise<Stats> {
     supabase.from("tools").select("*", { count: "exact", head: true }),
     supabase.from("tools").select("*", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("planner_cards").select("*", { count: "exact", head: true }),
-    supabase.from("planner_cards").select("*", { count: "exact", head: true }).neq("status", "done"),
+    supabase.from("planner_cards").select("*", { count: "exact", head: true }).eq("due_done", false),
   ]);
 
   const [
