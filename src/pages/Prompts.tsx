@@ -35,7 +35,7 @@ interface RatingRow {
   rating: number;
 }
 
-interface ProfileLite { id: string; full_name: string | null; }
+interface ProfileLite { id: string; user_id: string; full_name: string | null; }
 
 const ALL = "Alla" as const;
 
@@ -43,7 +43,7 @@ async function fetchData(userId: string) {
   const [pRes, rRes, profRes] = await Promise.all([
     supabase.from("prompts" as any).select("*").order("created_at", { ascending: false }),
     supabase.from("prompt_ratings" as any).select("prompt_id, user_id, rating"),
-    supabase.from("profiles").select("id, full_name"),
+    supabase.from("profiles").select("id, user_id, full_name"),
   ]);
   if (pRes.error) throw pRes.error;
   return {
@@ -99,7 +99,11 @@ export default function Prompts() {
 
   const profileMap = useMemo(() => {
     const m = new Map<string, string>();
-    profiles.forEach((p) => m.set(p.id, p.full_name ?? "Okänd"));
+    profiles.forEach((p) => {
+      const name = p.full_name ?? "Okänd";
+      if (p.user_id) m.set(p.user_id, name);
+      if (p.id) m.set(p.id, name);
+    });
     return m;
   }, [profiles]);
 
@@ -178,11 +182,11 @@ export default function Prompts() {
   const tabs = [ALL, ...activeNames] as string[];
 
   return (
-    <div className="container max-w-6xl px-4 py-6 space-y-6">
+    <div className="container max-w-6xl px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-serif text-foreground flex items-center gap-2">
-            <Sparkles className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-serif text-foreground flex items-center gap-2">
+            <Sparkles className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
             Prompt-bibliotek
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -192,8 +196,8 @@ export default function Prompts() {
       </div>
 
       {/* Search + add */}
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[260px]">
+      <div className="flex gap-2 sm:gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-full sm:min-w-[260px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
@@ -203,32 +207,34 @@ export default function Prompts() {
           />
         </div>
         {canEditPrompts && (
-          <Button variant="outline" onClick={() => setCategoriesOpen(true)} className="h-11" title="Redigera kategorier">
-            <Tags className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Kategorier</span>
+          <Button variant="outline" onClick={() => setCategoriesOpen(true)} className="h-11 flex-1 sm:flex-none" title="Redigera kategorier">
+            <Tags className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Kategorier</span>
           </Button>
         )}
-        <Button onClick={() => { setEditing(null); setCreatorOpen(true); }} className="h-11">
-          <Plus className="h-4 w-4 mr-1" /> Lägg till prompt
+        <Button onClick={() => { setEditing(null); setCreatorOpen(true); }} className="h-11 flex-1 sm:flex-none">
+          <Plus className="h-4 w-4 mr-1" /> Lägg till<span className="hidden sm:inline"> prompt</span>
         </Button>
       </div>
 
       {/* Tabs + sort */}
-      <div className="flex flex-wrap items-center gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveCat(t)}
-            className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
-              activeCat === t
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-foreground border-border hover:bg-muted"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-        <div className="ml-auto flex items-center gap-1 text-xs">
-          <span className="text-muted-foreground mr-1">Sortera:</span>
+      <div className="space-y-2">
+        <div className="flex gap-2 overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap pb-1">
+          {tabs.map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveCat(t)}
+              className={`shrink-0 px-3 py-1.5 rounded-full border text-sm transition-colors ${
+                activeCat === t
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 text-xs overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+          <span className="text-muted-foreground mr-1 shrink-0">Sortera:</span>
           {([
             ["recent", "Senaste"],
             ["rating", "Topprankade"],
@@ -237,7 +243,7 @@ export default function Prompts() {
             <button
               key={k}
               onClick={() => setSortBy(k)}
-              className={`px-2 py-1 rounded ${sortBy === k ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`shrink-0 px-2 py-1 rounded ${sortBy === k ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               {label}
             </button>
@@ -276,14 +282,14 @@ export default function Prompts() {
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>
 
-              <div className="flex items-center justify-between mt-auto pt-2 gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-auto pt-2 gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="h-7 w-7 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium shrink-0">
                     {initials || "?"}
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs text-foreground truncate">{authorName}</div>
-                    <div className="flex items-center gap-0.5">
+                    <div className="flex items-center gap-0.5 flex-wrap">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
                           key={n}
@@ -311,7 +317,7 @@ export default function Prompts() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 justify-end">
                   {canEdit ? (
                     <>
                       <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setCreatorOpen(true); }} title="Redigera">
