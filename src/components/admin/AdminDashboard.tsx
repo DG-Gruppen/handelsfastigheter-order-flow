@@ -100,7 +100,7 @@ async function fetchAdminStats(): Promise<Stats> {
     supabase.from("profiles").select("department").eq("is_hidden", false),
     supabase.from("orders").select("status"),
     supabase.from("orders").select("*", { count: "exact", head: true }).gte("created_at", since7d),
-    supabase.from("orders").select("id, status, created_at, requester_name").order("created_at", { ascending: false }).limit(5),
+    supabase.from("orders").select("id, status, created_at, title, recipient_name").order("created_at", { ascending: false }).limit(5),
     supabase.from("kb_articles").select("*", { count: "exact", head: true }),
     supabase.from("kb_articles").select("*", { count: "exact", head: true }).eq("is_published", true),
     supabase.from("kb_videos").select("*", { count: "exact", head: true }),
