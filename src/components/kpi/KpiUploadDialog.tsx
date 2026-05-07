@@ -84,7 +84,7 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
             <Label>Excel-fil (.xlsx)</Label>
             <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             <p className="text-xs text-muted-foreground mt-2">
-              Filen ska innehålla en flik per KPI (t.ex. "Driftnetto", "Hyresintäkter", "Vakansgrad", "Fastighetsvärde") med kolumnerna <strong>Region</strong>, <strong>Budget</strong> och <strong>Utfall</strong>.
+              Filen ska innehålla en flik per KPI (t.ex. "Driftnetto", "Hyresvärde", "Vakansgrad", "Fastighetsvärde") med kolumnerna <strong>Region</strong>, <strong>Budget</strong> och <strong>Utfall</strong>.
             </p>
           </div>
         </div>
