@@ -282,14 +282,14 @@ export default function Prompts() {
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>
 
-              <div className="flex items-center justify-between mt-auto pt-2 gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-auto pt-2 gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="h-7 w-7 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium shrink-0">
                     {initials || "?"}
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs text-foreground truncate">{authorName}</div>
-                    <div className="flex items-center gap-0.5">
+                    <div className="flex items-center gap-0.5 flex-wrap">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
                           key={n}
@@ -317,7 +317,7 @@ export default function Prompts() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 justify-end">
                   {canEdit ? (
                     <>
                       <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setCreatorOpen(true); }} title="Redigera">
