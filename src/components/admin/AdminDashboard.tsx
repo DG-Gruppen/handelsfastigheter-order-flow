@@ -104,12 +104,6 @@ async function fetchAdminStats(): Promise<Stats> {
     { count: toolsActive },
     { count: plannerCards },
     { count: plannerCardsOpen },
-    { count: recognitions30d },
-    { count: chatMessages7d },
-    { count: notifications7d },
-    { count: passwordsTotal },
-    { count: groupsTotal },
-    { data: integrationsData },
   ] = await Promise.all([
     supabase.from("news").select("*", { count: "exact", head: true }),
     supabase.from("news").select("*", { count: "exact", head: true }).eq("is_published", true),
@@ -118,6 +112,16 @@ async function fetchAdminStats(): Promise<Stats> {
     supabase.from("tools").select("*", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("planner_cards").select("*", { count: "exact", head: true }),
     supabase.from("planner_cards").select("*", { count: "exact", head: true }).neq("status", "done"),
+  ]);
+
+  const [
+    { count: recognitions30d },
+    { count: chatMessages7d },
+    { count: notifications7d },
+    { count: passwordsTotal },
+    { count: groupsTotal },
+    { data: integrationsData },
+  ] = await Promise.all([
     supabase.from("recognitions").select("*", { count: "exact", head: true }).gte("created_at", since30d),
     supabase.from("chat_messages").select("*", { count: "exact", head: true }).gte("created_at", since7d),
     supabase.from("notifications").select("*", { count: "exact", head: true }).gte("created_at", since7d),
