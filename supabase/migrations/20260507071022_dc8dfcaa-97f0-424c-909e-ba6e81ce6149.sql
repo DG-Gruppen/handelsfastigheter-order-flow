@@ -1,0 +1,1 @@
+UPDATE public.kpi_types SET name='Hyresvärde' WHERE slug='hyresintakter';
