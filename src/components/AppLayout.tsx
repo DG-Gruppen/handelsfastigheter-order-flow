@@ -55,9 +55,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <AiChatBubble />
         </Suspense>
 
-        <Suspense fallback={null}>
-          <RoleSwitcher />
-        </Suspense>
       </div>
     </>
   );
