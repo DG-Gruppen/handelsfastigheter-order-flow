@@ -19,10 +19,10 @@ import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
-  { label: "Information", slugs: ["nyheter", "strategy", "kpi", "kunskapsbanken", "documents"] },
+  { label: "Information", slugs: ["nyheter", "strategy", "kpi", "kunskapsbanken", "documents", "properties"] },
   { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "kulturen", "workwear", "pulse"] },
-  { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools", "losenord", "prompts", "statistik"] },
+  { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools", "losenord", "prompts", "statistik", "chatt"] },
   { label: "Personligt", slugs: ["my-shf"] },
   // "admin" removed – accessed via profile menu
 ];
@@ -175,16 +175,45 @@ export default function AppSidebar() {
     setMoreOpen(false);
   };
 
-  // Mobile overflow grouped — same categories & order as sidebar, excluding Information
-  const mobileOverflowGroups = useMemo(() => GROUP_CONFIG
-    .filter((g) => g.label !== "Information")
-    .map((g) => ({
-      label: g.label,
-      modules: g.slugs
-        .map((slug) => mobileOverflowModules.find((m) => m.slug === slug))
-        .filter(Boolean) as typeof accessibleModules,
-    }))
-    .filter((g) => g.modules.length > 0), [mobileOverflowModules]);
+  // Mobile overflow grouped — uses same sidebar order + sort, plus catch-all for ungrouped modules
+  const mobileOverflowGroups = useMemo(() => {
+    const configured = GROUP_CONFIG
+      .filter((g) => g.label !== "Information")
+      .map((g) => ({
+        key: g.label,
+        label: g.label,
+        modules: (g.slugs
+          .map((slug) => mobileOverflowModules.find((m) => m.slug === slug))
+          .filter(Boolean) as typeof accessibleModules)
+          .sort((a, b) => {
+            const nameA = SLUG_NAME_OVERRIDES[a.slug] || a.name;
+            const nameB = SLUG_NAME_OVERRIDES[b.slug] || b.name;
+            return nameA.localeCompare(nameB, "sv");
+          }),
+      }))
+      .filter((g) => g.modules.length > 0);
+
+    // Catch any accessible module not covered by GROUP_CONFIG so nothing disappears
+    const knownSlugs = new Set(GROUP_CONFIG.flatMap((g) => g.slugs));
+    const leftover = mobileOverflowModules.filter((m) => !knownSlugs.has(m.slug));
+    if (leftover.length > 0) {
+      configured.push({
+        key: "Övrigt",
+        label: "Övrigt",
+        modules: leftover.sort((a, b) => (SLUG_NAME_OVERRIDES[a.slug] || a.name).localeCompare(SLUG_NAME_OVERRIDES[b.slug] || b.name, "sv")),
+      });
+    }
+
+    // Respect sidebar drag-and-drop order
+    return configured.sort((a, b) => {
+      const ai = groupOrder.indexOf(a.key);
+      const bi = groupOrder.indexOf(b.key);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, [mobileOverflowModules, groupOrder]);
 
   return (
     <>
