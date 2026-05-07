@@ -11,7 +11,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
 
-interface RecentOrder { id: string; status: string; created_at: string; requester_name: string | null; }
+interface RecentOrder { id: string; status: string; created_at: string; title: string | null; recipient_name: string | null; }
 interface RecentItem { id: string; title: string; created_at: string; }
 interface IntegrationRow { slug: string; name: string; status: string; last_sync_at: string | null; error_count: number | null; }
 interface TopDept { name: string; count: number; }
