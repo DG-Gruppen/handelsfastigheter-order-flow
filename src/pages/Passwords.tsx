@@ -212,6 +212,7 @@ export default function Passwords() {
 
   const handleSave = async () => {
     if (!form.service_name.trim()) { toast.error("Tjänstnamn krävs"); return; }
+    if (!user) { toast.error("Du måste vara inloggad"); return; }
     setSaving(true);
 
     try {
@@ -249,10 +250,12 @@ export default function Passwords() {
 
       toast.success(editingId ? "Lösenord uppdaterat" : "Lösenord skapat");
       setDialogOpen(false);
+      setForm(EMPTY_FORM);
+      setEditingId(null);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save password:", err);
-      toast.error("Kunde inte spara");
+      toast.error(err?.message ? `Kunde inte spara: ${err.message}` : "Kunde inte spara");
     } finally {
       setSaving(false);
     }

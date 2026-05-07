@@ -1,9 +1,10 @@
 /**
  * AES-GCM encryption utilities for the shared password manager.
  *
- * The encryption key is a hex string fetched from the `get-passwords-key`
- * Edge Function (JWT-protected). It is never stored in localStorage or
- * persisted beyond the browser session.
+ * The encryption key is fetched from the `get-passwords-key`
+ * Edge Function (JWT-protected). Some environments provide a 64-char hex key,
+ * while older setups use a plain secret string. We support both formats.
+ * The key is never stored in localStorage or persisted beyond the browser session.
  *
  * Ciphertext format stored in DB: base64(iv[12 bytes] || ciphertext)
  */
@@ -11,10 +12,22 @@
 const ALGO = "AES-GCM";
 const KEY_LENGTH = 256;
 
-/** Import a raw hex key string as a CryptoKey */
-async function importKey(hexKey: string): Promise<CryptoKey> {
-  const raw = hexToBytes(hexKey);
-  return crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, { name: ALGO, length: KEY_LENGTH }, false, [
+const HEX_KEY_PATTERN = /^[0-9a-f]{64}$/i;
+
+async function normalizeKeyMaterial(key: string): Promise<ArrayBuffer> {
+  const trimmed = key.trim();
+
+  if (HEX_KEY_PATTERN.test(trimmed)) {
+    return hexToBytes(trimmed).buffer as ArrayBuffer;
+  }
+
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(trimmed));
+}
+
+/** Import either a raw hex key string or a plain secret string as a CryptoKey */
+async function importKey(keyValue: string): Promise<CryptoKey> {
+  const raw = await normalizeKeyMaterial(keyValue);
+  return crypto.subtle.importKey("raw", raw, { name: ALGO, length: KEY_LENGTH }, false, [
     "encrypt",
     "decrypt",
   ]);
