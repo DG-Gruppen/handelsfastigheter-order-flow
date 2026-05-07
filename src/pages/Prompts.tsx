@@ -35,7 +35,7 @@ interface RatingRow {
   rating: number;
 }
 
-interface ProfileLite { id: string; full_name: string | null; }
+interface ProfileLite { id: string; user_id: string; full_name: string | null; }
 
 const ALL = "Alla" as const;
 
@@ -43,7 +43,7 @@ async function fetchData(userId: string) {
   const [pRes, rRes, profRes] = await Promise.all([
     supabase.from("prompts" as any).select("*").order("created_at", { ascending: false }),
     supabase.from("prompt_ratings" as any).select("prompt_id, user_id, rating"),
-    supabase.from("profiles").select("id, full_name"),
+    supabase.from("profiles").select("id, user_id, full_name"),
   ]);
   if (pRes.error) throw pRes.error;
   return {
