@@ -145,6 +145,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchUserData]);
 
+  // Realtime: refetch roles when this user's group memberships or direct roles change.
+  // Lets newly-added group permissions take effect without requiring a re-login.
+  useEffect(() => {
+    if (!user?.id) return;
+    const userId = user.id;
+    const channel = supabase
+      .channel(`auth-roles-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_members", filter: `user_id=eq.${userId}` },
+        () => { void fetchUserData(userId); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_roles", filter: `user_id=eq.${userId}` },
+        () => { void fetchUserData(userId); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "groups" },
+        () => { void fetchUserData(userId); }
+      )
+      .subscribe();
+
+    // Also refresh when window/tab regains focus, as a fallback if realtime is delayed.
+    const onFocus = () => { void fetchUserData(userId); };
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [user?.id, fetchUserData]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
