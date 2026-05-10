@@ -82,6 +82,8 @@ export default function OrderDetail() {
   const { user, roles } = useAuth();
   const { canEdit: canEditAdmin } = useModulePermission("admin");
   const isAdmin = roles.includes("admin") || canEditAdmin;
+  const isIT = roles.includes("it");
+  const canMarkDelivered = isAdmin || isIT;
   const queryClient = useQueryClient();
 
   const [marking, setMarking] = useState(false);
