@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Save, Moon, Phone, Building2, Mail, Shield, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useRegions } from "@/hooks/useRegions";
+import MyEffectivePermissions from "@/components/MyEffectivePermissions";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
