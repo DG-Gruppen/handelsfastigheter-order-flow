@@ -135,6 +135,11 @@ export default function OrderDetail() {
 
   const handleMarkDelivered = async () => {
     if (!order) return;
+    if (!canMarkDelivered) {
+      toast.error("Endast admin eller IT kan markera beställningar som levererade");
+      setDeliverDialogOpen(false);
+      return;
+    }
     setMarking(true);
     const comment = deliveryComment.trim();
     const { error } = await supabase
