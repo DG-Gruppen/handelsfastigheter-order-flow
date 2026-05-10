@@ -82,6 +82,8 @@ export default function OrderDetail() {
   const { user, roles } = useAuth();
   const { canEdit: canEditAdmin } = useModulePermission("admin");
   const isAdmin = roles.includes("admin") || canEditAdmin;
+  const isIT = roles.includes("it");
+  const canMarkDelivered = isAdmin || isIT;
   const queryClient = useQueryClient();
 
   const [marking, setMarking] = useState(false);
@@ -133,6 +135,11 @@ export default function OrderDetail() {
 
   const handleMarkDelivered = async () => {
     if (!order) return;
+    if (!canMarkDelivered) {
+      toast.error("Endast admin eller IT kan markera beställningar som levererade");
+      setDeliverDialogOpen(false);
+      return;
+    }
     setMarking(true);
     const comment = deliveryComment.trim();
     const { error } = await supabase
@@ -305,7 +312,7 @@ export default function OrderDetail() {
             </div>
           )}
 
-          {isAdmin && order.status === "approved" && (
+          {canMarkDelivered && order.status === "approved" && (
             <Button onClick={() => setDeliverDialogOpen(true)} className="gap-2 w-full gradient-primary hover:opacity-90 shadow-md shadow-primary/20 h-12 md:h-10">
               <Truck className="h-4 w-4" /> Markera som levererad
             </Button>
