@@ -36,11 +36,9 @@ export default function ExternalInvite() {
         return;
       }
 
-      const { data, error: fetchErr } = await supabase
-        .from("external_invites")
-        .select("email, company_name, expires_at, accepted_at")
-        .eq("token", token)
-        .single();
+      const { data: rows, error: fetchErr } = await supabase
+        .rpc("get_external_invite_by_token", { _token: token });
+      const data = Array.isArray(rows) ? rows[0] : null;
 
       if (fetchErr || !data) {
         setError("Inbjudan hittades inte eller är ogiltig");

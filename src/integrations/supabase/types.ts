@@ -2475,6 +2475,15 @@ export type Database = {
         }[]
       }
       get_anonymous_chat_stats: { Args: { _since: string }; Returns: Json }
+      get_external_invite_by_token: {
+        Args: { _token: string }
+        Returns: {
+          accepted_at: string
+          company_name: string
+          email: string
+          expires_at: string
+        }[]
+      }
       get_manager_user_ids: {
         Args: never
         Returns: {
