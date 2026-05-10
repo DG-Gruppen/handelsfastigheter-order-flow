@@ -1,111 +1,165 @@
-## Diagnos: tre rotorsaker till behörighetsproblemen
+## Väg B — Skrota roll-lagret, gör grupper till sanningskällan
 
-Efter att ha gått igenom `module_permissions`, RLS-policys (`has_module_permission`, `has_module_slug_permission`), `useModulePermission`-hooken, `resolveModuleAccess` och faktisk data i databasen, finns det **tre tydliga buggar** som tillsammans förklarar varför rättigheter inte beter sig som du förväntar dig — och varför symtomen varierar mellan moduler.
-
----
-
-### Problem 1 — `is_owner` betyder olika saker i frontend och backend
-
-**Frontend** (`resolveModuleAccess`): `isOwner = true` räknas som "full behörighet" → `canEdit/canDelete` blir true automatiskt.
-
-**Backend** (`has_module_permission` / `has_module_slug_permission`): kollar EXAKT vilken flagga som efterfrågas. Om en RLS-policy frågar `'edit'` och raden bara har `is_owner=true` (men `can_edit=false`) → **nekas**.
-
-Konsekvens: En grupp som markeras som "ägare" i UI:t kan se modulen men *inte spara/radera*, trots att UI:t visar knappar.
-
-I databasen finns idag 30+ rader där `is_owner=true` också har `can_view/can_edit/can_delete=true`, vilket maskerar buggen — men så fort någon admin kryssar i bara "ägare" utan resten, går det sönder.
-
-### Problem 2 — `can_delete` utan `can_edit` (och `can_edit` utan `can_view`)
-
-Frontend tillåter att admins kryssar i delete utan edit, eller edit utan view. Men:
-- RLS för UPDATE kollar bara `can_edit` → går igenom, men användaren ser inte raden (saknar SELECT) → "ingenting händer".
-- För moduler som använder slug-baserad RLS (nyheter, prompts, kpi, kb, planner, it-support, history, losenord) är detta särskilt synligt.
-
-### Problem 3 — Slug-baserade RLS tar INTE hänsyn till `module_role_access` eller admin-roll-via-grupp på rätt sätt
-
-`has_module_slug_permission` kollar **enbart** `module_permissions` (explicita user/group-grants). Den kollar inte:
-- `module_role_access` (rollbaserad standardåtkomst)
-- Användarens *roller* alls
-
-Frontend (`resolveModuleAccess`) däremot faller tillbaka på `module_role_access` när explicita grants saknas. Det betyder att en användare kan **se** modulen via roll men inte **skapa/redigera** något, eftersom INSERT/UPDATE-policys bara accepterar explicita module_permissions.
-
-Detta är exakt mönstret vi nyss åtgärdade för "Anställda"-gruppen och prompts — och samma sak gäller alla slug-baserade moduler. Konkret betyder det att grupper som **Anställda, Underchefer, Chefer, Stab** står som `view-only` på `documents, history, it-support, kunskapsbanken, losenord, tools` — så ingen utöver IT/Admin kan faktiskt redigera där, även om UI antyder att rollen ger åtkomst.
+Du har rätt: långsiktigt är detta renare. Och med rätt sekvens är det säkert. Nyckeln är att **ändra ingenting destruktivt förrän nya systemet bevisat sig parallellt**.
 
 ---
 
-## Lösningsplan (fyra steg)
+## Designprincip
 
-### Steg 1 — Normalisera semantiken för `is_owner` i backend
+Efter refaktorn finns bara två koncept:
+1. **Grupper** — namngivna behållare för användare (Anställda, Chefer, IT, Underchefer, Region Nord, …)
+2. **Modulbehörigheter per grupp** — `can_view/can_edit/can_delete/is_owner` per (grupp, modul)
 
-Uppdatera `has_module_permission` och `has_module_slug_permission` så att `is_owner=true` **implicit** ger view, edit och delete:
+Dessutom några **systemflaggor på grupper** som ersätter dagens roll-kollar utanför moduler:
+- `is_admin_group` (boolean) — ger åtkomst till admin-panel, kan hantera grupper/användare
+- `is_it_group` (boolean) — får göra impersonation, hantera integrationer
+- `is_manager_group` (boolean) — får godkänna ordrar från sina underordnade
 
-```text
-WHEN 'view'   THEN (mp.can_view   OR mp.is_owner)
-WHEN 'edit'   THEN (mp.can_edit   OR mp.is_owner)
-WHEN 'delete' THEN (mp.can_delete OR mp.is_owner)
-WHEN 'owner'  THEN mp.is_owner
+Det är **3 binära flaggor** istället för 5 roller — mappar exakt till de få platser där "rollen" faktiskt betyder något utöver modulåtkomst.
+
+`app_role` enum, `user_roles`-tabell och `has_role()` försvinner till slut.
+
+---
+
+## Sekvensen — 6 faser, varje fas är säker att stanna vid
+
+### Fas 0 — Förberedelse (ingen kod-ändring, ingen risk)
+- Inventera **alla** anrop till `has_role()`, `app_role` och rollnamnssträngar i:
+  - 40+ RLS-policys (script: `pg_policies` där `qual` matchar `has_role`)
+  - 6 Edge Functions
+  - Frontend (`useAuth`, `useAdminAccess`, `OrderDetail`, `ProfilePanel`, dokument-UI, …)
+  - `document_folders.access_roles` / `write_roles`-arrayer
+- Producera en **checklista** (`docs/refactor/role-removal.md`) med varje träff och dess ersättning.
+
+→ **Stoppunkt:** Vi vet exakt vad som måste ändras innan en rad kod skrivs.
+
+### Fas 1 — Lägg till nya kolumner & funktioner *parallellt*
+**Migration (additiv, bryter inget):**
+```sql
+ALTER TABLE public.groups
+  ADD COLUMN is_admin_group   boolean NOT NULL DEFAULT false,
+  ADD COLUMN is_it_group      boolean NOT NULL DEFAULT false,
+  ADD COLUMN is_manager_group boolean NOT NULL DEFAULT false;
+
+-- Sätt flaggor utifrån dagens role_equivalent
+UPDATE public.groups SET is_admin_group   = true WHERE role_equivalent = 'admin';
+UPDATE public.groups SET is_it_group      = true WHERE role_equivalent = 'it';
+UPDATE public.groups SET is_manager_group = true WHERE role_equivalent = 'manager';
+-- Underchefer manuellt:
+UPDATE public.groups SET is_manager_group = true WHERE name = 'Underchefer';
+
+-- Nya security definer-funktioner som använder grupper
+CREATE FUNCTION public.is_in_admin_group(_uid uuid) RETURNS boolean ...
+CREATE FUNCTION public.is_in_it_group(_uid uuid) RETURNS boolean ...
+CREATE FUNCTION public.is_in_manager_group(_uid uuid) RETURNS boolean ...
+CREATE FUNCTION public.user_in_group(_uid uuid, _group_slug text) RETURNS boolean ...
 ```
 
-Detta matchar frontend och eliminerar Problem 1 utan att behöva städa befintlig data.
+→ Inget anropar dem ännu. Befintliga policys och `has_role()` fortsätter fungera oförändrat.
 
-### Steg 2 — Inför dataintegritetsregler (CHECK-trigger)
+### Fas 2 — Migrera RLS-policys policy-för-policy
+För varje RLS-policy som idag använder `has_role(uid, 'admin')`:
+- Skriv om till `is_in_admin_group(uid)` (eller motsvarande).
+- Verifiera mot testanvändare i varje grupp.
+- Mätare: kör `pg_stat_user_functions` före/efter för att fånga ev. perf-regress.
 
-Lägg till en BEFORE INSERT/UPDATE-trigger på `module_permissions` som auto-justerar:
-- `can_delete=true` ⇒ tvinga `can_edit=true`
-- `can_edit=true` ⇒ tvinga `can_view=true`
-- `is_owner=true` ⇒ tvinga alla tre true
+Görs i **5–6 mindre migrationer**, grupperade per modulområde:
+1. Orders + order-relaterade tabeller
+2. Categories/departments/order_types
+3. KB / News / IT FAQ / Prompts
+4. Chat-tabeller
+5. Modules / module_permissions / groups
+6. Övrigt (notifications, integrations, email_log, …)
 
-Plus en engångs-städning på befintlig data så att alla rader blir konsekventa.
+Efter varje migration: smoke-test i preview, sen produktion. Rollback = en migration tillbaka.
 
-### Steg 3 — Rensa "tomma" permission-rader
+### Fas 3 — Migrera Edge Functions
+6 funktioner, alla isolerade:
+- `impersonate-user` → kolla `is_in_it_group` eller `is_in_admin_group`
+- `database-backup` → `is_in_admin_group`
+- `import-google-workspace` → `is_in_admin_group`
+- `update-integration-secret` → `is_in_admin_group`
+- `accept-external-invite`, `auth-email-hook` → kontrollera, oftast bara service role
 
-7 rader i `module_permissions` har alla flaggor = false. De gör inget men förvirrar UI och felsökning. Ta bort dem.
+Deploy en åt gången, testa via admin-UI.
 
-### Steg 4 — Rätta UI:n i `ModulePermissionsManager`
+### Fas 4 — Migrera frontend
+- `useAuth` exponerar `groups: Group[]` + härledda booleans `isAdmin`, `isIT`, `isManager` (baserade på gruppflaggor, inte roller).
+- Sök-och-ersätt: `roles.includes('admin')` → `isAdmin` etc.
+- `useAdminAccess` — använd nya booleans.
+- `OrderDetail` — godkännandelogik baseras på `is_manager_group` + hierarki.
+- `MyEffectivePermissions` — visa **grupper + per-modul-rättigheter** istället för "roller".
+- Admin → Grupper-UI: lägg till tre toggles (Admin-grupp / IT-grupp / Chefs-grupp) med tooltips som förklarar konsekvenser.
 
-I admin-panelens behörighetsmatris:
-- När admin kryssar i "Delete" → kryssa automatiskt i "Edit" + "View"
-- När admin kryssar i "Edit" → kryssa automatiskt i "View"
-- "Owner"-kryssrutan → låt övriga vara grå/disabled och visuellt markerade som "ingår"
-- Tooltip som förklarar hierarkin
+### Fas 5 — Migrera `document_folders.access_roles`
+Idag är detta en `text[]` med rollnamn. Byt till `group_ids uuid[]`:
+```sql
+ALTER TABLE document_folders 
+  ADD COLUMN access_group_ids uuid[],
+  ADD COLUMN write_group_ids  uuid[];
+-- migrera värden: 'admin' → admin-gruppens id, etc.
+-- skriv om has_folder_access() att använda nya kolumnerna
+-- behåll gamla i 1 release för säkerhet
+```
 
-Detta gör att admins inte längre kan skapa inkonsekventa permission-rader via UI:t.
-
-### Steg 5 (valfritt men rekommenderat) — Fyll på saknade gruppbehörigheter
-
-Som tidigare gjordes för "Anställda" + prompts, behöver vi fatta beslut om vilka grupper som faktiskt ska kunna **redigera** i:
-- `kunskapsbanken` (idag bara IT + Kunskapsbanken-gruppen kan redigera)
-- `it-support` FAQ
-- `history`-modulen
-- `losenord` (vem ska få lägga till lösenord?)
-- `tools`
-- `documents`
-
-Detta beslut tar vi efter att 1–4 är på plats, modul för modul.
+### Fas 6 — Städa bort det gamla
+När fas 1–5 körts i produktion **i minst 2 veckor utan incidenter**:
+- DROP-a `has_role()`, `user_roles`-tabellen, `app_role`-enum, `groups.role_equivalent`, gamla `access_roles`/`write_roles`.
+- Ta bort `roles`-fältet från `useAuth`.
+- Uppdatera memory: "Behörigheter = rena gruppbehörigheter, inga roller".
 
 ---
 
-## Tekniska detaljer
+## Riskhantering
 
-**Migration som skrivs i steg 1+2+3:**
-- `CREATE OR REPLACE FUNCTION` för `has_module_permission` och `has_module_slug_permission` med ny CASE-logik
-- `CREATE TRIGGER normalize_module_permissions BEFORE INSERT OR UPDATE ON module_permissions`
-- `UPDATE module_permissions SET can_view=true WHERE can_edit OR can_delete OR is_owner; UPDATE … can_edit=true WHERE can_delete OR is_owner; …`
-- `DELETE FROM module_permissions WHERE NOT can_view AND NOT can_edit AND NOT can_delete AND NOT is_owner;`
-
-**Frontend-filer som påverkas i steg 4:**
-- `src/components/admin/ModulePermissionsManager.tsx` — checkbox-hierarki + visuell markering
-
-**Inga RLS-policys behöver ändras** — de fortsätter anropa samma funktioner, men funktionerna ger nu rätt svar.
-
----
-
-## Vad förväntas hända efter åtgärden
-
-| Symtom idag | Efter fix |
+| Risk | Mitigering |
 |---|---|
-| Sätter "Owner" på grupp → kan inte redigera | Owner ger automatiskt edit+delete+view |
-| Sätter "Edit" → ser inte raderna | Edit kräver/får automatiskt view |
-| Olika beteende mellan moduler | Konsekvent över alla slug-baserade moduler |
-| 30+ rader är "rätt" pga manuell dubbelkryssning | Trigger garanterar konsekvens framöver |
+| Glömd RLS-policy → någon låses ute | Fas 0:s inventering + script som listar **alla** kvarvarande `has_role`-träffar efter varje fas. CI-check som failar om en träff finns kvar efter Fas 6. |
+| Användare loggad in under migration | Realtime invalidate på `groups` (finns redan). Backend-funktioner kollar nya systemet direkt. |
+| Edge Function-deploy går sönder | Varje Edge Function deployas separat med smoke-test. Rollback = återställ en fil. |
+| Hierarkisk manager-logik (subordinate orders) går sönder | `is_subordinate_order()` kollar redan `manager_id`-kedjan, inte rollnamnet — bara `has_role(_, 'manager')` byts mot `is_in_manager_group()`. |
+| Document folders låser ut användare | Fas 5 körs **efter** att alla har testats med dubbla kolumner i en release. |
+| Superadmin-gruppen tappar åtkomst | `is_admin_group=true` på Superadmin sätts i Fas 1. |
 
-Säg till om jag ska köra igång steg 1–4, eller om du vill att vi börjar med bara migrationen (1–3) och tar UI-städningen separat.
+---
+
+## Tidsuppskattning
+- Fas 0: 1 h (inventering)
+- Fas 1: 30 min (additiv migration)
+- Fas 2: 3–4 h fördelat på 5–6 migrationer
+- Fas 3: 1 h
+- Fas 4: 2–3 h
+- Fas 5: 1 h
+- Fas 6: 30 min (efter karenstid)
+
+**Totalt aktivt arbete: ~10 h**, utspritt över ca 2 veckor med karenstider mellan faserna.
+
+---
+
+## Det administratören ser efter refaktorn
+
+I **Admin → Grupper**:
+- Lista över grupper. Varje grupp har:
+  - Namn, färg, beskrivning
+  - Tre toggles: ☐ Adminbehörighet  ☐ IT-behörighet  ☐ Chefsbehörighet
+  - Lista över medlemmar
+  - Lista över moduler den har behörighet till (med view/edit/delete/owner per modul)
+
+I **Admin → Moduler → Behörigheter**:
+- En matris: rader = grupper, kolumner = view/edit/delete/owner. **En enda sanningskälla.**
+
+I **Profil → Mina behörigheter**:
+- "Du tillhör grupperna: …"
+- "Det ger dig: admin ja/nej, IT ja/nej, chef ja/nej"
+- "Du kan se följande moduler: …"
+
+**Inga roller. Inga lager. En modell.**
+
+---
+
+## Beslut innan vi börjar
+
+1. **Behåller vi `employee` som default-nivå för alla inloggade?** Förslag: ja, men implicit — varje autentiserad användare som *inte* är extern får basåtkomst utan att tillhöra någon grupp. (Idag är "Anställda"-gruppen i praktiken obligatorisk.)
+2. **Vill du att jag börjar köra Fas 0 + Fas 1 nu**, eller väntar vi och du läser planen först?
+
+Säg till så drar jag igång — eller justerar planen om något känns fel.

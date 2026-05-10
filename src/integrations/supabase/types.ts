@@ -626,6 +626,10 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_admin_group: boolean
+          is_it_group: boolean
+          is_manager_group: boolean
+          is_staff_group: boolean
           is_system: boolean | null
           name: string
           role_equivalent: Database["public"]["Enums"]["app_role"] | null
@@ -637,6 +641,10 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_admin_group?: boolean
+          is_it_group?: boolean
+          is_manager_group?: boolean
+          is_staff_group?: boolean
           is_system?: boolean | null
           name: string
           role_equivalent?: Database["public"]["Enums"]["app_role"] | null
@@ -648,6 +656,10 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_admin_group?: boolean
+          is_it_group?: boolean
+          is_manager_group?: boolean
+          is_staff_group?: boolean
           is_system?: boolean | null
           name?: string
           role_equivalent?: Database["public"]["Enums"]["app_role"] | null
@@ -2506,6 +2518,10 @@ export type Database = {
         Args: { _prompt_id: string }
         Returns: undefined
       }
+      is_in_admin_group: { Args: { _user_id: string }; Returns: boolean }
+      is_in_it_group: { Args: { _user_id: string }; Returns: boolean }
+      is_in_manager_group: { Args: { _user_id: string }; Returns: boolean }
+      is_in_staff_group: { Args: { _user_id: string }; Returns: boolean }
       is_subordinate_order: {
         Args: { _requester_id: string; _viewer_id: string }
         Returns: boolean
@@ -2551,6 +2567,10 @@ export type Database = {
           _title: string
         }
         Returns: undefined
+      }
+      user_in_group_named: {
+        Args: { _group_name: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
