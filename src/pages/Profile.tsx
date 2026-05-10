@@ -188,6 +188,8 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        <MyEffectivePermissions />
       </div>
     </div>
   );
