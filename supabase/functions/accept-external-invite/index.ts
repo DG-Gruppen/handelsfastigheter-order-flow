@@ -14,11 +14,23 @@ Deno.serve(async (req) => {
   try {
     const { token, password, full_name } = await req.json();
 
-    if (!token || typeof token !== "string" || token.length < 10) {
-      return new Response(JSON.stringify({ error: "Ogiltig token" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Standardiserat token-fel: oavsett om token saknas, är för kort, inte
+    // hittas, redan har accepterats eller har gått ut svarar vi med exakt
+    // samma payload och status. Detta förhindrar enumerering och håller
+    // användarupplevelsen identisk med klientens load-flöde.
+    const INVITE_UNAVAILABLE_MSG =
+      "Inbjudningslänken är ogiltig eller kan inte längre användas. Kontakta din kontaktperson för en ny.";
+    const inviteUnavailable = () =>
+      new Response(
+        JSON.stringify({ error: INVITE_UNAVAILABLE_MSG, code: "invite_unavailable" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+
+    if (!token || typeof token !== "string" || token.length < 32) {
+      return inviteUnavailable();
     }
     if (!password || typeof password !== "string" || password.length < 6) {
       return new Response(
@@ -49,36 +61,18 @@ Deno.serve(async (req) => {
       .from("external_invites")
       .select("*")
       .eq("token", token)
-      .single();
+      .maybeSingle();
 
     if (inviteErr || !invite) {
-      return new Response(
-        JSON.stringify({ error: "Inbjudan hittades inte" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return inviteUnavailable();
     }
 
     if (invite.accepted_at) {
-      return new Response(
-        JSON.stringify({ error: "Denna inbjudan har redan använts" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return inviteUnavailable();
     }
 
     if (new Date(invite.expires_at) < new Date()) {
-      return new Response(
-        JSON.stringify({ error: "Inbjudan har gått ut" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return inviteUnavailable();
     }
 
     // Create auth user with auto-confirm
