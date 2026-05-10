@@ -28,10 +28,17 @@ export default function ExternalInvite() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Standardiserat felmeddelande för alla token-relaterade fel (saknad,
+  // ogiltig, för kort, utgången, redan accepterad). Vi avslöjar avsiktligt
+  // inte vilken delfel som inträffade — det förhindrar enumerering och ger
+  // en enhetlig användarupplevelse.
+  const INVITE_UNAVAILABLE_MSG =
+    "Inbjudningslänken är ogiltig eller kan inte längre användas. Kontakta din kontaktperson för en ny.";
+
   useEffect(() => {
     async function loadInvite() {
-      if (!token) {
-        setError("Ingen inbjudningstoken angiven");
+      if (!token || token.length < 32) {
+        setError(INVITE_UNAVAILABLE_MSG);
         setLoadingInvite(false);
         return;
       }
@@ -40,12 +47,14 @@ export default function ExternalInvite() {
         .rpc("get_external_invite_by_token", { _token: token });
       const data = Array.isArray(rows) ? rows[0] : null;
 
-      if (fetchErr || !data) {
-        setError("Inbjudan hittades inte eller är ogiltig");
-      } else if (data.accepted_at) {
-        setError("Denna inbjudan har redan använts");
-      } else if (new Date(data.expires_at) < new Date()) {
-        setError("Inbjudan har gått ut. Kontakta din kontaktperson för en ny.");
+      const isUnavailable =
+        fetchErr ||
+        !data ||
+        !!data.accepted_at ||
+        new Date(data.expires_at) < new Date();
+
+      if (isUnavailable) {
+        setError(INVITE_UNAVAILABLE_MSG);
       } else {
         setInvite(data as InviteData);
       }
