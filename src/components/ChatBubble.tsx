@@ -87,7 +87,7 @@ export default function ChatBubble() {
 
   const handleClose = useCallback(() => setOpen(false), []);
 
-  if (!enabled || !user) return null;
+  if (!enabled || !user || profile?.is_external) return null;
 
   return (
     <>
