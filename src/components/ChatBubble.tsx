@@ -9,7 +9,7 @@ const Chat = lazy(() => import("@/pages/Chat"));
 
 export default function ChatBubble() {
   const [open, setOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [enabled, setEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
