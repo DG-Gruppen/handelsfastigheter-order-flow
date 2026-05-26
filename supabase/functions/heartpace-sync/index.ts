@@ -100,11 +100,17 @@ Deno.serve(async (req) => {
         if (offset > 5000) break; // safety
       }
 
+      // Filtrera bort tidigare anställda och inaktiva konton
+      const active = all.filter(
+        (emp) => emp?.is_current === true && emp?.user_account?.account_status === 1,
+      );
+      const skipped = all.length - active.length;
+
       // Bygg email→id-map. Heartpace-strukturen:
       //   user_account.personal_data.work_email
       //   user_account.uuid  ← stabil identifierare
       const byEmail = new Map<string, string>();
-      for (const emp of all) {
+      for (const emp of active) {
         const ua = emp?.user_account ?? {};
         const pd = ua?.personal_data ?? {};
         const email: string | undefined =
@@ -142,7 +148,7 @@ Deno.serve(async (req) => {
         if (uErr) console.error("Update failed for", u.id, uErr.message);
       }
 
-      const unmatchedHp = all.length - matched;
+      const unmatchedHp = active.length - matched;
       await updateStatus(supa, {
         status: "ok",
         last_sync_at: new Date().toISOString(),
@@ -151,6 +157,8 @@ Deno.serve(async (req) => {
         metadata: {
           last_action: "match",
           heartpace_total: all.length,
+          heartpace_active: active.length,
+          heartpace_skipped: skipped,
           newly_matched: matched,
           unmatched_in_heartpace: Math.max(unmatchedHp, 0),
         },
@@ -159,6 +167,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true,
         heartpace_total: all.length,
+        heartpace_active: active.length,
+        heartpace_skipped: skipped,
         newly_matched: matched,
         profiles_checked: profiles?.length ?? 0,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
