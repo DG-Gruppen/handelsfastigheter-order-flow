@@ -85,6 +85,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "probe") {
+      // Sondera vilka endpoints som finns
+      const paths = [
+        "/employees", "/employees/employment-info", "/employees/personal-info",
+        "/onboarding", "/onboardings", "/offboarding", "/offboardings",
+        "/processes", "/tasks", "/checklists",
+        "/absences", "/leaves", "/vacations",
+        "/departments", "/positions", "/locations",
+        "/documents", "/contracts",
+        "/webhooks", "/events",
+        "/users", "/user-accounts",
+      ];
+      const results: any[] = [];
+      for (const p of paths) {
+        try {
+          const res = await fetch(`${HEARTPACE_BASE}${p}?limit=1`, {
+            headers: {
+              accept: "application/json",
+              "X-Subdomain": SUBDOMAIN,
+              Authorization: `Bearer ${token}`,
+              "X-CSRF-TOKEN": "",
+            },
+          });
+          const text = await res.text();
+          results.push({
+            path: p,
+            status: res.status,
+            preview: text.slice(0, 120),
+          });
+        } catch (e) {
+          results.push({ path: p, error: String(e) });
+        }
+      }
+      return new Response(JSON.stringify({ ok: true, results }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "list") {
       const q = (url.searchParams.get("q") ?? "").toLowerCase().trim();
       const limit = 200;
