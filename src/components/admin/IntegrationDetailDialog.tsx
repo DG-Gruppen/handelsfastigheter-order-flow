@@ -295,15 +295,26 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
 
         {/* Actions */}
         <Separator />
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2 justify-end flex-wrap">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Stäng
           </Button>
+          {integration.slug === "heartpace" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={runHeartpaceMatch}
+              disabled={matching}
+            >
+              {matching ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Synka & matcha profiler
+            </Button>
+          )}
           <Button
             variant="default"
             size="sm"
             onClick={testIntegration}
-            disabled={testing || !["cision-feed", "content-index"].includes(integration.slug)}
+            disabled={testing || !["cision-feed", "content-index", "google-drive", "heartpace"].includes(integration.slug)}
           >
             {testing ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
             Testa anslutning
@@ -313,3 +324,4 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
     </Dialog>
   );
 }
+
