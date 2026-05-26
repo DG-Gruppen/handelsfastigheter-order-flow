@@ -66,6 +66,7 @@ export default function IntegrationsStatus() {
         "cision-feed": "fetch-cision-feed",
         "content-index": "sync-content-index",
         "google-drive": "index-google-drive",
+        "heartpace": "heartpace-sync",
       };
       const fnName = fnMap[slug];
       if (!fnName) {
@@ -73,6 +74,7 @@ export default function IntegrationsStatus() {
         return;
       }
       const { error } = await supabase.functions.invoke(fnName);
+
       if (error) throw error;
       toast.success("Test klart – uppdaterar status…");
       setTimeout(fetchStatus, 2000);
