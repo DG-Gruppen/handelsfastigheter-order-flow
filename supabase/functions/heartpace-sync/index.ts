@@ -100,11 +100,17 @@ Deno.serve(async (req) => {
         if (offset > 5000) break; // safety
       }
 
+      // Filtrera bort tidigare anställda och inaktiva konton
+      const active = all.filter(
+        (emp) => emp?.is_current === true && emp?.user_account?.account_status === 1,
+      );
+      const skipped = all.length - active.length;
+
       // Bygg email→id-map. Heartpace-strukturen:
       //   user_account.personal_data.work_email
       //   user_account.uuid  ← stabil identifierare
       const byEmail = new Map<string, string>();
-      for (const emp of all) {
+      for (const emp of active) {
         const ua = emp?.user_account ?? {};
         const pd = ua?.personal_data ?? {};
         const email: string | undefined =
