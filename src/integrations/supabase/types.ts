@@ -1901,6 +1901,7 @@ export type Database = {
           department: string | null
           email: string
           full_name: string
+          heartpace_employee_id: string | null
           id: string
           is_external: boolean
           is_hidden: boolean
@@ -1921,6 +1922,7 @@ export type Database = {
           department?: string | null
           email?: string
           full_name?: string
+          heartpace_employee_id?: string | null
           id?: string
           is_external?: boolean
           is_hidden?: boolean
@@ -1941,6 +1943,7 @@ export type Database = {
           department?: string | null
           email?: string
           full_name?: string
+          heartpace_employee_id?: string | null
           id?: string
           is_external?: boolean
           is_hidden?: boolean
