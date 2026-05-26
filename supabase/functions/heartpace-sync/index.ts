@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         if (uErr) console.error("Update failed for", u.id, uErr.message);
       }
 
-      const unmatchedHp = all.length - matched;
+      const unmatchedHp = active.length - matched;
       await updateStatus(supa, {
         status: "ok",
         last_sync_at: new Date().toISOString(),
@@ -157,6 +157,8 @@ Deno.serve(async (req) => {
         metadata: {
           last_action: "match",
           heartpace_total: all.length,
+          heartpace_active: active.length,
+          heartpace_skipped: skipped,
           newly_matched: matched,
           unmatched_in_heartpace: Math.max(unmatchedHp, 0),
         },
