@@ -128,19 +128,18 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
   const runHeartpaceMatch = async () => {
     setMatching(true);
     try {
-      const { data, error } = await supabase.functions.invoke("heartpace-sync", {
-        body: {},
-        method: "POST",
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/heartpace-sync?action=match`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
       });
-      // Använd query-param via direkt fetch om body-vägen inte funkar
-      const res = data as any;
-      if (error) throw error;
-      // Anropa med action=match
-      const { data: matchData, error: matchErr } = await supabase.functions.invoke(
-        "heartpace-sync?action=match" as any,
-      );
-      if (matchErr) throw matchErr;
-      const m = matchData as any;
+      const m = await res.json();
+      if (!res.ok || m?.ok === false) throw new Error(m?.error || `HTTP ${res.status}`);
       toast.success(
         `Matchade ${m?.newly_matched ?? 0} av ${m?.heartpace_total ?? 0} Heartpace-anställda`,
       );
@@ -151,6 +150,7 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
       setMatching(false);
     }
   };
+
 
 
   return (
