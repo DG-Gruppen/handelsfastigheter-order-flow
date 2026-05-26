@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       });
     }
 
-
+    if (action === "match") {
       // Hämta alla anställningar (paginerat)
       const limit = 200;
       let offset = 0;
