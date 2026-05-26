@@ -59,24 +59,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (action === "test") {
+    if (action === "test" || action === "debug") {
       // Liten begäran för att verifiera autentisering
-      const data = await hpFetch("/employees/employment-info?limit=1&offset=0", token);
-      const count = Array.isArray((data as any)?.data) ? (data as any).data.length
-                  : Array.isArray(data) ? (data as any).length : 0;
+      const data = await hpFetch("/employees/employment-info?limit=2&offset=0", token);
+      const items: any[] = Array.isArray((data as any)?.data) ? (data as any).data
+                          : Array.isArray(data) ? (data as any) : [];
 
       await updateStatus(supa, {
         status: "ok",
         last_sync_at: new Date().toISOString(),
         last_error: null,
         error_count: 0,
-        metadata: { last_action: "test", sample_count: count },
+        metadata: { last_action: action, sample_count: items.length },
       });
 
-      return new Response(JSON.stringify({ ok: true, message: "Anslutning OK", sample_count: count }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        message: "Anslutning OK",
+        sample_count: items.length,
+        sample_keys: items[0] ? Object.keys(items[0]) : [],
+        sample: action === "debug" ? items.slice(0, 2) : undefined,
+        raw_top_level_keys: data && typeof data === "object" ? Object.keys(data as any) : null,
+      }, null, 2), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     if (action === "match") {
       // Hämta alla anställningar (paginerat)
