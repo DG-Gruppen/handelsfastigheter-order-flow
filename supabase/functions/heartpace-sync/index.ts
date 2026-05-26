@@ -59,24 +59,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (action === "test") {
+    if (action === "test" || action === "debug") {
       // Liten begäran för att verifiera autentisering
-      const data = await hpFetch("/employees/employment-info?limit=1&offset=0", token);
-      const count = Array.isArray((data as any)?.data) ? (data as any).data.length
-                  : Array.isArray(data) ? (data as any).length : 0;
+      const data = await hpFetch("/employees/employment-info?limit=2&offset=0", token);
+      const items: any[] = Array.isArray((data as any)?.data) ? (data as any).data
+                          : Array.isArray(data) ? (data as any) : [];
 
       await updateStatus(supa, {
         status: "ok",
         last_sync_at: new Date().toISOString(),
         last_error: null,
         error_count: 0,
-        metadata: { last_action: "test", sample_count: count },
+        metadata: { last_action: action, sample_count: items.length },
       });
 
-      return new Response(JSON.stringify({ ok: true, message: "Anslutning OK", sample_count: count }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        message: "Anslutning OK",
+        sample_count: items.length,
+        sample_keys: items[0] ? Object.keys(items[0]) : [],
+        sample: action === "debug" ? items.slice(0, 2) : undefined,
+        raw_top_level_keys: data && typeof data === "object" ? Object.keys(data as any) : null,
+      }, null, 2), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     if (action === "match") {
       // Hämta alla anställningar (paginerat)
@@ -92,15 +100,20 @@ Deno.serve(async (req) => {
         if (offset > 5000) break; // safety
       }
 
-      // Bygg email→id-map
+      // Bygg email→id-map. Heartpace-strukturen:
+      //   user_account.personal_data.work_email
+      //   user_account.uuid  ← stabil identifierare
       const byEmail = new Map<string, string>();
       for (const emp of all) {
+        const ua = emp?.user_account ?? {};
+        const pd = ua?.personal_data ?? {};
         const email: string | undefined =
-          emp.email || emp.workEmail || emp.work_email || emp.user?.email;
+          pd.work_email || pd.personal_email || emp.work_email || emp.email;
         const id: string | undefined =
-          emp.employeeId || emp.employee_id || emp.id || emp.userId || emp.user_id;
+          ua.uuid || (ua.id != null ? String(ua.id) : undefined) || emp.uuid;
         if (email && id) byEmail.set(String(email).toLowerCase().trim(), String(id));
       }
+
 
       // Hämta profiler utan heartpace_employee_id
       const { data: profiles, error: pErr } = await supa
