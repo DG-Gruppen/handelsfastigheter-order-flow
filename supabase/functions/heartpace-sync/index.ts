@@ -85,6 +85,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "list") {
+      const q = (url.searchParams.get("q") ?? "").toLowerCase().trim();
+      const limit = 200;
+      let offset = 0;
+      const all: any[] = [];
+      while (true) {
+        const page: any = await hpFetch(`/employees/employment-info?limit=${limit}&offset=${offset}`, token);
+        const items: any[] = Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [];
+        all.push(...items);
+        if (items.length < limit) break;
+        offset += limit;
+        if (offset > 5000) break;
+      }
+      const rows = all
+        .filter((e) => e?.is_current === true && e?.user_account?.account_status === 1)
+        .map((e) => {
+          const pd = e?.user_account?.personal_data ?? {};
+          return {
+            name: [pd.first_name, pd.last_name].filter(Boolean).join(" "),
+            work_email: pd.work_email ?? null,
+            personal_email: pd.personal_email ?? null,
+            employment_number: e?.employment_number ?? null,
+          };
+        })
+        .filter((r) => !q || `${r.name} ${r.work_email ?? ""} ${r.personal_email ?? ""}`.toLowerCase().includes(q));
+      return new Response(JSON.stringify({ ok: true, count: rows.length, rows }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (action === "match") {
       // Hämta alla anställningar (paginerat)
