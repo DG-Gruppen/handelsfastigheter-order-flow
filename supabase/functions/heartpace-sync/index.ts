@@ -167,6 +167,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true,
         heartpace_total: all.length,
+        heartpace_active: active.length,
+        heartpace_skipped: skipped,
         newly_matched: matched,
         profiles_checked: profiles?.length ?? 0,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
