@@ -55,7 +55,7 @@ const SLUG_DESCRIPTION: Record<string, string> = {
   "ai-chat": "AI-assistenten som hjälper medarbetare med frågor baserat på intranätets innehåll. Använder Lovable AI.",
   "content-index": "Indexerar och synkroniserar innehåll för AI-sökning. Inkluderar webbscraping via Firecrawl.",
   "document-extract": "Extraherar text från uppladdade dokument (PDF, Word, Excel) för sökindexering.",
-  "heartpace": "HR-system för synkronisering av medarbetardata och organisationsstruktur. Inväntar API-åtkomst.",
+  "heartpace": "HR-system för synkronisering av medarbetardata. Test-knappen verifierar API-anslutningen. Synka-knappen hämtar alla anställda och kopplar dem mot SHF-profiler via e-postadress.",
 };
 
 export default function IntegrationDetailDialog({ integration, open, onOpenChange, onRefresh, icon: Icon }: Props) {
@@ -63,6 +63,8 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [matching, setMatching] = useState(false);
+
 
   if (!integration) return null;
 
@@ -104,6 +106,8 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
       const fnMap: Record<string, string> = {
         "cision-feed": "fetch-cision-feed",
         "content-index": "sync-content-index",
+        "google-drive": "index-google-drive",
+        "heartpace": "heartpace-sync",
       };
       const fnName = fnMap[integration.slug];
       if (!fnName) {
@@ -120,6 +124,34 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
       setTesting(false);
     }
   };
+
+  const runHeartpaceMatch = async () => {
+    setMatching(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/heartpace-sync?action=match`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+      });
+      const m = await res.json();
+      if (!res.ok || m?.ok === false) throw new Error(m?.error || `HTTP ${res.status}`);
+      toast.success(
+        `Matchade ${m?.newly_matched ?? 0} av ${m?.heartpace_total ?? 0} Heartpace-anställda`,
+      );
+      setTimeout(onRefresh, 1500);
+    } catch (e: any) {
+      toast.error(`Matchning misslyckades: ${e.message || "Okänt fel"}`);
+    } finally {
+      setMatching(false);
+    }
+  };
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -263,15 +295,26 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
 
         {/* Actions */}
         <Separator />
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2 justify-end flex-wrap">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Stäng
           </Button>
+          {integration.slug === "heartpace" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={runHeartpaceMatch}
+              disabled={matching}
+            >
+              {matching ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Synka & matcha profiler
+            </Button>
+          )}
           <Button
             variant="default"
             size="sm"
             onClick={testIntegration}
-            disabled={testing || !["cision-feed", "content-index"].includes(integration.slug)}
+            disabled={testing || !["cision-feed", "content-index", "google-drive", "heartpace"].includes(integration.slug)}
           >
             {testing ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
             Testa anslutning
@@ -281,3 +324,4 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
     </Dialog>
   );
 }
+
