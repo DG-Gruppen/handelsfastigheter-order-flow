@@ -106,6 +106,8 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
       const fnMap: Record<string, string> = {
         "cision-feed": "fetch-cision-feed",
         "content-index": "sync-content-index",
+        "google-drive": "index-google-drive",
+        "heartpace": "heartpace-sync",
       };
       const fnName = fnMap[integration.slug];
       if (!fnName) {
@@ -122,6 +124,34 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
       setTesting(false);
     }
   };
+
+  const runHeartpaceMatch = async () => {
+    setMatching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("heartpace-sync", {
+        body: {},
+        method: "POST",
+      });
+      // Använd query-param via direkt fetch om body-vägen inte funkar
+      const res = data as any;
+      if (error) throw error;
+      // Anropa med action=match
+      const { data: matchData, error: matchErr } = await supabase.functions.invoke(
+        "heartpace-sync?action=match" as any,
+      );
+      if (matchErr) throw matchErr;
+      const m = matchData as any;
+      toast.success(
+        `Matchade ${m?.newly_matched ?? 0} av ${m?.heartpace_total ?? 0} Heartpace-anställda`,
+      );
+      setTimeout(onRefresh, 1500);
+    } catch (e: any) {
+      toast.error(`Matchning misslyckades: ${e.message || "Okänt fel"}`);
+    } finally {
+      setMatching(false);
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
