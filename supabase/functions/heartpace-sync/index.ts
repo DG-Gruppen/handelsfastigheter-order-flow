@@ -100,15 +100,20 @@ Deno.serve(async (req) => {
         if (offset > 5000) break; // safety
       }
 
-      // Bygg email→id-map
+      // Bygg email→id-map. Heartpace-strukturen:
+      //   user_account.personal_data.work_email
+      //   user_account.uuid  ← stabil identifierare
       const byEmail = new Map<string, string>();
       for (const emp of all) {
+        const ua = emp?.user_account ?? {};
+        const pd = ua?.personal_data ?? {};
         const email: string | undefined =
-          emp.email || emp.workEmail || emp.work_email || emp.user?.email;
+          pd.work_email || pd.personal_email || emp.work_email || emp.email;
         const id: string | undefined =
-          emp.employeeId || emp.employee_id || emp.id || emp.userId || emp.user_id;
+          ua.uuid || (ua.id != null ? String(ua.id) : undefined) || emp.uuid;
         if (email && id) byEmail.set(String(email).toLowerCase().trim(), String(id));
       }
+
 
       // Hämta profiler utan heartpace_employee_id
       const { data: profiles, error: pErr } = await supa
