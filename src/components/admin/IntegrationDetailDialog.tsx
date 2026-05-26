@@ -55,7 +55,7 @@ const SLUG_DESCRIPTION: Record<string, string> = {
   "ai-chat": "AI-assistenten som hjälper medarbetare med frågor baserat på intranätets innehåll. Använder Lovable AI.",
   "content-index": "Indexerar och synkroniserar innehåll för AI-sökning. Inkluderar webbscraping via Firecrawl.",
   "document-extract": "Extraherar text från uppladdade dokument (PDF, Word, Excel) för sökindexering.",
-  "heartpace": "HR-system för synkronisering av medarbetardata och organisationsstruktur. Inväntar API-åtkomst.",
+  "heartpace": "HR-system för synkronisering av medarbetardata. Test-knappen verifierar API-anslutningen. Synka-knappen hämtar alla anställda och kopplar dem mot SHF-profiler via e-postadress.",
 };
 
 export default function IntegrationDetailDialog({ integration, open, onOpenChange, onRefresh, icon: Icon }: Props) {
