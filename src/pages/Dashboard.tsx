@@ -177,6 +177,31 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 md:space-y-8">
       <HomepageSuggestion />
+
+      {/* ── Supermålet-resan banner ── */}
+      <Link
+        to="/supermalet"
+        className="block rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 p-4 md:p-5 hover:from-primary/15 hover:to-accent/15 transition-colors group"
+      >
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="text-3xl md:text-4xl shrink-0">✈️</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] uppercase tracking-wider font-semibold text-primary mb-0.5">
+              Anmälan
+            </div>
+            <h2 className="font-heading text-base md:text-lg font-bold text-foreground leading-tight">
+              Supermålet-resan – anmäl dig nu
+            </h2>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+              Fyll i passuppgifter och ladda upp passkopia.
+            </p>
+          </div>
+          <span className="hidden sm:inline-flex items-center text-sm font-medium text-primary group-hover:translate-x-0.5 transition-transform">
+            Anmäl →
+          </span>
+        </div>
+      </Link>
+
       {/* ── Greeting ── */}
       <div>
         <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
