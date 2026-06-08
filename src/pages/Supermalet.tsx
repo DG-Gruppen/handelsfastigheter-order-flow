@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Plane, CheckCircle2 } from "lucide-react";
+import { Plane, CheckCircle2, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import * as XLSX from "xlsx";
 
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
@@ -36,7 +37,9 @@ const empty: FormState = {
 };
 
 export default function Supermalet() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles } = useAuth();
+  const isAdmin = roles?.includes("admin") || roles?.includes("it");
+  const [exporting, setExporting] = useState(false);
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(empty);
   const [submitting, setSubmitting] = useState(false);
@@ -89,6 +92,65 @@ export default function Supermalet() {
     }
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("supermalet_registrations" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      if (rows.length === 0) {
+        toast({ title: "Inga anmälningar att exportera ännu." });
+        return;
+      }
+
+      const sheetData = rows.map((r) => ({
+        "Efternamn": r.last_name ?? "",
+        "För-/mellannamn": r.first_name ?? "",
+        "Personnummer": r.personal_number ?? "",
+        "Passnummer": r.passport_number ?? "",
+        "Utfärdat": r.issued_date ?? "",
+        "Giltigt till": r.valid_until ?? "",
+        "Födelseort": r.birth_place ?? "",
+        "Allergier": r.allergies ?? "",
+        "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(sheetData);
+      ws["!cols"] = [
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 14 },
+        { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
+      ];
+      // Bold header row
+      const range = XLSX.utils.decode_range(ws["!ref"] as string);
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r: 0, c });
+        const cell = ws[addr];
+        if (cell) {
+          cell.s = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "2E4A62" } },
+            alignment: { horizontal: "left", vertical: "center" },
+          };
+        }
+      }
+      ws["!autofilter"] = { ref: ws["!ref"] as string };
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Supermålet");
+      const stamp = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `supermalet-anmalningar-${stamp}.xlsx`);
+      toast({ title: "Exporterat", description: `${rows.length} anmälningar nedladdade.` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Export misslyckades", description: err.message ?? String(err), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (done) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -108,14 +170,22 @@ export default function Supermalet() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Plane className="w-6 h-6 text-primary" />
+      <div className="flex items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Plane className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-heading text-2xl md:text-3xl font-bold">Anmälan: Supermålet-resan</h1>
+            <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold">Anmälan: Supermålet-resan</h1>
-          <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
-        </div>
+        {isAdmin && (
+          <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
+            <Download className="w-4 h-4" />
+            {exporting ? "Exporterar..." : "Exportera"}
+          </Button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
