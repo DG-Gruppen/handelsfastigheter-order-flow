@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Plane, Upload, CheckCircle2 } from "lucide-react";
+import { Plane, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,17 +11,11 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-const RECIPIENTS = [
-  "thomas.holm@handelsfastigheter.se",
-  "christel.johansson@handelsfastigheter.se",
-];
-
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
   personalNumber: z.string().trim().min(8, "Personnummer krävs").max(20),
   passportNumber: z.string().trim().min(3, "Passnummer krävs").max(30),
-  nationality: z.string().trim().min(1, "Nationalitet krävs").max(60),
   issuedDate: z.string().min(1, "Utfärdat datum krävs"),
   validUntil: z.string().min(1, "Giltigt till krävs"),
   birthPlace: z.string().trim().min(1, "Födelseort krävs").max(100),
@@ -35,7 +29,6 @@ const empty: FormState = {
   firstName: "",
   personalNumber: "",
   passportNumber: "",
-  nationality: "",
   issuedDate: "",
   validUntil: "",
   birthPlace: "",
@@ -46,7 +39,6 @@ export default function Supermalet() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(empty);
-  const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -72,20 +64,6 @@ export default function Supermalet() {
     }
     setSubmitting(true);
     try {
-      let passportPath: string | null = null;
-      if (file) {
-        if (file.size > 10 * 1024 * 1024) {
-          throw new Error("Passkopian får vara max 10 MB.");
-        }
-        const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("supermalet-passports")
-          .upload(path, file, { upsert: false, contentType: file.type });
-        if (upErr) throw upErr;
-        passportPath = path;
-      }
-
       const { error: insErr } = await supabase
         .from("supermalet_registrations" as any)
         .insert({
@@ -94,58 +72,18 @@ export default function Supermalet() {
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
           passport_number: parsed.data.passportNumber,
-          nationality: parsed.data.nationality,
           issued_date: parsed.data.issuedDate,
           valid_until: parsed.data.validUntil,
           birth_place: parsed.data.birthPlace,
           allergies: parsed.data.allergies || null,
-          passport_file_path: passportPath,
         });
       if (insErr) throw insErr;
 
-      // Signed URL for passport (valid 7 days)
-      let passportFileUrl = "";
-      if (passportPath) {
-        const { data: signed } = await supabase.storage
-          .from("supermalet-passports")
-          .createSignedUrl(passportPath, 60 * 60 * 24 * 7);
-        passportFileUrl = signed?.signedUrl ?? "";
-      }
-
-      const templateData = {
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        personalNumber: parsed.data.personalNumber,
-        passportNumber: parsed.data.passportNumber,
-        nationality: parsed.data.nationality,
-        issuedDate: parsed.data.issuedDate,
-        validUntil: parsed.data.validUntil,
-        birthPlace: parsed.data.birthPlace,
-        allergies: parsed.data.allergies || "",
-        submitterName: profile?.full_name || user.email || "",
-        submitterEmail: user.email || "",
-        passportFileUrl,
-      };
-
-      const idem = `supermalet-${user.id}-${Date.now()}`;
-      await Promise.all(
-        RECIPIENTS.map((to) =>
-          supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "supermalet-registration",
-              recipientEmail: to,
-              idempotencyKey: `${idem}-${to}`,
-              templateData,
-            },
-          })
-        )
-      );
-
       setDone(true);
-      toast({ title: "Anmälan skickad!", description: "Tack – vi har tagit emot dina uppgifter." });
+      toast({ title: "Anmälan sparad!", description: "Tack – vi har tagit emot dina uppgifter." });
     } catch (err: any) {
       console.error(err);
-      toast({ title: "Kunde inte skicka anmälan", description: err.message ?? String(err), variant: "destructive" });
+      toast({ title: "Kunde inte spara anmälan", description: err.message ?? String(err), variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -159,7 +97,7 @@ export default function Supermalet() {
             <CheckCircle2 className="w-16 h-16 text-primary mx-auto" />
             <h1 className="font-heading text-2xl font-bold">Tack för din anmälan!</h1>
             <p className="text-muted-foreground">
-              Dina uppgifter har skickats till Thomas och Christel. Du hör av dem inom kort.
+              Dina uppgifter har sparats. Thomas och Christel hör av sig inom kort.
             </p>
             <Button onClick={() => navigate("/dashboard")} className="mt-2">Tillbaka till start</Button>
           </CardContent>
@@ -176,7 +114,7 @@ export default function Supermalet() {
         </div>
         <div>
           <h1 className="font-heading text-2xl md:text-3xl font-bold">Anmälan: Supermålet-resan</h1>
-          <p className="text-sm text-muted-foreground">Fyll i dina uppgifter och ladda upp en kopia på passet.</p>
+          <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
         </div>
       </div>
 
@@ -189,7 +127,6 @@ export default function Supermalet() {
             <Field id="lastName" label="Efternamn" value={form.lastName} onChange={(v) => update("lastName", v)} required />
             <Field id="firstName" label="För-/mellannamn" value={form.firstName} onChange={(v) => update("firstName", v)} required />
             <Field id="personalNumber" label="Personnummer (ÅÅÅÅMMDD-XXXX)" value={form.personalNumber} onChange={(v) => update("personalNumber", v)} required />
-            <Field id="nationality" label="Nationalitet" value={form.nationality} onChange={(v) => update("nationality", v)} required />
             <Field id="birthPlace" label="Födelseort" value={form.birthPlace} onChange={(v) => update("birthPlace", v)} required />
           </CardContent>
         </Card>
@@ -203,24 +140,6 @@ export default function Supermalet() {
             <div />
             <Field id="issuedDate" label="Utfärdat datum" type="date" value={form.issuedDate} onChange={(v) => update("issuedDate", v)} required />
             <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required />
-
-            <div className="md:col-span-2">
-              <Label htmlFor="passportFile">Passkopia (PDF eller bild, max 10 MB)</Label>
-              <div className="mt-1.5 flex items-center gap-3">
-                <Input
-                  id="passportFile"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  className="cursor-pointer"
-                />
-                {file && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Upload className="w-3 h-3" /> {file.name}
-                  </span>
-                )}
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -247,7 +166,7 @@ export default function Supermalet() {
             Avbryt
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Skickar..." : "Skicka anmälan"}
+            {submitting ? "Sparar..." : "Skicka anmälan"}
           </Button>
         </div>
       </form>
