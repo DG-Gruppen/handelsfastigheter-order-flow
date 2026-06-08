@@ -2279,6 +2279,57 @@ export type Database = {
         }
         Relationships: []
       }
+      supermalet_registrations: {
+        Row: {
+          allergies: string | null
+          birth_place: string
+          created_at: string
+          first_name: string
+          id: string
+          issued_date: string
+          last_name: string
+          nationality: string
+          passport_file_path: string | null
+          passport_number: string
+          personal_number: string
+          updated_at: string
+          user_id: string
+          valid_until: string
+        }
+        Insert: {
+          allergies?: string | null
+          birth_place: string
+          created_at?: string
+          first_name: string
+          id?: string
+          issued_date: string
+          last_name: string
+          nationality: string
+          passport_file_path?: string | null
+          passport_number: string
+          personal_number: string
+          updated_at?: string
+          user_id: string
+          valid_until: string
+        }
+        Update: {
+          allergies?: string | null
+          birth_place?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          issued_date?: string
+          last_name?: string
+          nationality?: string
+          passport_file_path?: string | null
+          passport_number?: string
+          personal_number?: string
+          updated_at?: string
+          user_id?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
