@@ -37,7 +37,9 @@ const empty: FormState = {
 };
 
 export default function Supermalet() {
-  const { user, profile } = useAuth();
+  const { user, profile, roles } = useAuth();
+  const isAdmin = roles?.includes("admin") || roles?.includes("it");
+  const [exporting, setExporting] = useState(false);
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(empty);
   const [submitting, setSubmitting] = useState(false);
