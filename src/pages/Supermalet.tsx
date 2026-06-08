@@ -170,14 +170,22 @@ export default function Supermalet() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Plane className="w-6 h-6 text-primary" />
+      <div className="flex items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Plane className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-heading text-2xl md:text-3xl font-bold">Anmälan: Supermålet-resan</h1>
+            <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold">Anmälan: Supermålet-resan</h1>
-          <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
-        </div>
+        {isAdmin && (
+          <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
+            <Download className="w-4 h-4" />
+            {exporting ? "Exporterar..." : "Exportera"}
+          </Button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
