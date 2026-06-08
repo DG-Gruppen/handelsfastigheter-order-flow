@@ -92,6 +92,65 @@ export default function Supermalet() {
     }
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("supermalet_registrations" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      if (rows.length === 0) {
+        toast({ title: "Inga anmälningar att exportera ännu." });
+        return;
+      }
+
+      const sheetData = rows.map((r) => ({
+        "Efternamn": r.last_name ?? "",
+        "För-/mellannamn": r.first_name ?? "",
+        "Personnummer": r.personal_number ?? "",
+        "Passnummer": r.passport_number ?? "",
+        "Utfärdat": r.issued_date ?? "",
+        "Giltigt till": r.valid_until ?? "",
+        "Födelseort": r.birth_place ?? "",
+        "Allergier": r.allergies ?? "",
+        "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(sheetData);
+      ws["!cols"] = [
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 14 },
+        { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
+      ];
+      // Bold header row
+      const range = XLSX.utils.decode_range(ws["!ref"] as string);
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r: 0, c });
+        const cell = ws[addr];
+        if (cell) {
+          cell.s = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "2E4A62" } },
+            alignment: { horizontal: "left", vertical: "center" },
+          };
+        }
+      }
+      ws["!autofilter"] = { ref: ws["!ref"] as string };
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Supermålet");
+      const stamp = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `supermalet-anmalningar-${stamp}.xlsx`);
+      toast({ title: "Exporterat", description: `${rows.length} anmälningar nedladdade.` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Export misslyckades", description: err.message ?? String(err), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (done) {
     return (
       <div className="max-w-2xl mx-auto">
