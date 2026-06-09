@@ -98,6 +98,7 @@ export const template = {
     lastName: 'Andersson',
     personalNumber: '19850101-1234',
     birthPlace: 'Stockholm',
+    nationality: 'Svensk',
     passportNumber: '12345678',
     issuedDate: '2022-05-10',
     validUntil: '2032-05-10',
