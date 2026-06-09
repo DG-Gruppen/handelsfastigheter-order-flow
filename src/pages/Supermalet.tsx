@@ -87,9 +87,6 @@ export default function Supermalet() {
           last_name: parsed.data.lastName,
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
-          passport_number: parsed.data.passportNumber,
-          issued_date: parsed.data.issuedDate,
-          valid_until: parsed.data.validUntil,
           birth_place: parsed.data.birthPlace,
           allergies: parsed.data.allergies || null,
         });
