@@ -38,8 +38,8 @@ const empty: FormState = {
 };
 
 export default function Supermalet() {
-  const { user, profile, roles } = useAuth();
-  const isAdmin = roles?.includes("admin") || roles?.includes("it");
+  const { user, profile } = useAuth();
+  const { canEdit: canExport } = useModulePermission("supermalet");
   const [exporting, setExporting] = useState(false);
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(empty);
