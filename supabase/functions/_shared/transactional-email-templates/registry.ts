@@ -14,7 +14,7 @@ import { template as orderRejected } from './order-rejected.tsx'
 import { template as orderApproved } from './order-approved.tsx'
 import { template as orderDelivered } from './order-delivered.tsx'
 import { template as helpdeskOrder } from './helpdesk-order.tsx'
-import { template as supermaletRegistration } from './supermalet-registration.tsx'
+import { template as supermaletExport } from './supermalet-export.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-order-approval': newOrderApproval,
@@ -22,5 +22,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'order-approved': orderApproved,
   'order-delivered': orderDelivered,
   'helpdesk-order': helpdeskOrder,
-  'supermalet-registration': supermaletRegistration,
+  'supermalet-export': supermaletExport,
 }
