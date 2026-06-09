@@ -306,6 +306,56 @@ export default function Supermalet() {
           </Button>
         </div>
       </form>
+
+      <Dialog open={registrationsOpen} onOpenChange={setRegistrationsOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Anmälningar – Supermålet</DialogTitle>
+          </DialogHeader>
+          {registrationsLoading ? (
+            <p className="text-muted-foreground text-sm py-4">Laddar anmälningar…</p>
+          ) : registrations.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-4">Inga anmälningar ännu.</p>
+          ) : (
+            <ScrollArea className="flex-1 -mx-6 px-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Efternamn</TableHead>
+                    <TableHead>Förnamn</TableHead>
+                    <TableHead>Personnummer</TableHead>
+                    <TableHead>Passnummer</TableHead>
+                    <TableHead>Giltigt till</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {registrations.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.last_name}</TableCell>
+                      <TableCell>{r.first_name}</TableCell>
+                      <TableCell>{r.personal_number}</TableCell>
+                      <TableCell>{r.passport_number}</TableCell>
+                      <TableCell>{r.valid_until}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDelete(r.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
