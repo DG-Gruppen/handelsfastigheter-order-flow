@@ -107,6 +107,7 @@ export default function Supermalet() {
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
           birth_place: parsed.data.birthPlace,
+          nationality: parsed.data.nationality,
           passport_number: parsed.data.passportNumber,
           issued_date: parsed.data.issuedDate,
           valid_until: parsed.data.validUntil,
