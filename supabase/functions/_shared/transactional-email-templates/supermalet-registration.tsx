@@ -1,7 +1,7 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Link, Preview, Text,
+  Body, Container, Head, Heading, Html, Preview, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
@@ -9,30 +9,20 @@ interface Props {
   firstName?: string
   lastName?: string
   personalNumber?: string
-  passportNumber?: string
-  nationality?: string
-  issuedDate?: string
-  validUntil?: string
   birthPlace?: string
   allergies?: string
   submitterName?: string
   submitterEmail?: string
-  passportFileUrl?: string
 }
 
 const SupermaletRegistration = ({
   firstName = '',
   lastName = '',
   personalNumber = '',
-  passportNumber = '',
-  nationality = '',
-  issuedDate = '',
-  validUntil = '',
   birthPlace = '',
   allergies = '',
   submitterName = '',
   submitterEmail = '',
-  passportFileUrl = '',
 }: Props) => (
   <Html lang="sv" dir="ltr">
     <Head />
@@ -53,17 +43,7 @@ const SupermaletRegistration = ({
               <Row label="Efternamn" value={lastName} />
               <Row label="För-/mellannamn" value={firstName} />
               <Row label="Personnummer" value={personalNumber} />
-              <Row label="Nationalitet" value={nationality} />
               <Row label="Födelseort" value={birthPlace} />
-            </tbody>
-          </table>
-
-          <Heading as="h3" style={sectionHeading}>Passuppgifter</Heading>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              <Row label="Passnummer" value={passportNumber} />
-              <Row label="Utfärdat" value={issuedDate} />
-              <Row label="Giltigt till" value={validUntil} />
             </tbody>
           </table>
 
@@ -73,17 +53,6 @@ const SupermaletRegistration = ({
               <Row label="Allergier" value={allergies || '—'} />
             </tbody>
           </table>
-
-          {passportFileUrl ? (
-            <>
-              <Heading as="h3" style={sectionHeading}>Passkopia</Heading>
-              <Text style={text}>
-                <Link href={passportFileUrl} style={link}>Öppna passkopia (länken gäller i 7 dagar)</Link>
-              </Text>
-            </>
-          ) : (
-            <Text style={text}><em>Ingen passkopia bifogad.</em></Text>
-          )}
         </div>
         <div style={brandFooter}>
           <Text style={brandName}>SHF Intra</Text>
@@ -110,15 +79,10 @@ export const template = {
     firstName: 'Anna',
     lastName: 'Andersson',
     personalNumber: '19850101-1234',
-    passportNumber: '88123456',
-    nationality: 'Svensk',
-    issuedDate: '2022-05-01',
-    validUntil: '2032-05-01',
     birthPlace: 'Stockholm',
     allergies: 'Nötter',
     submitterName: 'Anna Andersson',
     submitterEmail: 'anna@handelsfastigheter.se',
-    passportFileUrl: 'https://example.com/pass.pdf',
   },
 } satisfies TemplateEntry
 
@@ -143,4 +107,3 @@ const infoValue = { padding: '6px 0', fontSize: '14px', color: BRAND.textDark, f
 const brandFooter = { padding: '24px 16px', textAlign: 'center' as const }
 const brandName = { margin: '0 0 8px', fontSize: '13px', fontWeight: '500' as const, color: BRAND.textMuted, fontFamily: "Georgia, 'Times New Roman', serif" }
 const brandSub = { margin: '0', fontSize: '11px', color: BRAND.textMuted }
-const link = { color: BRAND.primary, textDecoration: 'none', fontWeight: '600' as const }
