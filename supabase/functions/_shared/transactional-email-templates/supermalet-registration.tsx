@@ -24,6 +24,7 @@ const SupermaletRegistration = ({
   lastName = '',
   personalNumber = '',
   birthPlace = '',
+  nationality = '',
   passportNumber = '',
   issuedDate = '',
   validUntil = '',
