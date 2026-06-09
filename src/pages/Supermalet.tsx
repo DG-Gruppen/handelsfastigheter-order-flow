@@ -120,9 +120,6 @@ export default function Supermalet() {
         "Efternamn": r.last_name ?? "",
         "För-/mellannamn": r.first_name ?? "",
         "Personnummer": r.personal_number ?? "",
-        "Passnummer": r.passport_number ?? "",
-        "Utfärdat": r.issued_date ?? "",
-        "Giltigt till": r.valid_until ?? "",
         "Födelseort": r.birth_place ?? "",
         "Allergier": r.allergies ?? "",
         "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
@@ -130,8 +127,7 @@ export default function Supermalet() {
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       ws["!cols"] = [
-        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 14 },
-        { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
       ];
       // Bold header row
       const range = XLSX.utils.decode_range(ws["!ref"] as string);
