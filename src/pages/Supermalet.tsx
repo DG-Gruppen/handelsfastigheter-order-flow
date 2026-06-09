@@ -98,6 +98,14 @@ export default function Supermalet() {
       toast({ title: "Kontrollera fälten", description: parsed.error.issues[0]?.message, variant: "destructive" });
       return;
     }
+    let finalNationality = parsed.data.nationality;
+    if (parsed.data.nationality === "Annan") {
+      if (!form.otherNationality.trim()) {
+        toast({ title: "Ange nationalitet", description: "Fyll i nationalitet när 'Annan' är vald.", variant: "destructive" });
+        return;
+      }
+      finalNationality = form.otherNationality.trim();
+    }
     setSubmitting(true);
     try {
       const { error: insErr } = await supabase
@@ -108,7 +116,7 @@ export default function Supermalet() {
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
           birth_place: parsed.data.birthPlace,
-          nationality: parsed.data.nationality,
+          nationality: finalNationality,
           passport_number: parsed.data.passportNumber,
           issued_date: parsed.data.issuedDate,
           valid_until: parsed.data.validUntil,
@@ -291,6 +299,19 @@ export default function Supermalet() {
                   ))}
                 </SelectContent>
               </Select>
+              {form.nationality === "Annan" && (
+                <div className="mt-2">
+                  <Label htmlFor="otherNationality">Ange nationalitet<span className="text-destructive"> *</span></Label>
+                  <Input
+                    id="otherNationality"
+                    value={form.otherNationality}
+                    onChange={(e) => update("otherNationality", e.target.value)}
+                    className="mt-1.5"
+                    placeholder="Skriv in din nationalitet"
+                    required
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
