@@ -296,20 +296,22 @@ export default function Supermalet() {
             <Field id="firstName" label="För-/mellannamn" value={form.firstName} onChange={(v) => update("firstName", v)} required />
             <Field id="personalNumber" label="Personnummer (ÅÅÅÅMMDD-XXXX)" value={form.personalNumber} onChange={(v) => update("personalNumber", v)} required />
             <Field id="birthPlace" label="Födelseort" value={form.birthPlace} onChange={(v) => update("birthPlace", v)} required />
-            <div>
-              <Label htmlFor="nationality">Nationalitet<span className="text-destructive"> *</span></Label>
-              <Select value={form.nationality} onValueChange={(v) => update("nationality", v)}>
-                <SelectTrigger id="nationality" className="mt-1.5">
-                  <SelectValue placeholder="Välj nationalitet" />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {NATIONALITIES.map((n) => (
-                    <SelectItem key={n} value={n}>{n}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className={`grid gap-4 ${form.nationality === "Annan" ? "md:grid-cols-2" : "grid-cols-1"}`}>
+              <div>
+                <Label htmlFor="nationality">Nationalitet<span className="text-destructive"> *</span></Label>
+                <Select value={form.nationality} onValueChange={(v) => update("nationality", v)}>
+                  <SelectTrigger id="nationality" className="mt-1.5">
+                    <SelectValue placeholder="Välj nationalitet" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {NATIONALITIES.map((n) => (
+                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {form.nationality === "Annan" && (
-                <div className="mt-2">
+                <div>
                   <Label htmlFor="otherNationality">Ange nationalitet<span className="text-destructive"> *</span></Label>
                   <Input
                     id="otherNationality"
