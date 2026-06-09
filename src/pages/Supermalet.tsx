@@ -139,58 +139,63 @@ export default function Supermalet() {
     }
   };
 
-  const handleExport = async () => {
+  const buildWorkbook = async (): Promise<{ wb: XLSX.WorkBook; count: number } | null> => {
+    const { data, error } = await supabase
+      .from("supermalet_registrations" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const rows = (data ?? []) as any[];
+    if (rows.length === 0) {
+      toast({ title: "Inga anmälningar att exportera ännu." });
+      return null;
+    }
+
+    const sheetData = rows.map((r) => ({
+      "Efternamn": r.last_name ?? "",
+      "För-/mellannamn": r.first_name ?? "",
+      "Personnummer": r.personal_number ?? "",
+      "Födelseort": r.birth_place ?? "",
+      "Nationalitet": r.nationality ?? "",
+      "Passnummer": r.passport_number ?? "",
+      "Utfärdat datum": r.issued_date ?? "",
+      "Giltigt till": r.valid_until ?? "",
+      "Skjorta/T-shirt": r.shirt_size ?? "",
+      "Allergier": r.allergies ?? "",
+      "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(sheetData);
+    ws["!cols"] = [
+      { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
+    ];
+    const range = XLSX.utils.decode_range(ws["!ref"] as string);
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const addr = XLSX.utils.encode_cell({ r: 0, c });
+      const cell = ws[addr];
+      if (cell) {
+        cell.s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2E4A62" } },
+          alignment: { horizontal: "left", vertical: "center" },
+        };
+      }
+    }
+    ws["!autofilter"] = { ref: ws["!ref"] as string };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Supermålet");
+    return { wb, count: rows.length };
+  };
+
+  const handleDownloadExport = async () => {
     setExporting(true);
     try {
-      const { data, error } = await supabase
-        .from("supermalet_registrations" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      const rows = (data ?? []) as any[];
-      if (rows.length === 0) {
-        toast({ title: "Inga anmälningar att exportera ännu." });
-        return;
-      }
-
-      const sheetData = rows.map((r) => ({
-        "Efternamn": r.last_name ?? "",
-        "För-/mellannamn": r.first_name ?? "",
-        "Personnummer": r.personal_number ?? "",
-        "Födelseort": r.birth_place ?? "",
-        "Nationalitet": r.nationality ?? "",
-        "Passnummer": r.passport_number ?? "",
-        "Utfärdat datum": r.issued_date ?? "",
-        "Giltigt till": r.valid_until ?? "",
-        "Skjorta/T-shirt": r.shirt_size ?? "",
-        "Allergier": r.allergies ?? "",
-        "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(sheetData);
-      ws["!cols"] = [
-        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
-      ];
-      // Bold header row
-      const range = XLSX.utils.decode_range(ws["!ref"] as string);
-      for (let c = range.s.c; c <= range.e.c; c++) {
-        const addr = XLSX.utils.encode_cell({ r: 0, c });
-        const cell = ws[addr];
-        if (cell) {
-          cell.s = {
-            font: { bold: true, color: { rgb: "FFFFFF" } },
-            fill: { fgColor: { rgb: "2E4A62" } },
-            alignment: { horizontal: "left", vertical: "center" },
-          };
-        }
-      }
-      ws["!autofilter"] = { ref: ws["!ref"] as string };
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Supermålet");
+      const result = await buildWorkbook();
+      if (!result) return;
       const stamp = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(wb, `supermalet-anmalningar-${stamp}.xlsx`);
-      toast({ title: "Exporterat", description: `${rows.length} anmälningar nedladdade.` });
+      XLSX.writeFile(result.wb, `supermalet-anmalningar-${stamp}.xlsx`);
+      toast({ title: "Exporterat", description: `${result.count} anmälningar nedladdade.` });
     } catch (err: any) {
       console.error(err);
       toast({ title: "Export misslyckades", description: err.message ?? String(err), variant: "destructive" });
@@ -198,6 +203,56 @@ export default function Supermalet() {
       setExporting(false);
     }
   };
+
+  const handleEmailExport = async () => {
+    if (!user?.email) {
+      toast({ title: "Ingen e-postadress", description: "Din profil saknar e-post.", variant: "destructive" });
+      return;
+    }
+    setExporting(true);
+    try {
+      const result = await buildWorkbook();
+      if (!result) return;
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const arrayBuffer = XLSX.write(result.wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+      const fileName = `supermalet-anmalningar-${stamp}.xlsx`;
+      const path = `${user.id}/${fileName}`;
+      const { error: upErr } = await supabase.storage
+        .from("supermalet-exports")
+        .upload(path, new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), {
+          contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          upsert: true,
+        });
+      if (upErr) throw upErr;
+      const expiresIn = 60 * 60 * 24 * 7; // 7 days
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("supermalet-exports")
+        .createSignedUrl(path, expiresIn);
+      if (signErr || !signed?.signedUrl) throw signErr ?? new Error("Kunde inte skapa nedladdningslänk");
+
+      const { error: mailErr } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "supermalet-export",
+          recipientEmail: user.email,
+          idempotencyKey: `supermalet-export-${user.id}-${stamp}`,
+          templateData: {
+            recipientName: profile?.full_name?.split(/\s+/)[0] ?? "",
+            downloadUrl: signed.signedUrl,
+            count: result.count,
+            expiresHours: 168,
+          },
+        },
+      });
+      if (mailErr) throw mailErr;
+      toast({ title: "Skickat", description: `Exporten har mejlats till ${user.email}.` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Kunde inte mejla export", description: err.message ?? String(err), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   const fetchRegistrations = async () => {
     setRegistrationsLoading(true);
