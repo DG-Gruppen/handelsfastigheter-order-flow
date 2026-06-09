@@ -300,8 +300,8 @@ export default function Supermalet() {
                     <TableHead>Efternamn</TableHead>
                     <TableHead>Förnamn</TableHead>
                     <TableHead>Personnummer</TableHead>
-                    <TableHead>Passnummer</TableHead>
-                    <TableHead>Giltigt till</TableHead>
+                    <TableHead>Födelseort</TableHead>
+                    <TableHead>Allergier</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -311,8 +311,8 @@ export default function Supermalet() {
                       <TableCell>{r.last_name}</TableCell>
                       <TableCell>{r.first_name}</TableCell>
                       <TableCell>{r.personal_number}</TableCell>
-                      <TableCell>{r.passport_number}</TableCell>
-                      <TableCell>{r.valid_until}</TableCell>
+                      <TableCell>{r.birth_place}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{r.allergies || "—"}</TableCell>
                       <TableCell>
                         <Button
                           type="button"
