@@ -233,10 +233,24 @@ export default function Supermalet() {
           </div>
         </div>
         {canExport && (
-          <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
-            <Download className="w-4 h-4" />
-            {exporting ? "Exporterar..." : "Exportera"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRegistrationsOpen(true);
+                fetchRegistrations();
+              }}
+              className="gap-2"
+            >
+              <Users className="w-4 h-4" />
+              Anmälningar
+            </Button>
+            <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
+              <Download className="w-4 h-4" />
+              {exporting ? "Exporterar..." : "Exportera"}
+            </Button>
+          </div>
         )}
       </div>
 
