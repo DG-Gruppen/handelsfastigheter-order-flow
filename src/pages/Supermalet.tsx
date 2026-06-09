@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Plane, CheckCircle2, Download, Users, Trash2 } from "lucide-react";
+import { Plane, CheckCircle2, Download, Users, Trash2, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -276,6 +277,14 @@ export default function Supermalet() {
           </div>
         )}
       </div>
+
+      <Alert className="border-primary/30 bg-primary/5">
+        <Info className="h-4 w-4 text-primary" />
+        <AlertTitle>Viktigt om namn</AlertTitle>
+        <AlertDescription>
+          Skriv dina namn exakt som de står i passet – inklusive alla förnamn, efternamn och mellannamn. Det är viktigt för bokningen.
+        </AlertDescription>
+      </Alert>
 
       <form onSubmit={handleSubmit}>
         <Card className="glass-card">
