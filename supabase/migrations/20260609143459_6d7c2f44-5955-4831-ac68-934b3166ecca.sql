@@ -1,0 +1,1 @@
+ALTER TABLE public.supermalet_registrations ADD COLUMN shirt_size TEXT;

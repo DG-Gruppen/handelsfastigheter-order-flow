@@ -14,6 +14,7 @@ interface Props {
   passportNumber?: string
   issuedDate?: string
   validUntil?: string
+  shirtSize?: string
   allergies?: string
   submitterName?: string
   submitterEmail?: string

@@ -2292,6 +2292,7 @@ export type Database = {
           passport_file_path: string | null
           passport_number: string
           personal_number: string
+          shirt_size: string | null
           updated_at: string
           user_id: string
           valid_until: string
@@ -2308,6 +2309,7 @@ export type Database = {
           passport_file_path?: string | null
           passport_number: string
           personal_number: string
+          shirt_size?: string | null
           updated_at?: string
           user_id: string
           valid_until: string
@@ -2324,6 +2326,7 @@ export type Database = {
           passport_file_path?: string | null
           passport_number?: string
           personal_number?: string
+          shirt_size?: string | null
           updated_at?: string
           user_id?: string
           valid_until?: string

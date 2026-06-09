@@ -49,6 +49,7 @@ const schema = z.object({
   passportNumber: z.string().trim().min(1, "Passnummer krävs").max(50),
   issuedDate: z.string().trim().min(1, "Utfärdat datum krävs"),
   validUntil: z.string().trim().min(1, "Giltigt till krävs"),
+  shirtSize: z.string().trim().min(1, "Storlek krävs").max(10),
   allergies: z.string().max(500).optional(),
 });
 
@@ -64,6 +65,7 @@ const empty: FormState = {
   passportNumber: "",
   issuedDate: "",
   validUntil: "",
+  shirtSize: "",
   allergies: "",
 };
 
@@ -121,6 +123,7 @@ export default function Supermalet() {
           passport_number: parsed.data.passportNumber,
           issued_date: parsed.data.issuedDate,
           valid_until: parsed.data.validUntil,
+          shirt_size: parsed.data.shirtSize,
           allergies: parsed.data.allergies || null,
         });
       if (insErr) throw insErr;
@@ -158,13 +161,14 @@ export default function Supermalet() {
         "Passnummer": r.passport_number ?? "",
         "Utfärdat datum": r.issued_date ?? "",
         "Giltigt till": r.valid_until ?? "",
+        "Skjorta/T-shirt": r.shirt_size ?? "",
         "Allergier": r.allergies ?? "",
         "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
       }));
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       ws["!cols"] = [
-        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
       ];
       // Bold header row
       const range = XLSX.utils.decode_range(ws["!ref"] as string);
@@ -344,17 +348,32 @@ export default function Supermalet() {
           <CardHeader>
             <CardTitle className="text-base">Övrigt</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Label htmlFor="allergies">Allergier (eller annat vi behöver veta)</Label>
-            <Textarea
-              id="allergies"
-              className="mt-1.5"
-              rows={3}
-              value={form.allergies}
-              onChange={(e) => update("allergies", e.target.value)}
-              placeholder="T.ex. nötter, laktos, gluten – eller lämna tomt."
-              maxLength={500}
-            />
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="shirtSize">Skjorta/T-shirt storlek<span className="text-destructive"> *</span></Label>
+              <Select value={form.shirtSize} onValueChange={(v) => update("shirtSize", v)}>
+                <SelectTrigger id="shirtSize" className="mt-1.5">
+                  <SelectValue placeholder="Välj storlek" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["S", "M", "L", "XL", "XXL"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="allergies">Allergier (eller annat vi behöver veta)</Label>
+              <Textarea
+                id="allergies"
+                className="mt-1.5"
+                rows={3}
+                value={form.allergies}
+                onChange={(e) => update("allergies", e.target.value)}
+                placeholder="T.ex. nötter, laktos, gluten – eller lämna tomt."
+                maxLength={500}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -390,6 +409,7 @@ export default function Supermalet() {
                     <TableHead>Passnummer</TableHead>
                     <TableHead>Utfärdat</TableHead>
                     <TableHead>Giltigt till</TableHead>
+                    <TableHead>Storlek</TableHead>
                     <TableHead>Allergier</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -405,6 +425,7 @@ export default function Supermalet() {
                       <TableCell>{r.passport_number || "—"}</TableCell>
                       <TableCell>{r.issued_date || "—"}</TableCell>
                       <TableCell>{r.valid_until || "—"}</TableCell>
+                      <TableCell>{r.shirt_size || "—"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.allergies || "—"}</TableCell>
                       <TableCell>
                         <Button
