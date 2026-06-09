@@ -10,6 +10,7 @@ interface Props {
   lastName?: string
   personalNumber?: string
   birthPlace?: string
+  nationality?: string
   passportNumber?: string
   issuedDate?: string
   validUntil?: string
