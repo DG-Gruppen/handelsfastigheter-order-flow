@@ -32,9 +32,6 @@ const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
   personalNumber: z.string().trim().min(8, "Personnummer krävs").max(20),
-  passportNumber: z.string().trim().min(3, "Passnummer krävs").max(30),
-  issuedDate: z.string().min(1, "Utfärdat datum krävs"),
-  validUntil: z.string().min(1, "Giltigt till krävs"),
   birthPlace: z.string().trim().min(1, "Födelseort krävs").max(100),
   allergies: z.string().max(500).optional(),
 });
@@ -45,9 +42,6 @@ const empty: FormState = {
   lastName: "",
   firstName: "",
   personalNumber: "",
-  passportNumber: "",
-  issuedDate: "",
-  validUntil: "",
   birthPlace: "",
   allergies: "",
 };
