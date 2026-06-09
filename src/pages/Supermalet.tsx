@@ -330,10 +330,25 @@ export default function Supermalet() {
               <Users className="w-4 h-4" />
               Anmälningar
             </Button>
-            <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
-              <Download className="w-4 h-4" />
-              {exporting ? "Exporterar..." : "Exportera"}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" disabled={exporting} className="gap-2">
+                  <Download className="w-4 h-4" />
+                  {exporting ? "Exporterar..." : "Exportera"}
+                  <ChevronDown className="w-4 h-4 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleDownloadExport} className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Ladda ner Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleEmailExport} className="gap-2">
+                  <Mail className="w-4 h-4" />
+                  Maila till mig
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
