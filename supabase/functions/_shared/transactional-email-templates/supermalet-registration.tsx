@@ -10,6 +10,7 @@ interface Props {
   lastName?: string
   personalNumber?: string
   birthPlace?: string
+  nationality?: string
   passportNumber?: string
   issuedDate?: string
   validUntil?: string
@@ -23,6 +24,7 @@ const SupermaletRegistration = ({
   lastName = '',
   personalNumber = '',
   birthPlace = '',
+  nationality = '',
   passportNumber = '',
   issuedDate = '',
   validUntil = '',
@@ -50,6 +52,7 @@ const SupermaletRegistration = ({
               <Row label="För-/mellannamn" value={firstName} />
               <Row label="Personnummer" value={personalNumber} />
               <Row label="Födelseort" value={birthPlace} />
+              <Row label="Nationalitet" value={nationality} />
             </tbody>
           </table>
 
@@ -95,6 +98,7 @@ export const template = {
     lastName: 'Andersson',
     personalNumber: '19850101-1234',
     birthPlace: 'Stockholm',
+    nationality: 'Svensk',
     passportNumber: '12345678',
     issuedDate: '2022-05-10',
     validUntil: '2032-05-10',

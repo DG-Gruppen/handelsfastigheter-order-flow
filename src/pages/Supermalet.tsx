@@ -27,12 +27,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const NATIONALITIES = [
+  "Svensk", "Norsk", "Dansk", "Finsk", "Isländsk",
+  "Amerikansk", "Australisk", "Belgisk", "Brittisk", "Bulgarisk",
+  "Estnisk", "Fransk", "Grekisk", "Indisk", "Irländsk", "Italiensk",
+  "Japansk", "Kanadensisk", "Kinesisk", "Kroatisk", "Lettisk", "Litauisk",
+  "Nederländsk", "Polsk", "Portugisisk", "Rumänsk", "Rysk", "Schweizisk",
+  "Slovakisk", "Slovensk", "Spansk", "Sydkoreansk", "Tjeckisk", "Turkisk",
+  "Tysk", "Ukrainsk", "Ungersk", "Österrikisk", "Annan",
+];
 
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
   personalNumber: z.string().trim().min(8, "Personnummer krävs").max(20),
   birthPlace: z.string().trim().min(1, "Födelseort krävs").max(100),
+  nationality: z.string().trim().min(1, "Nationalitet krävs").max(50),
   passportNumber: z.string().trim().min(1, "Passnummer krävs").max(50),
   issuedDate: z.string().trim().min(1, "Utfärdat datum krävs"),
   validUntil: z.string().trim().min(1, "Giltigt till krävs"),
@@ -46,6 +58,7 @@ const empty: FormState = {
   firstName: "",
   personalNumber: "",
   birthPlace: "",
+  nationality: "Svensk",
   passportNumber: "",
   issuedDate: "",
   validUntil: "",
@@ -94,6 +107,7 @@ export default function Supermalet() {
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
           birth_place: parsed.data.birthPlace,
+          nationality: parsed.data.nationality,
           passport_number: parsed.data.passportNumber,
           issued_date: parsed.data.issuedDate,
           valid_until: parsed.data.validUntil,
@@ -130,6 +144,7 @@ export default function Supermalet() {
         "För-/mellannamn": r.first_name ?? "",
         "Personnummer": r.personal_number ?? "",
         "Födelseort": r.birth_place ?? "",
+        "Nationalitet": r.nationality ?? "",
         "Passnummer": r.passport_number ?? "",
         "Utfärdat datum": r.issued_date ?? "",
         "Giltigt till": r.valid_until ?? "",
@@ -139,7 +154,7 @@ export default function Supermalet() {
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       ws["!cols"] = [
-        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
       ];
       // Bold header row
       const range = XLSX.utils.decode_range(ws["!ref"] as string);
@@ -263,6 +278,19 @@ export default function Supermalet() {
             <Field id="firstName" label="För-/mellannamn" value={form.firstName} onChange={(v) => update("firstName", v)} required />
             <Field id="personalNumber" label="Personnummer (ÅÅÅÅMMDD-XXXX)" value={form.personalNumber} onChange={(v) => update("personalNumber", v)} required />
             <Field id="birthPlace" label="Födelseort" value={form.birthPlace} onChange={(v) => update("birthPlace", v)} required />
+            <div>
+              <Label htmlFor="nationality">Nationalitet<span className="text-destructive"> *</span></Label>
+              <Select value={form.nationality} onValueChange={(v) => update("nationality", v)}>
+                <SelectTrigger id="nationality" className="mt-1.5">
+                  <SelectValue placeholder="Välj nationalitet" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {NATIONALITIES.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
@@ -325,6 +353,7 @@ export default function Supermalet() {
                     <TableHead>Förnamn</TableHead>
                     <TableHead>Personnummer</TableHead>
                     <TableHead>Födelseort</TableHead>
+                    <TableHead>Nationalitet</TableHead>
                     <TableHead>Passnummer</TableHead>
                     <TableHead>Utfärdat</TableHead>
                     <TableHead>Giltigt till</TableHead>
@@ -339,6 +368,7 @@ export default function Supermalet() {
                       <TableCell>{r.first_name}</TableCell>
                       <TableCell>{r.personal_number}</TableCell>
                       <TableCell>{r.birth_place}</TableCell>
+                      <TableCell>{r.nationality || "—"}</TableCell>
                       <TableCell>{r.passport_number || "—"}</TableCell>
                       <TableCell>{r.issued_date || "—"}</TableCell>
                       <TableCell>{r.valid_until || "—"}</TableCell>
