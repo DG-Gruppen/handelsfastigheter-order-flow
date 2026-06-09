@@ -353,6 +353,7 @@ export default function Supermalet() {
                     <TableHead>Förnamn</TableHead>
                     <TableHead>Personnummer</TableHead>
                     <TableHead>Födelseort</TableHead>
+                    <TableHead>Nationalitet</TableHead>
                     <TableHead>Passnummer</TableHead>
                     <TableHead>Utfärdat</TableHead>
                     <TableHead>Giltigt till</TableHead>
