@@ -10,6 +10,9 @@ interface Props {
   lastName?: string
   personalNumber?: string
   birthPlace?: string
+  passportNumber?: string
+  issuedDate?: string
+  validUntil?: string
   allergies?: string
   submitterName?: string
   submitterEmail?: string
@@ -20,6 +23,9 @@ const SupermaletRegistration = ({
   lastName = '',
   personalNumber = '',
   birthPlace = '',
+  passportNumber = '',
+  issuedDate = '',
+  validUntil = '',
   allergies = '',
   submitterName = '',
   submitterEmail = '',
@@ -44,6 +50,15 @@ const SupermaletRegistration = ({
               <Row label="För-/mellannamn" value={firstName} />
               <Row label="Personnummer" value={personalNumber} />
               <Row label="Födelseort" value={birthPlace} />
+            </tbody>
+          </table>
+
+          <Heading as="h3" style={sectionHeading}>Passuppgifter</Heading>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              <Row label="Passnummer" value={passportNumber} />
+              <Row label="Utfärdat datum" value={issuedDate} />
+              <Row label="Giltigt till" value={validUntil} />
             </tbody>
           </table>
 
@@ -80,6 +95,9 @@ export const template = {
     lastName: 'Andersson',
     personalNumber: '19850101-1234',
     birthPlace: 'Stockholm',
+    passportNumber: '12345678',
+    issuedDate: '2022-05-10',
+    validUntil: '2032-05-10',
     allergies: 'Nötter',
     submitterName: 'Anna Andersson',
     submitterEmail: 'anna@handelsfastigheter.se',
