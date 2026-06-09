@@ -170,6 +170,39 @@ export default function Supermalet() {
     }
   };
 
+  const fetchRegistrations = async () => {
+    setRegistrationsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("supermalet_registrations" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setRegistrations(data ?? []);
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Kunde inte hämta anmälningar", description: err.message ?? String(err), variant: "destructive" });
+    } finally {
+      setRegistrationsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Är du säker på att du vill radera denna anmälan?")) return;
+    try {
+      const { error } = await supabase
+        .from("supermalet_registrations" as any)
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+      toast({ title: "Anmälan raderad" });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Kunde inte radera", description: err.message ?? String(err), variant: "destructive" });
+    }
+  };
+
   if (done) {
     return (
       <div className="max-w-2xl mx-auto">
