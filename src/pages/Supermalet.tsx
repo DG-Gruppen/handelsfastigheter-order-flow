@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useModulePermission } from "@/hooks/useModulePermission";
 import * as XLSX from "xlsx";
 
 const schema = z.object({
@@ -37,8 +38,8 @@ const empty: FormState = {
 };
 
 export default function Supermalet() {
-  const { user, profile, roles } = useAuth();
-  const isAdmin = roles?.includes("admin") || roles?.includes("it");
+  const { user, profile } = useAuth();
+  const { canEdit: canExport } = useModulePermission("supermalet");
   const [exporting, setExporting] = useState(false);
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(empty);
@@ -180,7 +181,7 @@ export default function Supermalet() {
             <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
           </div>
         </div>
-        {isAdmin && (
+        {canExport && (
           <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
             <Download className="w-4 h-4" />
             {exporting ? "Exporterar..." : "Exportera"}
