@@ -368,6 +368,7 @@ export default function Supermalet() {
                       <TableCell>{r.first_name}</TableCell>
                       <TableCell>{r.personal_number}</TableCell>
                       <TableCell>{r.birth_place}</TableCell>
+                      <TableCell>{r.nationality || "—"}</TableCell>
                       <TableCell>{r.passport_number || "—"}</TableCell>
                       <TableCell>{r.issued_date || "—"}</TableCell>
                       <TableCell>{r.valid_until || "—"}</TableCell>
