@@ -33,6 +33,9 @@ const schema = z.object({
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
   personalNumber: z.string().trim().min(8, "Personnummer krävs").max(20),
   birthPlace: z.string().trim().min(1, "Födelseort krävs").max(100),
+  passportNumber: z.string().trim().min(1, "Passnummer krävs").max(50),
+  issuedDate: z.string().trim().min(1, "Utfärdat datum krävs"),
+  validUntil: z.string().trim().min(1, "Giltigt till krävs"),
   allergies: z.string().max(500).optional(),
 });
 
@@ -43,6 +46,9 @@ const empty: FormState = {
   firstName: "",
   personalNumber: "",
   birthPlace: "",
+  passportNumber: "",
+  issuedDate: "",
+  validUntil: "",
   allergies: "",
 };
 
@@ -88,6 +94,9 @@ export default function Supermalet() {
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
           birth_place: parsed.data.birthPlace,
+          passport_number: parsed.data.passportNumber,
+          issued_date: parsed.data.issuedDate,
+          valid_until: parsed.data.validUntil,
           allergies: parsed.data.allergies || null,
         });
       if (insErr) throw insErr;
@@ -121,13 +130,16 @@ export default function Supermalet() {
         "För-/mellannamn": r.first_name ?? "",
         "Personnummer": r.personal_number ?? "",
         "Födelseort": r.birth_place ?? "",
+        "Passnummer": r.passport_number ?? "",
+        "Utfärdat datum": r.issued_date ?? "",
+        "Giltigt till": r.valid_until ?? "",
         "Allergier": r.allergies ?? "",
         "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
       }));
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       ws["!cols"] = [
-        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
       ];
       // Bold header row
       const range = XLSX.utils.decode_range(ws["!ref"] as string);
@@ -254,6 +266,18 @@ export default function Supermalet() {
           </CardContent>
         </Card>
 
+        <Card className="glass-card mt-4">
+          <CardHeader>
+            <CardTitle className="text-base">Passuppgifter</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field id="passportNumber" label="Passnummer" value={form.passportNumber} onChange={(v) => update("passportNumber", v)} required />
+            <div />
+            <Field id="issuedDate" label="Utfärdat datum" type="date" value={form.issuedDate} onChange={(v) => update("issuedDate", v)} required />
+            <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required />
+          </CardContent>
+        </Card>
+
 
         <Card className="glass-card mt-4">
           <CardHeader>
@@ -301,6 +325,9 @@ export default function Supermalet() {
                     <TableHead>Förnamn</TableHead>
                     <TableHead>Personnummer</TableHead>
                     <TableHead>Födelseort</TableHead>
+                    <TableHead>Passnummer</TableHead>
+                    <TableHead>Utfärdat</TableHead>
+                    <TableHead>Giltigt till</TableHead>
                     <TableHead>Allergier</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
@@ -312,6 +339,9 @@ export default function Supermalet() {
                       <TableCell>{r.first_name}</TableCell>
                       <TableCell>{r.personal_number}</TableCell>
                       <TableCell>{r.birth_place}</TableCell>
+                      <TableCell>{r.passport_number || "—"}</TableCell>
+                      <TableCell>{r.issued_date || "—"}</TableCell>
+                      <TableCell>{r.valid_until || "—"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.allergies || "—"}</TableCell>
                       <TableCell>
                         <Button
