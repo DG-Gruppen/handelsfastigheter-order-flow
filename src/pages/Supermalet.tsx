@@ -51,7 +51,7 @@ const schema = z.object({
   allergies: z.string().max(500).optional(),
 });
 
-type FormState = z.infer<typeof schema>;
+type FormState = z.infer<typeof schema> & { otherNationality: string };
 
 const empty: FormState = {
   lastName: "",
@@ -59,6 +59,7 @@ const empty: FormState = {
   personalNumber: "",
   birthPlace: "",
   nationality: "Svensk",
+  otherNationality: "",
   passportNumber: "",
   issuedDate: "",
   validUntil: "",
