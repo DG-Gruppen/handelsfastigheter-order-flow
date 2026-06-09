@@ -52,6 +52,7 @@ const SupermaletRegistration = ({
               <Row label="För-/mellannamn" value={firstName} />
               <Row label="Personnummer" value={personalNumber} />
               <Row label="Födelseort" value={birthPlace} />
+              <Row label="Nationalitet" value={nationality} />
             </tbody>
           </table>
 
