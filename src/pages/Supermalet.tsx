@@ -258,17 +258,6 @@ export default function Supermalet() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card mt-4">
-          <CardHeader>
-            <CardTitle className="text-base">Passuppgifter</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field id="passportNumber" label="Passnummer" value={form.passportNumber} onChange={(v) => update("passportNumber", v)} required />
-            <div />
-            <Field id="issuedDate" label="Utfärdat datum" type="date" value={form.issuedDate} onChange={(v) => update("issuedDate", v)} required />
-            <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required />
-          </CardContent>
-        </Card>
 
         <Card className="glass-card mt-4">
           <CardHeader>
