@@ -32,9 +32,6 @@ const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
   personalNumber: z.string().trim().min(8, "Personnummer krävs").max(20),
-  passportNumber: z.string().trim().min(3, "Passnummer krävs").max(30),
-  issuedDate: z.string().min(1, "Utfärdat datum krävs"),
-  validUntil: z.string().min(1, "Giltigt till krävs"),
   birthPlace: z.string().trim().min(1, "Födelseort krävs").max(100),
   allergies: z.string().max(500).optional(),
 });
@@ -45,9 +42,6 @@ const empty: FormState = {
   lastName: "",
   firstName: "",
   personalNumber: "",
-  passportNumber: "",
-  issuedDate: "",
-  validUntil: "",
   birthPlace: "",
   allergies: "",
 };
@@ -93,9 +87,6 @@ export default function Supermalet() {
           last_name: parsed.data.lastName,
           first_name: parsed.data.firstName,
           personal_number: parsed.data.personalNumber,
-          passport_number: parsed.data.passportNumber,
-          issued_date: parsed.data.issuedDate,
-          valid_until: parsed.data.validUntil,
           birth_place: parsed.data.birthPlace,
           allergies: parsed.data.allergies || null,
         });
@@ -129,9 +120,6 @@ export default function Supermalet() {
         "Efternamn": r.last_name ?? "",
         "För-/mellannamn": r.first_name ?? "",
         "Personnummer": r.personal_number ?? "",
-        "Passnummer": r.passport_number ?? "",
-        "Utfärdat": r.issued_date ?? "",
-        "Giltigt till": r.valid_until ?? "",
         "Födelseort": r.birth_place ?? "",
         "Allergier": r.allergies ?? "",
         "Anmäld": r.created_at ? new Date(r.created_at).toLocaleString("sv-SE") : "",
@@ -139,8 +127,7 @@ export default function Supermalet() {
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       ws["!cols"] = [
-        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 14 },
-        { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
+        { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 18 },
       ];
       // Bold header row
       const range = XLSX.utils.decode_range(ws["!ref"] as string);
@@ -267,17 +254,6 @@ export default function Supermalet() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card mt-4">
-          <CardHeader>
-            <CardTitle className="text-base">Passuppgifter</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field id="passportNumber" label="Passnummer" value={form.passportNumber} onChange={(v) => update("passportNumber", v)} required />
-            <div />
-            <Field id="issuedDate" label="Utfärdat datum" type="date" value={form.issuedDate} onChange={(v) => update("issuedDate", v)} required />
-            <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required />
-          </CardContent>
-        </Card>
 
         <Card className="glass-card mt-4">
           <CardHeader>
@@ -324,8 +300,8 @@ export default function Supermalet() {
                     <TableHead>Efternamn</TableHead>
                     <TableHead>Förnamn</TableHead>
                     <TableHead>Personnummer</TableHead>
-                    <TableHead>Passnummer</TableHead>
-                    <TableHead>Giltigt till</TableHead>
+                    <TableHead>Födelseort</TableHead>
+                    <TableHead>Allergier</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -335,8 +311,8 @@ export default function Supermalet() {
                       <TableCell>{r.last_name}</TableCell>
                       <TableCell>{r.first_name}</TableCell>
                       <TableCell>{r.personal_number}</TableCell>
-                      <TableCell>{r.passport_number}</TableCell>
-                      <TableCell>{r.valid_until}</TableCell>
+                      <TableCell>{r.birth_place}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{r.allergies || "—"}</TableCell>
                       <TableCell>
                         <Button
                           type="button"
