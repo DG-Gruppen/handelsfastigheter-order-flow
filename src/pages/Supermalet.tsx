@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Plane, CheckCircle2, Download } from "lucide-react";
+import { Plane, CheckCircle2, Download, Users, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import * as XLSX from "xlsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
@@ -45,6 +60,9 @@ export default function Supermalet() {
   const [form, setForm] = useState<FormState>(empty);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [registrationsOpen, setRegistrationsOpen] = useState(false);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
 
   useEffect(() => {
     if (profile?.full_name) {
@@ -152,6 +170,39 @@ export default function Supermalet() {
     }
   };
 
+  const fetchRegistrations = async () => {
+    setRegistrationsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("supermalet_registrations" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setRegistrations(data ?? []);
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Kunde inte hämta anmälningar", description: err.message ?? String(err), variant: "destructive" });
+    } finally {
+      setRegistrationsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Är du säker på att du vill radera denna anmälan?")) return;
+    try {
+      const { error } = await supabase
+        .from("supermalet_registrations" as any)
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+      toast({ title: "Anmälan raderad" });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Kunde inte radera", description: err.message ?? String(err), variant: "destructive" });
+    }
+  };
+
   if (done) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -182,10 +233,24 @@ export default function Supermalet() {
           </div>
         </div>
         {canExport && (
-          <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
-            <Download className="w-4 h-4" />
-            {exporting ? "Exporterar..." : "Exportera"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRegistrationsOpen(true);
+                fetchRegistrations();
+              }}
+              className="gap-2"
+            >
+              <Users className="w-4 h-4" />
+              Anmälningar
+            </Button>
+            <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
+              <Download className="w-4 h-4" />
+              {exporting ? "Exporterar..." : "Exportera"}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -241,6 +306,56 @@ export default function Supermalet() {
           </Button>
         </div>
       </form>
+
+      <Dialog open={registrationsOpen} onOpenChange={setRegistrationsOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Anmälningar – Supermålet</DialogTitle>
+          </DialogHeader>
+          {registrationsLoading ? (
+            <p className="text-muted-foreground text-sm py-4">Laddar anmälningar…</p>
+          ) : registrations.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-4">Inga anmälningar ännu.</p>
+          ) : (
+            <ScrollArea className="flex-1 -mx-6 px-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Efternamn</TableHead>
+                    <TableHead>Förnamn</TableHead>
+                    <TableHead>Personnummer</TableHead>
+                    <TableHead>Passnummer</TableHead>
+                    <TableHead>Giltigt till</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {registrations.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.last_name}</TableCell>
+                      <TableCell>{r.first_name}</TableCell>
+                      <TableCell>{r.personal_number}</TableCell>
+                      <TableCell>{r.passport_number}</TableCell>
+                      <TableCell>{r.valid_until}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDelete(r.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
