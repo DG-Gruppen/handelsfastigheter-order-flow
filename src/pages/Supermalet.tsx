@@ -27,12 +27,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const NATIONALITIES = [
+  "Svensk", "Norsk", "Dansk", "Finsk", "Isländsk",
+  "Amerikansk", "Australisk", "Belgisk", "Brittisk", "Bulgarisk",
+  "Estnisk", "Fransk", "Grekisk", "Indisk", "Irländsk", "Italiensk",
+  "Japansk", "Kanadensisk", "Kinesisk", "Kroatisk", "Lettisk", "Litauisk",
+  "Nederländsk", "Polsk", "Portugisisk", "Rumänsk", "Rysk", "Schweizisk",
+  "Slovakisk", "Slovensk", "Spansk", "Sydkoreansk", "Tjeckisk", "Turkisk",
+  "Tysk", "Ukrainsk", "Ungersk", "Österrikisk", "Annan",
+];
 
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
   personalNumber: z.string().trim().min(8, "Personnummer krävs").max(20),
   birthPlace: z.string().trim().min(1, "Födelseort krävs").max(100),
+  nationality: z.string().trim().min(1, "Nationalitet krävs").max(50),
   passportNumber: z.string().trim().min(1, "Passnummer krävs").max(50),
   issuedDate: z.string().trim().min(1, "Utfärdat datum krävs"),
   validUntil: z.string().trim().min(1, "Giltigt till krävs"),
@@ -46,6 +58,7 @@ const empty: FormState = {
   firstName: "",
   personalNumber: "",
   birthPlace: "",
+  nationality: "Svensk",
   passportNumber: "",
   issuedDate: "",
   validUntil: "",
