@@ -29,6 +29,7 @@ const SupermaletRegistration = ({
   passportNumber = '',
   issuedDate = '',
   validUntil = '',
+  shirtSize = '',
   allergies = '',
   submitterName = '',
   submitterEmail = '',
@@ -69,6 +70,7 @@ const SupermaletRegistration = ({
           <Heading as="h3" style={sectionHeading}>Övrigt</Heading>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
+              <Row label="Skjorta/T-shirt" value={shirtSize || '—'} />
               <Row label="Allergier" value={allergies || '—'} />
             </tbody>
           </table>
@@ -103,6 +105,7 @@ export const template = {
     passportNumber: '12345678',
     issuedDate: '2022-05-10',
     validUntil: '2032-05-10',
+    shirtSize: 'L',
     allergies: 'Nötter',
     submitterName: 'Anna Andersson',
     submitterEmail: 'anna@handelsfastigheter.se',
