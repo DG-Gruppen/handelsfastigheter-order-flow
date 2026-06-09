@@ -181,7 +181,7 @@ export default function Supermalet() {
             <p className="text-sm text-muted-foreground">Fyll i dina uppgifter nedan.</p>
           </div>
         </div>
-        {isAdmin && (
+        {canExport && (
           <Button type="button" variant="outline" onClick={handleExport} disabled={exporting} className="gap-2">
             <Download className="w-4 h-4" />
             {exporting ? "Exporterar..." : "Exportera"}
