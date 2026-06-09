@@ -60,6 +60,9 @@ export default function Supermalet() {
   const [form, setForm] = useState<FormState>(empty);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [registrationsOpen, setRegistrationsOpen] = useState(false);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
 
   useEffect(() => {
     if (profile?.full_name) {
