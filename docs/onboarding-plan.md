@@ -218,13 +218,13 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 > **Besvarade 2026-06-10:**
 > - ✅ *Vem får initiera?* Alla chefer. Ingen separat rekryteringsrätt-roll i nuläget — kan införas retroaktivt vid behov.
 > - ✅ *Timing för chef-tasks?* Inga tasks aktiveras förrän HR bekräftat i Heartpace (Fas 2). Fas 1 är endast registrering, status `pending_hr`.
+> - ✅ *Statiska personnamn i mallen?* Nej. Allt auto-härleds från `tool_owners` / `role` / `nearest_manager`. Saknade "verktyg" (webbsida, nycklar, What's Up Kris, fastighetslistor) läggs upp i `/verktyg` med ägare.
 
 1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
 2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
 3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): kryssas av HR vid start, eller skapas alltid och ansvarig markerar "ej aktuellt"?
 4. **In-app-notiser** utöver mejl? (Vi har redan `notifications`-tabellen.)
-5. **SHF webbsida som verktyg?** Skulle göra även Ingas uppgift till `tool_owner`.
-6. **Christels uppgift "förändringar i fastighetslistor"** — engångs per onboarding eller löpande process? (Påverkar om den hör hemma i mallen.)
+5. **Fastighetslistor som löpande process?** Ska "förändringar i fastighetslistor" trigga vid varje onboarding, eller är det en stående uppgift som inte hör hemma i mallen?
 
 ---
 
