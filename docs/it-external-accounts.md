@@ -212,7 +212,19 @@ const { data: profiles, error } = await supabase
 
 ---
 
-## 5. Edge Cases & Undantag
+## 5. Tillfälligt borttagna konton
+
+Konton för personer som ännu inte officiellt börjat kan tas bort helt från systemet tills de registreras i Heartpace.
+
+| Namn | Status | Åtgärd | Kommentar |
+|------|--------|--------|-----------|
+| Jürgen Vilhelmsson | Borttagen | `DELETE FROM profiles` | Ska synkas in från Heartpace när Petra lagt in honom där (börjar i februari) |
+
+**Resultat:** Posten finns inte längre i `profiles` och kommer synkas in automatiskt vid nästa Heartpace-synk när `heartpace_employee_id` matchas.
+
+---
+
+## 6. Edge Cases & Undantag
 
 - Dessa konton kan fortfarande logga in och använda systemet (beroende på sina rollbehörigheter)
 - De kan fortfarande ha admin- eller moderatorroller och komma åt adminpanelen
