@@ -13,7 +13,7 @@ interface Tool {
   url: string;
   sort_order: number;
   owner_id: string;
-  profiles: { first_name: string | null; last_name: string | null } | null;
+  profiles: { full_name: string | null } | null;
 }
 
 const MAX_FAVORITES = 8;
