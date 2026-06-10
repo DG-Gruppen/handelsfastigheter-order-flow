@@ -193,7 +193,7 @@ export default function Dashboard() {
               Supermålet-resan – anmäl dig nu
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-              Fyll i passuppgifter och ladda upp passkopia.
+              Fyll i passuppgifter.
             </p>
           </div>
           <span className="hidden sm:inline-flex items-center text-sm font-medium text-primary group-hover:translate-x-0.5 transition-transform">
