@@ -18,6 +18,7 @@ const NewOrder = lazy(() => import("./pages/NewOrder"));
 const Admin = lazy(() => import("./pages/Admin"));
 const OrgTree = lazy(() => import("./pages/OrgTree"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const OnboardingPlan = lazy(() => import("./pages/OnboardingPlan"));
 const ITInfo = lazy(() => import("./pages/ITInfo"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const History = lazy(() => import("./pages/History"));
