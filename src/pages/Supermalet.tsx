@@ -468,37 +468,36 @@ export default function Supermalet() {
           ) : registrations.length === 0 ? (
             <p className="text-muted-foreground text-sm py-4">Inga anmälningar ännu.</p>
           ) : (
-            <ScrollArea className="flex-1 -mx-6 px-6 max-w-full">
-              <div className="min-w-max">
+            <div className="flex-1 overflow-y-auto -mx-6 px-6">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Efternamn</TableHead>
-                    <TableHead>Förnamn</TableHead>
-                    <TableHead>Personnummer</TableHead>
-                    <TableHead>Födelseort</TableHead>
-                    <TableHead>Nationalitet</TableHead>
-                    <TableHead>Passnummer</TableHead>
-                    <TableHead>Utfärdat</TableHead>
-                    <TableHead>Giltigt till</TableHead>
-                    <TableHead>Storlek</TableHead>
-                    <TableHead>Allergier</TableHead>
+                    <TableHead className="whitespace-nowrap">Efternamn</TableHead>
+                    <TableHead className="whitespace-nowrap">Förnamn</TableHead>
+                    <TableHead className="whitespace-nowrap">Personnummer</TableHead>
+                    <TableHead className="whitespace-nowrap">Födelseort</TableHead>
+                    <TableHead className="whitespace-nowrap">Nationalitet</TableHead>
+                    <TableHead className="whitespace-nowrap">Passnummer</TableHead>
+                    <TableHead className="whitespace-nowrap">Utfärdat</TableHead>
+                    <TableHead className="whitespace-nowrap">Giltigt till</TableHead>
+                    <TableHead className="whitespace-nowrap">Storlek</TableHead>
+                    <TableHead className="whitespace-nowrap">Allergier</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {registrations.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.last_name}</TableCell>
-                      <TableCell>{r.first_name}</TableCell>
-                      <TableCell>{r.personal_number}</TableCell>
-                      <TableCell>{r.birth_place}</TableCell>
-                      <TableCell>{r.nationality || "—"}</TableCell>
-                      <TableCell>{r.passport_number || "—"}</TableCell>
-                      <TableCell>{r.issued_date || "—"}</TableCell>
-                      <TableCell>{r.valid_until || "—"}</TableCell>
-                      <TableCell>{r.shirt_size || "—"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{r.allergies || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.last_name}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.first_name}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.personal_number}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.birth_place}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.nationality || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.passport_number || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.issued_date || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.valid_until || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.shirt_size || "—"}</TableCell>
+                      <TableCell className="max-w-[260px] truncate">{r.allergies || "—"}</TableCell>
                       <TableCell>
                         <Button
                           type="button"
@@ -514,9 +513,7 @@ export default function Supermalet() {
                   ))}
                 </TableBody>
               </Table>
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+            </div>
           )}
         </DialogContent>
       </Dialog>
