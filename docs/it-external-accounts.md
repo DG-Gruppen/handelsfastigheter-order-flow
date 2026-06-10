@@ -219,6 +219,8 @@ Konton för personer som ännu inte officiellt börjat kan tas bort helt från s
 | Namn | Status | Åtgärd | Kommentar |
 |------|--------|--------|-----------|
 | Jürgen Vilhelmsson | Borttagen | `DELETE FROM profiles` | Ska synkas in från Heartpace när Petra lagt in honom där (börjar i februari) |
+| Fredrik Klasson | Borttagen | `DELETE FROM profiles` | Inte längre anställd, ej i Heartpace |
+| Niklas Bodell | Borttagen | `DELETE FROM profiles` | Inte längre anställd, ej i Heartpace |
 
 **Resultat:** Posten finns inte längre i `profiles` och kommer synkas in automatiskt vid nästa Heartpace-synk när `heartpace_employee_id` matchas.
 
