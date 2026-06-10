@@ -226,7 +226,7 @@ onboarding_email_log
 - **Översikt** — pågående onboardings/offboardings, status, ansvarig chef, antal öppna tasks, nästa förfallodatum.
 - **Mallar** — listar `onboarding_templates` (kind = onboarding/offboarding). Redigera tasks: titel, sektion, `assignee_source`, koppling (tool/area/role), `is_optional`, mejlmall.
 - **Ansvarsområden** — CRUD för `responsibility_areas` (se 7.2 nedan).
-- **Externa kontakter** — CRUD för `external_contacts` (namn, organisation, e-post, rollbeskrivning, aktiv).
+- **Externa kontakter** — CRUD för `external_contacts` (se detaljer nedan).
 - **Mejlmallar** — redigera default-mejltexter per task-grupp med variabel-hjälp (`[namn]`, `[verktyg]` osv.).
 
 **`/admin/responsibility-areas`** (sub-route, eller egen flik enligt ovan) — egen sida för **Ansvarsområden**:
@@ -249,6 +249,30 @@ Drawer/dialog för redigering:
 - **Grunddata:** namn, slug (auto från namn, redigerbart), beskrivning (kort text), `is_active`-toggle.
 - **Ägare:** lista över kopplingar i `responsibility_owners`. Sök/lägg till intern profil **eller** extern kontakt (`external_contacts`). Visar badge "Intern" / "Extern". Flera ägare tillåts.
 - **Används av:** läs-bara badges över de mall-tasks som pekar på området (`onboarding_template_tasks.assignee_area_id`), så admin ser konsekvenser innan något inaktiveras.
+
+### Externa kontakter (flik)
+
+Samma sida (`/admin/onboarding`), fliken **Externa kontakter**:
+
+```text
+┌─ Externa kontakter ────────────────────────────────────────┐
+│  [+ Ny extern kontakt]                    [sök...]         │
+│                                                            │
+│  Namn                Organisation      Roll                │
+│  ─────────────────────────────────────────────────────   │
+│  Agnes Eriksson      Fastighetssnabben IT-drift            │
+│                                                            │
+│  Klick på rad → drawer med redigering + kopplade ägarskap   │
+└────────────────────────────────────────────────────────────┘
+```
+
+Drawer/dialog för redigering:
+- **Grunddata:** namn, e-post (obligatorisk, unik), organisation (fritext), rollbeskrivning (kort text), `is_active`-toggle.
+- **Kopplade ägarskap:** läs-bara lista över alla `tool_owners` och `responsibility_owners` där kontakten står som ägare, med länkar till respektive verktyg/område. Gör det enkelt att se *varför* en kontakt finns i systemet och vilka mejl hen mottar.
+- **Användningshistorik:** antal pågående/completed onboardings där kontakten är ansvarig (via snapshot i `onboarding_tasks` + `onboarding_email_log`).
+
+> **Syfte:** Samla alla externa parter på ett ställe utan att blanda in dem i personalkatalogen eller behöva ge dem inloggning. Används idag för Agnes (Fastighetssnabben → Spiris/Collectum) men är generisk för framtida revisorer, försäkringsmäklare m.m. E-postadressen är nyckeln för utskick — ändras den uppdateras framtida mallar automatiskt. Pågående onboardings påverkas inte pga snapshot i `onboarding_tasks`.
+
 
 ### 7.2 Behörighet
 - Bara medlemmar i admin- eller HR-gruppen (samt superadmin) kan nå `/admin/onboarding`.
