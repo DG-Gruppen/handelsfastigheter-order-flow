@@ -52,7 +52,11 @@ export default function Planner() {
   const { data: profiles = [] } = useQuery({
     queryKey: ["planner-profiles"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name");
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .eq("is_external", false)
+        .eq("heartpace_sync_excluded", false);
       return (data as Profile[]) ?? [];
     },
     staleTime: 5 * 60 * 1000,

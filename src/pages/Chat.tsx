@@ -147,7 +147,11 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
   const { data: profiles = [] } = useQuery({
     queryKey: ["chat-profiles"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name, email");
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .eq("is_external", false)
+        .eq("heartpace_sync_excluded", false);
       return (data ?? []) as Profile[];
     },
     enabled: !!user,

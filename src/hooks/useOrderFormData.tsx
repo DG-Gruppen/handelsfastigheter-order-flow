@@ -59,8 +59,8 @@ async function fetchOrderFormData(userId: string, userRoles: string[]): Promise<
   const [catsRes, typesRes, profilesRes, allProfilesRes, rolesRes, myProfileRes, catDeptsRes, otDeptsRes, approvalRes, deptRows, systemsRes] = await Promise.all([
     supabase.from("categories").select("id, name, icon").eq("is_active", true).order("sort_order"),
     supabase.from("order_types").select("id, name, category_id, description, icon").eq("is_active", true).order("name"),
-    supabase.from("profiles").select("id, user_id, full_name").neq("user_id", userId),
-    supabase.from("profiles").select("id, user_id, full_name, manager_id").order("full_name"),
+    supabase.from("profiles").select("id, user_id, full_name").neq("user_id", userId).eq("is_external", false).eq("heartpace_sync_excluded", false),
+    supabase.from("profiles").select("id, user_id, full_name, manager_id").eq("is_external", false).eq("heartpace_sync_excluded", false).order("full_name"),
     supabase.rpc("get_all_user_roles"),
     supabase.from("profiles").select("id, department, is_staff, manager_id, user_id").eq("user_id", userId).single(),
     supabase.from("category_departments").select("category_id, department_id"),
