@@ -13,7 +13,7 @@ const HEARTPACE_BASE = "https://sync.heartpace.com/v1/api";
 const SUBDOMAIN = "svenskahandelsfastigheter";
 const PRESERVED_DEPT_NAME = "IT/Support";
 const PARENT_GROUPS: Array<{ prefix: string; parent: string }> = [
-  { prefix: "Förvaltningen ", parent: "Förvaltning" },
+  { prefix: "Förvaltningen ", parent: "Förvaltningen" },
 ];
 
 async function hpFetch(path: string, token: string) {
