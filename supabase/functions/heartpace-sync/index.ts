@@ -153,6 +153,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "departments") {
+      const limit = 200;
+      let offset = 0;
+      const all: any[] = [];
+      while (true) {
+        const page: any = await hpFetch(`/employees/employment-info?limit=${limit}&offset=${offset}`, token);
+        const items: any[] = Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [];
+        all.push(...items);
+        if (items.length < limit) break;
+        offset += limit;
+        if (offset > 5000) break;
+      }
+      const onlyActive = url.searchParams.get("active") !== "false";
+      const source = onlyActive
+        ? all.filter((e) => e?.is_current === true && e?.user_account?.account_status === 1)
+        : all;
+      const map = new Map<string, { uuid: string; name: string; color?: string; employee_count: number }>();
+      for (const emp of source) {
+        const jis: any[] = Array.isArray(emp?.job_informations) ? emp.job_informations : [];
+        const ji = jis.find((j) => j?.is_current) ?? jis[0];
+        const d = ji?.department;
+        if (!d?.uuid) continue;
+        const existing = map.get(d.uuid);
+        if (existing) existing.employee_count++;
+        else map.set(d.uuid, { uuid: d.uuid, name: d.name, color: d.color, employee_count: 1 });
+      }
+      const departments = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "sv"));
+      return new Response(JSON.stringify({ ok: true, count: departments.length, departments }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "match") {
       // Hämta alla anställningar (paginerat)
       const limit = 200;
