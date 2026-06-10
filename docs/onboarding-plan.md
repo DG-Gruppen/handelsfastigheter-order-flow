@@ -60,20 +60,32 @@ Onboardingen startar **inte** hos HR — den startar hos närmaste chef efter en
 
 ## 2. Ansvariga & uppgiftsgrupper
 
-**Princip:** Inga personnamn hårdkodas i mallen. Word-dokumentets namnlista (Petra, Emma, Marit, Wilma, Jörgen, Pernilla, Erika, Christel, Inga, Agnes m.fl.) speglar bara **vem som råkar vara systemägare idag** — och de finns redan registrerade som ägare på respektive verktyg i `/verktyg` (`tool_owners`).
+**Princip:** Inga personnamn hårdkodas i mallen. Ägarskap lagras som data och mallen pekar bara på *vilken källa* ansvaret kommer från. Word-dokumentets namnlista är bara dagens utfall — den ska aldrig speglas i kod.
 
-Mallen pekar därför på **roll, verktyg eller relation**, inte på person:
+För att täcka alla case i Word-dokumentet behöver vi **tre ägarskaps-register** + två relations-baserade källor:
 
-| Källa | Används för | Exempel från Word-dokumentet |
-|---|---|---|
-| `role: hr` | HR-uppgifter (avtal, försäkringar, Heartpace-registrering, anställningsförteckning) | Petra |
-| `tool_owner` (via `tool_id`) | Allt som rör behörighet/upplägg i ett specifikt system | Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, Webbsida, Nycklar/passerkort, What's Up Kris, Fastighetslistor |
-| `nearest_manager` | Allt chefen själv ska göra | Välkomstmejl, lunch, blomma, introduktion, info till org |
-| `role: it` | Generiska IT-uppgifter (dator, mobil, konton) | Hanteras via `/onboarding`-orderflödet |
+| Källa | Vad det är | Var ägaren lagras | Word-dokumentets exempel |
+|---|---|---|---|
+| `tool_owner` | Ägare till ett **system/verktyg** | `tools` + `tool_owners` (finns) | Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, What's Up Kris |
+| `area_owner` | Ägare till ett **ansvarsområde** som inte är ett system | `responsibility_areas` + `responsibility_owners` (nya) | Nycklar & passerkort, SHF:s webbsida, Fastighetslistor |
+| `role` | Generisk grupp/roll | `groups` (finns) | HR-arbete (avtal, försäkringar, anställningsförteckning, Heartpace-registrering), IT-arbete |
+| `nearest_manager` | Nyanställdas chef | `profiles.manager_id` (finns) | Välkomstmejl, lunch, blomma, introduktion, info till org |
+| *(ägaren kan vara extern)* | Person utanför `profiles` | `external_contacts` (ny) | Agnes Eriksson (Fastighetssnabben → Spiris, Collectum) |
 
-Allt som i Word-dokumentet är taggat på en specifik person (Christel → nycklar, Inga → webbsida, Agnes → Spiris/Collectum osv.) mappas via att **det "verktyget" finns i `/verktyg`** och att personen står som `tool_owner`. Saknas något som verktyg så skapas det där — det är enda stället där "ägaren" definieras.
+### Varför separera `tools` och `responsibility_areas`?
 
-**Konsekvens:** Byter SHF systemägare i `/admin → Verktyg` följer alla framtida onboardings/offboardings med automatiskt. Word-dokumentet behöver aldrig synkas mot koden.
+- Ett **verktyg** har URL, FAQ, beskrivning, ikon, är synligt på `/verktyg`, kan favoritmarkeras osv. Det vore fel att lägga in "Nycklar" där bara för att någon äger frågan.
+- Ett **ansvarsområde** är bara `{ slug, namn, beskrivning, ägare[] }` — inget mer. Det visas inte på `/verktyg`. Det enda syftet är att vara en pekare som mallen och andra processer kan rikta sig mot.
+- Båda registren administreras i `/admin → Ansvar` (delad vy med två flikar: *Verktyg* / *Ansvarsområden*).
+
+### Varför `external_contacts` istället för att tvinga Agnes till `profiles`?
+
+- Agnes är extern konsult — hon ska inte ha intranät-inlogg, inte synas i personalkatalogen, inte räknas som anställd någonstans.
+- `external_contacts` är ett minimalt register: `{ name, email, organization, role_description }`. Inga inloggningar, ingen RLS-komplexitet.
+- `tool_owners` och `responsibility_owners` får båda kunna peka på **antingen** `profile_id` **eller** `external_contact_id` (XOR-constraint). Mejlutskicket bryr sig bara om e-postadressen.
+- Bonus: löser samma problem för framtida externa partners (revisor, försäkringsmäklare m.fl.) utan att vi behöver återbesöka modellen.
+
+**Konsekvens:** Byter SHF systemägare eller områdesansvarig följer alla framtida onboardings/offboardings med automatiskt — oavsett om den nya ägaren är intern eller extern.
 
 ---
 
@@ -95,38 +107,40 @@ Allt som i Word-dokumentet är taggat på en specifik person (Christel → nyckl
 
 Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansvarig vid skapande:
 
-| `assignee_source` | Betydelse | Exempel |
+| `assignee_source` | Betydelse | Pekar på |
 |---|---|---|
-| `tool_owner` | Slå upp ägare(n) till verktyg `tool_id` | "Behörighet i Creditsafe" → ägaren i `tools` |
-| `nearest_manager` | Nyanställdas chef från Heartpace | "Boka lunch första dagen" |
-| `role` | Härled från grupp (HR-grupp, IT-grupp) | "Lägg upp i Heartpace" → HR-gruppen |
+| `tool_owner` | Ägaren/ägarna till ett verktyg | `tool_id` |
+| `area_owner` | Ägaren/ägarna till ett ansvarsområde | `responsibility_area_id` |
+| `role` | Alla i en grupp/roll | `assignee_role` (t.ex. `hr`, `it`) |
+| `nearest_manager` | Nyanställdas chef från Heartpace | — |
 
-> **`static_profile` används inte i mallarna.** Vi tillåter inte att en enskild persons namn skrivs in på en mall-task — det skulle återskapa Word-dokumentets underhållsproblem. Behövs en specifik person som ansvarig så är hen ägare till motsvarande verktyg, punkt.
+> **Inga statiska personnamn i mallen.** Behövs en specifik person så är hen ägare till motsvarande verktyg eller ansvarsområde — det är enda stället ägarskap lagras. Externa personer (Agnes m.fl.) ligger som `external_contacts` och kopplas in på samma sätt.
 
 ### Vinster
-- Byter man systemägare i `/admin → Verktyg` ändras automatiskt vem som får framtida onboarding-mejl — ingen mall att uppdatera.
-- Flera ägare per verktyg (`tool_owners` är many-to-many) → flera mottagare för samma uppgift utan dubbletter.
-- Mallen blir kortare och **personoberoende**: en rad per verktyg som pekar på `tool_id`, systemet grupperar mejlen per ansvarig vid utskick.
-- Snapshot vid skapande: när en onboarding-instans skapas resolvas alla `assignee_source` till konkreta `assignee_profile_id` på taskraden, så senare ägarbyten **inte** påverkar pågående onboardings.
+- Byter SHF systemägare eller områdesansvarig i `/admin → Ansvar` ändras automatiskt vem som får framtida onboarding-mejl.
+- Flera ägare per verktyg/område → flera mottagare för samma uppgift utan dubbletter.
+- Mallen blir kortare och **personoberoende**: en rad per verktyg/område, systemet grupperar mejlen per ansvarig vid utskick.
+- Snapshot vid skapande: när en onboarding-instans skapas resolvas alla `assignee_source` till konkreta mottagare på taskraden, så senare ägarbyten **inte** påverkar pågående onboardings.
+- Mejl funkar lika bra för interna profiler som för externa kontakter (samma `recipient_email`-fält i `onboarding_email_log`).
 
 ### Mejlmallens placeholders utökas
-- `[verktyg]` — verktygets namn (för `tool_owner`-tasks)
+- `[verktyg]` — verktygets/områdets namn
 - `[ansvarig]` — mottagarens förnamn
 - Befintliga: `[namn]`, `[startdatum]`, `[befattning]`, `[chef]`
 
-### Förutsättningar i `/verktyg` innan mallen kan rullas ut
-Varje system/uppgift som Word-dokumentet räknar upp behöver finnas som verktyg med rätt ägare. Lista att checka av:
+### Datapunkter att lägga upp innan mallen rullas ut
 
-- **System med befintlig ägare:** Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum.
-- **Behöver troligen läggas till som "verktyg" i `/verktyg`** för att kunna auto-härleda:
-  - SHF:s webbsida (kontaktuppgifter)
-  - Nycklar & passerkort
-  - What's Up Kris
-  - Fastighetslistor
+**Som `tools` (finns/kompletteras):** Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, What's Up Kris.
 
-När dessa finns med ägare räcker det att mallen pekar på `tool_id` — inga personnamn någonstans.
+**Som `responsibility_areas` (nya, icke-system):**
+- `keys-access` — Nycklar & passerkort
+- `website-contacts` — Kontaktuppgifter på SHF:s webbsida
+- `property-lists` — Fastighetslistor
 
-### Mall-rader som inte är `tool_owner`
+**Som `external_contacts`:**
+- Agnes Eriksson (Fastighetssnabben) — kopplas som ägare till `tools` Spiris och Collectum.
+
+### Mall-rader som varken är `tool_owner` eller `area_owner`
 - HR-arbete (avtal, försäkringar, anställningsförteckning, Heartpace-registrering) → `role: hr`
 - Närmaste chefs-uppgifter (välkomstmejl, lunch, blomma, introduktion, info till org) → `nearest_manager`
 
@@ -135,32 +149,58 @@ När dessa finns med ägare räcker det att mallen pekar på `tool_id` — inga 
 ## 5. Datamodell
 
 ```text
+-- Nya ägarskaps-register (delas av onboarding/offboarding och framtida processer)
+
+external_contacts
+  id, name, email, organization, role_description, is_active
+
+responsibility_areas              -- icke-system, t.ex. nycklar, webbsida
+  id, slug, name, description, is_active
+
+responsibility_owners             -- many-to-many; ägaren är intern ELLER extern
+  id, area_id,
+  profile_id          nullable,
+  external_contact_id nullable,
+  CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+
+-- tool_owners utökas på samma sätt:
+tool_owners (befintlig, ALTER)
+  + external_contact_id nullable
+  + CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+
+-- Onboarding-modellen
+
 onboarding_templates
   id, name, kind ('onboarding' | 'offboarding'), is_active
 
 onboarding_template_tasks
   id, template_id, section, title, description, sort_order,
-  assignee_source,               -- 'tool_owner' | 'nearest_manager' | 'role'
-  assignee_tool_id     nullable, -- för tool_owner
-  assignee_role        nullable, -- för role (t.ex. 'hr', 'it')
-  is_optional          bool,     -- "om aktuellt"
-  email_template_key   nullable  -- om vi vill ha tasks-specifik mejltext
+  assignee_source,                  -- 'tool_owner' | 'area_owner' | 'role' | 'nearest_manager'
+  assignee_tool_id          nullable,
+  assignee_area_id          nullable,
+  assignee_role             nullable,
+  is_optional               bool,
+  email_template_key        nullable
 
 onboarding_instances
   id, profile_id (nyanställd), template_id,
   start_date, position, manager_id,
   heartpace_employee_id, status, created_at, completed_at
 
-onboarding_tasks   -- snapshot av mall vid skapande
-  id, instance_id, template_task_id (nullable),
+onboarding_tasks                    -- snapshot av mall vid skapande
+  id, instance_id, template_task_id nullable,
   title, description, section,
-  assignee_profile_id,
-  is_applicable bool default true,    -- HR/ansvarig kan markera "ej aktuellt"
+  assignee_profile_id      nullable,   -- intern mottagare
+  assignee_external_id     nullable,   -- extern mottagare
+  is_applicable bool default true,
   done bool, done_at, done_by, note
 
 onboarding_email_log
-  id, instance_id, recipient_profile_id, task_ids uuid[],
-  sent_at, status
+  id, instance_id,
+  recipient_profile_id     nullable,
+  recipient_external_id    nullable,
+  recipient_email          text not null,   -- alltid satt (snapshot)
+  task_ids uuid[], sent_at, status
 ```
 
 ---
@@ -218,7 +258,9 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 > **Besvarade 2026-06-10:**
 > - ✅ *Vem får initiera?* Alla chefer. Ingen separat rekryteringsrätt-roll i nuläget — kan införas retroaktivt vid behov.
 > - ✅ *Timing för chef-tasks?* Inga tasks aktiveras förrän HR bekräftat i Heartpace (Fas 2). Fas 1 är endast registrering, status `pending_hr`.
-> - ✅ *Statiska personnamn i mallen?* Nej. Allt auto-härleds från `tool_owners` / `role` / `nearest_manager`. Saknade "verktyg" (webbsida, nycklar, What's Up Kris, fastighetslistor) läggs upp i `/verktyg` med ägare.
+> - ✅ *Statiska personnamn i mallen?* Nej. Allt auto-härleds via `tool_owner` / `area_owner` / `role` / `nearest_manager`.
+> - ✅ *Saker som inte är "verktyg" (nycklar, webbsida, fastighetslistor)?* Läggs som `responsibility_areas` — eget register, syns inte på `/verktyg`.
+> - ✅ *Externa personer (Agnes m.fl.)?* Läggs som `external_contacts` och kan stå som ägare på både verktyg och ansvarsområden. Inga inloggningar, ingen plats i personalkatalogen.
 
 1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
 2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
