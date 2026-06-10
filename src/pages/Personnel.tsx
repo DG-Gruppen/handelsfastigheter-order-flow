@@ -38,7 +38,7 @@ function formatBirthday(dateStr: string | null): string | null {
 async function fetchPersonnelData() {
   const [rolesRes, profilesRes, settingsRes] = await Promise.all([
     supabase.rpc("get_all_user_roles"),
-    supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override, birthday").order("full_name"),
+    supabase.from("profiles").select("id, user_id, full_name, email, department, phone, title_override, birthday, heartpace_sync_excluded, is_external").order("full_name"),
     supabase.from("org_chart_settings").select("setting_key, setting_value"),
   ]);
 
@@ -58,7 +58,11 @@ async function fetchPersonnelData() {
   }
 
   const profiles = (profilesRes.data ?? []).filter(
-    (p) => !itUserIds.has(p.user_id) && p.full_name.trim() !== ""
+    (p) =>
+      !itUserIds.has(p.user_id) &&
+      p.full_name.trim() !== "" &&
+      p.is_external !== true &&
+      p.heartpace_sync_excluded !== true
   );
 
   return { profiles, roleMap: rm, colorSettings: cs };
