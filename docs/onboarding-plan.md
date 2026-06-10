@@ -140,10 +140,9 @@ onboarding_templates
 
 onboarding_template_tasks
   id, template_id, section, title, description, sort_order,
-  assignee_source,               -- 'static_profile' | 'tool_owner' | 'nearest_manager' | 'role'
-  assignee_profile_id  nullable, -- för static_profile
+  assignee_source,               -- 'tool_owner' | 'nearest_manager' | 'role'
   assignee_tool_id     nullable, -- för tool_owner
-  assignee_role        nullable, -- för role (t.ex. 'hr')
+  assignee_role        nullable, -- för role (t.ex. 'hr', 'it')
   is_optional          bool,     -- "om aktuellt"
   email_template_key   nullable  -- om vi vill ha tasks-specifik mejltext
 
