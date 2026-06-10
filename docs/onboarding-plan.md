@@ -219,6 +219,44 @@ onboarding_email_log
 - **"Mina onboarding-uppgifter"** — widget på dashboard + flik under `/personal` där användaren ser sina öppna punkter och bockar av.
 - **Admin → Onboardingmallar** — redigera tasks, ansvarstyp (välj profil / koppla mot verktygsägare / chef / roll), mejltext med variabler.
 
+### 7.1 Nya admin-sidor
+
+**`/admin/onboarding`** — egen sektion i admin-sidomenyn (ikon: `UserPlus`), grupperad under "Personal". Innehåller flikar:
+
+- **Översikt** — pågående onboardings/offboardings, status, ansvarig chef, antal öppna tasks, nästa förfallodatum.
+- **Mallar** — listar `onboarding_templates` (kind = onboarding/offboarding). Redigera tasks: titel, sektion, `assignee_source`, koppling (tool/area/role), `is_optional`, mejlmall.
+- **Ansvarsområden** — CRUD för `responsibility_areas` (se 7.2 nedan).
+- **Externa kontakter** — CRUD för `external_contacts` (namn, organisation, e-post, rollbeskrivning, aktiv).
+- **Mejlmallar** — redigera default-mejltexter per task-grupp med variabel-hjälp (`[namn]`, `[verktyg]` osv.).
+
+**`/admin/responsibility-areas`** (sub-route, eller egen flik enligt ovan) — egen sida för **Ansvarsområden**:
+
+```text
+┌─ Ansvarsområden ───────────────────────────────────────────┐
+│  [+ Nytt ansvarsområde]                  [sök...]          │
+│                                                            │
+│  Namn                Slug              Ägare       Aktiv   │
+│  ─────────────────────────────────────────────────────     │
+│  Nycklar & passerkort  keys-access     Christel J.   ✓     │
+│  SHF:s webbsida        website-contacts Inga P.      ✓     │
+│  Fastighetslistor      property-lists   Christel J.  ✓     │
+│                                                            │
+│  Klick på rad → drawer med fält + ägarhantering            │
+└────────────────────────────────────────────────────────────┘
+```
+
+Drawer/dialog för redigering:
+- **Grunddata:** namn, slug (auto från namn, redigerbart), beskrivning (kort text), `is_active`-toggle.
+- **Ägare:** lista över kopplingar i `responsibility_owners`. Sök/lägg till intern profil **eller** extern kontakt (`external_contacts`). Visar badge "Intern" / "Extern". Flera ägare tillåts.
+- **Används av:** läs-bara badges över de mall-tasks som pekar på området (`onboarding_template_tasks.assignee_area_id`), så admin ser konsekvenser innan något inaktiveras.
+
+### 7.2 Behörighet
+- Bara medlemmar i admin- eller HR-gruppen (samt superadmin) kan nå `/admin/onboarding`.
+- Modulen registreras i `modules`-tabellen som `onboarding-admin` så övriga rättigheter (`module_permissions`) fungerar som för andra admin-moduler.
+- Lägg till en länk i admin-sidomenyn under "Personal" enligt befintligt mönster (`AdminSidebar`).
+
+> **Status:** endast plan. Implementation görs i Etapp 1 enligt avsnitt 10 — börja med datamodellen + `/admin/onboarding`-skalet och fliken Ansvarsområden, eftersom mallarna förutsätter att områden och externa kontakter finns på plats.
+
 ---
 
 ## 8. Kopplingar till befintlig kod
