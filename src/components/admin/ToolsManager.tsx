@@ -9,7 +9,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Pencil, Trash2, ExternalLink, GripVertical, Star } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Pencil, Trash2, ExternalLink, GripVertical, Star, User } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import data from "@emoji-mart/data";
@@ -41,17 +43,25 @@ interface Tool {
   sort_order: number;
   is_active: boolean;
   is_starred: boolean;
+  owner_id: string;
+  owner_name?: string;
+  department_ids?: string[];
 }
+
+interface ProfileOpt { id: string; full_name: string; }
+interface DepartmentOpt { id: string; name: string; }
 
 /* ── Sortable tool row ── */
 function SortableToolRow({
   tool,
+  departments,
   onToggleStar,
   onToggleActive,
   onEdit,
   onDelete,
 }: {
   tool: Tool;
+  departments: DepartmentOpt[];
   onToggleStar: (t: Tool) => void;
   onToggleActive: (t: Tool) => void;
   onEdit: (t: Tool) => void;
@@ -65,6 +75,10 @@ function SortableToolRow({
     zIndex: isDragging ? 50 : undefined,
     opacity: isDragging ? 0.8 : undefined,
   };
+
+  const deptNames = (tool.department_ids ?? [])
+    .map(id => departments.find(d => d.id === id)?.name)
+    .filter(Boolean) as string[];
 
   return (
     <div
@@ -91,6 +105,15 @@ function SortableToolRow({
           </a>
         </div>
         <p className="text-xs text-muted-foreground truncate">{tool.description}</p>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <User className="h-3 w-3" />
+            {tool.owner_name ?? "Ingen ägare"}
+          </span>
+          {deptNames.length > 0 && (
+            <span className="truncate">• {deptNames.join(", ")}</span>
+          )}
+        </div>
       </div>
       <button
         onClick={() => onToggleStar(tool)}
@@ -116,6 +139,8 @@ function SortableToolRow({
 
 export default function ToolsManager() {
   const [tools, setTools] = useState<Tool[]>([]);
+  const [profiles, setProfiles] = useState<ProfileOpt[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Tool | null>(null);
@@ -126,22 +151,51 @@ export default function ToolsManager() {
   const [description, setDescription] = useState("");
   const [emoji, setEmoji] = useState("🔗");
   const [url, setUrl] = useState("");
+  const [ownerId, setOwnerId] = useState<string>("");
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const fetchTools = async () => {
-    const { data } = await supabase
-      .from("tools" as any)
-      .select("*")
-      .order("sort_order");
-    setTools(((data as unknown) as Tool[]) ?? []);
+  const fetchAll = async () => {
+    const [toolsRes, profilesRes, deptsRes, linksRes] = await Promise.all([
+      supabase.from("tools" as any).select("*").order("sort_order"),
+      supabase.from("profiles")
+        .select("id, full_name")
+        .eq("is_external", false)
+        .eq("is_hidden", false)
+        .order("full_name"),
+      supabase.from("departments").select("id, name").order("name"),
+      supabase.from("tool_departments" as any).select("tool_id, department_id"),
+    ]);
+
+    const profs = (profilesRes.data ?? []) as ProfileOpt[];
+    const depts = (deptsRes.data ?? []) as DepartmentOpt[];
+    const links = ((linksRes.data ?? []) as unknown) as { tool_id: string; department_id: string }[];
+
+    const byTool = new Map<string, string[]>();
+    for (const l of links) {
+      const arr = byTool.get(l.tool_id) ?? [];
+      arr.push(l.department_id);
+      byTool.set(l.tool_id, arr);
+    }
+
+    const rawTools = ((toolsRes.data ?? []) as unknown) as Tool[];
+    const decorated = rawTools.map(t => ({
+      ...t,
+      owner_name: profs.find(p => p.id === t.owner_id)?.full_name,
+      department_ids: byTool.get(t.id) ?? [],
+    }));
+
+    setTools(decorated);
+    setProfiles(profs);
+    setDepartments(depts);
     setLoading(false);
   };
 
-  useEffect(() => { fetchTools(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -149,6 +203,8 @@ export default function ToolsManager() {
     setDescription("");
     setEmoji("🔗");
     setUrl("");
+    setOwnerId("");
+    setSelectedDepartments([]);
     setDialogOpen(true);
   };
 
@@ -158,34 +214,49 @@ export default function ToolsManager() {
     setDescription(tool.description);
     setEmoji(tool.emoji);
     setUrl(tool.url);
+    setOwnerId(tool.owner_id);
+    setSelectedDepartments(tool.department_ids ?? []);
     setDialogOpen(true);
   };
 
+  const syncDepartments = async (toolId: string, deptIds: string[]) => {
+    // Replace existing links: delete all, then insert selected
+    await supabase.from("tool_departments" as any).delete().eq("tool_id", toolId);
+    if (deptIds.length > 0) {
+      await supabase.from("tool_departments" as any).insert(
+        deptIds.map(department_id => ({ tool_id: toolId, department_id })),
+      );
+    }
+  };
+
   const handleSave = async () => {
-    if (!name.trim() || !url.trim()) return;
+    if (!name.trim() || !url.trim() || !ownerId) return;
     if (editing) {
       const { error } = await supabase.from("tools" as any).update({
         name: name.trim(), description: description.trim(), emoji: emoji.trim(), url: url.trim(),
+        owner_id: ownerId,
       }).eq("id", editing.id);
       if (error) { toast.error("Kunde inte uppdatera: " + error.message); return; }
+      await syncDepartments(editing.id, selectedDepartments);
       toast.success("Verktyg uppdaterat");
     } else {
-      const { error } = await supabase.from("tools" as any).insert({
+      const { data: inserted, error } = await supabase.from("tools" as any).insert({
         name: name.trim(), description: description.trim(), emoji: emoji.trim(), url: url.trim(),
-        sort_order: tools.length,
-      });
-      if (error) { toast.error("Kunde inte skapa: " + error.message); return; }
+        sort_order: tools.length, owner_id: ownerId,
+      }).select("id").single();
+      if (error || !inserted) { toast.error("Kunde inte skapa: " + (error?.message ?? "okänt fel")); return; }
+      await syncDepartments((inserted as any).id, selectedDepartments);
       toast.success("Verktyg skapat");
     }
     setDialogOpen(false);
-    fetchTools();
+    fetchAll();
   };
 
   const handleDelete = async (id: string) => {
     await supabase.from("tools" as any).delete().eq("id", id);
     toast.success("Verktyg borttaget");
     setConfirmDelete(null);
-    fetchTools();
+    fetchAll();
   };
 
   const handleToggleActive = async (tool: Tool) => {
@@ -205,6 +276,12 @@ export default function ToolsManager() {
     setTools(prev => prev.map(t => t.id === tool.id ? { ...t, is_starred: !t.is_starred } : t));
   };
 
+  const toggleDepartment = (id: string) => {
+    setSelectedDepartments(prev =>
+      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id],
+    );
+  };
+
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -213,10 +290,8 @@ export default function ToolsManager() {
     const newIndex = tools.findIndex(t => t.id === over.id);
     const reordered = arrayMove(tools, oldIndex, newIndex);
 
-    // Optimistic update
     setTools(reordered);
 
-    // Persist new sort_order for all affected items
     const updates = reordered.map((t, i) => ({ id: t.id, sort_order: i }));
     for (const u of updates) {
       await supabase.from("tools" as any).update({ sort_order: u.sort_order }).eq("id", u.id);
@@ -230,6 +305,8 @@ export default function ToolsManager() {
       </div>
     );
   }
+
+  const canSave = !!name.trim() && !!url.trim() && !!ownerId;
 
   return (
     <div className="space-y-4">
@@ -250,6 +327,7 @@ export default function ToolsManager() {
               <SortableToolRow
                 key={tool.id}
                 tool={tool}
+                departments={departments}
                 onToggleStar={handleToggleStar}
                 onToggleActive={handleToggleActive}
                 onEdit={openEdit}
@@ -262,7 +340,7 @@ export default function ToolsManager() {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={v => !v && setDialogOpen(false)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Redigera verktyg" : "Nytt verktyg"}</DialogTitle>
             <DialogDescription>
@@ -295,9 +373,36 @@ export default function ToolsManager() {
               <Label>URL</Label>
               <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." type="url" />
             </div>
+            <div>
+              <Label>Systemägare <span className="text-destructive">*</span></Label>
+              <Select value={ownerId} onValueChange={setOwnerId}>
+                <SelectTrigger><SelectValue placeholder="Välj ägare" /></SelectTrigger>
+                <SelectContent>
+                  {profiles.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Ansvarig person för verktyget — krävs för att kunna spara.</p>
+            </div>
+            <div>
+              <Label>Avdelningar som använder verktyget</Label>
+              <div className="mt-1.5 border border-border rounded-md p-2 space-y-1.5 max-h-48 overflow-y-auto">
+                {departments.map(d => (
+                  <label key={d.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selectedDepartments.includes(d.id)}
+                      onCheckedChange={() => toggleDepartment(d.id)}
+                    />
+                    <span>{d.name}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Används senare i onboarding-processen.</p>
+            </div>
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
-              <Button onClick={handleSave} disabled={!name.trim() || !url.trim()}>
+              <Button onClick={handleSave} disabled={!canSave}>
                 {editing ? "Spara" : "Lägg till"}
               </Button>
             </div>
