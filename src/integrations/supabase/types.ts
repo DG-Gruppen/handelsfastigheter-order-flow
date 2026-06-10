@@ -345,6 +345,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          heartpace_uuid: string | null
           id: string
           name: string
           parent_id: string | null
@@ -352,6 +353,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          heartpace_uuid?: string | null
           id?: string
           name: string
           parent_id?: string | null
@@ -359,6 +361,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          heartpace_uuid?: string | null
           id?: string
           name?: string
           parent_id?: string | null

@@ -1,5 +1,6 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useHeartpaceDepartmentSync } from "@/hooks/useHeartpaceDepartmentSync";
 
 interface Department {
   id: string;
@@ -13,6 +14,7 @@ interface DepartmentPickerProps {
 }
 
 export default function DepartmentPicker({ departments, selected, onChange }: DepartmentPickerProps) {
+  useHeartpaceDepartmentSync();
   const allSelected = departments.length > 0 && selected.length === departments.length;
 
   const toggleAll = () => {
