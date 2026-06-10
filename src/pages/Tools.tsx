@@ -13,16 +13,16 @@ interface Tool {
   url: string;
   sort_order: number;
   owner_id: string;
-  profiles: { full_name: string | null } | null;
+  owner_names: string[];
 }
 
 const MAX_FAVORITES = 8;
 
 async function fetchToolsData(userId: string | undefined) {
-  const [toolsRes, favsRes] = await Promise.all([
+  const [toolsRes, favsRes, ownersRes, profilesRes] = await Promise.all([
     supabase
       .from("tools" as any)
-      .select("*, profiles!tools_owner_id_fkey(full_name)")
+      .select("*")
       .eq("is_active", true)
       .order("name"),
     userId
