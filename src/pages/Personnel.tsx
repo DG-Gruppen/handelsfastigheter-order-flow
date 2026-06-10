@@ -3,6 +3,7 @@ import { Search, Phone, Mail, Users, Cake } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ORG_COLOR_MAP, getRoleColorKey } from "@/lib/orgColors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHeartpacePersonnelSync } from "@/hooks/useHeartpacePersonnelSync";
 
 interface PersonnelProfile {
   id: string;
