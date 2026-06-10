@@ -149,32 +149,58 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 ## 5. Datamodell
 
 ```text
+-- Nya ägarskaps-register (delas av onboarding/offboarding och framtida processer)
+
+external_contacts
+  id, name, email, organization, role_description, is_active
+
+responsibility_areas              -- icke-system, t.ex. nycklar, webbsida
+  id, slug, name, description, is_active
+
+responsibility_owners             -- many-to-many; ägaren är intern ELLER extern
+  id, area_id,
+  profile_id          nullable,
+  external_contact_id nullable,
+  CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+
+-- tool_owners utökas på samma sätt:
+tool_owners (befintlig, ALTER)
+  + external_contact_id nullable
+  + CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+
+-- Onboarding-modellen
+
 onboarding_templates
   id, name, kind ('onboarding' | 'offboarding'), is_active
 
 onboarding_template_tasks
   id, template_id, section, title, description, sort_order,
-  assignee_source,               -- 'tool_owner' | 'nearest_manager' | 'role'
-  assignee_tool_id     nullable, -- för tool_owner
-  assignee_role        nullable, -- för role (t.ex. 'hr', 'it')
-  is_optional          bool,     -- "om aktuellt"
-  email_template_key   nullable  -- om vi vill ha tasks-specifik mejltext
+  assignee_source,                  -- 'tool_owner' | 'area_owner' | 'role' | 'nearest_manager'
+  assignee_tool_id          nullable,
+  assignee_area_id          nullable,
+  assignee_role             nullable,
+  is_optional               bool,
+  email_template_key        nullable
 
 onboarding_instances
   id, profile_id (nyanställd), template_id,
   start_date, position, manager_id,
   heartpace_employee_id, status, created_at, completed_at
 
-onboarding_tasks   -- snapshot av mall vid skapande
-  id, instance_id, template_task_id (nullable),
+onboarding_tasks                    -- snapshot av mall vid skapande
+  id, instance_id, template_task_id nullable,
   title, description, section,
-  assignee_profile_id,
-  is_applicable bool default true,    -- HR/ansvarig kan markera "ej aktuellt"
+  assignee_profile_id      nullable,   -- intern mottagare
+  assignee_external_id     nullable,   -- extern mottagare
+  is_applicable bool default true,
   done bool, done_at, done_by, note
 
 onboarding_email_log
-  id, instance_id, recipient_profile_id, task_ids uuid[],
-  sent_at, status
+  id, instance_id,
+  recipient_profile_id     nullable,
+  recipient_external_id    nullable,
+  recipient_email          text not null,   -- alltid satt (snapshot)
+  task_ids uuid[], sent_at, status
 ```
 
 ---
