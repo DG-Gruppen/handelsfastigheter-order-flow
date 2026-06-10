@@ -13,7 +13,7 @@ interface Tool {
   url: string;
   sort_order: number;
   owner_id: string;
-  profiles: { first_name: string | null; last_name: string | null } | null;
+  profiles: { full_name: string | null } | null;
 }
 
 const MAX_FAVORITES = 8;
@@ -22,7 +22,7 @@ async function fetchToolsData(userId: string | undefined) {
   const [toolsRes, favsRes] = await Promise.all([
     supabase
       .from("tools" as any)
-      .select("*, profiles!tools_owner_id_fkey(first_name, last_name)")
+      .select("*, profiles!tools_owner_id_fkey(full_name)")
       .eq("is_active", true)
       .order("name"),
     userId
@@ -103,9 +103,7 @@ export default function Tools() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => {
           const isFav = favoriteIds.has(tool.id);
-          const ownerName = tool.profiles
-            ? `${tool.profiles.first_name ?? ""} ${tool.profiles.last_name ?? ""}`.trim()
-            : "";
+          const ownerName = tool.profiles?.full_name ?? "";
           return (
             <div
               key={tool.id}
