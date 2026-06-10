@@ -13,27 +13,46 @@ interface Tool {
   url: string;
   sort_order: number;
   owner_id: string;
-  profiles: { full_name: string | null } | null;
+  owner_names: string[];
 }
 
 const MAX_FAVORITES = 8;
 
 async function fetchToolsData(userId: string | undefined) {
-  const [toolsRes, favsRes] = await Promise.all([
-    supabase
-      .from("tools" as any)
-      .select("*, profiles!tools_owner_id_fkey(full_name)")
-      .eq("is_active", true)
-      .order("name"),
+  const [toolsRes, favsRes, ownersRes, profilesRes] = await Promise.all([
+    supabase.from("tools" as any).select("*").eq("is_active", true).order("name"),
     userId
       ? supabase.from("user_tool_favorites" as any).select("tool_id").eq("user_id", userId)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as any[] }),
+    supabase.from("tool_owners" as any).select("tool_id, profile_id"),
+    supabase.from("profiles").select("id, full_name"),
   ]);
+
+  const profMap = new Map<string, string>();
+  for (const p of (profilesRes.data ?? []) as { id: string; full_name: string | null }[]) {
+    if (p.full_name) profMap.set(p.id, p.full_name);
+  }
+  const ownersByTool = new Map<string, string[]>();
+  for (const link of ((ownersRes.data ?? []) as unknown) as { tool_id: string; profile_id: string }[]) {
+    const name = profMap.get(link.profile_id);
+    if (!name) continue;
+    const arr = ownersByTool.get(link.tool_id) ?? [];
+    arr.push(name);
+    ownersByTool.set(link.tool_id, arr);
+  }
+
+  const rawTools = ((toolsRes.data ?? []) as unknown) as Tool[];
+  const tools = rawTools.map(t => ({
+    ...t,
+    owner_names: ownersByTool.get(t.id) ?? (t.owner_id && profMap.has(t.owner_id) ? [profMap.get(t.owner_id)!] : []),
+  }));
+
   return {
-    tools: ((toolsRes.data as unknown) as Tool[]) ?? [],
+    tools,
     favoriteIds: new Set(((favsRes.data as any[]) ?? []).map((f: any) => f.tool_id)) as Set<string>,
   };
 }
+
 
 export default function Tools() {
   const { user } = useAuth();
@@ -103,7 +122,7 @@ export default function Tools() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => {
           const isFav = favoriteIds.has(tool.id);
-          const ownerName = tool.profiles?.full_name ?? "";
+          const ownerLabel = (tool.owner_names ?? []).join(" & ");
           return (
             <div
               key={tool.id}
@@ -119,8 +138,8 @@ export default function Tools() {
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{tool.name}</h3>
                   <p className="text-xs text-muted-foreground">{tool.description}</p>
-                  {ownerName && (
-                    <p className="text-[11px] text-accent mt-1">Systemägare: {ownerName}</p>
+                  {ownerLabel && (
+                    <p className="text-[11px] text-accent mt-1">Systemägare: {ownerLabel}</p>
                   )}
                 </div>
                 <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" />

@@ -2426,6 +2426,39 @@ export type Database = {
           },
         ]
       }
+      tool_owners: {
+        Row: {
+          created_at: string
+          profile_id: string
+          tool_id: string
+        }
+        Insert: {
+          created_at?: string
+          profile_id: string
+          tool_id: string
+        }
+        Update: {
+          created_at?: string
+          profile_id?: string
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_owners_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_owners_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tools: {
         Row: {
           created_at: string
