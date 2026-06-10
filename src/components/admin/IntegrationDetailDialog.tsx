@@ -152,6 +152,27 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
     }
   };
 
+  const runHeartpacePersonnelSync = async () => {
+    setSyncingPersonnel(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "heartpace-sync-personnel",
+        { body: {} },
+      );
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data?.error || "Okänt fel");
+      const fc = data?.field_changes ?? {};
+      toast.success(
+        `Uppdaterade ${data?.updated ?? 0} profiler · titel ${fc.title_override ?? 0}, telefon ${fc.phone ?? 0}, födelsedag ${fc.birthday ?? 0}, anställningsdatum ${fc.start_date ?? 0}`,
+      );
+      setTimeout(onRefresh, 1500);
+    } catch (e: any) {
+      toast.error(`Personalsynk misslyckades: ${e.message || "Okänt fel"}`);
+    } finally {
+      setSyncingPersonnel(false);
+    }
+  };
+
 
 
   return (
