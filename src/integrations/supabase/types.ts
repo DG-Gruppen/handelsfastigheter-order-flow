@@ -1905,6 +1905,7 @@ export type Database = {
           email: string
           full_name: string
           heartpace_employee_id: string | null
+          heartpace_sync_excluded: boolean
           id: string
           is_external: boolean
           is_hidden: boolean
@@ -1926,6 +1927,7 @@ export type Database = {
           email?: string
           full_name?: string
           heartpace_employee_id?: string | null
+          heartpace_sync_excluded?: boolean
           id?: string
           is_external?: boolean
           is_hidden?: boolean
@@ -1947,6 +1949,7 @@ export type Database = {
           email?: string
           full_name?: string
           heartpace_employee_id?: string | null
+          heartpace_sync_excluded?: boolean
           id?: string
           is_external?: boolean
           is_hidden?: boolean
