@@ -20,6 +20,8 @@ interface OrgProfile {
   title_override?: string | null;
   is_staff?: boolean | null;
   sort_order?: number | null;
+  is_external?: boolean | null;
+  heartpace_sync_excluded?: boolean | null;
 }
 
 interface RoleMap { [userId: string]: string; }
