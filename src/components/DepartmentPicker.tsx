@@ -1,5 +1,6 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useHeartpaceDepartmentSync } from "@/hooks/useHeartpaceDepartmentSync";
 
 interface Department {
   id: string;
