@@ -250,6 +250,30 @@ Drawer/dialog för redigering:
 - **Ägare:** lista över kopplingar i `responsibility_owners`. Sök/lägg till intern profil **eller** extern kontakt (`external_contacts`). Visar badge "Intern" / "Extern". Flera ägare tillåts.
 - **Används av:** läs-bara badges över de mall-tasks som pekar på området (`onboarding_template_tasks.assignee_area_id`), så admin ser konsekvenser innan något inaktiveras.
 
+### Externa kontakter (flik)
+
+Samma sida (`/admin/onboarding`), fliken **Externa kontakter**:
+
+```text
+┌─ Externa kontakter ────────────────────────────────────────┐
+│  [+ Ny extern kontakt]                    [sök...]         │
+│                                                            │
+│  Namn                Organisation      Roll                │
+│  ─────────────────────────────────────────────────────   │
+│  Agnes Eriksson      Fastighetssnabben IT-drift            │
+│                                                            │
+│  Klick på rad → drawer med redigering + kopplade ägarskap   │
+└────────────────────────────────────────────────────────────┘
+```
+
+Drawer/dialog för redigering:
+- **Grunddata:** namn, e-post (obligatorisk, unik), organisation (fritext), rollbeskrivning (kort text), `is_active`-toggle.
+- **Kopplade ägarskap:** läs-bara lista över alla `tool_owners` och `responsibility_owners` där kontakten står som ägare, med länkar till respektive verktyg/område. Gör det enkelt att se *varför* en kontakt finns i systemet och vilka mejl hen mottar.
+- **Användningshistorik:** antal pågående/completed onboardings där kontakten är ansvarig (via snapshot i `onboarding_tasks` + `onboarding_email_log`).
+
+> **Syfte:** Samla alla externa parter på ett ställe utan att blanda in dem i personalkatalogen eller behöva ge dem inloggning. Används idag för Agnes (Fastighetssnabben → Spiris/Collectum) men är generisk för framtida revisorer, försäkringsmäklare m.m. E-postadressen är nyckeln för utskick — ändras den uppdateras framtida mallar automatiskt. Pågående onboardings påverkas inte pga snapshot i `onboarding_tasks`.
+
+
 ### 7.2 Behörighet
 - Bara medlemmar i admin- eller HR-gruppen (samt superadmin) kan nå `/admin/onboarding`.
 - Modulen registreras i `modules`-tabellen som `onboarding-admin` så övriga rättigheter (`module_permissions`) fungerar som för andra admin-moduler.
