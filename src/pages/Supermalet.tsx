@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -459,7 +459,7 @@ export default function Supermalet() {
       </form>
 
       <Dialog open={registrationsOpen} onOpenChange={setRegistrationsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] w-full max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Anmälningar – Supermålet</DialogTitle>
           </DialogHeader>
@@ -468,7 +468,8 @@ export default function Supermalet() {
           ) : registrations.length === 0 ? (
             <p className="text-muted-foreground text-sm py-4">Inga anmälningar ännu.</p>
           ) : (
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            <ScrollArea className="flex-1 -mx-6 px-6 max-w-full">
+              <div className="min-w-max">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -513,6 +514,8 @@ export default function Supermalet() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
           )}
         </DialogContent>
