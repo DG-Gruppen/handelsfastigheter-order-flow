@@ -58,21 +58,22 @@ Onboardingen startar **inte** hos HR — den startar hos närmaste chef efter en
 
 ---
 
-## 2. Ansvariga & uppgiftsgrupper enligt dokumentet
+## 2. Ansvariga & uppgiftsgrupper
 
-- **Petra/HR** — registrering, avtal, försäkringar, anställningsförteckning, org-schema
-- **Fastighetssnabben (Agnes Eriksson)** — Collectum, Spiris tid/utlägg
-- **Närmaste chef** — info till org, välkomstmejl, introduktion, lunch, blomma, dator/mobil-beställning, ID06
-- **Christel Johansson** — nycklar/passerkort, Uniguide, What's Up Kris, fastighetslistor
-- **Emma Lundberg** — Rillion, Vitec/3L, Rekyl, IT-hotellet, bank
-- **Marit Karlsson** — Creditsafe
-- **Wilma Norin** — Momentum
-- **Jörgen Seegh** — Webport, Bereko, iBinder, Metry
-- **Pernilla Kjellén** — Vyer
-- **Erika Venäläinen** — Zendesk
-- **Inga Påhlsson** — kontaktuppgifter på SHF:s webbsida
+**Princip:** Inga personnamn hårdkodas i mallen. Word-dokumentets namnlista (Petra, Emma, Marit, Wilma, Jörgen, Pernilla, Erika, Christel, Inga, Agnes m.fl.) speglar bara **vem som råkar vara systemägare idag** — och de finns redan registrerade som ägare på respektive verktyg i `/verktyg` (`tool_owners`).
 
-Många är redan **systemägare på `/verktyg`** → vi kan auto-härleda ansvariga från `tool_owners`.
+Mallen pekar därför på **roll, verktyg eller relation**, inte på person:
+
+| Källa | Används för | Exempel från Word-dokumentet |
+|---|---|---|
+| `role: hr` | HR-uppgifter (avtal, försäkringar, Heartpace-registrering, anställningsförteckning) | Petra |
+| `tool_owner` (via `tool_id`) | Allt som rör behörighet/upplägg i ett specifikt system | Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, Webbsida, Nycklar/passerkort, What's Up Kris, Fastighetslistor |
+| `nearest_manager` | Allt chefen själv ska göra | Välkomstmejl, lunch, blomma, introduktion, info till org |
+| `role: it` | Generiska IT-uppgifter (dator, mobil, konton) | Hanteras via `/onboarding`-orderflödet |
+
+Allt som i Word-dokumentet är taggat på en specifik person (Christel → nycklar, Inga → webbsida, Agnes → Spiris/Collectum osv.) mappas via att **det "verktyget" finns i `/verktyg`** och att personen står som `tool_owner`. Saknas något som verktyg så skapas det där — det är enda stället där "ägaren" definieras.
+
+**Konsekvens:** Byter SHF systemägare i `/admin → Verktyg` följer alla framtida onboardings/offboardings med automatiskt. Word-dokumentet behöver aldrig synkas mot koden.
 
 ---
 
