@@ -50,7 +50,8 @@ Onboardingen startar **inte** hos HR — den startar hos närmaste chef efter en
 
 - **Chefen vet först** — beslutet är fattat hos hen, inte hos HR.
 - **HR slipper jaga information** — chefens formulär fångar grunddata, Petra kompletterar bara det HR-specifika.
-- **Vissa förberedelser kan starta direkt** efter chefens initiering, även innan Heartpace-registreringen är klar (t.ex. chefen kan börja planera introduktion, boka lunch, beställa dator). Dessa "chef-tasks" aktiveras redan i Fas 1; behörighets- och avtals-tasks väntar tills Fas 2.
+- **Alla tasks aktiveras först när HR bekräftat i Heartpace (Fas 2).** Risken med att aktivera chef-tasks redan i Fas 1 är att förberedelser (lunchbokning, blomma, intro) startas innan kontraktet är påskrivet. I Fas 1 är instansen i status `pending_hr` och syns för chef + HR, men inga mejl skickas och inga tasks är aktiva.
+- **Vem får initiera?** Alla chefer (alla med minst en `manager_id`-relation under sig, eller flagga `can_initiate_onboarding` på profil) kan starta en onboarding. Organisationen är liten nog att inte behöva en separat "rekryteringsrätt"-roll i nuläget — kan införas retroaktivt om behovet uppstår.
 - **Spårbarhet** — varje onboarding har en tydlig ägare (chefen) och en HR-ansvarig (Petra) från dag 1.
 
 
@@ -214,6 +215,10 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 ---
 
 ## 11. Öppna frågor (besvara innan bygge)
+
+> **Besvarade 2026-06-10:**
+> - ✅ *Vem får initiera?* Alla chefer. Ingen separat rekryteringsrätt-roll i nuläget — kan införas retroaktivt vid behov.
+> - ✅ *Timing för chef-tasks?* Inga tasks aktiveras förrän HR bekräftat i Heartpace (Fas 2). Fas 1 är endast registrering, status `pending_hr`.
 
 1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
 2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
