@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       const first = (pd.first_name ?? ua.first_name ?? "").toString().trim();
       const last = (pd.last_name ?? ua.last_name ?? "").toString().trim();
       const full_name = [first, last].filter(Boolean).join(" ") || null;
-      const email = pd.work_email || pd.personal_email || ua.email || null;
+      const email = pd.work_email || null;
 
       const fields: HpFields = {
         title: ji?.position?.name ?? null,
