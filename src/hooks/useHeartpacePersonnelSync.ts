@@ -21,6 +21,7 @@ export async function runHeartpacePersonnelSync(qc?: {
       qc.invalidateQueries({ queryKey: ["profiles"] }),
       qc.invalidateQueries({ queryKey: ["all-profiles"] }),
       qc.invalidateQueries({ queryKey: ["personnel"] }),
+      qc.invalidateQueries({ queryKey: ["personnel-data"] }),
       qc.invalidateQueries({ queryKey: ["org-tree"] }),
     ]);
   }
