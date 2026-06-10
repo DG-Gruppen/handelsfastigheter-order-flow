@@ -258,7 +258,9 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 > **Besvarade 2026-06-10:**
 > - ✅ *Vem får initiera?* Alla chefer. Ingen separat rekryteringsrätt-roll i nuläget — kan införas retroaktivt vid behov.
 > - ✅ *Timing för chef-tasks?* Inga tasks aktiveras förrän HR bekräftat i Heartpace (Fas 2). Fas 1 är endast registrering, status `pending_hr`.
-> - ✅ *Statiska personnamn i mallen?* Nej. Allt auto-härleds från `tool_owners` / `role` / `nearest_manager`. Saknade "verktyg" (webbsida, nycklar, What's Up Kris, fastighetslistor) läggs upp i `/verktyg` med ägare.
+> - ✅ *Statiska personnamn i mallen?* Nej. Allt auto-härleds via `tool_owner` / `area_owner` / `role` / `nearest_manager`.
+> - ✅ *Saker som inte är "verktyg" (nycklar, webbsida, fastighetslistor)?* Läggs som `responsibility_areas` — eget register, syns inte på `/verktyg`.
+> - ✅ *Externa personer (Agnes m.fl.)?* Läggs som `external_contacts` och kan stå som ägare på både verktyg och ansvarsområden. Inga inloggningar, ingen plats i personalkatalogen.
 
 1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
 2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
