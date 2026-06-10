@@ -116,11 +116,13 @@ Deno.serve(async (req) => {
       if (hpId) byHpId.set(hpId, fields);
     }
 
-    // 3) Hämta profiler med heartpace_employee_id
+    // 3) Hämta profiler med heartpace_employee_id (exkludera externa och flaggade konton)
     const { data: profiles, error: pErr } = await supa
       .from("profiles")
       .select("id, heartpace_employee_id, title_override, phone, birthday, start_date, department, full_name, email")
-      .not("heartpace_employee_id", "is", null);
+      .not("heartpace_employee_id", "is", null)
+      .eq("heartpace_sync_excluded", false)
+      .eq("is_external", false);
     if (pErr) throw pErr;
 
     let updated = 0, noMatch = 0, unchanged = 0;
