@@ -64,6 +64,7 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [matching, setMatching] = useState(false);
+  const [syncingPersonnel, setSyncingPersonnel] = useState(false);
 
 
   if (!integration) return null;
