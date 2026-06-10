@@ -226,7 +226,7 @@ onboarding_email_log
 - **Översikt** — pågående onboardings/offboardings, status, ansvarig chef, antal öppna tasks, nästa förfallodatum.
 - **Mallar** — listar `onboarding_templates` (kind = onboarding/offboarding). Redigera tasks: titel, sektion, `assignee_source`, koppling (tool/area/role), `is_optional`, mejlmall.
 - **Ansvarsområden** — CRUD för `responsibility_areas` (se 7.2 nedan).
-- **Externa kontakter** — CRUD för `external_contacts` (namn, organisation, e-post, rollbeskrivning, aktiv).
+- **Externa kontakter** — CRUD för `external_contacts` (se detaljer nedan).
 - **Mejlmallar** — redigera default-mejltexter per task-grupp med variabel-hjälp (`[namn]`, `[verktyg]` osv.).
 
 **`/admin/responsibility-areas`** (sub-route, eller egen flik enligt ovan) — egen sida för **Ansvarsområden**:
