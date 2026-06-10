@@ -514,6 +514,8 @@ export default function Supermalet() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
           )}
         </DialogContent>
