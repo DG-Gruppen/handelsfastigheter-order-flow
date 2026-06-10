@@ -82,6 +82,8 @@ Deno.serve(async (req) => {
       birthday: string | null;
       start_date: string | null;
       department: string | null;
+      full_name: string | null;
+      email: string | null;
     };
     const byHpId = new Map<string, HpFields>();
     for (const emp of active) {
@@ -96,12 +98,19 @@ Deno.serve(async (req) => {
       // Föredra lokalt avdelningsnamn (matchat via heartpace_uuid), fall tillbaka till Heartpaces namn
       const department = (hpDeptUuid && deptNameByHpUuid.get(hpDeptUuid)) || hpDeptName;
 
+      const first = (pd.first_name ?? ua.first_name ?? "").toString().trim();
+      const last = (pd.last_name ?? ua.last_name ?? "").toString().trim();
+      const full_name = [first, last].filter(Boolean).join(" ") || null;
+      const email = pd.work_email || pd.personal_email || ua.email || null;
+
       const fields: HpFields = {
         title: ji?.position?.name ?? null,
         phone: phone ? String(phone).trim() : null,
         birthday: toDate(pd.birth_date),
         start_date: toDate(emp?.start_date) ?? toDate(ua?.hire_date) ?? toDate(ua?.actual_hire_date),
         department: department ?? null,
+        full_name,
+        email: email ? String(email).toLowerCase().trim() : null,
       };
       const hpId: string | undefined = ua.uuid || (ua.id != null ? String(ua.id) : undefined);
       if (hpId) byHpId.set(hpId, fields);
@@ -110,12 +119,12 @@ Deno.serve(async (req) => {
     // 3) Hämta profiler med heartpace_employee_id
     const { data: profiles, error: pErr } = await supa
       .from("profiles")
-      .select("id, heartpace_employee_id, title_override, phone, birthday, start_date, department")
+      .select("id, heartpace_employee_id, title_override, phone, birthday, start_date, department, full_name, email")
       .not("heartpace_employee_id", "is", null);
     if (pErr) throw pErr;
 
     let updated = 0, noMatch = 0, unchanged = 0;
-    const changes: Record<string, number> = { title_override: 0, phone: 0, birthday: 0, start_date: 0, department: 0 };
+    const changes: Record<string, number> = { title_override: 0, phone: 0, birthday: 0, start_date: 0, department: 0, full_name: 0, email: 0 };
 
     for (const p of profiles ?? []) {
       const hp = byHpId.get(p.heartpace_employee_id as string);
@@ -126,6 +135,8 @@ Deno.serve(async (req) => {
       if (hp.birthday !== null && hp.birthday !== (p.birthday ?? null)) { patch.birthday = hp.birthday; changes.birthday++; }
       if (hp.start_date !== null && hp.start_date !== (p.start_date ?? null)) { patch.start_date = hp.start_date; changes.start_date++; }
       if (hp.department !== null && hp.department !== (p.department ?? null)) { patch.department = hp.department; changes.department++; }
+      if (hp.full_name !== null && hp.full_name !== p.full_name) { patch.full_name = hp.full_name; changes.full_name++; }
+      if (hp.email !== null && hp.email !== (p.email ?? "").toLowerCase()) { patch.email = hp.email; changes.email++; }
       if (Object.keys(patch).length === 0) { unchanged++; continue; }
       const { error } = await supa.from("profiles").update(patch).eq("id", p.id);
       if (!error) updated++;
