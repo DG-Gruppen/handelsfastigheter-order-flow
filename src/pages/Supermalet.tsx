@@ -427,7 +427,7 @@ export default function Supermalet() {
                   <SelectValue placeholder="Välj storlek" />
                 </SelectTrigger>
                 <SelectContent>
-                  {["S", "M", "L", "XL", "XXL"].map((s) => (
+                  {["XS", "S", "M", "L", "XL", "XXL", "XXXL"].map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
