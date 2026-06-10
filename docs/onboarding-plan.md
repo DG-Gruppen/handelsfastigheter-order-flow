@@ -107,38 +107,40 @@ För att täcka alla case i Word-dokumentet behöver vi **tre ägarskaps-registe
 
 Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansvarig vid skapande:
 
-| `assignee_source` | Betydelse | Exempel |
+| `assignee_source` | Betydelse | Pekar på |
 |---|---|---|
-| `tool_owner` | Slå upp ägare(n) till verktyg `tool_id` | "Behörighet i Creditsafe" → ägaren i `tools` |
-| `nearest_manager` | Nyanställdas chef från Heartpace | "Boka lunch första dagen" |
-| `role` | Härled från grupp (HR-grupp, IT-grupp) | "Lägg upp i Heartpace" → HR-gruppen |
+| `tool_owner` | Ägaren/ägarna till ett verktyg | `tool_id` |
+| `area_owner` | Ägaren/ägarna till ett ansvarsområde | `responsibility_area_id` |
+| `role` | Alla i en grupp/roll | `assignee_role` (t.ex. `hr`, `it`) |
+| `nearest_manager` | Nyanställdas chef från Heartpace | — |
 
-> **`static_profile` används inte i mallarna.** Vi tillåter inte att en enskild persons namn skrivs in på en mall-task — det skulle återskapa Word-dokumentets underhållsproblem. Behövs en specifik person som ansvarig så är hen ägare till motsvarande verktyg, punkt.
+> **Inga statiska personnamn i mallen.** Behövs en specifik person så är hen ägare till motsvarande verktyg eller ansvarsområde — det är enda stället ägarskap lagras. Externa personer (Agnes m.fl.) ligger som `external_contacts` och kopplas in på samma sätt.
 
 ### Vinster
-- Byter man systemägare i `/admin → Verktyg` ändras automatiskt vem som får framtida onboarding-mejl — ingen mall att uppdatera.
-- Flera ägare per verktyg (`tool_owners` är many-to-many) → flera mottagare för samma uppgift utan dubbletter.
-- Mallen blir kortare och **personoberoende**: en rad per verktyg som pekar på `tool_id`, systemet grupperar mejlen per ansvarig vid utskick.
-- Snapshot vid skapande: när en onboarding-instans skapas resolvas alla `assignee_source` till konkreta `assignee_profile_id` på taskraden, så senare ägarbyten **inte** påverkar pågående onboardings.
+- Byter SHF systemägare eller områdesansvarig i `/admin → Ansvar` ändras automatiskt vem som får framtida onboarding-mejl.
+- Flera ägare per verktyg/område → flera mottagare för samma uppgift utan dubbletter.
+- Mallen blir kortare och **personoberoende**: en rad per verktyg/område, systemet grupperar mejlen per ansvarig vid utskick.
+- Snapshot vid skapande: när en onboarding-instans skapas resolvas alla `assignee_source` till konkreta mottagare på taskraden, så senare ägarbyten **inte** påverkar pågående onboardings.
+- Mejl funkar lika bra för interna profiler som för externa kontakter (samma `recipient_email`-fält i `onboarding_email_log`).
 
 ### Mejlmallens placeholders utökas
-- `[verktyg]` — verktygets namn (för `tool_owner`-tasks)
+- `[verktyg]` — verktygets/områdets namn
 - `[ansvarig]` — mottagarens förnamn
 - Befintliga: `[namn]`, `[startdatum]`, `[befattning]`, `[chef]`
 
-### Förutsättningar i `/verktyg` innan mallen kan rullas ut
-Varje system/uppgift som Word-dokumentet räknar upp behöver finnas som verktyg med rätt ägare. Lista att checka av:
+### Datapunkter att lägga upp innan mallen rullas ut
 
-- **System med befintlig ägare:** Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum.
-- **Behöver troligen läggas till som "verktyg" i `/verktyg`** för att kunna auto-härleda:
-  - SHF:s webbsida (kontaktuppgifter)
-  - Nycklar & passerkort
-  - What's Up Kris
-  - Fastighetslistor
+**Som `tools` (finns/kompletteras):** Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, What's Up Kris.
 
-När dessa finns med ägare räcker det att mallen pekar på `tool_id` — inga personnamn någonstans.
+**Som `responsibility_areas` (nya, icke-system):**
+- `keys-access` — Nycklar & passerkort
+- `website-contacts` — Kontaktuppgifter på SHF:s webbsida
+- `property-lists` — Fastighetslistor
 
-### Mall-rader som inte är `tool_owner`
+**Som `external_contacts`:**
+- Agnes Eriksson (Fastighetssnabben) — kopplas som ägare till `tools` Spiris och Collectum.
+
+### Mall-rader som varken är `tool_owner` eller `area_owner`
 - HR-arbete (avtal, försäkringar, anställningsförteckning, Heartpace-registrering) → `role: hr`
 - Närmaste chefs-uppgifter (välkomstmejl, lunch, blomma, introduktion, info till org) → `nearest_manager`
 
