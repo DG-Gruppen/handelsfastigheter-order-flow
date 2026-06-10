@@ -122,7 +122,7 @@ export default function Tools() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => {
           const isFav = favoriteIds.has(tool.id);
-          const ownerName = tool.profiles?.full_name ?? "";
+          const ownerLabel = (tool.owner_names ?? []).join(" & ");
           return (
             <div
               key={tool.id}
