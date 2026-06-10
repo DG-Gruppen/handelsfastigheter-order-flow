@@ -60,20 +60,32 @@ Onboardingen startar **inte** hos HR — den startar hos närmaste chef efter en
 
 ## 2. Ansvariga & uppgiftsgrupper
 
-**Princip:** Inga personnamn hårdkodas i mallen. Word-dokumentets namnlista (Petra, Emma, Marit, Wilma, Jörgen, Pernilla, Erika, Christel, Inga, Agnes m.fl.) speglar bara **vem som råkar vara systemägare idag** — och de finns redan registrerade som ägare på respektive verktyg i `/verktyg` (`tool_owners`).
+**Princip:** Inga personnamn hårdkodas i mallen. Ägarskap lagras som data och mallen pekar bara på *vilken källa* ansvaret kommer från. Word-dokumentets namnlista är bara dagens utfall — den ska aldrig speglas i kod.
 
-Mallen pekar därför på **roll, verktyg eller relation**, inte på person:
+För att täcka alla case i Word-dokumentet behöver vi **tre ägarskaps-register** + två relations-baserade källor:
 
-| Källa | Används för | Exempel från Word-dokumentet |
-|---|---|---|
-| `role: hr` | HR-uppgifter (avtal, försäkringar, Heartpace-registrering, anställningsförteckning) | Petra |
-| `tool_owner` (via `tool_id`) | Allt som rör behörighet/upplägg i ett specifikt system | Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, Webbsida, Nycklar/passerkort, What's Up Kris, Fastighetslistor |
-| `nearest_manager` | Allt chefen själv ska göra | Välkomstmejl, lunch, blomma, introduktion, info till org |
-| `role: it` | Generiska IT-uppgifter (dator, mobil, konton) | Hanteras via `/onboarding`-orderflödet |
+| Källa | Vad det är | Var ägaren lagras | Word-dokumentets exempel |
+|---|---|---|---|
+| `tool_owner` | Ägare till ett **system/verktyg** | `tools` + `tool_owners` (finns) | Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, What's Up Kris |
+| `area_owner` | Ägare till ett **ansvarsområde** som inte är ett system | `responsibility_areas` + `responsibility_owners` (nya) | Nycklar & passerkort, SHF:s webbsida, Fastighetslistor |
+| `role` | Generisk grupp/roll | `groups` (finns) | HR-arbete (avtal, försäkringar, anställningsförteckning, Heartpace-registrering), IT-arbete |
+| `nearest_manager` | Nyanställdas chef | `profiles.manager_id` (finns) | Välkomstmejl, lunch, blomma, introduktion, info till org |
+| *(ägaren kan vara extern)* | Person utanför `profiles` | `external_contacts` (ny) | Agnes Eriksson (Fastighetssnabben → Spiris, Collectum) |
 
-Allt som i Word-dokumentet är taggat på en specifik person (Christel → nycklar, Inga → webbsida, Agnes → Spiris/Collectum osv.) mappas via att **det "verktyget" finns i `/verktyg`** och att personen står som `tool_owner`. Saknas något som verktyg så skapas det där — det är enda stället där "ägaren" definieras.
+### Varför separera `tools` och `responsibility_areas`?
 
-**Konsekvens:** Byter SHF systemägare i `/admin → Verktyg` följer alla framtida onboardings/offboardings med automatiskt. Word-dokumentet behöver aldrig synkas mot koden.
+- Ett **verktyg** har URL, FAQ, beskrivning, ikon, är synligt på `/verktyg`, kan favoritmarkeras osv. Det vore fel att lägga in "Nycklar" där bara för att någon äger frågan.
+- Ett **ansvarsområde** är bara `{ slug, namn, beskrivning, ägare[] }` — inget mer. Det visas inte på `/verktyg`. Det enda syftet är att vara en pekare som mallen och andra processer kan rikta sig mot.
+- Båda registren administreras i `/admin → Ansvar` (delad vy med två flikar: *Verktyg* / *Ansvarsområden*).
+
+### Varför `external_contacts` istället för att tvinga Agnes till `profiles`?
+
+- Agnes är extern konsult — hon ska inte ha intranät-inlogg, inte synas i personalkatalogen, inte räknas som anställd någonstans.
+- `external_contacts` är ett minimalt register: `{ name, email, organization, role_description }`. Inga inloggningar, ingen RLS-komplexitet.
+- `tool_owners` och `responsibility_owners` får båda kunna peka på **antingen** `profile_id` **eller** `external_contact_id` (XOR-constraint). Mejlutskicket bryr sig bara om e-postadressen.
+- Bonus: löser samma problem för framtida externa partners (revisor, försäkringsmäklare m.fl.) utan att vi behöver återbesöka modellen.
+
+**Konsekvens:** Byter SHF systemägare eller områdesansvarig följer alla framtida onboardings/offboardings med automatiskt — oavsett om den nya ägaren är intern eller extern.
 
 ---
 
