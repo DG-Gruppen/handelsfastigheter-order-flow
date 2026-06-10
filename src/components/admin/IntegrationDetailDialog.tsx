@@ -64,6 +64,7 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [matching, setMatching] = useState(false);
+  const [syncingPersonnel, setSyncingPersonnel] = useState(false);
 
 
   if (!integration) return null;
@@ -148,6 +149,27 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
       toast.error(`Matchning misslyckades: ${e.message || "Okänt fel"}`);
     } finally {
       setMatching(false);
+    }
+  };
+
+  const runHeartpacePersonnelSync = async () => {
+    setSyncingPersonnel(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "heartpace-sync-personnel",
+        { body: {} },
+      );
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data?.error || "Okänt fel");
+      const fc = data?.field_changes ?? {};
+      toast.success(
+        `Uppdaterade ${data?.updated ?? 0} profiler · titel ${fc.title_override ?? 0}, telefon ${fc.phone ?? 0}, födelsedag ${fc.birthday ?? 0}, anställningsdatum ${fc.start_date ?? 0}`,
+      );
+      setTimeout(onRefresh, 1500);
+    } catch (e: any) {
+      toast.error(`Personalsynk misslyckades: ${e.message || "Okänt fel"}`);
+    } finally {
+      setSyncingPersonnel(false);
     }
   };
 
@@ -300,15 +322,26 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
             Stäng
           </Button>
           {integration.slug === "heartpace" && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={runHeartpaceMatch}
-              disabled={matching}
-            >
-              {matching ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
-              Synka & matcha profiler
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={runHeartpaceMatch}
+                disabled={matching}
+              >
+                {matching ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Synka & matcha profiler
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={runHeartpacePersonnelSync}
+                disabled={syncingPersonnel}
+              >
+                {syncingPersonnel ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Synka personalfält
+              </Button>
+            </>
           )}
           <Button
             variant="default"

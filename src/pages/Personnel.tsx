@@ -3,6 +3,7 @@ import { Search, Phone, Mail, Users, Cake } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ORG_COLOR_MAP, getRoleColorKey } from "@/lib/orgColors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHeartpacePersonnelSync } from "@/hooks/useHeartpacePersonnelSync";
 
 interface PersonnelProfile {
   id: string;
@@ -64,6 +65,7 @@ async function fetchPersonnelData() {
 }
 
 export default function Personnel() {
+  useHeartpacePersonnelSync();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alla");
