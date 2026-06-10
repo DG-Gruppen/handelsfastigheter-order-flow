@@ -5,16 +5,55 @@
 
 ## 1. Vad Petra vill ha (kärnan)
 
-Onboarding ska bli en **HR-driven checklista** som startar när Petra lägger upp en ny anställd i Heartpace, inte ett orderformulär. Varje uppgift har en **ansvarig person/funktion** som får ett **eget mejl** med bara sina uppgifter, och bockar av dem i intranätet så HR ser status i realtid.
+Onboarding ska vara en **chefs-initierad, HR-koordinerad checklista** som följer den nyanställde från beslut att anställa till färdig introduktion. Varje uppgift har en **ansvarig person/funktion** som får ett **eget mejl** med bara sina uppgifter och bockar av dem i intranätet så HR ser status i realtid.
 
 Samma struktur ska kunna återanvändas för **offboarding** senare.
 
-### Petras flöde
-1. Petra registrerar nyanställd i Heartpace (avtal, startdatum, befattning, chef, kostnadsställe).
-2. Heartpace-syncen plockar upp posten och skapar en **onboarding-instans** i intranätet från en mall.
-3. Intranätet skickar **ett mejl per ansvarig** med endast deras uppgifter. Variabler (`[namn]`, `[startdatum]`, `[befattning]`, `[chef]`) fylls i automatiskt.
-4. Varje mottagare öppnar intranätet → ser sina punkter → bockar av → HR ser progress live.
-5. När alla punkter är avbockade markeras onboardingen klar.
+### Det verkliga flödet (uppdaterat efter feedback)
+
+Onboardingen startar **inte** hos HR — den startar hos närmaste chef efter en lyckad rekrytering. HR kommer in i bild när chefen lämnar över kandidatuppgifterna.
+
+```text
+┌─ Fas 0: Rekrytering (närmaste chef) ─────────────────────────────┐
+│  Intervjuer → beslut → kandidat tackar ja                         │
+└──────────────────────────┬────────────────────────────────────────┘
+                           ▼
+┌─ Fas 1: Chef initierar onboarding i intranätet ──────────────────┐
+│  Chef öppnar /onboarding → "Starta ny onboarding"                 │
+│  Fyller i: namn, e-post, befattning, startdatum, avdelning,       │
+│            ev. tjänstebil/ID06/bank-flaggor                       │
+│  → Skapar en onboarding-instans i status 'pending_hr'             │
+│  → HR (Petra) får mejl + in-app-notis: "Ny anställd att lägga upp"│
+└──────────────────────────┬────────────────────────────────────────┘
+                           ▼
+┌─ Fas 2: HR registrerar i Heartpace ──────────────────────────────┐
+│  Petra granskar uppgifterna, kompletterar (kostnadsställe,        │
+│  attestant, lön m.m.) och lägger upp i Heartpace.                 │
+│  Markerar "Registrerad i Heartpace" → instansen går till 'active' │
+│  → Heartpace-sync länkar instansen mot den nya profilen           │
+└──────────────────────────┬────────────────────────────────────────┘
+                           ▼
+┌─ Fas 3: Mejl ut till alla ansvariga ─────────────────────────────┐
+│  Intranätet skickar ett samlat mejl per ansvarig (chef,           │
+│  Fastighetssnabben, Christel, systemägare för verktygen, etc.)    │
+│  Variabler [namn] [startdatum] [befattning] [chef] fylls i.       │
+└──────────────────────────┬────────────────────────────────────────┘
+                           ▼
+┌─ Fas 4: Avbockning & uppföljning ────────────────────────────────┐
+│  Varje ansvarig bockar av i intranätet.                           │
+│  HR och chef ser progress live.                                   │
+│  När alla punkter är klara → status 'completed'.                  │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+### Varför chefen initierar
+
+- **Chefen vet först** — beslutet är fattat hos hen, inte hos HR.
+- **HR slipper jaga information** — chefens formulär fångar grunddata, Petra kompletterar bara det HR-specifika.
+- **Vissa förberedelser kan starta direkt** efter chefens initiering, även innan Heartpace-registreringen är klar (t.ex. chefen kan börja planera introduktion, boka lunch, beställa dator). Dessa "chef-tasks" aktiveras redan i Fas 1; behörighets- och avtals-tasks väntar tills Fas 2.
+- **Spårbarhet** — varje onboarding har en tydlig ägare (chefen) och en HR-ansvarig (Petra) från dag 1.
+
+
 
 ---
 
