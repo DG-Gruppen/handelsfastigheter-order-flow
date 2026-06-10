@@ -322,15 +322,26 @@ export default function IntegrationDetailDialog({ integration, open, onOpenChang
             Stäng
           </Button>
           {integration.slug === "heartpace" && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={runHeartpaceMatch}
-              disabled={matching}
-            >
-              {matching ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
-              Synka & matcha profiler
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={runHeartpaceMatch}
+                disabled={matching}
+              >
+                {matching ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Synka & matcha profiler
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={runHeartpacePersonnelSync}
+                disabled={syncingPersonnel}
+              >
+                {syncingPersonnel ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Synka personalfält
+              </Button>
+            </>
           )}
           <Button
             variant="default"
