@@ -138,8 +138,8 @@ export default function Tools() {
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{tool.name}</h3>
                   <p className="text-xs text-muted-foreground">{tool.description}</p>
-                  {ownerName && (
-                    <p className="text-[11px] text-accent mt-1">Systemägare: {ownerName}</p>
+                  {ownerLabel && (
+                    <p className="text-[11px] text-accent mt-1">Systemägare: {ownerLabel}</p>
                   )}
                 </div>
                 <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" />
