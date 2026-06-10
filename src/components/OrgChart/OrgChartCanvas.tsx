@@ -58,10 +58,10 @@ const GAP_V            = 72;   // vertical gap parent bottom → child top
 const STACK_GAP        = 12;   // vertical gap between stacked leaf cards
 const STACK_COL_GAP    = 28;   // gap between leaf columns
 const MAX_STACK        = 6;    // max stacked leaves per column
-const STAFF_TOP_GAP    = 48;   // root bottom → first staff row
-const STAFF_GUTTER     = 64;   // stem → staff card inner edge
-const STAFF_ROW_GAP    = 12;   // vertical gap between staff cards on one side
-const STAFF_BOTTOM_GAP = 64;   // staff block → line children
+const STAFF_TOP_GAP    = 56;   // root bottom → staff row
+const STAFF_GAP_H      = 24;   // horizontal gap between staff cards in the row
+const STAFF_GUTTER     = 44;   // stem → nearest staff card edge (keeps the stem clear)
+const STAFF_BOTTOM_GAP = 64;   // staff row → line children
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2.0;
@@ -195,8 +195,14 @@ function stackColumns(kids: OrgNode[]): OrgNode[][] {
 function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> {
   const pos = new Map<string, Pos>();
 
+  // The staff layer is a horizontal row split evenly around the stem;
+  // its width is twice the widest side so the root stays centered.
   function staffRegionW(node: OrgNode): number {
-    return staffKidsOf(node).length ? 2 * (STAFF_GUTTER + CARD.STAFF.W) : 0;
+    const n = staffKidsOf(node).length;
+    if (!n) return 0;
+    const sideW = (count: number) => count ? count * CARD.STAFF.W + (count - 1) * STAFF_GAP_H : 0;
+    const leftCount = Math.floor(n / 2);
+    return 2 * (STAFF_GUTTER + Math.max(sideW(leftCount), sideW(n - leftCount)));
   }
 
   function subtreeW(node: OrgNode): number {
@@ -220,31 +226,35 @@ function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> 
     pos.set(node.id, { x: centerX - d.W / 2, y: top, w: d.W, h: d.H });
     if (collapsed.has(node.id)) return;
 
-    // Staff/assistant block: two vertical columns flanking the stem
+    // Staff layer: one horizontal row between the root and its line children,
+    // split evenly around the stem so the solid line stays clear. Reading
+    // order left → right follows the children's sort order.
     const staff = staffKidsOf(node);
-    let staffBlockH = 0;
     if (staff.length) {
-      const half = Math.ceil(staff.length / 2);
-      const left = staff.slice(0, half);
-      const right = staff.slice(half);
+      const leftCount = Math.floor(staff.length / 2);
+      const left = staff.slice(0, leftCount);
+      const right = staff.slice(leftCount);
       const staffTop = top + d.H + STAFF_TOP_GAP;
-      const placeSide = (arr: OrgNode[], side: -1 | 1) => {
-        arr.forEach((s, i) => {
-          const sd = cardDims(s);
-          const cx = centerX + side * (STAFF_GUTTER + sd.W / 2);
-          pos.set(s.id, { x: cx - sd.W / 2, y: staffTop + i * (sd.H + STAFF_ROW_GAP), w: sd.W, h: sd.H });
-        });
-      };
-      placeSide(left, -1);
-      placeSide(right, 1);
-      staffBlockH = Math.max(left.length, right.length) * (CARD.STAFF.H + STAFF_ROW_GAP) - STAFF_ROW_GAP;
+      let x = centerX - STAFF_GUTTER;
+      for (let i = left.length - 1; i >= 0; i--) {
+        const sd = cardDims(left[i]);
+        x -= sd.W;
+        pos.set(left[i].id, { x, y: staffTop, w: sd.W, h: sd.H });
+        x -= STAFF_GAP_H;
+      }
+      x = centerX + STAFF_GUTTER;
+      for (const s of right) {
+        const sd = cardDims(s);
+        pos.set(s.id, { x, y: staffTop, w: sd.W, h: sd.H });
+        x += sd.W + STAFF_GAP_H;
+      }
     }
 
     const kids = lineKidsOf(node);
     if (!kids.length) return;
 
     const lineTop = staff.length
-      ? top + d.H + STAFF_TOP_GAP + staffBlockH + STAFF_BOTTOM_GAP
+      ? top + d.H + STAFF_TOP_GAP + CARD.STAFF.H + STAFF_BOTTOM_GAP
       : top + d.H + GAP_V;
 
     // All children are leaves → stack them vertically in columns
@@ -300,14 +310,23 @@ function buildConnectors(tree: OrgNode, positions: Map<string, Pos>, collapsed: 
     const px = p.x + p.w / 2;
     const py = p.y + p.h;
 
-    // Staff: dashed horizontal from the stem to the inner edge of each card
-    for (const s of staffKidsOf(node)) {
-      const sp = positions.get(s.id);
-      if (!sp) continue;
-      const scy = sp.y + sp.h / 2;
-      const onLeft = sp.x + sp.w / 2 < px;
-      const innerX = onLeft ? sp.x + sp.w : sp.x;
-      out.push({ d: `M ${px} ${scy} L ${innerX} ${scy}`, dashed: true });
+    // Staff layer: a dashed bus across the row with a dashed drop into each
+    // card; the solid stem passes straight through the layer to the line bus
+    const staffPs = staffKidsOf(node)
+      .map(s => positions.get(s.id))
+      .filter(Boolean) as Pos[];
+    let staffBusY = py;
+    let staffBottom = py;
+    if (staffPs.length) {
+      const staffTopY = Math.min(...staffPs.map(sp => sp.y));
+      staffBusY = py + (staffTopY - py) / 2;
+      staffBottom = Math.max(...staffPs.map(sp => sp.y + sp.h));
+      const cxs = staffPs.map(sp => sp.x + sp.w / 2);
+      out.push({ d: `M ${Math.min(...cxs, px)} ${staffBusY} L ${Math.max(...cxs, px)} ${staffBusY}`, dashed: true });
+      for (const sp of staffPs) {
+        const cx = sp.x + sp.w / 2;
+        out.push({ d: `M ${cx} ${staffBusY} L ${cx} ${sp.y}`, dashed: true });
+      }
     }
 
     const kidPs = lineKidsOf(node)
@@ -328,8 +347,11 @@ function buildConnectors(tree: OrgNode, positions: Map<string, Pos>, collapsed: 
         colMap.get(key)!.push(kp);
       }
 
+      // With a staff layer, the line bus sits between the staff row and the
+      // children; the stem runs unbroken from the root through the layer
       const minTop = Math.min(...kidPs.map(kp => kp.y));
-      const busY = py + (minTop - py) / 2;
+      const busBase = staffPs.length ? staffBottom : py;
+      const busY = busBase + (minTop - busBase) / 2;
       out.push({ d: `M ${px} ${py} L ${px} ${busY}`, dashed: false });
 
       for (const [cx, col] of colMap) {
@@ -339,6 +361,9 @@ function buildConnectors(tree: OrgNode, positions: Map<string, Pos>, collapsed: 
           out.push({ d: `M ${cx} ${col[i].y + col[i].h} L ${cx} ${col[i + 1].y}`, dashed: false });
         }
       }
+    } else if (staffPs.length) {
+      // No line children: anchor the staff bus with a short solid stem
+      out.push({ d: `M ${px} ${py} L ${px} ${staffBusY}`, dashed: false });
     }
 
     node.children.forEach(draw);
