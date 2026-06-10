@@ -22,7 +22,7 @@ async function fetchToolsData(userId: string | undefined) {
   const [toolsRes, favsRes] = await Promise.all([
     supabase
       .from("tools" as any)
-      .select("*, profiles!tools_owner_id_fkey(first_name, last_name)")
+      .select("*, profiles!tools_owner_id_fkey(full_name)")
       .eq("is_active", true)
       .order("name"),
     userId
