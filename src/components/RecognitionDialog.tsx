@@ -49,6 +49,8 @@ export default function RecognitionDialog({ onCreated }: RecognitionDialogProps)
       .from("profiles")
       .select("user_id, full_name")
       .neq("user_id", user?.id ?? "")
+      .eq("is_external", false)
+      .eq("heartpace_sync_excluded", false)
       .order("full_name")
       .then(({ data }) => setProfiles((data as Profile[]) ?? []));
   }, [open, user]);
