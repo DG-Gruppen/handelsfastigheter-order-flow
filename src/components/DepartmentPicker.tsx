@@ -14,6 +14,7 @@ interface DepartmentPickerProps {
 }
 
 export default function DepartmentPicker({ departments, selected, onChange }: DepartmentPickerProps) {
+  useHeartpaceDepartmentSync();
   const allSelected = departments.length > 0 && selected.length === departments.length;
 
   const toggleAll = () => {
