@@ -69,7 +69,9 @@ export default function WeeklyCelebrations({ compact = false }: { compact?: bool
     const { data: profiles } = await supabase
       .from("profiles")
       .select("full_name, birthday, start_date")
-      .eq("is_hidden", false);
+      .eq("is_hidden", false)
+      .eq("is_external", false)
+      .eq("heartpace_sync_excluded", false);
 
     if (!profiles) {
       setLoading(false);
