@@ -65,6 +65,7 @@ async function fetchPersonnelData() {
 }
 
 export default function Personnel() {
+  useHeartpacePersonnelSync();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alla");
