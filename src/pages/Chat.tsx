@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff, Pencil, UsersRound, AlertTriangle, ImagePlus, Loader2 } from "lucide-react";
+import { Hash, MessageCircle, Plus, Send, Users, Search, SmilePlus, Reply, Trash2, X, ArrowLeft, UserPlus, UserMinus, Check, CheckCheck, Crown, Smile, MoreVertical, Phone, Video, LogOut, EyeOff, Pencil, UsersRound, AlertTriangle, ImagePlus, Loader2, Clock, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,8 @@ interface Message {
   is_edited: boolean;
   created_at: string;
   updated_at: string;
+  /** Client-only flag for optimistically added messages awaiting server confirmation */
+  pending?: boolean;
 }
 
 interface Reaction {
@@ -104,6 +106,39 @@ function formatConversationTime(dateStr: string) {
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "🎉", "🤔", "👀"];
 
+// ─── Cache helpers (instant messaging: apply changes directly instead of refetching) ───
+function upsertMessageInList(list: Message[] | undefined, msg: Message, removeTempId?: string): Message[] | undefined {
+  if (!list) return list;
+  if (!removeTempId && list.some(m => m.id === msg.id)) {
+    return list.map(m => (m.id === msg.id ? msg : m));
+  }
+  let next = list.filter(m => m.id !== msg.id && m.id !== removeTempId);
+  // Drop the optimistic duplicate when the confirmed row arrives via realtime
+  if (!removeTempId) {
+    const dupIdx = next.findIndex(m => m.pending && m.user_id === msg.user_id && m.content === msg.content && m.parent_message_id === msg.parent_message_id);
+    if (dupIdx !== -1) next = next.filter((_, i) => i !== dupIdx);
+  }
+  next.push(msg);
+  next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  return next;
+}
+
+function replaceMessageInList(list: Message[] | undefined, msg: Message): Message[] | undefined {
+  if (!list || !list.some(m => m.id === msg.id)) return list;
+  return list.map(m => (m.id === msg.id ? { ...m, ...msg, pending: false } : m));
+}
+
+function removeMessageFromList(list: Message[] | undefined, msgId: string): Message[] | undefined {
+  if (!list || !list.some(m => m.id === msgId)) return list;
+  return list.filter(m => m.id !== msgId);
+}
+
+/** Shape of a postgres_changes payload — DELETE events only carry the primary key in `old` */
+interface RealtimeRow<T> {
+  new?: Partial<T> | null;
+  old?: Partial<T> | null;
+}
+
 // ─── Main ───
 export default function Chat({ embedded, onClose }: { embedded?: boolean; onClose?: () => void } = {}) {
   const { user } = useAuth();
@@ -162,6 +197,92 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
     profiles.forEach(p => m.set(p.user_id, p));
     return m;
   }, [profiles]);
+
+  // Members of all DM channels, so the sidebar can show the *other* person's name
+  const dmChannelIds = useMemo(() => channels.filter(c => c.type === "dm").map(c => c.id), [channels]);
+  const { data: dmMemberRows = [] } = useQuery({
+    queryKey: ["chat-dm-members", dmChannelIds.join(",")],
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_channel_members").select("channel_id, user_id").in("channel_id", dmChannelIds);
+      return (data ?? []) as { channel_id: string; user_id: string }[];
+    },
+    enabled: dmChannelIds.length > 0,
+  });
+
+  const dmPartnerByChannel = useMemo(() => {
+    const m = new Map<string, string>();
+    dmMemberRows.forEach(row => {
+      if (row.user_id !== user?.id) m.set(row.channel_id, row.user_id);
+    });
+    return m;
+  }, [dmMemberRows, user?.id]);
+
+  const getChannelDisplayName = useCallback((ch: Channel) => {
+    if (ch.type === "dm") {
+      const partner = dmPartnerByChannel.get(ch.id);
+      return (partner && profileMap.get(partner)?.full_name) || ch.name;
+    }
+    return ch.name;
+  }, [dmPartnerByChannel, profileMap]);
+
+  // ─── Presence: who is online right now ───
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user) return;
+    const presence = supabase.channel("chat-presence", { config: { presence: { key: user.id } } });
+    presence
+      .on("presence", { event: "sync" }, () => {
+        setOnlineUserIds(new Set(Object.keys(presence.presenceState())));
+      })
+      .subscribe(status => {
+        if (status === "SUBSCRIBED") presence.track({ online_at: new Date().toISOString() });
+      });
+    return () => { supabase.removeChannel(presence); };
+  }, [user?.id]);
+
+  // ─── Typing indicator (broadcast, no DB writes) ───
+  const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; until: number }>>({});
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastTypingSentRef = useRef(0);
+  const myName = (user && profileMap.get(user.id)?.full_name) || "Någon";
+
+  useEffect(() => {
+    if (!activeChannelId || !user) return;
+    setTypingUsers({});
+    const ch = supabase.channel(`chat-typing-${activeChannelId}`);
+    ch.on("broadcast", { event: "typing" }, ({ payload }) => {
+      if (!payload?.user_id || payload.user_id === user.id) return;
+      setTypingUsers(prev => ({ ...prev, [payload.user_id]: { name: payload.name || "Någon", until: Date.now() + 3500 } }));
+    }).subscribe();
+    typingChannelRef.current = ch;
+    const prune = setInterval(() => {
+      setTypingUsers(prev => {
+        const now = Date.now();
+        const active = Object.entries(prev).filter(([, v]) => v.until > now);
+        return active.length === Object.keys(prev).length ? prev : Object.fromEntries(active);
+      });
+    }, 1000);
+    return () => {
+      clearInterval(prune);
+      supabase.removeChannel(ch);
+      typingChannelRef.current = null;
+    };
+  }, [activeChannelId, user?.id]);
+
+  const sendTyping = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 2000) return;
+    lastTypingSentRef.current = now;
+    typingChannelRef.current?.send({ type: "broadcast", event: "typing", payload: { user_id: user?.id, name: myName } });
+  }, [user?.id, myName]);
+
+  const typingText = useMemo(() => {
+    const names = Object.values(typingUsers).map(t => t.name.split(" ")[0]);
+    if (names.length === 0) return null;
+    if (names.length === 1) return `${names[0]} skriver…`;
+    if (names.length === 2) return `${names[0]} och ${names[1]} skriver…`;
+    return "Flera personer skriver…";
+  }, [typingUsers]);
 
   // Fetch last message for each channel (for sidebar preview)
   const { data: lastMessages = {} } = useQuery({
@@ -261,7 +382,7 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
   }, [messages, allReadStatus, channelMembers, user?.id, activeChannelId]);
 
   const { data: replyCounts = {} } = useQuery({
-    queryKey: ["chat-reply-counts", activeChannelId, messages.length],
+    queryKey: ["chat-reply-counts", activeChannelId],
     queryFn: async () => {
       if (messages.length === 0) return {};
       const msgIds = messages.map(m => m.id);
@@ -278,93 +399,229 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
     enabled: messages.length > 0,
   });
 
-  // Unread counts per channel
-  const unreadCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    channels.forEach(ch => {
-      const rs = readStatus.find(r => r.channel_id === ch.id);
-      const lastMsg = lastMessages[ch.id];
-      if (!lastMsg) { counts[ch.id] = 0; return; }
-      if (!rs) { counts[ch.id] = 1; return; } // never read = at least 1
-      counts[ch.id] = new Date(lastMsg.created_at) > new Date(rs.last_read_at) ? 1 : 0;
-    });
-    return counts;
-  }, [channels, readStatus, lastMessages]);
+  // Real unread counts per channel (WhatsApp-style badge with actual numbers).
+  // Only channels whose last message is newer than our read marker are counted,
+  // so this stays cheap (HEAD count requests for the few unread channels).
+  const unreadCandidates = useMemo(() => {
+    const readMap = new Map(readStatus.map(r => [r.channel_id, r.last_read_at] as const));
+    return channels
+      .filter(ch => memberships.includes(ch.id))
+      .filter(ch => {
+        const last = lastMessages[ch.id];
+        if (!last || last.user_id === user?.id || last.pending) return false;
+        const lastRead = readMap.get(ch.id);
+        return !lastRead || new Date(last.created_at) > new Date(lastRead);
+      })
+      .map(ch => ({ channelId: ch.id, lastRead: readMap.get(ch.id) ?? null }));
+  }, [channels, memberships, readStatus, lastMessages, user?.id]);
 
-  // ─── Realtime: global subscription for sidebar (all channels) ───
+  const { data: unreadCounts = {} } = useQuery({
+    queryKey: ["chat-unread-counts", user?.id, unreadCandidates.map(c => `${c.channelId}:${c.lastRead ?? ""}:${lastMessages[c.channelId]?.id ?? ""}`).join("|")],
+    queryFn: async () => {
+      const counts: Record<string, number> = {};
+      await Promise.all(unreadCandidates.map(async ({ channelId, lastRead }) => {
+        let q = supabase
+          .from("chat_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("channel_id", channelId)
+          .is("parent_message_id", null)
+          .neq("user_id", user!.id);
+        if (lastRead) q = q.gt("created_at", lastRead);
+        const { count } = await q;
+        counts[channelId] = count || 0;
+      }));
+      return counts;
+    },
+    enabled: !!user,
+    placeholderData: prev => prev,
+  });
+
+  // ─── Realtime: one stable global subscription. Incoming events are applied
+  // straight into the react-query caches (no refetch round-trip = instant). ───
   useEffect(() => {
     if (!user) return;
+    const applyMessage = (msg: Message) => {
+      if (msg.parent_message_id) {
+        qc.setQueryData<Message[]>(["chat-thread", msg.parent_message_id], old => upsertMessageInList(old, msg));
+        qc.setQueryData<Record<string, number>>(["chat-reply-counts", msg.channel_id], old =>
+          old ? { ...old, [msg.parent_message_id!]: (old[msg.parent_message_id!] || 0) + 1 } : old
+        );
+      } else {
+        qc.setQueryData<Message[]>(["chat-messages", msg.channel_id], old => upsertMessageInList(old, msg));
+        qc.setQueriesData<Record<string, Message>>({ queryKey: ["chat-last-messages"] }, old =>
+          old ? { ...old, [msg.channel_id]: msg } : old
+        );
+      }
+      qc.invalidateQueries({ queryKey: ["chat-bubble-unread"] });
+    };
+
     const globalChannel = supabase
       .channel("chat-global")
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, (payload: any) => {
-        const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
-        // Always refresh sidebar data
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload: RealtimeRow<Message>) => {
+        applyMessage(payload.new as Message);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_messages" }, (payload: RealtimeRow<Message>) => {
+        const msg = payload.new as Message;
+        const key = msg.parent_message_id ? ["chat-thread", msg.parent_message_id] : ["chat-messages", msg.channel_id];
+        qc.setQueryData<Message[]>(key, old => replaceMessageInList(old, msg));
+        qc.setQueriesData<Record<string, Message>>({ queryKey: ["chat-last-messages"] }, old =>
+          old && old[msg.channel_id]?.id === msg.id ? { ...old, [msg.channel_id]: msg } : old
+        );
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_messages" }, (payload: RealtimeRow<Message>) => {
+        const msgId = payload.old?.id;
+        if (!msgId) return;
+        // DELETE payloads only carry the id, so sweep all message caches
+        qc.setQueriesData<Message[]>({ queryKey: ["chat-messages"] }, old => removeMessageFromList(old, msgId));
+        qc.setQueriesData<Message[]>({ queryKey: ["chat-thread"] }, old => removeMessageFromList(old, msgId));
         qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
-        qc.invalidateQueries({ queryKey: ["chat-read-status"] });
-        qc.invalidateQueries({ queryKey: ["chat-channels"] });
-        // Also update bubble unread
         qc.invalidateQueries({ queryKey: ["chat-bubble-unread"] });
-        // If the change is for the active channel, update messages too
-        if (changedChannelId && changedChannelId === activeChannelId) {
-          qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
-          qc.invalidateQueries({ queryKey: ["chat-reply-counts", activeChannelId] });
-          if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_reactions" }, (payload: RealtimeRow<Reaction>) => {
+        const reaction = payload.new as Reaction;
+        qc.setQueriesData<Reaction[]>({ queryKey: ["chat-reactions"] }, old => {
+          if (!old) return old;
+          // Replace both an already-known row and any optimistic temp duplicate
+          const rest = old.filter(r =>
+            r.id !== reaction.id &&
+            !(r.id.startsWith("temp-") && r.message_id === reaction.message_id && r.user_id === reaction.user_id && r.emoji === reaction.emoji)
+          );
+          return [...rest, reaction];
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_reactions" }, (payload: RealtimeRow<Reaction>) => {
+        const reactionId = payload.old?.id;
+        if (!reactionId) return;
+        qc.setQueriesData<Reaction[]>({ queryKey: ["chat-reactions"] }, old =>
+          old?.some(r => r.id === reactionId) ? old.filter(r => r.id !== reactionId) : old
+        );
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_read_status" }, (payload: RealtimeRow<{ channel_id: string; user_id: string; last_read_at: string }>) => {
+        const row = payload.new;
+        if (!row?.channel_id) return;
+        if (row.user_id !== user.id) {
+          // Live read receipts (double blue checkmarks)
+          qc.setQueryData<{ user_id: string; last_read_at: string }[]>(["chat-all-read-status", row.channel_id], old => {
+            if (!old) return old;
+            const rest = old.filter(r => r.user_id !== row.user_id);
+            return [...rest, { user_id: row.user_id!, last_read_at: row.last_read_at! }];
+          });
         }
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_reactions" }, () => {
-        if (activeChannelId) qc.invalidateQueries({ queryKey: ["chat-reactions", activeChannelId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_read_status" }, (payload: any) => {
-        const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
-        qc.invalidateQueries({ queryKey: ["chat-read-status"] });
-        if (changedChannelId && changedChannelId === activeChannelId) {
-          qc.invalidateQueries({ queryKey: ["chat-all-read-status", activeChannelId] });
-        }
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "chat_channel_members" }, (payload: any) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_channel_members" }, (payload: RealtimeRow<{ channel_id: string; user_id: string }>) => {
         const memberUserId = payload.new?.user_id || payload.old?.user_id;
         if (memberUserId === user.id || !memberUserId) {
           qc.invalidateQueries({ queryKey: ["chat-channels"] });
           qc.invalidateQueries({ queryKey: ["chat-memberships"] });
           qc.invalidateQueries({ queryKey: ["chat-bubble-unread"] });
         }
-        if (activeChannelId) {
-          const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
-          if (changedChannelId === activeChannelId) {
-            qc.invalidateQueries({ queryKey: ["chat-channel-members", activeChannelId] });
-          }
+        const changedChannelId = payload.new?.channel_id || payload.old?.channel_id;
+        if (changedChannelId) {
+          qc.invalidateQueries({ queryKey: ["chat-channel-members", changedChannelId] });
+          qc.invalidateQueries({ queryKey: ["chat-dm-members"] });
         }
       })
       .subscribe();
     return () => { supabase.removeChannel(globalChannel); };
-  }, [user, activeChannelId, threadParent?.id, qc]);
+  }, [user?.id, qc]);
 
-  // ─── Mutations ───
+  // ─── Mutations (optimistic — messages appear instantly, WhatsApp-style) ───
   const sendMsg = useMutation({
     mutationFn: async ({ content, parentId, imageUrl }: { content: string; parentId?: string; imageUrl?: string }) => {
-      await supabase.from("chat_messages").insert({
+      const { data, error } = await supabase.from("chat_messages").insert({
         channel_id: activeChannelId!,
         user_id: user!.id,
         content,
         parent_message_id: parentId ?? null,
         image_url: imageUrl ?? null,
-      } as any);
+      } as any).select().single();
+      if (error) throw error;
+      return data as Message;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
+    onMutate: async ({ content, parentId, imageUrl }) => {
+      const now = new Date().toISOString();
+      const temp: Message = {
+        id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        channel_id: activeChannelId!,
+        user_id: user!.id,
+        content,
+        image_url: imageUrl ?? null,
+        parent_message_id: parentId ?? null,
+        is_edited: false,
+        created_at: now,
+        updated_at: now,
+        pending: true,
+      };
+      const key = parentId ? ["chat-thread", parentId] : ["chat-messages", activeChannelId];
+      await qc.cancelQueries({ queryKey: key });
+      qc.setQueryData<Message[]>(key, old => [...(old ?? []), temp]);
+      if (!parentId) {
+        qc.setQueriesData<Record<string, Message>>({ queryKey: ["chat-last-messages"] }, old =>
+          old ? { ...old, [activeChannelId!]: temp } : old
+        );
+      }
+      return { tempId: temp.id, key };
+    },
+    onSuccess: (row, _vars, ctx) => {
+      qc.setQueryData<Message[]>(ctx.key, old => upsertMessageInList(old, row, ctx.tempId));
+      if (!row.parent_message_id) {
+        qc.setQueriesData<Record<string, Message>>({ queryKey: ["chat-last-messages"] }, old =>
+          old && old[row.channel_id]?.id === ctx.tempId ? { ...old, [row.channel_id]: row } : old
+        );
+      } else {
+        qc.setQueryData<Record<string, number>>(["chat-reply-counts", row.channel_id], old =>
+          old ? { ...old, [row.parent_message_id!]: (old[row.parent_message_id!] || 0) + 1 } : old
+        );
+      }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx) qc.setQueryData<Message[]>(ctx.key, old => removeMessageFromList(old, ctx.tempId));
       qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
-      if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
+      toast({ title: "Kunde inte skicka", description: "Meddelandet skickades inte – försök igen.", variant: "destructive" });
     },
   });
 
   const deleteMsg = useMutation({
     mutationFn: async (msgId: string) => {
-      await supabase.from("chat_messages").delete().eq("id", msgId);
+      const { error } = await supabase.from("chat_messages").delete().eq("id", msgId);
+      if (error) throw error;
+    },
+    onMutate: async (msgId: string) => {
+      const msgKey = ["chat-messages", activeChannelId];
+      const threadKey = threadParent ? ["chat-thread", threadParent.id] : null;
+      await qc.cancelQueries({ queryKey: msgKey });
+      const prevMsgs = qc.getQueryData<Message[]>(msgKey);
+      const prevThread = threadKey ? qc.getQueryData<Message[]>(threadKey) : undefined;
+      qc.setQueryData<Message[]>(msgKey, old => removeMessageFromList(old, msgId));
+      if (threadKey) qc.setQueryData<Message[]>(threadKey, old => removeMessageFromList(old, msgId));
+      return { msgKey, threadKey, prevMsgs, prevThread };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
       qc.invalidateQueries({ queryKey: ["chat-last-messages"] });
+    },
+    onError: (_err, _msgId, ctx) => {
+      if (ctx?.prevMsgs) qc.setQueryData(ctx.msgKey, ctx.prevMsgs);
+      if (ctx?.threadKey && ctx.prevThread) qc.setQueryData(ctx.threadKey, ctx.prevThread);
+      toast({ title: "Kunde inte ta bort", description: "Meddelandet kunde inte tas bort.", variant: "destructive" });
+    },
+  });
+
+  const editMsg = useMutation({
+    mutationFn: async ({ msgId, content }: { msgId: string; content: string }) => {
+      const { data, error } = await supabase.from("chat_messages").update({ content, is_edited: true }).eq("id", msgId).select().single();
+      if (error) throw error;
+      return data as Message;
+    },
+    onMutate: async ({ msgId, content }) => {
+      const patch = (old: Message[] | undefined) =>
+        old?.some(m => m.id === msgId) ? old.map(m => (m.id === msgId ? { ...m, content, is_edited: true } : m)) : old;
+      qc.setQueryData<Message[]>(["chat-messages", activeChannelId], patch);
+      if (threadParent) qc.setQueryData<Message[]>(["chat-thread", threadParent.id], patch);
+    },
+    onError: () => {
+      qc.invalidateQueries({ queryKey: ["chat-messages", activeChannelId] });
       if (threadParent) qc.invalidateQueries({ queryKey: ["chat-thread", threadParent.id] });
+      toast({ title: "Kunde inte redigera", description: "Ändringen sparades inte.", variant: "destructive" });
     },
   });
 
@@ -372,12 +629,29 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
     mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
       const existing = reactions.find(r => r.message_id === messageId && r.user_id === user!.id && r.emoji === emoji);
       if (existing) {
-        await supabase.from("chat_reactions").delete().eq("id", existing.id);
+        // Match on columns (not id) so optimistic temp rows can be toggled off safely
+        const { error } = await supabase.from("chat_reactions").delete().match({ message_id: messageId, user_id: user!.id, emoji });
+        if (error) throw error;
       } else {
-        await supabase.from("chat_reactions").insert({ message_id: messageId, user_id: user!.id, emoji });
+        const { error } = await supabase.from("chat_reactions").insert({ message_id: messageId, user_id: user!.id, emoji });
+        if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["chat-reactions", activeChannelId] }),
+    onMutate: async ({ messageId, emoji }) => {
+      const key = ["chat-reactions", activeChannelId];
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<Reaction[]>(key);
+      qc.setQueryData<Reaction[]>(key, old => {
+        const list = old ?? [];
+        const existing = list.find(r => r.message_id === messageId && r.user_id === user!.id && r.emoji === emoji);
+        if (existing) return list.filter(r => r.id !== existing.id);
+        return [...list, { id: `temp-${Date.now()}`, message_id: messageId, user_id: user!.id, emoji }];
+      });
+      return { key, prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(ctx.key, ctx.prev);
+    },
   });
 
   const updateReadStatus = useCallback(async (channelId: string) => {
@@ -399,13 +673,13 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
     const s = search.toLowerCase();
     return channels
       .filter(c => memberships.includes(c.id))
-      .filter(c => !s || c.name.toLowerCase().includes(s))
+      .filter(c => !s || getChannelDisplayName(c).toLowerCase().includes(s))
       .sort((a, b) => {
         const aTime = lastMessages[a.id]?.created_at || a.created_at;
         const bTime = lastMessages[b.id]?.created_at || b.created_at;
         return new Date(bTime).getTime() - new Date(aTime).getTime();
       });
-  }, [channels, memberships, search, lastMessages]);
+  }, [channels, memberships, search, lastMessages, getChannelDisplayName]);
 
   const handleSelectChannel = (id: string) => {
     setActiveChannelId(id);
@@ -413,20 +687,10 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
     setMobileShowChat(true);
   };
 
-  // Get display name for channel (for DMs, show other person)
-  const getChannelDisplayName = (ch: Channel) => {
-    if (ch.type === "dm") {
-      const otherMemberId = channelMembers.find(uid => uid !== user?.id) || "";
-      const otherProfile = profileMap.get(otherMemberId);
-      return otherProfile?.full_name || ch.name;
-    }
-    return ch.name;
-  };
-
   return (
     <div className={cn(
-      "flex rounded-xl border border-border overflow-hidden shadow-lg",
-      embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)]"
+      "flex overflow-hidden",
+      embedded ? "h-full" : "h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] rounded-xl border border-border shadow-lg"
     )}>
       {/* ─── Mobile layout (no resize) ─── */}
       <div className={cn("w-full flex flex-col bg-card md:hidden", mobileShowChat && "hidden")}>
@@ -439,6 +703,9 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
           showNewDm={showNewDm} setShowNewDm={setShowNewDm}
           profiles={profiles} memberships={memberships} channels={channels} qc={qc}
           onClose={onClose}
+          getChannelDisplayName={getChannelDisplayName}
+          dmPartnerByChannel={dmPartnerByChannel}
+          onlineUserIds={onlineUserIds}
         />
       </div>
       <div className={cn("w-full flex flex-col min-w-0 md:hidden", !mobileShowChat && "hidden")}>
@@ -448,8 +715,12 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
           replyCounts={replyCounts as Record<string, number>} readReceipts={readReceipts}
           threadParent={threadParent} threadMessages={threadMessages}
           setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
-          sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
+          sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction} editMsg={editMsg}
           activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+          getChannelDisplayName={getChannelDisplayName}
+          dmPartnerByChannel={dmPartnerByChannel}
+          onlineUserIds={onlineUserIds}
+          typingText={typingText} sendTyping={sendTyping}
           onLeaveChannel={() => { setActiveChannelId(null); setThreadParent(null); setMobileShowChat(false); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
         />
       </div>
@@ -466,6 +737,9 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
             showNewDm={showNewDm} setShowNewDm={setShowNewDm}
             profiles={profiles} memberships={memberships} channels={channels} qc={qc}
             onClose={onClose}
+            getChannelDisplayName={getChannelDisplayName}
+            dmPartnerByChannel={dmPartnerByChannel}
+            onlineUserIds={onlineUserIds}
           />
         </div>
         <div className="flex-1 flex flex-col min-w-0">
@@ -475,8 +749,12 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
             replyCounts={replyCounts as Record<string, number>} readReceipts={readReceipts}
             threadParent={threadParent} threadMessages={threadMessages}
             setThreadParent={setThreadParent} setMobileShowChat={setMobileShowChat}
-            sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction}
+            sendMsg={sendMsg} deleteMsg={deleteMsg} toggleReaction={toggleReaction} editMsg={editMsg}
             activeChannelId={activeChannelId} qc={qc} profiles={profiles}
+            getChannelDisplayName={getChannelDisplayName}
+            dmPartnerByChannel={dmPartnerByChannel}
+            onlineUserIds={onlineUserIds}
+            typingText={typingText} sendTyping={sendTyping}
             onLeaveChannel={() => { setActiveChannelId(null); setThreadParent(null); setMobileShowChat(false); qc.invalidateQueries({ queryKey: ["chat-channels"] }); qc.invalidateQueries({ queryKey: ["chat-memberships"] }); }}
           />
         </div>
@@ -486,7 +764,7 @@ export default function Chat({ embedded, onClose }: { embedded?: boolean; onClos
 }
 
 // ─── Conversation Sidebar (extracted) ───
-function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc, onClose }: any) {
+function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, profileMap, activeChannelId, unreadCounts, user, handleSelectChannel, showNewChannel, setShowNewChannel, showNewDm, setShowNewDm, profiles, memberships, channels, qc, onClose, getChannelDisplayName, dmPartnerByChannel, onlineUserIds }: any) {
   return (
     <>
       <div className="h-14 px-4 flex items-center justify-between bg-muted/50 border-b border-border">
@@ -514,6 +792,9 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
           const isActive = c.id === activeChannelId;
           const unread = unreadCounts[c.id] || 0;
           const isDm = c.type === "dm";
+          const displayName = getChannelDisplayName(c);
+          const partnerId = isDm ? dmPartnerByChannel.get(c.id) : null;
+          const partnerOnline = !!partnerId && onlineUserIds.has(partnerId);
           return (
             <button
               key={c.id}
@@ -523,14 +804,19 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
                 isActive ? "bg-primary/8" : "hover:bg-muted/50"
               )}
             >
-              <Avatar className="h-12 w-12 shrink-0">
-                <AvatarFallback className={cn("text-sm font-medium", isDm ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
-                  {isDm ? <MessageCircle className="h-5 w-5" /> : initials(c.name)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative shrink-0">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className={cn("text-sm font-medium", isDm ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
+                    {initials(displayName)}
+                  </AvatarFallback>
+                </Avatar>
+                {partnerOnline && (
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card" title="Online" />
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>{c.name}</span>
+                  <span className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>{displayName}</span>
                   {lastMsg && (
                     <span className={cn("text-[11px] shrink-0", unread > 0 ? "text-accent font-medium" : "text-muted-foreground")}>
                       {formatConversationTime(lastMsg.created_at)}
@@ -557,7 +843,7 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
                   </p>
                   {unread > 0 && (
                     <span className="ml-auto shrink-0 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
-                      {unread}
+                      {unread > 99 ? "99+" : unread}
                     </span>
                   )}
                 </div>
@@ -574,28 +860,73 @@ function ConversationSidebar({ search, setSearch, sortedChannels, lastMessages, 
 }
 
 // ─── Chat Main Area (extracted) ───
-function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, activeChannelId, qc, profiles, onLeaveChannel }: any) {
+function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions, profileMap, replyCounts, readReceipts, threadParent, threadMessages, setThreadParent, setMobileShowChat, sendMsg, deleteMsg, toggleReaction, editMsg, activeChannelId, qc, profiles, onLeaveChannel, getChannelDisplayName, dmPartnerByChannel, onlineUserIds, typingText, sendTyping }: any) {
   const mentionProfiles = useMemo(() => {
     return profiles.filter((p: Profile) => channelMembers.includes(p.user_id) && p.user_id !== user?.id);
   }, [profiles, channelMembers, user?.id]);
+
+  // Drag-and-drop image upload (WhatsApp-style drop zone)
+  const [dragOver, setDragOver] = useState(false);
+  const [droppedFile, setDroppedFile] = useState<File | null>(null);
+  const dragDepth = useRef(0);
+
+  const isDm = activeChannel?.type === "dm";
+  const displayName = activeChannel ? getChannelDisplayName(activeChannel) : "";
+  const partnerId = isDm && activeChannel ? dmPartnerByChannel.get(activeChannel.id) : null;
+  const partnerOnline = !!partnerId && onlineUserIds.has(partnerId);
+  const subtitle = typingText
+    ? typingText
+    : activeChannel?.type === "group"
+    ? `${channelMembers.length} medlemmar`
+    : partnerOnline
+    ? "Online"
+    : activeChannel?.description || "";
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragDepth.current = 0;
+    setDragOver(false);
+    const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith("image/"));
+    if (file) setDroppedFile(file);
+  };
+
   return (
     <div className="flex-1 flex min-w-0 h-full">
-      <div className="flex-1 flex flex-col min-w-0">
+      <div
+        className="flex-1 flex flex-col min-w-0 relative"
+        onDragEnter={activeChannel ? (e => { e.preventDefault(); dragDepth.current++; if (e.dataTransfer.types.includes("Files")) setDragOver(true); }) : undefined}
+        onDragLeave={activeChannel ? (() => { dragDepth.current = Math.max(0, dragDepth.current - 1); if (dragDepth.current === 0) setDragOver(false); }) : undefined}
+        onDragOver={activeChannel ? (e => e.preventDefault()) : undefined}
+        onDrop={activeChannel ? handleDrop : undefined}
+      >
+        {dragOver && activeChannel && (
+          <div className="absolute inset-0 z-30 bg-primary/10 backdrop-blur-[2px] border-2 border-dashed border-primary rounded-lg m-2 flex items-center justify-center pointer-events-none">
+            <div className="bg-card border border-border rounded-xl shadow-lg px-6 py-4 text-center">
+              <ImagePlus className="h-8 w-8 text-primary mx-auto mb-2" />
+              <p className="text-sm font-medium">Släpp bilden här för att skicka</p>
+            </div>
+          </div>
+        )}
         {activeChannel ? (
           <>
             <div className="h-14 px-3 flex items-center gap-3 bg-muted/50 border-b border-border shrink-0">
               <button className="md:hidden p-1" onClick={() => setMobileShowChat(false)}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <Avatar className="h-10 w-10 shrink-0">
-                <AvatarFallback className={cn("text-sm font-medium", activeChannel.type === "dm" ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
-                  {activeChannel.type === "dm" ? <MessageCircle className="h-4 w-4" /> : initials(activeChannel.name)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative shrink-0">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className={cn("text-sm font-medium", isDm ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary")}>
+                    {initials(displayName)}
+                  </AvatarFallback>
+                </Avatar>
+                {partnerOnline && (
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" title="Online" />
+                )}
+              </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm truncate">{activeChannel.name}</h3>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {activeChannel.type === "group" ? `${channelMembers.length} medlemmar` : activeChannel.description || ""}
+                <h3 className="font-semibold text-sm truncate">{displayName}</h3>
+                <p className={cn("text-[11px] truncate", typingText ? "text-primary italic" : "text-muted-foreground")}>
+                  {subtitle}
                 </p>
               </div>
               {activeChannel.type === "group" && (
@@ -619,6 +950,7 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
               }} />
               <MessageList
+                key={activeChannel.id}
                 messages={messages}
                 reactions={reactions}
                 profileMap={profileMap}
@@ -629,9 +961,17 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
                 onReply={setThreadParent}
                 onReact={(msgId: string, emoji: string) => toggleReaction.mutate({ messageId: msgId, emoji })}
                 onDelete={(msgId: string) => deleteMsg.mutate(msgId)}
+                onEdit={(msgId: string, content: string) => editMsg.mutate({ msgId, content })}
               />
             </div>
-            <ComposeBar onSend={(content: string, imageUrl?: string) => sendMsg.mutate({ content, imageUrl })} userId={user?.id} mentionProfiles={mentionProfiles} />
+            <ComposeBar
+              onSend={(content: string, imageUrl?: string) => sendMsg.mutate({ content, imageUrl })}
+              userId={user?.id}
+              mentionProfiles={mentionProfiles}
+              onTyping={sendTyping}
+              droppedFile={droppedFile}
+              onDroppedFileConsumed={() => setDroppedFile(null)}
+            />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -661,16 +1001,16 @@ function ChatMainArea({ activeChannel, user, channelMembers, messages, reactions
               <MessageBubble key={m.id} msg={m} profile={profileMap.get(m.user_id)} userId={user?.id} reactions={[]} compact isGroupChat={true} onDelete={() => deleteMsg.mutate(m.id)} allProfileMap={profileMap} />
             ))}
           </ScrollArea>
-          <ComposeBar onSend={(content: string, imageUrl?: string) => sendMsg.mutate({ content, parentId: threadParent.id, imageUrl })} userId={user?.id} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} />
+          <ComposeBar onSend={(content: string, imageUrl?: string) => sendMsg.mutate({ content, parentId: threadParent.id, imageUrl })} userId={user?.id} placeholder="Svara i tråd..." mentionProfiles={mentionProfiles} onTyping={sendTyping} />
         </div>
       )}
     </div>
   );
 }
 
-// ─── Message List with date separators ───
+// ─── Message List with date separators + smart scrolling ───
 function MessageList({
-  messages, reactions, profileMap, userId, replyCounts, readReceipts, isGroupChat, onReply, onReact, onDelete
+  messages, reactions, profileMap, userId, replyCounts, readReceipts, isGroupChat, onReply, onReact, onDelete, onEdit
 }: {
   messages: Message[];
   reactions: Reaction[];
@@ -682,15 +1022,84 @@ function MessageList({
   onReply: (msg: Message) => void;
   onReact: (msgId: string, emoji: string) => void;
   onDelete: (msgId: string) => void;
+  onEdit: (msgId: string, content: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const nearBottomRef = useRef(true);
+  const firstRenderRef = useRef(true);
+  const prevLenRef = useRef(0);
+  const [nearBottom, setNearBottom] = useState(true);
+  const [newCount, setNewCount] = useState(0);
 
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  // Only auto-scroll when the user is already at the bottom (or just sent a
+  // message themselves) — never yank them away from reading history.
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages.length]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const len = messages.length;
+    const prevLen = prevLenRef.current;
+    prevLenRef.current = len;
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false;
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    if (len > prevLen) {
+      const last = messages[len - 1];
+      if (nearBottomRef.current || last?.user_id === userId) {
+        requestAnimationFrame(() => scrollToBottom("smooth"));
+        setNewCount(0);
+      } else {
+        setNewCount(c => c + (len - prevLen));
+      }
+    }
+  }, [messages, userId, scrollToBottom]);
+
+  // Keep pinned to bottom when content grows (e.g. images finish loading)
+  useEffect(() => {
+    const content = contentRef.current;
+    const el = scrollRef.current;
+    if (!content || !el) return;
+    const ro = new ResizeObserver(() => {
+      if (nearBottomRef.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, []);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nb = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    nearBottomRef.current = nb;
+    setNearBottom(nb);
+    if (nb) setNewCount(0);
+  };
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 relative z-10">
+    <>
+    {!nearBottom && (
+      <button
+        onClick={() => { scrollToBottom("smooth"); setNewCount(0); }}
+        className="absolute bottom-4 right-4 z-20 h-9 w-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-lg transition-all"
+        aria-label="Scrolla till botten"
+      >
+        <ChevronDown className="h-5 w-5" />
+        {newCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1 shadow-sm">
+            {newCount > 99 ? "99+" : newCount}
+          </span>
+        )}
+      </button>
+    )}
+    <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 relative z-10">
+    <div ref={contentRef}>
       {messages.map((msg, i) => {
         const prev = messages[i - 1];
         const sameUser = prev && prev.user_id === msg.user_id;
@@ -730,6 +1139,7 @@ function MessageList({
                   onReply={() => onReply(msg)}
                   onReact={(emoji) => onReact(msg.id, emoji)}
                   onDelete={() => onDelete(msg.id)}
+                  onEdit={(content) => onEdit(msg.id, content)}
                   allProfileMap={profileMap}
                 />
               </div>
@@ -745,12 +1155,14 @@ function MessageList({
         </div>
       )}
     </div>
+    </div>
+    </>
   );
 }
 
 // ─── Message Bubble (WhatsApp style) ───
 function MessageBubble({
-  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete, allProfileMap
+  msg, profile, userId, reactions = [], grouped, compact, replyCount, readReceipt, isGroupChat, onReply, onReact, onDelete, onEdit, allProfileMap
 }: {
   msg: Message;
   profile?: Profile;
@@ -764,11 +1176,30 @@ function MessageBubble({
   onReply?: () => void;
   onReact?: (emoji: string) => void;
   onDelete?: () => void;
+  onEdit?: (content: string) => void;
   allProfileMap?: Map<string, Profile>;
 }) {
   const name = profile?.full_name || "Okänd";
   const isOwn = msg.user_id === userId;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(msg.content);
+  const editRef = useRef<HTMLTextAreaElement>(null);
+
+  const startEdit = () => {
+    setEditText(msg.content);
+    setEditing(true);
+    setTimeout(() => {
+      editRef.current?.focus();
+      editRef.current?.setSelectionRange(msg.content.length, msg.content.length);
+    }, 0);
+  };
+
+  const saveEdit = () => {
+    const t = editText.trim();
+    if (t && t !== msg.content) onEdit?.(t);
+    setEditing(false);
+  };
 
   const groupedReactions = useMemo(() => {
     const map = new Map<string, { emoji: string; count: number; hasOwn: boolean }>();
@@ -818,6 +1249,25 @@ function MessageBubble({
         )}
 
         {/* Message content + inline time */}
+        {editing ? (
+          <div className="min-w-[180px]">
+            <textarea
+              ref={editRef}
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEdit(); }
+                if (e.key === "Escape") { e.preventDefault(); setEditing(false); }
+              }}
+              rows={Math.min(5, Math.max(1, editText.split("\n").length))}
+              className="w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-[13.5px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <div className="flex justify-end gap-1.5 mt-1">
+              <button onClick={() => setEditing(false)} className="text-[11px] px-2 py-0.5 rounded hover:bg-muted text-muted-foreground">Avbryt</button>
+              <button onClick={saveEdit} disabled={!editText.trim()} className="text-[11px] px-2 py-0.5 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">Spara</button>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-end gap-2">
           {msg.content && (
             <div className={cn(
@@ -832,7 +1282,8 @@ function MessageBubble({
           <span className="inline-flex items-center gap-0.5 shrink-0 self-end translate-y-0.5 ml-1">
             {msg.is_edited && <span className="text-[10px] text-muted-foreground/60 italic mr-0.5">redigerad</span>}
             <span className={cn("text-[10px] leading-none", isOwn ? "text-muted-foreground/60" : "text-muted-foreground/60")}>{formatMsgTime(msg.created_at)}</span>
-            {isOwn && readReceipt && (
+            {isOwn && msg.pending && <Clock className="h-3 w-3 text-muted-foreground/50" />}
+            {isOwn && !msg.pending && readReceipt && (
               readReceipt === "read_all"
                 ? <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
                 : readReceipt === "read_some"
@@ -841,6 +1292,7 @@ function MessageBubble({
             )}
           </span>
         </div>
+        )}
 
         {/* Link preview (WhatsApp-style) for first URL in message */}
         {msg.content && <LinkPreview content={msg.content} isOwn={isOwn} />}
@@ -863,10 +1315,13 @@ function MessageBubble({
           </PopoverContent>
         </Popover>
         {onReply && (
-          <button onClick={onReply} className="px-1.5 py-1 hover:bg-accent text-foreground"><Reply className="h-3.5 w-3.5" /></button>
+          <button onClick={onReply} className="px-1.5 py-1 hover:bg-accent text-foreground" title="Svara i tråd"><Reply className="h-3.5 w-3.5" /></button>
         )}
-        {isOwn && onDelete && (
-          <button onClick={onDelete} className="px-1.5 py-1 hover:bg-destructive/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+        {isOwn && !msg.pending && onEdit && msg.content && (
+          <button onClick={startEdit} className="px-1.5 py-1 hover:bg-accent text-foreground" title="Redigera"><Pencil className="h-3.5 w-3.5" /></button>
+        )}
+        {isOwn && !msg.pending && onDelete && (
+          <button onClick={onDelete} className="px-1.5 py-1 hover:bg-destructive/10 text-destructive" title="Ta bort"><Trash2 className="h-3.5 w-3.5" /></button>
         )}
       </div>
 
@@ -1011,7 +1466,7 @@ function MentionRenderer({ content, profileMap, currentUserId }: { content: stri
 }
 
 // ─── Compose Bar (WhatsApp style) ───
-function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userId }: { onSend: (content: string, imageUrl?: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[]; userId?: string }) {
+function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userId, onTyping, droppedFile, onDroppedFileConsumed }: { onSend: (content: string, imageUrl?: string) => void; disabled?: boolean; placeholder?: string; mentionProfiles?: Profile[]; userId?: string; onTyping?: () => void; droppedFile?: File | null; onDroppedFileConsumed?: () => void }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1032,6 +1487,7 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userI
     const val = e.target.value;
     const cursor = e.target.selectionStart || 0;
     setText(val);
+    if (val.trim()) onTyping?.();
     const textBefore = val.slice(0, cursor);
     const atMatch = textBefore.match(/@([^\s@]*)$/);
     if (atMatch) {
@@ -1060,13 +1516,11 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userI
     }, 0);
   };
 
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !userId) return;
-    e.target.value = "";
-    if (!file.type.startsWith("image/")) return;
+  const uploadImage = useCallback(async (file: File) => {
+    if (!userId || !file.type.startsWith("image/")) return;
     setUploading(true);
-    const path = `${userId}/${Date.now()}_${file.name}`;
+    const safeName = file.name && file.name !== "image.png" ? file.name : `bild_${Date.now()}.png`;
+    const path = `${userId}/${Date.now()}_${safeName}`;
     const { error } = await supabase.storage.from("chat-images").upload(path, file);
     if (error) {
       setUploading(false);
@@ -1075,6 +1529,28 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userI
     const { data: urlData } = supabase.storage.from("chat-images").getPublicUrl(path);
     setPendingImage(urlData.publicUrl);
     setUploading(false);
+  }, [userId]);
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) uploadImage(file);
+  };
+
+  // Images dropped on the chat surface (drag-and-drop)
+  useEffect(() => {
+    if (!droppedFile) return;
+    uploadImage(droppedFile);
+    onDroppedFileConsumed?.();
+  }, [droppedFile, uploadImage, onDroppedFileConsumed]);
+
+  // Paste image straight from the clipboard (WhatsApp-style)
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const file = Array.from(e.clipboardData.files).find(f => f.type.startsWith("image/"));
+    if (file) {
+      e.preventDefault();
+      uploadImage(file);
+    }
   };
 
   const handleSend = () => {
@@ -1158,6 +1634,7 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userI
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder={disabled ? "Gå med i gruppen för att skriva..." : (placeholder || "Skriv ett meddelande")}
           disabled={disabled}
           rows={1}

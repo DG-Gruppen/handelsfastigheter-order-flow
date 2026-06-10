@@ -1,9 +1,9 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from "react";
-import { MessageSquare, X } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { FloatingWindow } from "@/components/chat/FloatingWindow";
 
 const Chat = lazy(() => import("@/pages/Chat"));
 
@@ -11,6 +11,7 @@ export default function ChatBubble() {
   const [open, setOpen] = useState(false);
   const { user, profile } = useAuth();
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const qc = useQueryClient();
 
   useEffect(() => {
     supabase
@@ -45,26 +46,27 @@ export default function ChatBubble() {
       const readMap = new Map<string, string>();
       readStatuses?.forEach((rs) => readMap.set(rs.channel_id, rs.last_read_at));
 
-      // Count unread messages per channel
-      let total = 0;
-      for (const m of memberships) {
-        const lastRead = readMap.get(m.channel_id);
-        let query = supabase
-          .from("chat_messages")
-          .select("id", { count: "exact", head: true })
-          .eq("channel_id", m.channel_id)
-          .is("parent_message_id", null)
-          .neq("user_id", user.id);
-        if (lastRead) {
-          query = query.gt("created_at", lastRead);
-        }
-        const { count } = await query;
-        total += count || 0;
-      }
-      return total;
+      // Count unread messages per channel (HEAD requests, run in parallel)
+      const counts = await Promise.all(
+        memberships.map(async (m) => {
+          const lastRead = readMap.get(m.channel_id);
+          let query = supabase
+            .from("chat_messages")
+            .select("id", { count: "exact", head: true })
+            .eq("channel_id", m.channel_id)
+            .is("parent_message_id", null)
+            .neq("user_id", user.id);
+          if (lastRead) {
+            query = query.gt("created_at", lastRead);
+          }
+          const { count } = await query;
+          return count || 0;
+        })
+      );
+      return counts.reduce((sum, c) => sum + c, 0);
     },
     enabled: !!user && !open,
-    refetchInterval: 30000, // Poll every 30 seconds
+    refetchInterval: 60000, // Fallback poll; realtime below keeps it fresh
   });
 
   // Subscribe to new messages for real-time badge updates
@@ -75,15 +77,16 @@ export default function ChatBubble() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages" },
-        () => {
-          // Invalidate will be handled by queryClient in the parent
+        (payload: { new?: { user_id?: string } }) => {
+          if (payload.new?.user_id === user.id) return;
+          qc.invalidateQueries({ queryKey: ["chat-bubble-unread"] });
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, open]);
+  }, [user, open, qc]);
 
   const handleClose = useCallback(() => setOpen(false), []);
 
@@ -107,27 +110,23 @@ export default function ChatBubble() {
         </button>
       )}
 
-      {/* Chat panel — no extra header, Chat component has its own */}
+      {/* Draggable, resizable chat window */}
       {open && (
-        <div
-          className="fixed bottom-20 md:bottom-6 right-4 z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
-          style={{
-            width: "min(calc(100vw - 2rem), 700px)",
-            height: "min(80vh, 640px)",
-          }}
+        <FloatingWindow
+          title="SHF Chatt"
+          icon={<MessageSquare className="h-4 w-4 text-primary" />}
+          onClose={handleClose}
         >
-          <div className="flex-1 min-h-0">
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              }
-            >
-              <Chat embedded onClose={handleClose} />
-            </Suspense>
-          </div>
-        </div>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            }
+          >
+            <Chat embedded />
+          </Suspense>
+        </FloatingWindow>
       )}
     </>
   );
