@@ -20,20 +20,39 @@ const MAX_FAVORITES = 8;
 
 async function fetchToolsData(userId: string | undefined) {
   const [toolsRes, favsRes, ownersRes, profilesRes] = await Promise.all([
-    supabase
-      .from("tools" as any)
-      .select("*")
-      .eq("is_active", true)
-      .order("name"),
+    supabase.from("tools" as any).select("*").eq("is_active", true).order("name"),
     userId
       ? supabase.from("user_tool_favorites" as any).select("tool_id").eq("user_id", userId)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as any[] }),
+    supabase.from("tool_owners" as any).select("tool_id, profile_id"),
+    supabase.from("profiles").select("id, full_name"),
   ]);
+
+  const profMap = new Map<string, string>();
+  for (const p of (profilesRes.data ?? []) as { id: string; full_name: string | null }[]) {
+    if (p.full_name) profMap.set(p.id, p.full_name);
+  }
+  const ownersByTool = new Map<string, string[]>();
+  for (const link of ((ownersRes.data ?? []) as unknown) as { tool_id: string; profile_id: string }[]) {
+    const name = profMap.get(link.profile_id);
+    if (!name) continue;
+    const arr = ownersByTool.get(link.tool_id) ?? [];
+    arr.push(name);
+    ownersByTool.set(link.tool_id, arr);
+  }
+
+  const rawTools = ((toolsRes.data ?? []) as unknown) as Tool[];
+  const tools = rawTools.map(t => ({
+    ...t,
+    owner_names: ownersByTool.get(t.id) ?? (t.owner_id && profMap.has(t.owner_id) ? [profMap.get(t.owner_id)!] : []),
+  }));
+
   return {
-    tools: ((toolsRes.data as unknown) as Tool[]) ?? [],
+    tools,
     favoriteIds: new Set(((favsRes.data as any[]) ?? []).map((f: any) => f.tool_id)) as Set<string>,
   };
 }
+
 
 export default function Tools() {
   const { user } = useAuth();
