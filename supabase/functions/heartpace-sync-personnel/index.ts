@@ -65,12 +65,23 @@ Deno.serve(async (req) => {
     }
     const active = all.filter((e) => e?.is_current === true && e?.user_account?.account_status === 1);
 
-    // 2) Bygg fältmap per Heartpace user_account.uuid
+    // 2a) Slå upp lokala avdelningsnamn via heartpace_uuid
+    const { data: localDepts } = await supa
+      .from("departments")
+      .select("name, heartpace_uuid")
+      .not("heartpace_uuid", "is", null);
+    const deptNameByHpUuid = new Map<string, string>();
+    for (const d of localDepts ?? []) {
+      if (d.heartpace_uuid) deptNameByHpUuid.set(String(d.heartpace_uuid), d.name);
+    }
+
+    // 2b) Bygg fältmap per Heartpace user_account.uuid
     type HpFields = {
       title: string | null;
       phone: string | null;
       birthday: string | null;
       start_date: string | null;
+      department: string | null;
     };
     const byHpId = new Map<string, HpFields>();
     for (const emp of active) {
@@ -80,11 +91,17 @@ Deno.serve(async (req) => {
       const ji = jis.find((j) => j?.is_current) ?? jis[0];
 
       const phone = pd.work_phone || pd.mobile_work_phone || pd.mobile_phone || null;
+      const hpDeptUuid: string | undefined = ji?.department?.uuid;
+      const hpDeptName: string | null = ji?.department?.name ?? null;
+      // Föredra lokalt avdelningsnamn (matchat via heartpace_uuid), fall tillbaka till Heartpaces namn
+      const department = (hpDeptUuid && deptNameByHpUuid.get(hpDeptUuid)) || hpDeptName;
+
       const fields: HpFields = {
         title: ji?.position?.name ?? null,
         phone: phone ? String(phone).trim() : null,
         birthday: toDate(pd.birth_date),
         start_date: toDate(emp?.start_date) ?? toDate(ua?.hire_date) ?? toDate(ua?.actual_hire_date),
+        department: department ?? null,
       };
       const hpId: string | undefined = ua.uuid || (ua.id != null ? String(ua.id) : undefined);
       if (hpId) byHpId.set(hpId, fields);
