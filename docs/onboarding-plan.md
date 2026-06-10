@@ -58,21 +58,22 @@ Onboardingen startar **inte** hos HR — den startar hos närmaste chef efter en
 
 ---
 
-## 2. Ansvariga & uppgiftsgrupper enligt dokumentet
+## 2. Ansvariga & uppgiftsgrupper
 
-- **Petra/HR** — registrering, avtal, försäkringar, anställningsförteckning, org-schema
-- **Fastighetssnabben (Agnes Eriksson)** — Collectum, Spiris tid/utlägg
-- **Närmaste chef** — info till org, välkomstmejl, introduktion, lunch, blomma, dator/mobil-beställning, ID06
-- **Christel Johansson** — nycklar/passerkort, Uniguide, What's Up Kris, fastighetslistor
-- **Emma Lundberg** — Rillion, Vitec/3L, Rekyl, IT-hotellet, bank
-- **Marit Karlsson** — Creditsafe
-- **Wilma Norin** — Momentum
-- **Jörgen Seegh** — Webport, Bereko, iBinder, Metry
-- **Pernilla Kjellén** — Vyer
-- **Erika Venäläinen** — Zendesk
-- **Inga Påhlsson** — kontaktuppgifter på SHF:s webbsida
+**Princip:** Inga personnamn hårdkodas i mallen. Word-dokumentets namnlista (Petra, Emma, Marit, Wilma, Jörgen, Pernilla, Erika, Christel, Inga, Agnes m.fl.) speglar bara **vem som råkar vara systemägare idag** — och de finns redan registrerade som ägare på respektive verktyg i `/verktyg` (`tool_owners`).
 
-Många är redan **systemägare på `/verktyg`** → vi kan auto-härleda ansvariga från `tool_owners`.
+Mallen pekar därför på **roll, verktyg eller relation**, inte på person:
+
+| Källa | Används för | Exempel från Word-dokumentet |
+|---|---|---|
+| `role: hr` | HR-uppgifter (avtal, försäkringar, Heartpace-registrering, anställningsförteckning) | Petra |
+| `tool_owner` (via `tool_id`) | Allt som rör behörighet/upplägg i ett specifikt system | Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, Webbsida, Nycklar/passerkort, What's Up Kris, Fastighetslistor |
+| `nearest_manager` | Allt chefen själv ska göra | Välkomstmejl, lunch, blomma, introduktion, info till org |
+| `role: it` | Generiska IT-uppgifter (dator, mobil, konton) | Hanteras via `/onboarding`-orderflödet |
+
+Allt som i Word-dokumentet är taggat på en specifik person (Christel → nycklar, Inga → webbsida, Agnes → Spiris/Collectum osv.) mappas via att **det "verktyget" finns i `/verktyg`** och att personen står som `tool_owner`. Saknas något som verktyg så skapas det där — det är enda stället där "ägaren" definieras.
+
+**Konsekvens:** Byter SHF systemägare i `/admin → Verktyg` följer alla framtida onboardings/offboardings med automatiskt. Word-dokumentet behöver aldrig synkas mot koden.
 
 ---
 
@@ -96,15 +97,16 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 
 | `assignee_source` | Betydelse | Exempel |
 |---|---|---|
-| `static_profile` | Fast person (`profile_id`) | "Petra/HR registrerar avtal" |
 | `tool_owner` | Slå upp ägare(n) till verktyg `tool_id` | "Behörighet i Creditsafe" → ägaren i `tools` |
 | `nearest_manager` | Nyanställdas chef från Heartpace | "Boka lunch första dagen" |
 | `role` | Härled från grupp (HR-grupp, IT-grupp) | "Lägg upp i Heartpace" → HR-gruppen |
 
+> **`static_profile` används inte i mallarna.** Vi tillåter inte att en enskild persons namn skrivs in på en mall-task — det skulle återskapa Word-dokumentets underhållsproblem. Behövs en specifik person som ansvarig så är hen ägare till motsvarande verktyg, punkt.
+
 ### Vinster
 - Byter man systemägare i `/admin → Verktyg` ändras automatiskt vem som får framtida onboarding-mejl — ingen mall att uppdatera.
 - Flera ägare per verktyg (`tool_owners` är many-to-many) → flera mottagare för samma uppgift utan dubbletter.
-- Mallen blir kortare: istället för "Emma Lundberg → Rillion, Vitec/3L, Rekyl, IT-hotellet" får vi en rad per verktyg som pekar på `tool_id`, och systemet **grupperar mejlen per ansvarig** vid utskick.
+- Mallen blir kortare och **personoberoende**: en rad per verktyg som pekar på `tool_id`, systemet grupperar mejlen per ansvarig vid utskick.
 - Snapshot vid skapande: när en onboarding-instans skapas resolvas alla `assignee_source` till konkreta `assignee_profile_id` på taskraden, så senare ägarbyten **inte** påverkar pågående onboardings.
 
 ### Mejlmallens placeholders utökas
@@ -112,23 +114,21 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 - `[ansvarig]` — mottagarens förnamn
 - Befintliga: `[namn]`, `[startdatum]`, `[befattning]`, `[chef]`
 
-### Mall-rader som blir `tool_owner`
-| Verktyg på `/verktyg` | Ägare idag |
-|---|---|
-| Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank | Emma Lundberg |
-| Creditsafe | Marit Karlsson |
-| Momentum | Wilma Norin |
-| Webport, Bereko, iBinder, Metry | Jörgen Seegh |
-| Vyer | Pernilla Kjellén |
-| Zendesk | Erika Venäläinen |
-| Uniguide | Christel Johansson |
-| Spiris, Collectum | Fastighetssnabben (Agnes) |
+### Förutsättningar i `/verktyg` innan mallen kan rullas ut
+Varje system/uppgift som Word-dokumentet räknar upp behöver finnas som verktyg med rätt ägare. Lista att checka av:
 
-### Mall-rader som förblir statiska eller `role`
-- HR-arbete (avtal, försäkringar, anställningsförteckning) → `role: HR`
-- Närmaste chefs-uppgifter (välkomstmejl, lunch, blomma, introduktion) → `nearest_manager`
-- Christels icke-systemuppgifter (nycklar, What's Up Kris) → `static_profile`
-- Webbsida (Inga Påhlsson) → `static_profile` *(eller skapa "SHF webb" som verktyg — se öppen fråga 5)*
+- **System med befintlig ägare:** Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum.
+- **Behöver troligen läggas till som "verktyg" i `/verktyg`** för att kunna auto-härleda:
+  - SHF:s webbsida (kontaktuppgifter)
+  - Nycklar & passerkort
+  - What's Up Kris
+  - Fastighetslistor
+
+När dessa finns med ägare räcker det att mallen pekar på `tool_id` — inga personnamn någonstans.
+
+### Mall-rader som inte är `tool_owner`
+- HR-arbete (avtal, försäkringar, anställningsförteckning, Heartpace-registrering) → `role: hr`
+- Närmaste chefs-uppgifter (välkomstmejl, lunch, blomma, introduktion, info till org) → `nearest_manager`
 
 ---
 
@@ -140,10 +140,9 @@ onboarding_templates
 
 onboarding_template_tasks
   id, template_id, section, title, description, sort_order,
-  assignee_source,               -- 'static_profile' | 'tool_owner' | 'nearest_manager' | 'role'
-  assignee_profile_id  nullable, -- för static_profile
+  assignee_source,               -- 'tool_owner' | 'nearest_manager' | 'role'
   assignee_tool_id     nullable, -- för tool_owner
-  assignee_role        nullable, -- för role (t.ex. 'hr')
+  assignee_role        nullable, -- för role (t.ex. 'hr', 'it')
   is_optional          bool,     -- "om aktuellt"
   email_template_key   nullable  -- om vi vill ha tasks-specifik mejltext
 
@@ -219,13 +218,13 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 > **Besvarade 2026-06-10:**
 > - ✅ *Vem får initiera?* Alla chefer. Ingen separat rekryteringsrätt-roll i nuläget — kan införas retroaktivt vid behov.
 > - ✅ *Timing för chef-tasks?* Inga tasks aktiveras förrän HR bekräftat i Heartpace (Fas 2). Fas 1 är endast registrering, status `pending_hr`.
+> - ✅ *Statiska personnamn i mallen?* Nej. Allt auto-härleds från `tool_owners` / `role` / `nearest_manager`. Saknade "verktyg" (webbsida, nycklar, What's Up Kris, fastighetslistor) läggs upp i `/verktyg` med ägare.
 
 1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
 2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
 3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): kryssas av HR vid start, eller skapas alltid och ansvarig markerar "ej aktuellt"?
 4. **In-app-notiser** utöver mejl? (Vi har redan `notifications`-tabellen.)
-5. **SHF webbsida som verktyg?** Skulle göra även Ingas uppgift till `tool_owner`.
-6. **Christels uppgift "förändringar i fastighetslistor"** — engångs per onboarding eller löpande process? (Påverkar om den hör hemma i mallen.)
+5. **Fastighetslistor som löpande process?** Ska "förändringar i fastighetslistor" trigga vid varje onboarding, eller är det en stående uppgift som inte hör hemma i mallen?
 
 ---
 
