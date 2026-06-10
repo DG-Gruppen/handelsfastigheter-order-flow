@@ -271,6 +271,19 @@ Drawer/dialog för redigering:
 - **Kopplade ägarskap:** läs-bara lista över alla `tool_owners` och `responsibility_owners` där kontakten står som ägare, med länkar till respektive verktyg/område. Gör det enkelt att se *varför* en kontakt finns i systemet och vilka mejl hen mottar.
 - **Användningshistorik:** antal pågående/completed onboardings där kontakten är ansvarig (via snapshot i `onboarding_tasks` + `onboarding_email_log`).
 
+**Implementation (Etapp 1, första leverans):**
+
+- **Route:** `/admin/onboarding` → flik `Externa kontakter` (default-flik om inga mallar finns ännu). Komponent: `src/pages/admin/onboarding/ExternalContactsTab.tsx`.
+- **Data:** `external_contacts` (id, full_name, email, organization, role_description, is_active, created_at, updated_at) + RLS som tillåter läs/skriv för admin- och HR-gruppen samt superadmin. Unikt index på `lower(email)`.
+- **CRUD:**
+  - **Lista:** React Query (`useExternalContacts`) med sortering på namn, kolumner Namn / Organisation / E-post / Roll / Aktiv / antal kopplingar. Inaktiva visas nedtonat och kan filtreras bort via toggle.
+  - **Skapa/Redigera:** drawer (shadcn `Sheet`) med formulär, sparas via Supabase upsert. Optimistisk uppdatering + toast.
+  - **Radera:** soft delete genom `is_active = false`. Hård radering tillåts endast om inga `tool_owners`/`responsibility_owners` pekar på kontakten — annars visas dialog med antal kopplingar och uppmaning att flytta dem först.
+- **Sök:** debounced (200 ms) textfält ovanför tabellen, ILIKE-matchning mot `full_name`, `email`, `organization`, `role_description`. Resultat-count visas bredvid sökfältet. Tom-state med CTA "Lägg till första externa kontakten".
+- **Validering:** zod-schema (`externalContactSchema`) — `full_name` 2–100 tecken (trim), `email` giltig + max 255, `organization` valfri max 100, `role_description` valfri max 200. Dubblettkontroll på e-post (case-insensitive) både i klient (mot cache) och via DB-constraint; visa fältfel om kollision. Alla fält trimmas före insert.
+- **Kopplade ägarskap:** drawern hämtar `tool_owners` + `responsibility_owners` joinat mot `tools` resp. `responsibility_areas`. Klick på rad navigerar till respektive admin-vy.
+- **Behörighet:** sidan skyddas via `RequireRole` (admin/HR/superadmin). RLS på `external_contacts` är sanningskällan; UI gömmer bara knappar.
+
 > **Syfte:** Samla alla externa parter på ett ställe utan att blanda in dem i personalkatalogen eller behöva ge dem inloggning. Används idag för Agnes (Fastighetssnabben → Spiris/Collectum) men är generisk för framtida revisorer, försäkringsmäklare m.m. E-postadressen är nyckeln för utskick — ändras den uppdateras framtida mallar automatiskt. Pågående onboardings påverkas inte pga snapshot i `onboarding_tasks`.
 
 
