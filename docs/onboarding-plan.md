@@ -97,15 +97,16 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 
 | `assignee_source` | Betydelse | Exempel |
 |---|---|---|
-| `static_profile` | Fast person (`profile_id`) | "Petra/HR registrerar avtal" |
 | `tool_owner` | Slå upp ägare(n) till verktyg `tool_id` | "Behörighet i Creditsafe" → ägaren i `tools` |
 | `nearest_manager` | Nyanställdas chef från Heartpace | "Boka lunch första dagen" |
 | `role` | Härled från grupp (HR-grupp, IT-grupp) | "Lägg upp i Heartpace" → HR-gruppen |
 
+> **`static_profile` används inte i mallarna.** Vi tillåter inte att en enskild persons namn skrivs in på en mall-task — det skulle återskapa Word-dokumentets underhållsproblem. Behövs en specifik person som ansvarig så är hen ägare till motsvarande verktyg, punkt.
+
 ### Vinster
 - Byter man systemägare i `/admin → Verktyg` ändras automatiskt vem som får framtida onboarding-mejl — ingen mall att uppdatera.
 - Flera ägare per verktyg (`tool_owners` är many-to-many) → flera mottagare för samma uppgift utan dubbletter.
-- Mallen blir kortare: istället för "Emma Lundberg → Rillion, Vitec/3L, Rekyl, IT-hotellet" får vi en rad per verktyg som pekar på `tool_id`, och systemet **grupperar mejlen per ansvarig** vid utskick.
+- Mallen blir kortare och **personoberoende**: en rad per verktyg som pekar på `tool_id`, systemet grupperar mejlen per ansvarig vid utskick.
 - Snapshot vid skapande: när en onboarding-instans skapas resolvas alla `assignee_source` till konkreta `assignee_profile_id` på taskraden, så senare ägarbyten **inte** påverkar pågående onboardings.
 
 ### Mejlmallens placeholders utökas
@@ -113,23 +114,21 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 - `[ansvarig]` — mottagarens förnamn
 - Befintliga: `[namn]`, `[startdatum]`, `[befattning]`, `[chef]`
 
-### Mall-rader som blir `tool_owner`
-| Verktyg på `/verktyg` | Ägare idag |
-|---|---|
-| Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank | Emma Lundberg |
-| Creditsafe | Marit Karlsson |
-| Momentum | Wilma Norin |
-| Webport, Bereko, iBinder, Metry | Jörgen Seegh |
-| Vyer | Pernilla Kjellén |
-| Zendesk | Erika Venäläinen |
-| Uniguide | Christel Johansson |
-| Spiris, Collectum | Fastighetssnabben (Agnes) |
+### Förutsättningar i `/verktyg` innan mallen kan rullas ut
+Varje system/uppgift som Word-dokumentet räknar upp behöver finnas som verktyg med rätt ägare. Lista att checka av:
 
-### Mall-rader som förblir statiska eller `role`
-- HR-arbete (avtal, försäkringar, anställningsförteckning) → `role: HR`
-- Närmaste chefs-uppgifter (välkomstmejl, lunch, blomma, introduktion) → `nearest_manager`
-- Christels icke-systemuppgifter (nycklar, What's Up Kris) → `static_profile`
-- Webbsida (Inga Påhlsson) → `static_profile` *(eller skapa "SHF webb" som verktyg — se öppen fråga 5)*
+- **System med befintlig ägare:** Rillion, Vitec/3L, Rekyl, IT-hotellet, Bank, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum.
+- **Behöver troligen läggas till som "verktyg" i `/verktyg`** för att kunna auto-härleda:
+  - SHF:s webbsida (kontaktuppgifter)
+  - Nycklar & passerkort
+  - What's Up Kris
+  - Fastighetslistor
+
+När dessa finns med ägare räcker det att mallen pekar på `tool_id` — inga personnamn någonstans.
+
+### Mall-rader som inte är `tool_owner`
+- HR-arbete (avtal, försäkringar, anställningsförteckning, Heartpace-registrering) → `role: hr`
+- Närmaste chefs-uppgifter (välkomstmejl, lunch, blomma, introduktion, info till org) → `nearest_manager`
 
 ---
 
