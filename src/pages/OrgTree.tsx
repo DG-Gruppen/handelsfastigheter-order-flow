@@ -352,7 +352,6 @@ export default function OrgTree() {
     <>
       <div className="animate-fade-in relative" style={{ height: "calc(100vh - 80px)" }}>
         <OrgChartCanvas
-          key={profiles.length + '-' + profiles.map(p => p.sort_order).join(',')}
           initialTree={tree}
           unassignedNodes={unassigned}
           onMoveNode={handleMove}

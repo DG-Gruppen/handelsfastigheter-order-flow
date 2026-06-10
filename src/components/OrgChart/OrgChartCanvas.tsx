@@ -1,9 +1,17 @@
 /**
- * OrgChartCanvas — Interactive SVG org chart
+ * OrgChartCanvas — Interactive org chart
  *
- * Blueprint logic (computeLayout, buildConnectorSegments, drag-drop, pan/zoom)
- * is preserved 100% from the Claude blueprint.
- * Visual design uses the app's design tokens from index.css.
+ * Architecture:
+ *  - A pure layout engine computes x/y positions for every visible node,
+ *    including staff/assistant nodes (which now count toward subtree width).
+ *  - Connectors are drawn as SVG paths with rounded elbows.
+ *  - Cards are absolutely positioned HTML elements inside the same pan/zoom
+ *    container as the SVG, which gives real text truncation (ellipsis),
+ *    native tooltips and hover states instead of approximated SVG text.
+ *  - Pointer events power pan + drag-and-drop (mouse and touch).
+ *
+ * The component is purely presentational: all data fetching and persistence
+ * lives in OrgTree.tsx and is communicated via onMoveNode/onKebabClick.
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
@@ -35,35 +43,30 @@ interface DropMenuState {
 }
 
 interface Pos { x: number; y: number; w: number; h: number; }
-interface Segment { type: "vs"|"sh"|"sd"|"lh"|"ld"; x1: number; y1: number; x2: number; y2: number; }
+interface ConnPath { d: string; dashed: boolean; }
 
 // ─── LAYOUT CONSTANTS ────────────────────────────────────────────────────────
 const CARD = {
-  ROOT:  { W: 228, H: 74,  R: 14 },
-  STAFF: { W: 182, H: 60,  R: 10 },
-  LINE:  { W: 192, H: 66,  R: 11 },
-  EMP:   { W: 168, H: 58,  R: 9  },
+  ROOT:  { W: 248, H: 86, R: 14 },
+  LINE:  { W: 212, H: 74, R: 11 },
+  EMP:   { W: 196, H: 64, R: 10 },
+  STAFF: { W: 196, H: 60, R: 10 },
 };
 
-const GAP_H            = 28;
-const GAP_V            = 110;
-const GAP_V_STACK      = 16;  // vertical gap between stacked employees
-const STAFF_GAP_V      = 100;
-const LINE_AFTER_STAFF = 160;
-
-function isLeafNode(node: OrgNode): boolean {
-  return node.children.length === 0 && node.type === "line";
-}
-
-function allChildrenAreLeaves(node: OrgNode): boolean {
-  const lineKids = node.children.filter(c => c.type !== "staff");
-  return lineKids.length > 0 && lineKids.every(c => isLeafNode(c));
-}
+const GAP_H            = 36;   // horizontal gap between sibling subtrees
+const GAP_V            = 72;   // vertical gap parent bottom → child top
+const STACK_GAP        = 12;   // vertical gap between stacked leaf cards
+const STACK_COL_GAP    = 28;   // gap between leaf columns
+const MAX_STACK        = 6;    // max stacked leaves per column
+const STAFF_TOP_GAP    = 48;   // root bottom → first staff row
+const STAFF_GUTTER     = 64;   // stem → staff card inner edge
+const STAFF_ROW_GAP    = 12;   // vertical gap between staff cards on one side
+const STAFF_BOTTOM_GAP = 64;   // staff block → line children
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2.0;
 
-// ─── TREE UTILITIES (from blueprint — unchanged) ─────────────────────────────
+// ─── TREE UTILITIES ──────────────────────────────────────────────────────────
 const deepClone = (n: OrgNode): OrgNode => JSON.parse(JSON.stringify(n));
 
 function findNode(tree: OrgNode, id: string): OrgNode | null {
@@ -152,94 +155,142 @@ function countDescendants(node: OrgNode): number {
   return n;
 }
 
+// Card size derives from node type and whether it manages anyone —
+// not from the color setting, so changing colors never resizes cards.
 function cardDims(node: OrgNode) {
   if (node.type === "root")  return CARD.ROOT;
   if (node.type === "staff") return CARD.STAFF;
-  if (node.color === "muted") return CARD.EMP;
-  return CARD.LINE;
+  return node.children.length ? CARD.LINE : CARD.EMP;
 }
 
-// ─── LAYOUT ENGINE (from blueprint — unchanged) ─────────────────────────────
+// Staff nodes are only laid out specially directly under the root;
+// anywhere else they flow as regular line children (previously they
+// silently got no position at all and disappeared from the chart).
+function staffKidsOf(node: OrgNode): OrgNode[] {
+  return node.type === "root" ? node.children.filter(c => c.type === "staff") : [];
+}
+function lineKidsOf(node: OrgNode): OrgNode[] {
+  return node.type === "root" ? node.children.filter(c => c.type !== "staff") : node.children;
+}
+
+function isLeafNode(node: OrgNode): boolean {
+  return node.children.length === 0 && node.type !== "root";
+}
+
+function allChildrenAreLeaves(node: OrgNode): boolean {
+  const kids = lineKidsOf(node);
+  return kids.length > 0 && kids.every(isLeafNode);
+}
+
+// Split leaves into balanced sequential columns of at most MAX_STACK
+function stackColumns(kids: OrgNode[]): OrgNode[][] {
+  const cols = Math.ceil(kids.length / MAX_STACK);
+  const per = Math.ceil(kids.length / cols);
+  const out: OrgNode[][] = [];
+  for (let i = 0; i < kids.length; i += per) out.push(kids.slice(i, i + per));
+  return out;
+}
+
+// ─── LAYOUT ENGINE ───────────────────────────────────────────────────────────
 function computeLayout(tree: OrgNode, collapsed: Set<string>): Map<string, Pos> {
   const pos = new Map<string, Pos>();
 
+  function staffRegionW(node: OrgNode): number {
+    return staffKidsOf(node).length ? 2 * (STAFF_GUTTER + CARD.STAFF.W) : 0;
+  }
+
   function subtreeW(node: OrgNode): number {
-    if (collapsed.has(node.id)) return cardDims(node).W;
-    const kids = node.children.filter(c => c.type !== "staff");
-    if (!kids.length) return cardDims(node).W;
-    // If all children are leaves, they stack vertically → width is just the widest card
+    const d = cardDims(node);
+    if (collapsed.has(node.id)) return d.W;
+    const kids = lineKidsOf(node);
+    const staffW = staffRegionW(node);
+    if (!kids.length) return Math.max(d.W, staffW);
     if (allChildrenAreLeaves(node)) {
-      const maxChildW = Math.max(...kids.map(c => cardDims(c).W));
-      return Math.max(cardDims(node).W, maxChildW);
+      const columns = stackColumns(kids);
+      const colW = Math.max(...kids.map(k => cardDims(k).W));
+      const w = columns.length * colW + (columns.length - 1) * STACK_COL_GAP;
+      return Math.max(d.W, w, staffW);
     }
     const total = kids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (kids.length - 1);
-    return Math.max(cardDims(node).W, total);
+    return Math.max(d.W, total, staffW);
   }
 
   function place(node: OrgNode, centerX: number, top: number) {
-    const { W, H } = cardDims(node);
-    pos.set(node.id, { x: centerX - W / 2, y: top, w: W, h: H });
+    const d = cardDims(node);
+    pos.set(node.id, { x: centerX - d.W / 2, y: top, w: d.W, h: d.H });
     if (collapsed.has(node.id)) return;
 
-    const staffKids = node.children.filter(c => c.type === "staff");
-    const lineKids  = node.children.filter(c => c.type !== "staff");
-
-    if (staffKids.length && node.type === "root") {
-      const staffTop = top + H + STAFF_GAP_V;
-      const SIDE_OFFSET = 180; // distance from center to each staff node center
-      if (staffKids.length === 1) {
-        // Single staff node to the right
-        pos.set(staffKids[0].id, { x: centerX + SIDE_OFFSET - CARD.STAFF.W / 2, y: staffTop, w: CARD.STAFF.W, h: CARD.STAFF.H });
-      } else {
-        // Spread symmetrically: left half to the left, right half to the right
-        const half = Math.ceil(staffKids.length / 2);
-        staffKids.forEach((s, i) => {
-          const side = i < half ? -1 : 1;
-          const indexInSide = i < half ? (half - 1 - i) : (i - half);
-          const offset = SIDE_OFFSET + indexInSide * (CARD.STAFF.W + GAP_H);
-          pos.set(s.id, { x: centerX + side * offset - CARD.STAFF.W / 2, y: staffTop, w: CARD.STAFF.W, h: CARD.STAFF.H });
+    // Staff/assistant block: two vertical columns flanking the stem
+    const staff = staffKidsOf(node);
+    let staffBlockH = 0;
+    if (staff.length) {
+      const half = Math.ceil(staff.length / 2);
+      const left = staff.slice(0, half);
+      const right = staff.slice(half);
+      const staffTop = top + d.H + STAFF_TOP_GAP;
+      const placeSide = (arr: OrgNode[], side: -1 | 1) => {
+        arr.forEach((s, i) => {
+          const sd = cardDims(s);
+          const cx = centerX + side * (STAFF_GUTTER + sd.W / 2);
+          pos.set(s.id, { x: cx - sd.W / 2, y: staffTop + i * (sd.H + STAFF_ROW_GAP), w: sd.W, h: sd.H });
         });
-      }
+      };
+      placeSide(left, -1);
+      placeSide(right, 1);
+      staffBlockH = Math.max(left.length, right.length) * (CARD.STAFF.H + STAFF_ROW_GAP) - STAFF_ROW_GAP;
     }
 
-    if (!lineKids.length) return;
+    const kids = lineKidsOf(node);
+    if (!kids.length) return;
 
-    let lineTop: number;
-    if (node.type === "root" && staffKids.length) {
-      lineTop = top + H + STAFF_GAP_V + CARD.STAFF.H + LINE_AFTER_STAFF;
-    } else {
-      lineTop = top + H + GAP_V;
-    }
+    const lineTop = staff.length
+      ? top + d.H + STAFF_TOP_GAP + staffBlockH + STAFF_BOTTOM_GAP
+      : top + d.H + GAP_V;
 
-    // If all children are leaves, stack them vertically
+    // All children are leaves → stack them vertically in columns
     if (allChildrenAreLeaves(node)) {
-      let curY = lineTop;
-      lineKids.forEach(child => {
-        const { W: cW, H: cH } = cardDims(child);
-        pos.set(child.id, { x: centerX - cW / 2, y: curY, w: cW, h: cH });
-        curY += cH + GAP_V_STACK;
-      });
+      const columns = stackColumns(kids);
+      const colW = Math.max(...kids.map(k => cardDims(k).W));
+      const totalW = columns.length * colW + (columns.length - 1) * STACK_COL_GAP;
+      let colCx = centerX - totalW / 2 + colW / 2;
+      for (const col of columns) {
+        let y = lineTop;
+        for (const k of col) {
+          const kd = cardDims(k);
+          pos.set(k.id, { x: colCx - kd.W / 2, y, w: kd.W, h: kd.H });
+          y += kd.H + STACK_GAP;
+        }
+        colCx += colW + STACK_COL_GAP;
+      }
       return;
     }
 
-    const totalW = lineKids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (lineKids.length - 1);
+    const totalW = kids.reduce((s, c) => s + subtreeW(c), 0) + GAP_H * (kids.length - 1);
     let childX = centerX - totalW / 2;
-    lineKids.forEach(child => {
+    for (const child of kids) {
       const sw = subtreeW(child);
       place(child, childX + sw / 2, lineTop);
       childX += sw + GAP_H;
-    });
+    }
   }
 
   place(tree, 0, 0);
   return pos;
 }
 
-// ─── CONNECTOR SEGMENTS (from blueprint — unchanged) ─────────────────────────
-function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, collapsed: Set<string>): Segment[] {
-  const segments: Segment[] = [];
-  const push = (type: Segment["type"], x1: number, y1: number, x2: number, y2: number) =>
-    segments.push({ type, x1, y1, x2, y2 });
+// ─── CONNECTORS ──────────────────────────────────────────────────────────────
+function buildConnectors(tree: OrgNode, positions: Map<string, Pos>, collapsed: Set<string>): ConnPath[] {
+  const out: ConnPath[] = [];
+  const RADIUS = 12;
+
+  // Rounded elbow: from (px,busY) horizontally toward cx, then down to topY
+  function elbow(px: number, busY: number, cx: number, topY: number): string {
+    const dx = cx - px;
+    if (Math.abs(dx) < 1) return `M ${px} ${busY} L ${cx} ${topY}`;
+    const r = Math.min(RADIUS, Math.abs(dx) / 2, Math.max(1, (topY - busY) / 2));
+    const s = Math.sign(dx);
+    return `M ${px} ${busY} L ${cx - s * r} ${busY} Q ${cx} ${busY} ${cx} ${busY + r} L ${cx} ${topY}`;
+  }
 
   function draw(node: OrgNode) {
     if (collapsed.has(node.id)) return;
@@ -249,111 +300,75 @@ function buildConnectorSegments(tree: OrgNode, positions: Map<string, Pos>, coll
     const px = p.x + p.w / 2;
     const py = p.y + p.h;
 
-    const staff = node.children.filter(c => c.type === "staff");
-    const line  = node.children.filter(c => c.type !== "staff");
+    // Staff: dashed horizontal from the stem to the inner edge of each card
+    for (const s of staffKidsOf(node)) {
+      const sp = positions.get(s.id);
+      if (!sp) continue;
+      const scy = sp.y + sp.h / 2;
+      const onLeft = sp.x + sp.w / 2 < px;
+      const innerX = onLeft ? sp.x + sp.w : sp.x;
+      out.push({ d: `M ${px} ${scy} L ${innerX} ${scy}`, dashed: true });
+    }
 
-    if (node.type === "root" && staff.length) {
-      const sps = staff.map(s => positions.get(s.id)).filter(Boolean) as Pos[];
-      if (sps.length) {
-        const staffTopY = sps[0].y;
-        const barY = py + (staffTopY - py) / 2;
-
-        // Dashed horizontal segments from center to each staff node (not one continuous bar)
-        sps.forEach(sp => {
-          const scx = sp.x + sp.w / 2;
-          push("sh", px, barY, scx, barY);  // dashed horizontal from center to staff
-          push("sd", scx, barY, scx, sp.y); // dashed vertical down to staff card
-        });
-
-        if (line.length) {
-          const lps = line.map(l => positions.get(l.id)).filter(Boolean) as Pos[];
-          if (lps.length) {
-            const lineTopY = lps[0].y;
-            const lBarY = barY + (lineTopY - barY) / 2;
-            const lAllX = lps.map(lp => lp.x + lp.w / 2);
-            // Solid vertical: VD bottom all the way to manager bar (continuous through barY)
-            push("vs", px, py, px, lBarY);
-            if (line.length > 1) push("lh", Math.min(...lAllX), lBarY, Math.max(...lAllX), lBarY);
-            lps.forEach(lp => push("ld", lp.x + lp.w / 2, lBarY, lp.x + lp.w / 2, lp.y));
-          }
-        } else {
-          // No line kids, just draw solid vertical to barY
-          push("vs", px, py, px, barY);
+    const kidPs = lineKidsOf(node)
+      .map(k => positions.get(k.id))
+      .filter(Boolean) as Pos[];
+    if (kidPs.length) {
+      // Group children into columns by center x — stacked leaves share a
+      // column, regular rows produce one column per child, so a single
+      // code path handles both layouts.
+      const colMap = new Map<number, Pos[]>();
+      for (const kp of kidPs) {
+        const cx = Math.round(kp.x + kp.w / 2);
+        let key = cx;
+        for (const k of colMap.keys()) {
+          if (Math.abs(k - cx) < 2) { key = k; break; }
         }
+        if (!colMap.has(key)) colMap.set(key, []);
+        colMap.get(key)!.push(kp);
       }
-    } else if (line.length) {
-      // Check if children are stacked vertically
-      if (allChildrenAreLeaves(node)) {
-        // Draw a single vertical line from parent down through all stacked children
-        const lps = line.map(l => positions.get(l.id)).filter(Boolean) as Pos[];
-        if (lps.length) {
-          // Vertical stem from parent to first child
-          push("vs", px, py, px, lps[0].y);
-          // Vertical lines between consecutive stacked children
-          for (let i = 0; i < lps.length - 1; i++) {
-            const cx = lps[i].x + lps[i].w / 2;
-            push("vs", cx, lps[i].y + lps[i].h, cx, lps[i + 1].y);
-          }
-        }
-      } else {
-        const lps = line.map(l => positions.get(l.id)).filter(Boolean) as Pos[];
-        if (lps.length) {
-          const lineTopY = lps[0].y;
-          const barY = py + (lineTopY - py) / 2;
-          const lAllX = lps.map(lp => lp.x + lp.w / 2);
-          push("vs", px, py, px, barY);
-          if (line.length > 1) push("lh", Math.min(...lAllX), barY, Math.max(...lAllX), barY);
-          lps.forEach(lp => push("ld", lp.x + lp.w / 2, barY, lp.x + lp.w / 2, lp.y));
+
+      const minTop = Math.min(...kidPs.map(kp => kp.y));
+      const busY = py + (minTop - py) / 2;
+      out.push({ d: `M ${px} ${py} L ${px} ${busY}`, dashed: false });
+
+      for (const [cx, col] of colMap) {
+        col.sort((a, b) => a.y - b.y);
+        out.push({ d: elbow(px, busY, cx, col[0].y), dashed: false });
+        for (let i = 0; i < col.length - 1; i++) {
+          out.push({ d: `M ${cx} ${col[i].y + col[i].h} L ${cx} ${col[i + 1].y}`, dashed: false });
         }
       }
     }
 
-    line.forEach(c => draw(c));
+    node.children.forEach(draw);
   }
 
   draw(tree);
-  return segments;
+  return out;
 }
 
-// ─── CONNECTORS SVG COMPONENT ────────────────────────────────────────────────
 function Connectors({ tree, positions, collapsed, palette }: {
   tree: OrgNode; positions: Map<string, Pos>; collapsed: Set<string>;
   palette: ReturnType<typeof useOrgPalette>;
 }) {
-  const segments = useMemo(
-    () => buildConnectorSegments(tree, positions, collapsed),
+  const paths = useMemo(
+    () => buildConnectors(tree, positions, collapsed),
     [tree, positions, collapsed]
   );
 
   return (
     <g>
-      {segments.filter(s => s.type === "sh" || s.type === "sd").map((s, i) => (
-        <line
-          key={`staff-${i}`}
-          x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke={palette.connDash}
-          strokeWidth={1.5}
+      {paths.map((p, i) => (
+        <path
+          key={i}
+          d={p.d}
+          fill="none"
+          stroke={p.dashed ? palette.connDash : palette.connSolid}
+          strokeWidth={p.dashed ? 1.4 : 1.6}
           strokeLinecap="round"
-          strokeDasharray="5 4"
-          opacity={0.6}
-        />
-      ))}
-      {segments.filter(s => s.type !== "sh" && s.type !== "sd").map((s, i) => (
-        <line
-          key={`solid-${i}`}
-          x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke={palette.connSolid}
-          strokeWidth={2}
-          strokeLinecap="round"
-          opacity={0.7}
-        />
-      ))}
-      {segments.filter(s => s.type === "ld" || s.type === "sd").map((s, i) => (
-        <circle
-          key={`dot-${i}`}
-          cx={s.x1} cy={s.y1} r={2.5}
-          fill={s.type === "sd" ? palette.connDash : palette.junctionDot}
-          opacity={0.6}
+          strokeDasharray={p.dashed ? "5 4" : undefined}
+          opacity={p.dashed ? 0.7 : 0.8}
         />
       ))}
     </g>
@@ -366,26 +381,26 @@ function useOrgPalette() {
   const dark = resolvedTheme === "dark";
   return useMemo(() => ({
     cardBg:        dark ? "hsl(230, 25%, 11%)"  : "hsl(0, 0%, 100%)",
-    cardBgHover:   dark ? "hsl(230, 75%, 20%)"  : "hsl(230, 75%, 95%)",
+    cardBgHover:   dark ? "hsl(230, 60%, 18%)"  : "hsl(230, 75%, 96%)",
+    cardShadow:    dark ? "0 2px 10px rgba(0,0,0,0.35)" : "0 2px 8px rgba(20,30,60,0.08)",
     nameText:      dark ? "hsl(225, 12%, 93%)"  : "hsl(225, 35%, 10%)",
-    posText:       dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 45%)",
-    deptText:      dark ? "hsl(225, 12%, 40%)"  : "hsl(225, 12%, 55%)",
+    posText:       dark ? "hsl(225, 12%, 58%)"  : "hsl(225, 12%, 42%)",
+    deptText:      dark ? "hsl(225, 12%, 65%)"  : "hsl(225, 14%, 38%)",
     kebabDot:      dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 60%)",
-    kebabHover:    dark ? "hsl(230, 22%, 20%)"  : "hsl(225, 20%, 92%)",
-    connSolid:     dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 72%)",
+    connSolid:     dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 70%)",
     connDash:      dark ? "hsl(250, 80%, 65%)"  : "hsl(250, 60%, 60%)",
-    junctionDot:   dark ? "hsl(225, 12%, 48%)"  : "hsl(225, 15%, 72%)",
-    collapseBg:    dark ? "hsl(230, 25%, 11%)"  : "hsl(225, 25%, 96%)",
-    collapseBord:  dark ? "hsl(230, 22%, 24%)"  : "hsl(225, 18%, 85%)",
-    collapseText:  dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 12%, 45%)",
+    collapseBg:    dark ? "hsl(230, 25%, 14%)"  : "hsl(225, 25%, 97%)",
+    collapseBord:  dark ? "hsl(230, 22%, 26%)"  : "hsl(225, 18%, 82%)",
+    collapseText:  dark ? "hsl(225, 12%, 62%)"  : "hsl(225, 12%, 40%)",
     dotGrid:       dark ? "hsl(225, 12%, 52%)"  : "hsl(225, 15%, 72%)",
     dotOpacity:    dark ? 0.03 : 0.08,
     ghostBg:       dark ? "hsl(230, 25%, 14%)"  : "hsl(225, 25%, 97%)",
     ghostShadow:   dark ? "hsla(230, 75%, 55%, 0.3)" : "hsla(230, 75%, 55%, 0.15)",
+    dropAccent:    "hsl(230, 75%, 60%)",
   }), [dark]);
 }
 
-// ─── COLOR MAP (from shared lib) ──────
+// ─── COLOR MAP (from shared lib) ─────────────────────────────────────────────
 const COLOR_MAP = ORG_COLOR_MAP;
 
 function getColors(color: string, isDark: boolean) {
@@ -406,241 +421,194 @@ function getColors(color: string, isDark: boolean) {
   };
 }
 
-// ─── COLLAPSE BUTTON (from blueprint logic, styled with tokens) ──────────────
-function CollapseButton({ pos, collapsed, count, onClick, palette }: {
+const TRUNCATE: React.CSSProperties = {
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+};
+
+// ─── COLLAPSE PILL (HTML) ────────────────────────────────────────────────────
+function CollapsePill({ pos, collapsed, count, onClick, palette }: {
   pos: Pos; collapsed: boolean; count: number; onClick: () => void;
   palette: ReturnType<typeof useOrgPalette>;
 }) {
-  const bx = pos.x + pos.w / 2;
-  const by = pos.y + pos.h + 11;
-  const bw = collapsed ? Math.max(32, String(count).length * 8 + 22) : 22;
-  const bh = 16;
-
   return (
-    <g style={{ cursor: "pointer" }} onClick={e => { e.stopPropagation(); onClick(); }}>
-      <rect
-        x={bx - bw / 2} y={by - bh / 2} width={bw} height={bh} rx={bh / 2}
-        fill={palette.collapseBg}
-        stroke={palette.collapseBord}
-        strokeWidth={1}
-      />
-      <text
-        x={bx} y={by + 0.5}
-        textAnchor="middle" dominantBaseline="central"
-        fontSize={collapsed ? 8 : 11}
-        fill={palette.collapseText}
-        fontFamily="var(--font-body)"
-        fontWeight="600"
-      >
-        {collapsed ? `+${count}` : "−"}
-      </text>
-    </g>
+    <button
+      data-org-ui="true"
+      onPointerDown={e => e.stopPropagation()}
+      onClick={e => { e.stopPropagation(); onClick(); }}
+      title={collapsed ? `Visa ${count} underställda` : "Dölj underställda"}
+      style={{
+        position: "absolute",
+        left: pos.x + pos.w / 2,
+        top: pos.y + pos.h + 5,
+        transform: "translateX(-50%)",
+        height: 18,
+        minWidth: 26,
+        padding: "0 7px",
+        borderRadius: 9,
+        background: palette.collapseBg,
+        border: `1px solid ${palette.collapseBord}`,
+        color: palette.collapseText,
+        fontSize: collapsed ? 9 : 12,
+        fontWeight: 600,
+        lineHeight: "16px",
+        cursor: "pointer",
+        zIndex: 3,
+        fontFamily: "var(--font-body)",
+        transition: "left .25s ease, top .25s ease",
+      }}
+    >
+      {collapsed ? `+${count}` : "−"}
+    </button>
   );
 }
 
-// ─── NODE CARD (styled with our design tokens) ──────────────────────────────
-function NodeCard({ node, pos, isDragging, isDropTarget, onMouseDown, onKebabClick, palette, isDark }: {
+// ─── NODE CARD (HTML) ────────────────────────────────────────────────────────
+function NodeCard({ node, pos, isDragging, isDropTarget, onPointerDown, onKebabClick, palette, isDark }: {
   node: OrgNode; pos: Pos; isDragging: boolean; isDropTarget: boolean;
-  onMouseDown?: (e: React.MouseEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
   onKebabClick?: (e: React.MouseEvent) => void;
   palette: ReturnType<typeof useOrgPalette>;
   isDark: boolean;
 }) {
-  const { x, y, w, h } = pos;
   const c = getColors(node.color, isDark);
   const dims = cardDims(node);
+  const isRoot = node.type === "root";
 
-  const fillColor = isDropTarget ? palette.cardBgHover : palette.cardBg;
-  const strokeColor = isDropTarget ? "hsl(230, 75%, 60%)" : c.border;
-
-  // Consistent spacing constants
-  const ACCENT_BAR_W = 4;
-  const PAD_LEFT = 8;                 // padding from accent bar to avatar center
-  const AVATAR_R = node.type === "root" ? 15 : node.type === "staff" ? 11 : 12;
-  const AVATAR_CX = x + ACCENT_BAR_W + PAD_LEFT + AVATAR_R;
-  const AVATAR_CY = y + h / 2;
-  const TEXT_X = AVATAR_CX + AVATAR_R + 10; // gap between avatar and text
-  const KEBAB_W = 24;                // total kebab hit area width
-  const KEBAB_MARGIN = 6;            // margin from card edge
-  const TEXT_MAX_X = x + w - (onKebabClick ? KEBAB_W + KEBAB_MARGIN : 10);
-
+  const avatarSize = isRoot ? 34 : node.type === "staff" ? 24 : 28;
+  const nameSize = isRoot ? 13.5 : 12;
+  const titleSize = isRoot ? 10.5 : 9.5;
   const hasDept = !!node.dept && node.type !== "staff";
-  const hasPosition = !!node.position;
-
-  // Vertical text layout: center name+position block
-  const lineGap = node.type === "root" ? 15 : 13;
-  const nameFontSize = node.type === "root" ? 12.5 : node.type === "staff" ? 10 : 10.5;
-  const posFontSize = node.type === "root" ? 9.5 : 7.5;
-
-  const nameY = hasPosition ? AVATAR_CY - lineGap / 2 + 1 : AVATAR_CY + 1;
-  const posY = AVATAR_CY + lineGap / 2 + 1;
-
-  // Auto-shrink name
-  const availableTextW = TEXT_MAX_X - TEXT_X - (hasDept ? 4 : 0);
-  const approxCharW = nameFontSize * 0.58;
-  const nameWidth = node.name.length * approxCharW;
-  const finalNameSize = nameWidth > availableTextW
-    ? Math.max(7, nameFontSize * (availableTextW / nameWidth))
-    : nameFontSize;
+  const deptColor = node.deptColor || c.accent;
 
   return (
-    <g
+    <div
       data-org-card="true"
+      title={node.position ? `${node.name} — ${node.position}` : node.name}
+      onPointerDown={isRoot ? undefined : onPointerDown}
       style={{
-        cursor: node.type === "root" ? "default" : "grab",
-        opacity: isDragging ? 0.15 : 1,
+        position: "absolute",
+        left: pos.x,
+        top: pos.y,
+        width: pos.w,
+        height: pos.h,
+        boxSizing: "border-box",
+        borderRadius: dims.R,
+        background: isDropTarget ? palette.cardBgHover : palette.cardBg,
+        border: `${isDropTarget ? 1.5 : 1}px solid ${isDropTarget ? palette.dropAccent : c.border}`,
+        boxShadow: isDropTarget
+          ? `0 0 0 4px hsla(230, 75%, 60%, 0.18), ${palette.cardShadow}`
+          : palette.cardShadow,
+        opacity: isDragging ? 0.25 : 1,
+        display: "flex",
+        alignItems: "center",
+        paddingRight: onKebabClick ? 26 : 10,
+        cursor: isRoot ? "default" : "grab",
+        userSelect: "none",
+        touchAction: "none",
+        zIndex: isDropTarget ? 2 : 1,
+        transition: "left .25s ease, top .25s ease, box-shadow .15s ease, border-color .15s ease, background-color .15s ease, opacity .15s ease",
       }}
-      onMouseDown={node.type === "root" ? undefined : onMouseDown}
     >
-      {/* Card shadow */}
-      <rect
-        x={x + 1} y={y + 2} width={w} height={h} rx={dims.R}
-        fill="black"
-        opacity={isDark ? 0.25 : 0.06}
-      />
+      {/* Accent bar */}
+      <div style={{
+        position: "absolute", left: 0, top: 0, bottom: 0,
+        width: isRoot ? 5 : 4,
+        background: c.bg,
+        borderRadius: `${dims.R}px 0 0 ${dims.R}px`,
+      }} />
 
-      {/* Clip for entire card */}
-      <clipPath id={`card-clip-${node.id}`}>
-        <rect x={x} y={y} width={w} height={h} rx={dims.R} />
-      </clipPath>
-
-      {/* Card background */}
-      <rect
-        x={x} y={y} width={w} height={h} rx={dims.R}
-        fill={fillColor}
-        stroke={strokeColor}
-        strokeWidth={isDropTarget ? 2 : 1}
-      />
-
-      {/* Color accent bar on left — clipped to card shape */}
-      <rect
-        x={x} y={y} width={ACCENT_BAR_W} height={h}
-        fill={c.bg}
-        clipPath={`url(#card-clip-${node.id})`}
-      />
-
-      {/* Avatar circle */}
-      <circle
-        cx={AVATAR_CX} cy={AVATAR_CY}
-        r={AVATAR_R}
-        fill={c.bg}
-        opacity={0.15}
-      />
-      <text
-        x={AVATAR_CX} y={AVATAR_CY + 0.5}
-        textAnchor="middle" dominantBaseline="central"
-        fontSize={AVATAR_R * 0.75}
-        fontWeight="700"
-        fill={c.bg}
-        fontFamily="var(--font-heading)"
-      >
+      {/* Avatar */}
+      <div style={{
+        width: avatarSize, height: avatarSize,
+        borderRadius: "50%",
+        flexShrink: 0,
+        marginLeft: 13,
+        background: c.bg,
+        color: c.text,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "var(--font-heading)",
+        fontWeight: 700,
+        fontSize: avatarSize * 0.38,
+        letterSpacing: 0.3,
+      }}>
         {node.avatar}
-      </text>
+      </div>
 
-      {/* Name */}
-      <text
-        x={TEXT_X}
-        y={nameY}
-        dominantBaseline="central"
-        fontSize={finalNameSize}
-        fontWeight="700"
-        fill={palette.nameText}
-        fontFamily="var(--font-heading)"
-      >
-        {node.name}
-      </text>
+      {/* Name / title / department */}
+      <div style={{ flex: 1, minWidth: 0, marginLeft: 10, display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{
+          ...TRUNCATE,
+          fontSize: nameSize,
+          fontWeight: 700,
+          color: palette.nameText,
+          fontFamily: "var(--font-heading)",
+          lineHeight: 1.15,
+        }}>
+          {node.name}
+        </span>
+        {node.position && (
+          <span style={{
+            ...TRUNCATE,
+            fontSize: titleSize,
+            color: palette.posText,
+            fontFamily: "var(--font-body)",
+            lineHeight: 1.2,
+          }}>
+            {node.position}
+          </span>
+        )}
+        {hasDept && (
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            alignSelf: "flex-start",
+            maxWidth: "100%",
+            boxSizing: "border-box",
+            padding: "1px 6px",
+            borderRadius: 4,
+            background: `color-mix(in srgb, ${deptColor} 14%, transparent)`,
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", flexShrink: 0, background: deptColor }} />
+            <span style={{
+              ...TRUNCATE,
+              fontSize: 8.5,
+              fontWeight: 500,
+              color: palette.deptText,
+              fontFamily: "var(--font-body)",
+            }}>
+              {node.dept}
+            </span>
+          </span>
+        )}
+      </div>
 
-      {/* Position / title */}
-      {hasPosition && (
-        <text
-          x={TEXT_X}
-          y={posY}
-          dominantBaseline="central"
-          fontSize={posFontSize}
-          fill={palette.posText}
-          fontFamily="var(--font-body)"
-        >
-          {node.position}
-        </text>
-      )}
-
-      {/* Dept label — bottom-right corner */}
-      {hasDept && (
-        <g>
-          <rect
-            x={x + w - node.dept.length * 3.6 - 14}
-            y={y + h - 16}
-            width={node.dept.length * 3.6 + 8}
-            height={12}
-            rx={3}
-            fill={node.deptColor || c.bg}
-            opacity={node.deptColor ? 0.15 : 0.1}
-          />
-          {node.deptColor && (
-            <rect
-              x={x + w - node.dept.length * 3.6 - 14}
-              y={y + h - 16}
-              width={2.5}
-              height={12}
-              rx={1}
-              fill={node.deptColor}
-              opacity={0.6}
-            />
-          )}
-          <text
-            x={x + w - 10}
-            y={y + h - 10}
-            textAnchor="end"
-            dominantBaseline="central"
-            fontSize={6.5}
-            fill={node.deptColor || palette.deptText}
-            opacity={node.deptColor ? 0.8 : 1}
-            fontFamily="var(--font-body)"
-            fontWeight="500"
-          >
-            {node.dept}
-          </text>
-        </g>
-      )}
-
-      {/* Kebab menu (3 horizontal dots) — top right */}
+      {/* Kebab menu */}
       {onKebabClick && (
-        <g
-          style={{ cursor: "pointer" }}
-          onClick={(e) => { e.stopPropagation(); onKebabClick(e); }}
-          onMouseDown={(e) => e.stopPropagation()}
+        <button
+          data-org-ui="true"
+          title="Redigera kort"
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); onKebabClick(e); }}
+          style={{
+            position: "absolute", top: 4, right: 4,
+            width: 20, height: 20,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 2.5,
+            background: "transparent",
+            border: "none",
+            borderRadius: 5,
+            cursor: "pointer",
+            padding: 0,
+          }}
         >
-          <rect
-            x={x + w - KEBAB_W - KEBAB_MARGIN + 2}
-            y={y + 4}
-            width={KEBAB_W}
-            height={16}
-            rx={5}
-            fill="transparent"
-          />
           {[0, 1, 2].map(i => (
-            <circle
-              key={i}
-              cx={x + w - KEBAB_MARGIN - 4 - i * 5.5}
-              cy={y + 12}
-              r={1.5}
-              fill={palette.kebabDot}
-            />
+            <span key={i} style={{ width: 3, height: 3, borderRadius: "50%", background: palette.kebabDot, display: "block" }} />
           ))}
-        </g>
+        </button>
       )}
-
-      {/* Drop target glow */}
-      {isDropTarget && (
-        <rect
-          x={x - 3} y={y - 3} width={w + 6} height={h + 6} rx={dims.R + 2}
-          fill="none"
-          stroke="hsl(230, 75%, 60%)"
-          strokeWidth={1}
-          opacity={0.4}
-        />
-      )}
-    </g>
+    </div>
   );
 }
 
@@ -701,6 +669,12 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
     },
   ];
 
+  // Clamp so the menu never renders outside the viewport
+  const MENU_W = 250;
+  const MENU_H = 300;
+  const left = Math.min(Math.max(menu.screenX, MENU_W / 2 + 8), window.innerWidth - MENU_W / 2 - 8);
+  const top = Math.min(Math.max(menu.screenY, MENU_H / 2 + 8), window.innerHeight - MENU_H / 2 - 8);
+
   return (
     <div
       className="fixed inset-0 z-[10000]"
@@ -708,7 +682,7 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
     >
       <div
         className="absolute z-[10001]"
-        style={{ left: menu.screenX, top: menu.screenY, transform: "translate(-50%, -50%)" }}
+        style={{ left, top, transform: "translate(-50%, -50%)" }}
         onClick={e => e.stopPropagation()}
       >
         <div className="rounded-xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden min-w-[220px]">
@@ -738,6 +712,7 @@ function DropActionMenu({ menu, tree, unassignedNodes, onAction, onClose }: {
   );
 }
 
+// ─── DRAG GHOST ──────────────────────────────────────────────────────────────
 function DragGhost({ node, x, y, palette, isDark }: { node: OrgNode; x: number; y: number; palette: ReturnType<typeof useOrgPalette>; isDark: boolean }) {
   if (!node) return null;
   const { W, H } = cardDims(node);
@@ -745,24 +720,30 @@ function DragGhost({ node, x, y, palette, isDark }: { node: OrgNode; x: number; 
   return (
     <div style={{
       position: "fixed", left: x, top: y, pointerEvents: "none", zIndex: 9999,
-      transform: "translate(-50%, -50%) rotate(4deg) scale(1.05)",
+      transform: "translate(-50%, -50%) rotate(3deg) scale(1.04)",
     }}>
       <div style={{
         width: W, height: H, borderRadius: 10,
         background: palette.ghostBg,
         border: `1.5px solid ${c.bg}`,
-        display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
-        opacity: 0.9,
+        display: "flex", flexDirection: "column", justifyContent: "center",
+        padding: "0 14px", gap: 2,
+        opacity: 0.92,
         boxShadow: `0 8px 32px ${palette.ghostShadow}`,
+        boxSizing: "border-box",
       }}>
         <span style={{
+          ...TRUNCATE,
           fontWeight: 700, color: palette.nameText, fontSize: 12,
           fontFamily: "var(--font-heading)",
-        }}>{node.position}</span>
-        <span style={{
-          color: palette.posText, fontSize: 10,
-          fontFamily: "var(--font-body)",
         }}>{node.name}</span>
+        {node.position && (
+          <span style={{
+            ...TRUNCATE,
+            color: palette.posText, fontSize: 10,
+            fontFamily: "var(--font-body)",
+          }}>{node.position}</span>
+        )}
       </div>
     </div>
   );
@@ -776,6 +757,10 @@ interface OrgChartCanvasProps {
   onKebabClick?: (nodeId: string, screenX: number, screenY: number) => void;
   onSettingsClick?: () => void;
 }
+
+const DRAG_THRESHOLD = 5;       // px of pointer travel before a drag starts
+const UNASSIGNED_GAP = 100;     // gap between tree and the unassigned panel
+const DROP_HIT_PAD = 16;        // canvas-px margin around a card that counts as a hit
 
 export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMoveNode, onKebabClick, onSettingsClick }: OrgChartCanvasProps) {
   const palette = useOrgPalette();
@@ -795,13 +780,14 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   const [zoom, setZoom]             = useState(1);
   const [pan, setPan]               = useState({ x: 0, y: 0 });
 
-  const vpRef   = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ id: string; curX: number; curY: number } | null>(null);
-  const dropRef = useRef<string | null>(null);
-  const panRef  = useRef<{ panning: boolean; start: any }>({ panning: false, start: {} });
-  const zoomRef = useRef(zoom);   zoomRef.current = zoom;
-  const panXY   = useRef(pan);    panXY.current   = pan;
-  const treeRef = useRef(tree);   treeRef.current = tree;
+  const vpRef    = useRef<HTMLDivElement>(null);
+  const pendRef  = useRef<{ id: string; startX: number; startY: number } | null>(null);
+  const dragRef  = useRef<{ id: string; curX: number; curY: number } | null>(null);
+  const dropRef  = useRef<string | null>(null);
+  const panRef   = useRef<{ panning: boolean; start: { mx: number; my: number; px: number; py: number } | null }>({ panning: false, start: null });
+  const zoomRef  = useRef(zoom);  zoomRef.current = zoom;
+  const panXY    = useRef(pan);   panXY.current   = pan;
+  const treeRef  = useRef(tree);  treeRef.current = tree;
 
   useEffect(() => { setTree(initialTree); }, [initialTree]);
 
@@ -809,18 +795,17 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   const positions = useMemo(() => {
     const pos = computeLayout(tree, collapsed);
 
-    // Position unassigned nodes to the right of the tree
+    // Unassigned nodes stack in a panel to the right of the tree
     if (unassignedNodes.length > 0) {
       let mxX = -Infinity;
-      for (const [, p] of pos) {
-        mxX = Math.max(mxX, p.x + p.w);
-      }
-      const startX = mxX + 120;
-      const startY = 0;
-      unassignedNodes.forEach((node, i) => {
+      for (const [, p] of pos) mxX = Math.max(mxX, p.x + p.w);
+      const startX = mxX + UNASSIGNED_GAP;
+      let y = 0;
+      for (const node of unassignedNodes) {
         const dims = cardDims(node);
-        pos.set(node.id, { x: startX, y: startY + i * (dims.H + GAP_V_STACK), w: dims.W, h: dims.H });
-      });
+        pos.set(node.id, { x: startX, y, w: dims.W, h: dims.H });
+        y += dims.H + STACK_GAP;
+      }
     }
 
     return pos;
@@ -829,20 +814,19 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
   const { minX, minY, svgW, svgH } = useMemo(() => {
     let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
     for (const [, p] of positions) {
-      mnX = Math.min(mnX, p.x - 40); mnY = Math.min(mnY, p.y - 40);
-      mxX = Math.max(mxX, p.x + p.w + 40); mxY = Math.max(mxY, p.y + p.h + 40);
+      mnX = Math.min(mnX, p.x - 50); mnY = Math.min(mnY, p.y - 50);
+      mxX = Math.max(mxX, p.x + p.w + 50); mxY = Math.max(mxY, p.y + p.h + 50);
     }
     return { minX: mnX, minY: mnY, svgW: mxX - mnX, svgH: mxY - mnY };
   }, [positions]);
 
-  const collapsedDescendants = useMemo(() => {
-    const s = new Set<string>();
-    for (const id of collapsed) {
-      const n = findNode(tree, id);
-      if (n) n.children.forEach(c => collectIds(c, s));
-    }
-    return s;
-  }, [collapsed, tree]);
+  const bboxRef = useRef({ svgW, svgH });
+  bboxRef.current = { svgW, svgH };
+
+  const positionsRef = useRef(positions);
+  positionsRef.current = positions;
+  const minXY = useRef({ minX, minY });
+  minXY.current = { minX, minY };
 
   const ghostIds = useMemo(() => {
     if (!drag) return new Set<string>();
@@ -850,29 +834,41 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
     return n ? collectIds(n, new Set()) : new Set<string>();
   }, [drag, tree, unassignedNodes]);
 
-  // ── Center on mount ──
-  useEffect(() => {
+  // ── Fit to view ──
+  const fitToView = useCallback(() => {
     const vp = vpRef.current;
     if (!vp) return;
-    const { width } = vp.getBoundingClientRect();
-    setPan({ x: (width - svgW) / 2, y: 60 });
-  }, []); // eslint-disable-line
+    const { width, height } = vp.getBoundingClientRect();
+    const { svgW: w, svgH: h } = bboxRef.current;
+    const newZoom = Math.min((width - 60) / w, (height - 60) / h, 1);
+    const z = Math.max(MIN_ZOOM, newZoom);
+    setZoom(z);
+    setPan({ x: (width - w * z) / 2, y: (height - h * z) / 2 });
+  }, []);
+
+  // Fit the whole chart on first mount (the component is no longer remounted
+  // on data changes, so pan/zoom survive moves and realtime updates)
+  useEffect(() => { fitToView(); }, [fitToView]);
 
   // ── Collapse / expand ──
   const persistCollapsed = useCallback((s: Set<string>) => {
-    try { localStorage.setItem("org-collapsed", JSON.stringify([...s])); } catch {}
+    try { localStorage.setItem("org-collapsed", JSON.stringify([...s])); } catch { /* ignore */ }
   }, []);
 
   const toggleCollapse = useCallback((id: string) => {
     setCollapsed(prev => {
       const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
+      if (s.has(id)) s.delete(id); else s.add(id);
       persistCollapsed(s);
       return s;
     });
   }, [persistCollapsed]);
 
-  const expandAll = useCallback(() => { const s = new Set<string>(); setCollapsed(s); persistCollapsed(s); }, [persistCollapsed]);
+  const expandAll = useCallback(() => {
+    const s = new Set<string>();
+    setCollapsed(s);
+    persistCollapsed(s);
+  }, [persistCollapsed]);
 
   const collapseAll = useCallback(() => {
     const s = new Set<string>();
@@ -908,99 +904,113 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
     return () => el.removeEventListener("wheel", onWheel);
   }, [applyZoom]);
 
-  // ── Pan ──
-  const onViewportMouseDown = useCallback((e: React.MouseEvent) => {
-    // Allow panning with middle mouse or left-click on any non-interactive element
-    const target = e.target as HTMLElement | SVGElement;
-    const isCard = target.closest("[data-org-card]");
-    if (e.button === 1 || (e.button === 0 && !isCard)) {
-      e.preventDefault();
-      panRef.current = {
-        panning: true,
-        start: { mx: e.clientX, my: e.clientY, px: panXY.current.x, py: panXY.current.y },
-      };
-    }
-  }, []);
-
-  // ── Drag-and-drop (from blueprint — unchanged logic) ──
+  // ── Coordinate transforms & drop targeting ──
   const screenToCanvas = useCallback((sx: number, sy: number) => {
     const vp = vpRef.current?.getBoundingClientRect();
     if (!vp) return { x: 0, y: 0 };
     return {
-      x: (sx - vp.left - panXY.current.x) / zoomRef.current + minX,
-      y: (sy - vp.top  - panXY.current.y) / zoomRef.current + minY,
+      x: (sx - vp.left - panXY.current.x) / zoomRef.current + minXY.current.minX,
+      y: (sy - vp.top  - panXY.current.y) / zoomRef.current + minXY.current.minY,
     };
-  }, [minX, minY]);
+  }, []);
 
-  const findDropTargetFn = useCallback((sx: number, sy: number, dragId: string) => {
+  // Hit-test: the pointer must actually be over (or within a small margin of)
+  // a card — no more snapping to the nearest card within an arbitrary radius.
+  const findDropTarget = useCallback((sx: number, sy: number, dragId: string): string | null => {
     const { x: cx, y: cy } = screenToCanvas(sx, sy);
     let best: string | null = null, bestDist = Infinity;
-    for (const [id, p] of positions) {
+    for (const [id, p] of positionsRef.current) {
       if (id === dragId) continue;
+      if (cx < p.x - DROP_HIT_PAD || cx > p.x + p.w + DROP_HIT_PAD) continue;
+      if (cy < p.y - DROP_HIT_PAD || cy > p.y + p.h + DROP_HIT_PAD) continue;
       if (isAncestor(treeRef.current, dragId, id)) continue;
-      if (collapsedDescendants.has(id)) continue;
       const parent = findParent(treeRef.current, dragId);
       if (parent && parent.id === id) continue;
-      // Can't drop on staff nodes
       const targetNode = findNode(treeRef.current, id);
       if (targetNode?.type === "staff") continue;
       const dist = Math.hypot(cx - (p.x + p.w / 2), cy - (p.y + p.h / 2));
       if (dist < bestDist) { bestDist = dist; best = id; }
     }
-    const SNAP_DISTANCE = 140;
-    return bestDist < SNAP_DISTANCE ? best : null;
-  }, [positions, collapsedDescendants, screenToCanvas]);
+    return best;
+  }, [screenToCanvas]);
 
-  const onCardMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
+  // ── Pan + drag (pointer events: mouse and touch) ──
+  const onViewportPointerDown = useCallback((e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-org-card]") || target.closest("[data-org-ui]")) return;
+    if (e.button !== 0 && e.button !== 1) return;
+    e.preventDefault();
+    panRef.current = {
+      panning: true,
+      start: { mx: e.clientX, my: e.clientY, px: panXY.current.x, py: panXY.current.y },
+    };
+  }, []);
+
+  const onCardPointerDown = useCallback((e: React.PointerEvent, nodeId: string) => {
     if (e.button !== 0 || nodeId === treeRef.current.id) return;
     e.preventDefault();
     e.stopPropagation();
-    const s = { id: nodeId, curX: e.clientX, curY: e.clientY };
-    dragRef.current = s;
-    setDrag(s);
+    pendRef.current = { id: nodeId, startX: e.clientX, startY: e.clientY };
   }, []);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (panRef.current.panning) {
-        const { start } = panRef.current;
-        setPan({ x: start.px + e.clientX - start.mx, y: start.py + e.clientY - start.my });
-        return;
-      }
-      if (!dragRef.current) return;
-      const updated = { ...dragRef.current, curX: e.clientX, curY: e.clientY };
-      dragRef.current = updated;
-      setDrag({ ...updated });
-      const dt = findDropTargetFn(e.clientX, e.clientY, updated.id);
-      dropRef.current = dt;
-      setDropTarget(dt);
-    };
-
-    const onUp = (e: MouseEvent) => {
-      if (panRef.current.panning) { panRef.current = { panning: false, start: {} }; return; }
-      if (!dragRef.current) return;
-
-      const { id } = dragRef.current;
-      const dt = dropRef.current;
-
-      if (dt && dt !== id) {
-        // Show drop action menu instead of immediately moving
-        setDropMenu({ dragId: id, targetId: dt, screenX: e.clientX, screenY: e.clientY });
-      }
-
+    const cancelDrag = () => {
+      pendRef.current = null;
       dragRef.current = null;
       dropRef.current = null;
       setDrag(null);
       setDropTarget(null);
     };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+    const onMove = (e: PointerEvent) => {
+      if (panRef.current.panning && panRef.current.start) {
+        const { start } = panRef.current;
+        setPan({ x: start.px + e.clientX - start.mx, y: start.py + e.clientY - start.my });
+        return;
+      }
+      // Promote a pending press to a drag only after a small movement,
+      // so plain clicks never flash a drag ghost
+      if (pendRef.current && !dragRef.current) {
+        const { id, startX, startY } = pendRef.current;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) >= DRAG_THRESHOLD) {
+          dragRef.current = { id, curX: e.clientX, curY: e.clientY };
+          setDrag({ ...dragRef.current });
+        }
+      }
+      if (!dragRef.current) return;
+      const updated = { ...dragRef.current, curX: e.clientX, curY: e.clientY };
+      dragRef.current = updated;
+      setDrag({ ...updated });
+      const dt = findDropTarget(e.clientX, e.clientY, updated.id);
+      dropRef.current = dt;
+      setDropTarget(dt);
     };
-  }, [findDropTargetFn, onMoveNode]);
+
+    const onUp = (e: PointerEvent) => {
+      if (panRef.current.panning) { panRef.current = { panning: false, start: null }; return; }
+      if (!dragRef.current) { pendRef.current = null; return; }
+
+      const { id } = dragRef.current;
+      const dt = dropRef.current;
+      if (dt && dt !== id) {
+        setDropMenu({ dragId: id, targetId: dt, screenX: e.clientX, screenY: e.clientY });
+      }
+      cancelDrag();
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && (dragRef.current || pendRef.current)) cancelDrag();
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [findDropTarget]);
 
   // ── Snap line ──
   const snapLine = useMemo(() => {
@@ -1008,29 +1018,15 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
     const dragP = positions.get(drag.id);
     const targetP = positions.get(dropTarget);
     if (!targetP || !dragP) return null;
-    // Line from dragged card center to target card center
-    const sx = dragP.x + dragP.w / 2, sy = dragP.y + dragP.h / 2;
-    const tx = targetP.x + targetP.w / 2, ty = targetP.y + targetP.h / 2;
-    return { sx, sy, tx, ty };
+    return {
+      sx: dragP.x + dragP.w / 2, sy: dragP.y + dragP.h / 2,
+      tx: targetP.x + targetP.w / 2, ty: targetP.y + targetP.h / 2,
+    };
   }, [drag, dropTarget, positions]);
 
   const dragNode = drag ? (findNode(tree, drag.id) || unassignedNodes.find(n => n.id === drag.id)) : null;
 
-  // ── Fit to view ──
-  const fitToView = useCallback(() => {
-    const vp = vpRef.current;
-    if (!vp) return;
-    const { width, height } = vp.getBoundingClientRect();
-    const scaleX = (width - 80) / svgW;
-    const scaleY = (height - 80) / svgH;
-    const newZoom = Math.min(scaleX, scaleY, 1);
-    setZoom(newZoom);
-    setPan({
-      x: (width - svgW * newZoom) / 2,
-      y: (height - svgH * newZoom) / 2,
-    });
-  }, [svgW, svgH]);
-
+  // ── Drop actions (optimistic local update; persistence via onMoveNode) ──
   const handleDropAction = useCallback((action: DropAction) => {
     if (!dropMenu) return;
     const { dragId, targetId } = dropMenu;
@@ -1076,6 +1072,18 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
     setDropMenu(null);
   }, [dropMenu, onMoveNode]);
 
+  // ── Unassigned panel bounds ──
+  const unassignedPanel = useMemo(() => {
+    if (!unassignedNodes.length) return null;
+    const ps = unassignedNodes.map(n => positions.get(n.id)).filter(Boolean) as Pos[];
+    if (!ps.length) return null;
+    const x0 = Math.min(...ps.map(p => p.x)) - 16;
+    const y0 = Math.min(...ps.map(p => p.y)) - 36;
+    const x1 = Math.max(...ps.map(p => p.x + p.w)) + 16;
+    const y1 = Math.max(...ps.map(p => p.y + p.h)) + 16;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }, [unassignedNodes, positions]);
+
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
     <>
@@ -1089,9 +1097,13 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
           >
             <ZoomIn className="h-4 w-4" />
           </button>
-          <span className="text-xs font-medium text-muted-foreground w-10 text-center select-none">
+          <button
+            onClick={() => applyZoom(1)}
+            className="text-xs font-medium text-muted-foreground hover:text-foreground w-10 text-center select-none transition-colors"
+            title="Återställ zoom"
+          >
             {Math.round(zoom * 100)}%
-          </span>
+          </button>
           <button
             onClick={() => applyZoom(zoom * 0.8)}
             className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
@@ -1145,9 +1157,9 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
       {/* Viewport */}
       <div
         ref={vpRef}
-        onMouseDown={onViewportMouseDown}
+        onPointerDown={onViewportPointerDown}
         className="w-full h-full overflow-hidden relative"
-        style={{ cursor: drag ? "grabbing" : "grab" }}
+        style={{ cursor: drag ? "grabbing" : "grab", touchAction: "none" }}
       >
         {/* Dot grid background */}
         <div
@@ -1163,96 +1175,95 @@ export default function OrgChartCanvas({ initialTree, unassignedNodes = [], onMo
         {/* Canvas with pan + zoom */}
         <div style={{
           position: "absolute", top: 0, left: 0,
+          width: svgW, height: svgH,
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: "0 0",
           willChange: "transform",
         }}>
+          {/* Connector layer */}
           <svg
             width={svgW} height={svgH}
             viewBox={`${minX} ${minY} ${svgW} ${svgH}`}
-            style={{ overflow: "visible", display: "block" }}
+            style={{ position: "absolute", top: 0, left: 0, overflow: "visible", display: "block" }}
           >
-            {/* 1. Connectors */}
             <Connectors tree={tree} positions={positions} collapsed={collapsed} palette={palette} />
 
-            {/* 2. Snap line + drop target glow */}
+            {/* Snap line + drop target pulse */}
             {snapLine && (
               <g>
-                {/* Glow behind line */}
                 <line x1={snapLine.sx} y1={snapLine.sy} x2={snapLine.tx} y2={snapLine.ty}
-                  stroke="hsl(230, 75%, 55%)" strokeWidth={4} strokeLinecap="round" opacity={0.25} />
-                {/* Main dashed line */}
+                  stroke={palette.dropAccent} strokeWidth={4} strokeLinecap="round" opacity={0.25} />
                 <line x1={snapLine.sx} y1={snapLine.sy} x2={snapLine.tx} y2={snapLine.ty}
-                  stroke="hsl(230, 75%, 60%)" strokeWidth={1.5} strokeDasharray="6 5"
+                  stroke={palette.dropAccent} strokeWidth={1.5} strokeDasharray="6 5"
                   strokeLinecap="round" style={{ animation: "snap-dash 0.6s linear infinite" }} />
-                {/* Target pulse circle */}
                 <circle cx={snapLine.tx} cy={snapLine.ty} r={8}
-                  fill="none" stroke="hsl(230, 75%, 60%)" strokeWidth={1.5} opacity={0.6}>
+                  fill="none" stroke={palette.dropAccent} strokeWidth={1.5} opacity={0.6}>
                   <animate attributeName="r" from="6" to="18" dur="1s" repeatCount="indefinite" />
                   <animate attributeName="opacity" from="0.6" to="0" dur="1s" repeatCount="indefinite" />
                 </circle>
-                <circle cx={snapLine.tx} cy={snapLine.ty} r={5}
-                  fill="hsl(230, 75%, 60%)" opacity={0.4} />
+                <circle cx={snapLine.tx} cy={snapLine.ty} r={5} fill={palette.dropAccent} opacity={0.4} />
               </g>
             )}
-
-            {/* 3. Node cards */}
-            {Array.from(positions.entries()).map(([id, pos]) => {
-              const node = findNode(tree, id) || unassignedNodes.find(n => n.id === id);
-              if (!node) return null;
-              return (
-                <NodeCard
-                  key={id}
-                  node={node}
-                  pos={pos}
-                  isDragging={ghostIds.has(id)}
-                  isDropTarget={dropTarget === id}
-                  onMouseDown={(e) => onCardMouseDown(e, id)}
-                  onKebabClick={onKebabClick ? (e) => {
-                    onKebabClick(id, e.clientX, e.clientY);
-                  } : undefined}
-                  palette={palette}
-                  isDark={isDark}
-                />
-              );
-            })}
-
-            {/* 4. "Ej placerade" label above unassigned nodes */}
-            {unassignedNodes.length > 0 && (() => {
-              const firstPos = positions.get(unassignedNodes[0].id);
-              if (!firstPos) return null;
-              return (
-                <text
-                  x={firstPos.x + firstPos.w / 2}
-                  y={firstPos.y - 18}
-                  textAnchor="middle"
-                  fontSize={11}
-                  fontWeight="600"
-                  fill={palette.posText}
-                  fontFamily="var(--font-heading)"
-                  opacity={0.7}
-                >
-                  Ej placerade
-                </text>
-              );
-            })()}
-
-            {/* 5. Collapse buttons */}
-            {Array.from(positions.entries()).map(([id, pos]) => {
-              const node = findNode(tree, id);
-              if (!node || !node.children.length) return null;
-              return (
-                <CollapseButton
-                  key={`cb-${id}`}
-                  pos={pos}
-                  collapsed={collapsed.has(id)}
-                  count={countDescendants(node)}
-                  onClick={() => toggleCollapse(id)}
-                  palette={palette}
-                />
-              );
-            })}
           </svg>
+
+          {/* Unassigned panel frame */}
+          {unassignedPanel && (
+            <div style={{
+              position: "absolute",
+              left: unassignedPanel.x - minX,
+              top: unassignedPanel.y - minY,
+              width: unassignedPanel.w,
+              height: unassignedPanel.h,
+              border: `1.5px dashed ${palette.collapseBord}`,
+              borderRadius: 14,
+            }}>
+              <span style={{
+                position: "absolute", top: 8, left: 14,
+                fontSize: 10.5, fontWeight: 600,
+                color: palette.posText,
+                fontFamily: "var(--font-heading)",
+              }}>
+                Ej placerade
+              </span>
+            </div>
+          )}
+
+          {/* Card layer (HTML for real text truncation and tooltips) */}
+          {Array.from(positions.entries()).map(([id, pos]) => {
+            const node = findNode(tree, id) || unassignedNodes.find(n => n.id === id);
+            if (!node) return null;
+            return (
+              <NodeCard
+                key={id}
+                node={node}
+                pos={{ ...pos, x: pos.x - minX, y: pos.y - minY }}
+                isDragging={ghostIds.has(id)}
+                isDropTarget={dropTarget === id}
+                onPointerDown={(e) => onCardPointerDown(e, id)}
+                onKebabClick={onKebabClick ? (e) => {
+                  onKebabClick(id, e.clientX, e.clientY);
+                } : undefined}
+                palette={palette}
+                isDark={isDark}
+              />
+            );
+          })}
+
+          {/* Collapse pills */}
+          {Array.from(positions.entries()).map(([id, pos]) => {
+            const node = findNode(tree, id);
+            if (!node || !node.children.length) return null;
+            return (
+              <CollapsePill
+                key={`cb-${id}`}
+                pos={{ ...pos, x: pos.x - minX, y: pos.y - minY }}
+                collapsed={collapsed.has(id)}
+                count={countDescendants(node)}
+                onClick={() => toggleCollapse(id)}
+                palette={palette}
+              />
+            );
+          })}
         </div>
       </div>
 
