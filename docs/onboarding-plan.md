@@ -216,6 +216,10 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 
 ## 11. Öppna frågor (besvara innan bygge)
 
+> **Besvarade 2026-06-10:**
+> - ✅ *Vem får initiera?* Alla chefer. Ingen separat rekryteringsrätt-roll i nuläget — kan införas retroaktivt vid behov.
+> - ✅ *Timing för chef-tasks?* Inga tasks aktiveras förrän HR bekräftat i Heartpace (Fas 2). Fas 1 är endast registrering, status `pending_hr`.
+
 1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
 2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
 3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): kryssas av HR vid start, eller skapas alltid och ansvarig markerar "ej aktuellt"?
