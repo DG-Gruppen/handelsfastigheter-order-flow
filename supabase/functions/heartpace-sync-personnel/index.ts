@@ -65,12 +65,23 @@ Deno.serve(async (req) => {
     }
     const active = all.filter((e) => e?.is_current === true && e?.user_account?.account_status === 1);
 
-    // 2) Bygg fältmap per Heartpace user_account.uuid
+    // 2a) Slå upp lokala avdelningsnamn via heartpace_uuid
+    const { data: localDepts } = await supa
+      .from("departments")
+      .select("name, heartpace_uuid")
+      .not("heartpace_uuid", "is", null);
+    const deptNameByHpUuid = new Map<string, string>();
+    for (const d of localDepts ?? []) {
+      if (d.heartpace_uuid) deptNameByHpUuid.set(String(d.heartpace_uuid), d.name);
+    }
+
+    // 2b) Bygg fältmap per Heartpace user_account.uuid
     type HpFields = {
       title: string | null;
       phone: string | null;
       birthday: string | null;
       start_date: string | null;
+      department: string | null;
     };
     const byHpId = new Map<string, HpFields>();
     for (const emp of active) {
@@ -80,11 +91,17 @@ Deno.serve(async (req) => {
       const ji = jis.find((j) => j?.is_current) ?? jis[0];
 
       const phone = pd.work_phone || pd.mobile_work_phone || pd.mobile_phone || null;
+      const hpDeptUuid: string | undefined = ji?.department?.uuid;
+      const hpDeptName: string | null = ji?.department?.name ?? null;
+      // Föredra lokalt avdelningsnamn (matchat via heartpace_uuid), fall tillbaka till Heartpaces namn
+      const department = (hpDeptUuid && deptNameByHpUuid.get(hpDeptUuid)) || hpDeptName;
+
       const fields: HpFields = {
         title: ji?.position?.name ?? null,
         phone: phone ? String(phone).trim() : null,
         birthday: toDate(pd.birth_date),
         start_date: toDate(emp?.start_date) ?? toDate(ua?.hire_date) ?? toDate(ua?.actual_hire_date),
+        department: department ?? null,
       };
       const hpId: string | undefined = ua.uuid || (ua.id != null ? String(ua.id) : undefined);
       if (hpId) byHpId.set(hpId, fields);
@@ -93,12 +110,12 @@ Deno.serve(async (req) => {
     // 3) Hämta profiler med heartpace_employee_id
     const { data: profiles, error: pErr } = await supa
       .from("profiles")
-      .select("id, heartpace_employee_id, title_override, phone, birthday, start_date")
+      .select("id, heartpace_employee_id, title_override, phone, birthday, start_date, department")
       .not("heartpace_employee_id", "is", null);
     if (pErr) throw pErr;
 
     let updated = 0, noMatch = 0, unchanged = 0;
-    const changes: Record<string, number> = { title_override: 0, phone: 0, birthday: 0, start_date: 0 };
+    const changes: Record<string, number> = { title_override: 0, phone: 0, birthday: 0, start_date: 0, department: 0 };
 
     for (const p of profiles ?? []) {
       const hp = byHpId.get(p.heartpace_employee_id as string);
@@ -108,6 +125,7 @@ Deno.serve(async (req) => {
       if (hp.phone !== null && hp.phone !== p.phone) { patch.phone = hp.phone; changes.phone++; }
       if (hp.birthday !== null && hp.birthday !== (p.birthday ?? null)) { patch.birthday = hp.birthday; changes.birthday++; }
       if (hp.start_date !== null && hp.start_date !== (p.start_date ?? null)) { patch.start_date = hp.start_date; changes.start_date++; }
+      if (hp.department !== null && hp.department !== (p.department ?? null)) { patch.department = hp.department; changes.department++; }
       if (Object.keys(patch).length === 0) { unchanged++; continue; }
       const { error } = await supa.from("profiles").update(patch).eq("id", p.id);
       if (!error) updated++;
