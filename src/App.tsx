@@ -21,6 +21,9 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const OnboardingPlan = lazy(() => import("./pages/OnboardingPlan"));
 const OffboardingPlan = lazy(() => import("./pages/OffboardingPlan"));
 const BoardingPlan = lazy(() => import("./pages/BoardingPlan"));
+const Boarding = lazy(() => import("./pages/Boarding"));
+const BoardingNew = lazy(() => import("./pages/BoardingNew"));
+const BoardingDetail = lazy(() => import("./pages/BoardingDetail"));
 const ITInfo = lazy(() => import("./pages/ITInfo"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const History = lazy(() => import("./pages/History"));
@@ -87,6 +90,9 @@ const App = () => (
                       <Route path="/onboarding-plan" element={<OnboardingPlan />} />
                      <Route path="/offboarding-plan" element={<OffboardingPlan />} />
                      <Route path="/boarding-plan" element={<BoardingPlan />} />
+                     <Route path="/boarding" element={<Boarding />} />
+                     <Route path="/boarding/ny" element={<BoardingNew />} />
+                     <Route path="/boarding/:id" element={<BoardingDetail />} />
                       <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/orders/:id" element={<OrderDetail />} />
                       <Route path="/history" element={<History />} />
