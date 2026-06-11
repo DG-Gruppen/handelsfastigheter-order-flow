@@ -377,7 +377,7 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 
 1. **Mejlstrategi:** ✅ Ett samlat mejl per ansvarig med alla deras punkter — antingen skapa konto i verktyget och bekräfta det, eller att man ska kolla till sin checklista innan personen börjar. Ingen separat mejl per enskild punkt.
 2. **Heartpace-trigger:** ✅ Befintlig schemalagd sync (dagligen) räcker. En som ska börja ska finnas inlagd i Heartpace minst 48 timmar innan startdatum — det finns rutiner på plats internt så ingen webhook eller snabbare trigg behövs.
-3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): kryssas av HR vid start, eller skapas alltid och ansvarig markerar "ej aktuellt"?
+3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): ✅ Närmaste chef initierar onboardingen och kryssar i vilka punkter som är aktuella i Fas 1. Sedan får HR en "onboardingansökan" som notis/mejl — HR fyller i relevant information i Heartpace och bekräftar. Först när HR har bekräftat (Fas 2) börjar mejl/notiser gå ut till ansvariga tool-owners/area-owners för deras del. Punkter som chef markerat "ej aktuellt" skapas aldrig som tasks.
 4. **In-app-notiser:** ✅ Ja, utöver mejl. Notiser skickas till ansvariga i intranätet när de får nya onboarding-uppgifter (vi har redan `notifications`-tabellen).
 5. **Fastighetslistor som löpande process?** Ska "förändringar i fastighetslistor" trigga vid varje onboarding, eller är det en stående uppgift som inte hör hemma i mallen?
 
