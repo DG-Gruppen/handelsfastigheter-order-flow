@@ -325,6 +325,71 @@ Internt representeras varje val som en composite key `"profile:<id>"` eller `"ex
 
 > **Status:** endast plan. Implementation görs i Etapp 1 enligt avsnitt 10 — börja med datamodellen + `/admin/onboarding`-skalet och fliken Ansvarsområden, eftersom mallarna förutsätter att områden och externa kontakter finns på plats.
 
+### 7.3 Processflöde (bekräftat 2026-06-11)
+
+Hela onboarding-processen följer en strikt sekvens med två tydliga "grindar" innan ansvariga ägare aktiveras:
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│ FAS 1 — Närmaste chef initierar                    status: pending_hr │
+│   • Chef öppnar /onboarding och klickar "Ny onboarding"              │
+│   • Fyller i: namn, startdatum, befattning, ev. Heartpace-koppling   │
+│   • Kryssar i vilka "Om aktuellt"-punkter som gäller                 │
+│     (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry, ...)        │
+│   • Sparar → HR får mejl + in-app-notis: "Ny onboardingansökan"      │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FAS 2 — HR bekräftar                               status: active    │
+│   • HR öppnar ärendet från notisen/mejlet                            │
+│   • Lägger in personen i Heartpace, kompletterar profildata          │
+│   • Klickar "Bekräfta & starta utskick"                              │
+│   • Systemet resolvar alla tasks via assignee_source och skapar      │
+│     onboarding_tasks-rader (endast för aktuella punkter)             │
+│   • Mejl + notis går ut till varje ansvarig (samlat per person)      │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FAS 3 — Ansvariga utför                            status: active    │
+│   • Tool-owners / area-owners / chef får mejl med deras egna punkter │
+│   • Varje mejl innehåller en länk till ärendet:                      │
+│     https://intra.handelsfastigheter.se/onboarding/<instance_id>     │
+│     → öppnar deras del av checklistan, redo att kryssas av           │
+│   • Påminnelser går ut N dagar innan deadline om något är öppet      │
+└──────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FAS 4 — Avslut                                     status: completed │
+│   • När sista task kryssas av → instansen sätts till completed       │
+│   • HR + närmaste chef får mejl + notis: "Onboarding klar för X"     │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**`/onboarding`-sidan** (uppdaterad omfattning):
+- **Närmaste chef** ser sina pågående onboardings (där `initiated_by = chef.user_id` eller `nearest_manager_id = chef.profile_id`) med full progress-vy.
+- **HR** ser alla onboardings i organisationen, kan filtrera på status (`pending_hr`, `active`, `completed`) och se var det hänger upp sig.
+- **Övriga ansvariga** (tool-owners m.fl.) ser bara sina egna tasks via deep-link från mejlet eller via "Mina onboarding-uppgifter" på dashboarden.
+- Detalj-vyn (`/onboarding/<id>`) visar timeline med Fas 1–4, alla tasks grupperade per ansvarig, vilka som är klara/öppna/försenade.
+
+**Mejl-design — alla utskick innehåller deep-link tillbaka:**
+| Trigger | Mottagare | Innehåll | Länk |
+|---|---|---|---|
+| Fas 1 → Fas 2 | HR | "Ny onboardingansökan för [namn] från [chef]" | `/onboarding/<id>` |
+| Fas 2 → Fas 3 | Varje ansvarig (samlat) | "Du har X onboarding-uppgifter för [namn] inför [startdatum]" | `/onboarding/<id>` (filtrerad på mottagarens tasks) |
+| Påminnelse | Ansvarig med öppna tasks | "Påminnelse: [namn] börjar om N dagar" | `/onboarding/<id>` |
+| Fas 4 | HR + närmaste chef | "Onboarding klar för [namn]" | `/onboarding/<id>` |
+
+**Datamodells-tillägg:**
+- `onboarding_instances.initiated_by uuid` (user_id på chefen som startade) — för "mina onboardings"-filter.
+- `onboarding_instances.hr_confirmed_at timestamptz` + `hr_confirmed_by uuid` — markerar övergången Fas 1 → Fas 2.
+- `onboarding_instances.optional_items_included jsonb` — vilka "Om aktuellt"-punkter chefen kryssade i (snapshot, så tasks bara skapas för dessa när HR bekräftar).
+- `onboarding_instances.completed_at timestamptz` — sätts när sista task bockas av, triggar Fas 4-utskick.
+
+
+
 ---
 
 ## 8. Kopplingar till befintlig kod
@@ -377,7 +442,7 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 
 1. **Mejlstrategi:** ✅ Ett samlat mejl per ansvarig med alla deras punkter — antingen skapa konto i verktyget och bekräfta det, eller att man ska kolla till sin checklista innan personen börjar. Ingen separat mejl per enskild punkt.
 2. **Heartpace-trigger:** ✅ Befintlig schemalagd sync (dagligen) räcker. En som ska börja ska finnas inlagd i Heartpace minst 48 timmar innan startdatum — det finns rutiner på plats internt så ingen webhook eller snabbare trigg behövs.
-3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): kryssas av HR vid start, eller skapas alltid och ansvarig markerar "ej aktuellt"?
+3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): ✅ Närmaste chef initierar onboardingen och kryssar i vilka punkter som är aktuella i Fas 1. Sedan får HR en "onboardingansökan" som notis/mejl — HR fyller i relevant information i Heartpace och bekräftar. Först när HR har bekräftat (Fas 2) börjar mejl/notiser gå ut till ansvariga tool-owners/area-owners för deras del. Punkter som chef markerat "ej aktuellt" skapas aldrig som tasks.
 4. **In-app-notiser:** ✅ Ja, utöver mejl. Notiser skickas till ansvariga i intranätet när de får nya onboarding-uppgifter (vi har redan `notifications`-tabellen).
 5. **Fastighetslistor som löpande process?** Ska "förändringar i fastighetslistor" trigga vid varje onboarding, eller är det en stående uppgift som inte hör hemma i mallen?
 
