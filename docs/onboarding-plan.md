@@ -394,7 +394,7 @@ Hela onboarding-processen följer en strikt sekvens med två tydliga "grindar" i
 
 ## 8. Kopplingar till befintlig kod
 
-- Nuvarande `/onboarding`-orderflöde (dator/mobil/systembehörigheter) **behålls** som "Beställning av utrustning" — det är en av punkterna i checklistan ("Beställ dator och mobil via Onboarding-formuläret"). Vi länkar dit från checklistan istället för att ersätta.
+- Nuvarande `/onboarding`-orderflöde (dator/mobil/systembehörigheter) **konsolideras** in i nya onboarding-flödet — se avsnitt **14. Konsolidering av hårdvara & licenser**. Chefen fyller i ett (1) formulär.
 - `tool_owners` används för att auto-tilldela behörighetsuppgifter → mallen självuppdateras vid ägarbyten.
 
 ---
