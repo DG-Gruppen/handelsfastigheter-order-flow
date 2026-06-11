@@ -1280,6 +1280,399 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_email_log: {
+        Row: {
+          error: string | null
+          id: string
+          instance_id: string
+          payload: Json
+          recipient_email: string
+          recipient_profile_id: string | null
+          sent_at: string
+          template_key: string
+        }
+        Insert: {
+          error?: string | null
+          id?: string
+          instance_id: string
+          payload?: Json
+          recipient_email: string
+          recipient_profile_id?: string | null
+          sent_at?: string
+          template_key: string
+        }
+        Update: {
+          error?: string | null
+          id?: string
+          instance_id?: string
+          payload?: Json
+          recipient_email?: string
+          recipient_profile_id?: string | null
+          sent_at?: string
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_email_log_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_email_log_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_external_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          instance_id: string
+          label: string | null
+          task_ids: string[]
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          instance_id: string
+          label?: string | null
+          task_ids?: string[]
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          instance_id?: string
+          label?: string | null
+          task_ids?: string[]
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_external_tokens_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_instances: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          exit_reason: string | null
+          exit_type: string | null
+          id: string
+          initiated_by: string | null
+          last_day: string | null
+          legal_hold: boolean
+          nearest_manager_id: string | null
+          notes: string | null
+          profile_id: string | null
+          prospective_email: string | null
+          prospective_name: string | null
+          prospective_title: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["onboarding_instance_status"]
+          template_id: string
+          trigger_source: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          exit_reason?: string | null
+          exit_type?: string | null
+          id?: string
+          initiated_by?: string | null
+          last_day?: string | null
+          legal_hold?: boolean
+          nearest_manager_id?: string | null
+          notes?: string | null
+          profile_id?: string | null
+          prospective_email?: string | null
+          prospective_name?: string | null
+          prospective_title?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["onboarding_instance_status"]
+          template_id: string
+          trigger_source?: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          exit_reason?: string | null
+          exit_type?: string | null
+          id?: string
+          initiated_by?: string | null
+          last_day?: string | null
+          legal_hold?: boolean
+          nearest_manager_id?: string | null
+          notes?: string | null
+          profile_id?: string | null
+          prospective_email?: string | null
+          prospective_name?: string | null
+          prospective_title?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["onboarding_instance_status"]
+          template_id?: string
+          trigger_source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_instances_nearest_manager_id_fkey"
+            columns: ["nearest_manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_instances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_instances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_tasks: {
+        Row: {
+          assignee_email: string | null
+          assignee_label: string | null
+          assignee_profile_id: string | null
+          category: string | null
+          created_at: string
+          deadline_date: string | null
+          description: string | null
+          done_at: string | null
+          done_by: string | null
+          id: string
+          instance_id: string
+          is_sensitive: boolean
+          note: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["onboarding_task_status"]
+          template_task_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_email?: string | null
+          assignee_label?: string | null
+          assignee_profile_id?: string | null
+          category?: string | null
+          created_at?: string
+          deadline_date?: string | null
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          instance_id: string
+          is_sensitive?: boolean
+          note?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["onboarding_task_status"]
+          template_task_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_email?: string | null
+          assignee_label?: string | null
+          assignee_profile_id?: string | null
+          category?: string | null
+          created_at?: string
+          deadline_date?: string | null
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          instance_id?: string
+          is_sensitive?: boolean
+          note?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["onboarding_task_status"]
+          template_task_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_tasks_assignee_profile_id_fkey"
+            columns: ["assignee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_tasks_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_tasks_template_task_id_fkey"
+            columns: ["template_task_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_template_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_template_tasks: {
+        Row: {
+          assignee_area_id: string | null
+          assignee_profile_id: string | null
+          assignee_role: string | null
+          assignee_source: Database["public"]["Enums"]["onboarding_assignee_source"]
+          assignee_tool_id: string | null
+          category: string | null
+          conditional: string
+          created_at: string
+          description: string | null
+          due_offset_days: number
+          id: string
+          is_active: boolean
+          sort_order: number
+          template_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_area_id?: string | null
+          assignee_profile_id?: string | null
+          assignee_role?: string | null
+          assignee_source: Database["public"]["Enums"]["onboarding_assignee_source"]
+          assignee_tool_id?: string | null
+          category?: string | null
+          conditional?: string
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          template_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_area_id?: string | null
+          assignee_profile_id?: string | null
+          assignee_role?: string | null
+          assignee_source?: Database["public"]["Enums"]["onboarding_assignee_source"]
+          assignee_tool_id?: string | null
+          category?: string | null
+          conditional?: string
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          template_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_template_tasks_assignee_area_id_fkey"
+            columns: ["assignee_area_id"]
+            isOneToOne: false
+            referencedRelation: "responsibility_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_template_tasks_assignee_profile_id_fkey"
+            columns: ["assignee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_template_tasks_assignee_tool_id_fkey"
+            columns: ["assignee_tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_template_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          kind: Database["public"]["Enums"]["onboarding_kind"]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind: Database["public"]["Enums"]["onboarding_kind"]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind?: Database["public"]["Enums"]["onboarding_kind"]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           category_id: string | null
@@ -1458,6 +1851,8 @@ export type Database = {
           delivery_comment: string | null
           description: string | null
           id: string
+          offboarding_instance_id: string | null
+          onboarding_instance_id: string | null
           order_reason: string | null
           order_type_id: string | null
           recipient_department: string | null
@@ -1479,6 +1874,8 @@ export type Database = {
           delivery_comment?: string | null
           description?: string | null
           id?: string
+          offboarding_instance_id?: string | null
+          onboarding_instance_id?: string | null
           order_reason?: string | null
           order_type_id?: string | null
           recipient_department?: string | null
@@ -1500,6 +1897,8 @@ export type Database = {
           delivery_comment?: string | null
           description?: string | null
           id?: string
+          offboarding_instance_id?: string | null
+          onboarding_instance_id?: string | null
           order_reason?: string | null
           order_type_id?: string | null
           recipient_department?: string | null
@@ -1518,6 +1917,20 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_offboarding_instance_id_fkey"
+            columns: ["offboarding_instance_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_onboarding_instance_id_fkey"
+            columns: ["onboarding_instance_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_instances"
             referencedColumns: ["id"]
           },
           {
@@ -2228,6 +2641,69 @@ export type Database = {
         }
         Relationships: []
       }
+      responsibility_areas: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      responsibility_owners: {
+        Row: {
+          area_id: string
+          created_at: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          area_id: string
+          created_at?: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          area_id?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "responsibility_owners_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "responsibility_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "responsibility_owners_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_log: {
         Row: {
           created_at: string
@@ -2704,6 +3180,10 @@ export type Database = {
         Args: { _permission: string; _slug: string; _user_id: string }
         Returns: boolean
       }
+      has_onboarding_task: {
+        Args: { _instance_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2720,9 +3200,14 @@ export type Database = {
         Returns: undefined
       }
       is_in_admin_group: { Args: { _user_id: string }; Returns: boolean }
+      is_in_hr_group: { Args: { _user_id: string }; Returns: boolean }
       is_in_it_group: { Args: { _user_id: string }; Returns: boolean }
       is_in_manager_group: { Args: { _user_id: string }; Returns: boolean }
       is_in_staff_group: { Args: { _user_id: string }; Returns: boolean }
+      is_nearest_manager_for_instance: {
+        Args: { _instance_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_subordinate_order: {
         Args: { _requester_id: string; _viewer_id: string }
         Returns: boolean
@@ -2777,6 +3262,20 @@ export type Database = {
     Enums: {
       app_role: "employee" | "manager" | "admin" | "staff" | "it"
       integration_status_level: "ok" | "warning" | "error"
+      onboarding_assignee_source:
+        | "static_profile"
+        | "tool_owner"
+        | "area_owner"
+        | "role"
+        | "nearest_manager"
+      onboarding_instance_status:
+        | "draft"
+        | "pending_hr"
+        | "active"
+        | "completed"
+        | "cancelled"
+      onboarding_kind: "onboarding" | "offboarding"
+      onboarding_task_status: "pending" | "done" | "not_applicable"
       order_category: "computer" | "phone" | "peripheral" | "other"
       order_status: "pending" | "approved" | "rejected" | "delivered"
     }
@@ -2908,6 +3407,22 @@ export const Constants = {
     Enums: {
       app_role: ["employee", "manager", "admin", "staff", "it"],
       integration_status_level: ["ok", "warning", "error"],
+      onboarding_assignee_source: [
+        "static_profile",
+        "tool_owner",
+        "area_owner",
+        "role",
+        "nearest_manager",
+      ],
+      onboarding_instance_status: [
+        "draft",
+        "pending_hr",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+      onboarding_kind: ["onboarding", "offboarding"],
+      onboarding_task_status: ["pending", "done", "not_applicable"],
       order_category: ["computer", "phone", "peripheral", "other"],
       order_status: ["pending", "approved", "rejected", "delivered"],
     },
