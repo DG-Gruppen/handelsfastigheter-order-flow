@@ -653,6 +653,25 @@ Policyöversikt:
 
 Externa bockar av via `onboarding-external-checkoff` (service-role); tabellen behöver inga publika policys.
 
+Extra läsregel för kopplade orders (onboarding-kontext):
+
+```sql
+CREATE POLICY "Onboarding-deltagare ser kopplad order"
+ON public.orders FOR SELECT TO authenticated
+USING (
+  onboarding_instance_id IS NOT NULL
+  AND (
+    public.is_in_hr_group(auth.uid())
+    OR EXISTS (
+      SELECT 1 FROM public.onboarding_instances oi
+      WHERE oi.id = orders.onboarding_instance_id
+        AND (oi.initiated_by = auth.uid() OR oi.manager_user_id = auth.uid())
+    )
+    OR public.has_onboarding_task(auth.uid(), onboarding_instance_id)
+  )
+);
+```
+
 ### 13.3 Edge Functions (komplett lista)
 
 | Function | Trigger | Ansvar |
