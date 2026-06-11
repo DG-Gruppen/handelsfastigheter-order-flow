@@ -761,7 +761,7 @@ Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintli
 
 - **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2. **Blockerar B–F** (regenererar `types.ts`).
 - **Agent B — Edge Functions:** alla 7 funktioner i 13.3 + `config.toml` för `onboarding-external-checkoff`. Beroende: A.
-- **Agent C — React Email-mallar:** 5 mallar enligt 13.4 + `registry.ts`. Parallellt med B.
+- **Agent C — React Email-mallar:** ✅ levererade (5 mallar + `_onboarding-shared.ts` + registry uppdaterad). Inga ändringar behövs av andra agenter.
 - **Agent D — Admin-UI:** `/admin/onboarding` (Översikt, Mallar, Ansvarsområden, Mejlmallar). Parallellt med B/C.
 - **Agent E — `/onboarding`-vyer:** chef-init-formulär, HR-bekräftelse, detalj-vy med timeline, "Mina onboarding-uppgifter"-widget, publik `/onboarding/extern`. Beroende: A.
 - **Agent F — pg_cron + notiser:** schemaläggning av `onboarding-reminders` via `cron.schedule` (projekt-URL + anon key), hookar i `notifications`. Beroende: B.
