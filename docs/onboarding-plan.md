@@ -151,8 +151,10 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 ```text
 -- Nya ägarskaps-register (delas av onboarding/offboarding och framtida processer)
 
-external_contacts
-  id, name, email, organization, role_description, is_active
+external_contacts                  -- ✅ IMPLEMENTERAD (migration kör)
+  id, company_name (nullable), full_name, email (nullable),
+  phone (nullable), notes (nullable), is_active,
+  created_by, created_at, updated_at
 
 responsibility_areas              -- icke-system, t.ex. nycklar, webbsida
   id, slug, name, description, is_active
@@ -163,10 +165,14 @@ responsibility_owners             -- many-to-many; ägaren är intern ELLER exte
   external_contact_id nullable,
   CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
 
--- tool_owners utökas på samma sätt:
-tool_owners (befintlig, ALTER)
-  + external_contact_id nullable
-  + CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+-- tool_owners är redan utökad: ✅ IMPLEMENTERAD
+tool_owners (befintlig, ALTER körd)
+  + id (synthetic PK, ersätter gamla composite PK)
+  + external_contact_id nullable (FK → external_contacts ON DELETE CASCADE)
+  + profile_id nu nullable
+  + CHECK (exakt en av profile_id / external_contact_id är satt)
+  + unika index per (tool_id, profile_id) resp. (tool_id, external_contact_id)
+-- tools.owner_id är nu nullable så ett verktyg kan ägas av endast externa kontakter
 
 -- Onboarding-modellen
 
