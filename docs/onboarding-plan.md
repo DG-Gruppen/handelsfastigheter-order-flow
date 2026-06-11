@@ -791,12 +791,20 @@ Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintli
 
 ### 13.8 Föreslagen agent-split (parallellt körbar)
 
-- **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2. **Blockerar B–F** (regenererar `types.ts`).
+```text
+A (schema + RLS) ──┬─► B (edge functions) ──► F (cron + notiser)
+                   ├─► D (admin-UI)
+                   ├─► E (chef/HR-vyer) ──► G (konsolidering hårdvara/licens)
+                   └─► C (React Email) ✅ färdig
+```
+
+- **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2 (inklusive orders/order_types-tillägg för konsolideringen). **Blockerar B–F och G** (regenererar `types.ts`).
 - **Agent B — Edge Functions:** alla 7 funktioner i 13.3 + `config.toml` för `onboarding-external-checkoff`. Beroende: A.
 - **Agent C — React Email-mallar:** ✅ levererade (5 mallar + `_onboarding-shared.ts` + registry uppdaterad). Inga ändringar behövs av andra agenter.
 - **Agent D — Admin-UI:** `/admin/onboarding` (Översikt, Mallar, Ansvarsområden, Mejlmallar). Parallellt med B/C.
 - **Agent E — `/onboarding`-vyer:** chef-init-formulär, HR-bekräftelse, detalj-vy med timeline, "Mina onboarding-uppgifter"-widget, publik `/onboarding/extern`. Beroende: A.
 - **Agent F — pg_cron + notiser:** schemaläggning av `onboarding-reminders` via `cron.schedule` (projekt-URL + anon key), hookar i `notifications`. Beroende: B.
+- **Agent G — Konsolidering hårdvara/licens:** migration (DDL redan i 13.1), komponentextraktion (`SystemsPicker`, `EquipmentPicker`, `createOrder`), integration i Fas-1-formuläret (Agent E) och `NewOrder.tsx`, pensionering av gammalt formulär. Beroende: A + E.
 
 **Klart för bygge:** ja, så snart fråga 7 (fastighetslistor) är besvarad eller medvetet skjuten till efter Etapp 1.
 
