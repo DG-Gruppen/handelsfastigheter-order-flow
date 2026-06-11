@@ -440,14 +440,317 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 > - ✅ *Saker som inte är "verktyg" (nycklar, webbsida, fastighetslistor)?* Läggs som `responsibility_areas` — eget register, syns inte på `/verktyg`.
 > - ✅ *Externa personer (Agnes m.fl.)?* Läggs som `external_contacts` och kan stå som ägare på både verktyg och ansvarsområden. Inga inloggningar, ingen plats i personalkatalogen.
 
-1. **Mejlstrategi:** ✅ Ett samlat mejl per ansvarig med alla deras punkter — antingen skapa konto i verktyget och bekräfta det, eller att man ska kolla till sin checklista innan personen börjar. Ingen separat mejl per enskild punkt.
-2. **Heartpace-trigger:** ✅ Befintlig schemalagd sync (dagligen) räcker. En som ska börja ska finnas inlagd i Heartpace minst 48 timmar innan startdatum — det finns rutiner på plats internt så ingen webhook eller snabbare trigg behövs.
-3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): ✅ Närmaste chef initierar onboardingen och kryssar i vilka punkter som är aktuella i Fas 1. Sedan får HR en "onboardingansökan" som notis/mejl — HR fyller i relevant information i Heartpace och bekräftar. Först när HR har bekräftat (Fas 2) börjar mejl/notiser gå ut till ansvariga tool-owners/area-owners för deras del. Punkter som chef markerat "ej aktuellt" skapas aldrig som tasks.
-4. **In-app-notiser:** ✅ Ja, utöver mejl. Notiser skickas till ansvariga i intranätet när de får nya onboarding-uppgifter (vi har redan `notifications`-tabellen).
-5. **Fastighetslistor som löpande process?** Ska "förändringar i fastighetslistor" trigga vid varje onboarding, eller är det en stående uppgift som inte hör hemma i mallen?
+1. **Mejlstrategi:** ✅ Ett samlat mejl per ansvarig med alla deras punkter.
+2. **Heartpace-trigger:** ✅ Befintlig schemalagd sync (dagligen). Minst 48 h innan startdatum.
+3. **"Om aktuellt"-punkter:** ✅ Chefen kryssar i Fas 1. HR bekräftar i Fas 2. Tasks skapas bara för markerade punkter.
+4. **In-app-notiser:** ✅ Ja, utöver mejl.
+5. **Externa kontakters avbockning:** ✅ Token-länk i mejlet → publik vy där externa bockar av utan inloggning. HR har manuell fallback.
+6. **Påminnelse-logik:** ✅ T-7, T-3 och T-1 dagar före startdatum. T-1 eskalerar dessutom till närmaste chef.
+7. **Fastighetslistor som löpande process?** Öppen — ska "förändringar i fastighetslistor" trigga vid varje onboarding eller är det en stående uppgift utanför mallen?
 
 ---
 
 ## 12. Mejlmallar (Petras originaltexter)
 
 Bevaras som default i admin-vyn, redigerbara per task-grupp. Se `Onboarding 2026.docx` för full text. Variabler: `[namn]`, `[startdatum]`, `[befattning]`, `[chef]`, `[ansvarig]`, `[verktyg]`.
+
+---
+
+## 13. Bygg-spec (klar för agenter) — bekräftad 2026-06-11
+
+Detta avsnitt är "kontraktet" mellan plan och implementation. Agenter ska kunna parallellisera arbete utan ytterligare frågor.
+
+### 13.1 Komplett DDL
+
+```sql
+-- Enums
+CREATE TYPE onboarding_kind AS ENUM ('onboarding', 'offboarding');
+CREATE TYPE onboarding_status AS ENUM ('pending_hr', 'active', 'completed', 'cancelled');
+CREATE TYPE onboarding_assignee_source AS ENUM ('tool_owner', 'area_owner', 'role', 'nearest_manager');
+CREATE TYPE onboarding_task_kind AS ENUM ('standard', 'optional');
+
+-- responsibility_areas
+CREATE TABLE public.responsibility_areas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text NOT NULL UNIQUE,
+  name text NOT NULL,
+  description text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- responsibility_owners (XOR: intern eller extern)
+CREATE TABLE public.responsibility_owners (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  area_id uuid NOT NULL REFERENCES public.responsibility_areas(id) ON DELETE CASCADE,
+  profile_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  external_contact_id uuid REFERENCES public.external_contacts(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+);
+CREATE UNIQUE INDEX responsibility_owners_area_profile_uq
+  ON public.responsibility_owners(area_id, profile_id) WHERE profile_id IS NOT NULL;
+CREATE UNIQUE INDEX responsibility_owners_area_external_uq
+  ON public.responsibility_owners(area_id, external_contact_id) WHERE external_contact_id IS NOT NULL;
+
+-- onboarding_templates
+CREATE TABLE public.onboarding_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  kind onboarding_kind NOT NULL DEFAULT 'onboarding',
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- onboarding_template_tasks
+CREATE TABLE public.onboarding_template_tasks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_id uuid NOT NULL REFERENCES public.onboarding_templates(id) ON DELETE CASCADE,
+  section text NOT NULL,
+  title text NOT NULL,
+  description text,
+  sort_order int NOT NULL DEFAULT 0,
+  kind onboarding_task_kind NOT NULL DEFAULT 'standard',
+  optional_key text,                              -- t.ex. 'tjanstebil', 'id06', 'creditsafe'
+  assignee_source onboarding_assignee_source NOT NULL,
+  assignee_tool_id uuid REFERENCES public.tools(id) ON DELETE RESTRICT,
+  assignee_area_id uuid REFERENCES public.responsibility_areas(id) ON DELETE RESTRICT,
+  assignee_role text,                              -- 'hr' | 'it'
+  email_template_key text,
+  due_offset_days int,                             -- relativt start_date (negativ = före)
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (
+    (assignee_source = 'tool_owner'      AND assignee_tool_id IS NOT NULL) OR
+    (assignee_source = 'area_owner'      AND assignee_area_id IS NOT NULL) OR
+    (assignee_source = 'role'            AND assignee_role IS NOT NULL) OR
+    (assignee_source = 'nearest_manager')
+  )
+);
+
+-- onboarding_instances
+CREATE TABLE public.onboarding_instances (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_id uuid NOT NULL REFERENCES public.onboarding_templates(id) ON DELETE RESTRICT,
+  profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,  -- nullable: fylls i när profilen finns
+  full_name text NOT NULL,                          -- snapshot från Fas 1
+  email text,
+  position text,
+  start_date date NOT NULL,
+  initiated_by uuid NOT NULL REFERENCES auth.users(id),
+  nearest_manager_id uuid REFERENCES public.profiles(id),
+  heartpace_employee_id text,
+  status onboarding_status NOT NULL DEFAULT 'pending_hr',
+  optional_items_included jsonb NOT NULL DEFAULT '[]'::jsonb,
+  hr_confirmed_at timestamptz,
+  hr_confirmed_by uuid REFERENCES auth.users(id),
+  completed_at timestamptz,
+  cancelled_at timestamptz,
+  cancelled_by uuid REFERENCES auth.users(id),
+  cancel_reason text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- onboarding_tasks (snapshot vid Fas 2)
+CREATE TABLE public.onboarding_tasks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  instance_id uuid NOT NULL REFERENCES public.onboarding_instances(id) ON DELETE CASCADE,
+  template_task_id uuid REFERENCES public.onboarding_template_tasks(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  description text,
+  section text NOT NULL,
+  assignee_profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  assignee_external_id uuid REFERENCES public.external_contacts(id) ON DELETE SET NULL,
+  assignee_email text NOT NULL,                    -- snapshot, alltid satt
+  assignee_label text NOT NULL,                    -- "Anna A." eller "Agnes (Fastighetssnabben)"
+  deadline_date date,
+  reminder_sent_at timestamptz,
+  done boolean NOT NULL DEFAULT false,
+  done_at timestamptz,
+  done_by uuid REFERENCES auth.users(id),          -- null om bockad via token (extern)
+  note text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- onboarding_external_tokens (engångslänkar för externa)
+CREATE TABLE public.onboarding_external_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  instance_id uuid NOT NULL REFERENCES public.onboarding_instances(id) ON DELETE CASCADE,
+  external_contact_id uuid NOT NULL REFERENCES public.external_contacts(id) ON DELETE CASCADE,
+  token text NOT NULL UNIQUE,                      -- 64 hex chars (32 random bytes)
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- onboarding_email_log
+CREATE TABLE public.onboarding_email_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  instance_id uuid NOT NULL REFERENCES public.onboarding_instances(id) ON DELETE CASCADE,
+  recipient_profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  recipient_external_id uuid REFERENCES public.external_contacts(id) ON DELETE SET NULL,
+  recipient_email text NOT NULL,
+  template_key text NOT NULL,                      -- 'fas2_owner_batch', 'fas4_done', 'reminder', ...
+  task_ids uuid[] NOT NULL DEFAULT '{}',
+  sent_at timestamptz NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'queued'
+);
+```
+
+### 13.2 RLS-spec + helper-funktioner
+
+Nya security-definer helpers:
+
+```sql
+CREATE OR REPLACE FUNCTION public.is_in_hr_group(_user_id uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.group_members gm
+    JOIN public.groups g ON g.id = gm.group_id
+    WHERE gm.user_id = _user_id AND g.name ILIKE 'HR'
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_onboarding_task(_user_id uuid, _instance_id uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.onboarding_tasks t
+    JOIN public.profiles p ON p.id = t.assignee_profile_id
+    WHERE t.instance_id = _instance_id AND p.user_id = _user_id
+  )
+$$;
+```
+
+Policyöversikt:
+
+| Tabell | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| `responsibility_areas` | alla authenticated | admin/IT | admin/IT | admin/IT |
+| `responsibility_owners` | alla authenticated | admin/IT/HR | admin/IT/HR | admin/IT/HR |
+| `onboarding_templates` | admin/IT/HR | admin/IT/HR | admin/IT/HR | admin/IT |
+| `onboarding_template_tasks` | admin/IT/HR | admin/IT/HR | admin/IT/HR | admin/IT/HR |
+| `onboarding_instances` | HR + admin/IT + `initiated_by = auth.uid()` + caller är `nearest_manager` + `has_onboarding_task` | chefer (`is_in_manager_group`) | HR/admin/IT + initiator (begränsade fält) | admin/IT |
+| `onboarding_tasks` | HR/admin/IT + caller är assignee + initiator/chef för instansen | service_role (edge fn) | mottagaren (done/note) + HR/admin/IT | service_role |
+| `onboarding_external_tokens` | service_role only | service_role | service_role | service_role |
+| `onboarding_email_log` | HR/admin/IT | service_role | — | admin/IT |
+
+Externa bockar av via `onboarding-external-checkoff` (service-role); tabellen behöver inga publika policys.
+
+### 13.3 Edge Functions (komplett lista)
+
+| Function | Trigger | Ansvar |
+|---|---|---|
+| `onboarding-initiate` | UI (chef) | Validerar input, skapar instans i `pending_hr`, dubblett-skydd (60 dgr), mejl + notis till HR |
+| `onboarding-hr-confirm` | UI (HR) | Resolvar `assignee_source` → snapshottar tasks (hoppar över optional där `optional_key` inte finns i `optional_items_included`), genererar tokens för externa, batchar mejl per mottagare, skickar notiser |
+| `onboarding-task-checkoff` | UI (intern) | Markerar task done, anropar complete-check |
+| `onboarding-external-checkoff` | publik (`verify_jwt=false`) | Validerar token, listar/markerar tasks för extern mottagare |
+| `onboarding-complete-check` | inifrån checkoff | Om alla tasks done → sätt `completed_at`, skicka Fas 4-mejl till HR + chef |
+| `onboarding-reminders` | pg_cron dagligen 07:00 | För aktiva instanser där `start_date - today` ∈ {7,3,1} och tasks öppna → batch-påminnelser. T-1 eskalerar till chef. |
+| `onboarding-cancel` | UI (HR/admin) | Sätt `cancelled_at`, `cancel_reason`; mejl + notis till alla involverade; tokens invalideras logiskt |
+
+Alla mejlutskick går via `send-transactional-email`. Endast `onboarding-external-checkoff` har `verify_jwt = false`.
+
+### 13.4 React Email-mallar (props-kontrakt)
+
+Registreras i `supabase/functions/_shared/transactional-email-templates/registry.ts`.
+
+```ts
+// onboarding-hr-new-application
+interface Props {
+  instanceId: string;
+  fullName: string;
+  position?: string;
+  startDate: string;       // ISO
+  initiatedByName: string;
+  optionalItems: string[];
+  deepLink: string;        // /onboarding/<id>
+}
+
+// onboarding-owner-task-batch  (Fas 2 → 3)
+interface Props {
+  instanceId: string;
+  recipientFirstName: string;
+  newHireName: string;
+  startDate: string;
+  position?: string;
+  managerName: string;
+  tasks: { title: string; description?: string; deadline?: string }[];
+  deepLink: string;        // /onboarding/<id>?focus=mine
+  externalToken?: string;  // sätts om mottagaren är extern → deepLink = /onboarding/extern?token=...
+}
+
+// onboarding-reminder
+interface Props {
+  instanceId: string;
+  recipientFirstName: string;
+  newHireName: string;
+  startDate: string;
+  daysUntilStart: 7 | 3 | 1;
+  openTasks: { title: string }[];
+  deepLink: string;
+  escalatedToManager?: boolean;  // true vid T-1 till chef
+}
+
+// onboarding-completed
+interface Props {
+  instanceId: string;
+  newHireName: string;
+  startDate: string;
+  deepLink: string;
+}
+
+// onboarding-cancelled
+interface Props {
+  instanceId: string;
+  newHireName: string;
+  cancelReason: string;
+  cancelledByName: string;
+}
+```
+
+### 13.5 Påminnelse-logik (definitiv)
+
+- pg_cron-jobb `onboarding-daily-reminders` kör 07:00 Europe/Stockholm.
+- För varje `onboarding_instances` med `status = 'active'`:
+  - Beräkna `days_until_start = start_date - current_date`.
+  - Om `days_until_start ∈ {7, 3, 1}`: batcha öppna tasks per mottagare → `onboarding-reminder`-mejl + in-app-notis. Sätt `reminder_sent_at = now()` på berörda tasks.
+  - Om `days_until_start = 1`: skicka även ett separat eskaleringsmejl till `nearest_manager_id` med listan över **alla** öppna tasks (`escalatedToManager = true`).
+- Dedupe: max en påminnelse per mottagare per dygn (`reminder_sent_at >= today`).
+
+### 13.6 Externa kontakters avbockning (definitiv)
+
+- Vid Fas 2-utskick: en rad i `onboarding_external_tokens` per extern mottagare. `token = encode(gen_random_bytes(32), 'hex')`. `expires_at = start_date + interval '30 days'`.
+- Mejlet länkar till `/onboarding/extern?token=<token>`.
+- Publik route `/onboarding/extern` (ingen auth):
+  - GET → `onboarding-external-checkoff` action `load` → returnerar instans-snapshot + öppna tasks för mottagaren.
+  - POST → action `check`, taskId → sätter `done=true`, `done_by=null`, `note='ext:<external_contact_id>'`.
+- Token är giltig tills `expires_at` eller tills instansen är `completed`/`cancelled`. Samma token täcker alla mottagarens tasks (engångsbrukas inte per task).
+- HR-fallback: kan manuellt markera externa tasks som klara i `/onboarding/<id>` om den externa inte svarar.
+
+### 13.7 Edge cases (definierat beteende)
+
+| Case | Beteende |
+|---|---|
+| HR avbryter onboarding | `onboarding-cancel` sätter `cancelled_at`. Öppna tasks fryses (grå). Alla med öppna tasks får notis + `onboarding-cancelled`-mejl. Tokens slutar gälla. |
+| Task-mottagare slutar mitt i (profil inaktiveras) | `onboarding-reminders` omresolvar mot aktuell `tool_owner`/`area_owner`, uppdaterar `assignee_*`-fält + loggar `template_key='reassigned'`. Saknas ny ägare → HR notifieras. |
+| Chef vill lägga till "Om aktuellt"-punkt efter Fas 2 | `/onboarding/<id>` har knappen "Lägg till uppgift" (chef/HR). Väljer `optional_key` som saknades → nya tasks skapas, resolvas direkt, mejl går ut. `optional_items_included` uppdateras. |
+| Heartpace skapar profil efter Fas 1 | Befintlig sync matchar på `email` → uppdaterar `onboarding_instances.profile_id`. Redan resolverade tasks påverkas inte (snapshot). |
+| Tool får ny ägare under pågående onboarding | Snapshot → öppna tasks oförändrade. Nya onboardings använder nya ägaren. |
+| Mottagare saknar email | `onboarding-hr-confirm` validerar; saknas → instansen går till `active`, men `assignee_email='MISSING'` flaggas röd i UI och HR notifieras. |
+| Token-mejl studsar | `suppressed_emails` blockerar omsändning. HR ser status och bockar manuellt. |
+| Dubbel-initiering | `onboarding-initiate` blockerar om aktiv instans finns med samma `email` + `start_date` inom 60 dagar. |
+
+### 13.8 Föreslagen agent-split (parallellt körbar)
+
+- **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2. **Blockerar B–F** (regenererar `types.ts`).
+- **Agent B — Edge Functions:** alla 7 funktioner i 13.3 + `config.toml` för `onboarding-external-checkoff`. Beroende: A.
+- **Agent C — React Email-mallar:** 5 mallar enligt 13.4 + `registry.ts`. Parallellt med B.
+- **Agent D — Admin-UI:** `/admin/onboarding` (Översikt, Mallar, Ansvarsområden, Mejlmallar). Parallellt med B/C.
+- **Agent E — `/onboarding`-vyer:** chef-init-formulär, HR-bekräftelse, detalj-vy med timeline, "Mina onboarding-uppgifter"-widget, publik `/onboarding/extern`. Beroende: A.
+- **Agent F — pg_cron + notiser:** schemaläggning av `onboarding-reminders` via `cron.schedule` (projekt-URL + anon key), hookar i `notifications`. Beroende: B.
+
+**Klart för bygge:** ja, så snart fråga 7 (fastighetslistor) är besvarad eller medvetet skjuten till efter Etapp 1.
