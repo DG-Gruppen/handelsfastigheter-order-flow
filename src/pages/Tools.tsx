@@ -22,13 +22,14 @@ interface Tool {
 const MAX_FAVORITES = 8;
 
 async function fetchToolsData(userId: string | undefined) {
-  const [toolsRes, favsRes, ownersRes, profilesRes, toolDeptRes, deptRes] = await Promise.all([
+  const [toolsRes, favsRes, ownersRes, profilesRes, extRes, toolDeptRes, deptRes] = await Promise.all([
     supabase.from("tools" as any).select("*").eq("is_active", true).order("name"),
     userId
       ? supabase.from("user_tool_favorites" as any).select("tool_id").eq("user_id", userId)
       : Promise.resolve({ data: [] as any[] }),
-    supabase.from("tool_owners" as any).select("tool_id, profile_id"),
+    supabase.from("tool_owners" as any).select("tool_id, profile_id, external_contact_id"),
     supabase.from("profiles").select("id, full_name"),
+    supabase.from("external_contacts" as any).select("id, full_name, company_name"),
     supabase.from("tool_departments" as any).select("tool_id, department_id"),
     supabase.from("departments").select("id, name"),
   ]);
@@ -37,9 +38,17 @@ async function fetchToolsData(userId: string | undefined) {
   for (const p of (profilesRes.data ?? []) as { id: string; full_name: string | null }[]) {
     if (p.full_name) profMap.set(p.id, p.full_name);
   }
+  const extMap = new Map<string, string>();
+  for (const e of ((extRes.data ?? []) as unknown) as { id: string; full_name: string; company_name: string | null }[]) {
+    extMap.set(e.id, e.company_name ? `${e.full_name} (${e.company_name})` : e.full_name);
+  }
   const ownersByTool = new Map<string, string[]>();
-  for (const link of ((ownersRes.data ?? []) as unknown) as { tool_id: string; profile_id: string }[]) {
-    const name = profMap.get(link.profile_id);
+  for (const link of ((ownersRes.data ?? []) as unknown) as { tool_id: string; profile_id: string | null; external_contact_id: string | null }[]) {
+    const name = link.profile_id
+      ? profMap.get(link.profile_id)
+      : link.external_contact_id
+        ? extMap.get(link.external_contact_id)
+        : null;
     if (!name) continue;
     const arr = ownersByTool.get(link.tool_id) ?? [];
     arr.push(name);
