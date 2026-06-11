@@ -21,13 +21,14 @@ const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsSta
 const EmailLogDashboard = lazy(() => import("@/components/admin/EmailLogDashboard"));
 const ExternalPartiesManager = lazy(() => import("@/components/admin/ExternalPartiesManager"));
 const ExternalContactsManager = lazy(() => import("@/components/admin/ExternalContactsManager"));
+const BoardingTemplatesManager = lazy(() => import("@/components/admin/BoardingTemplatesManager"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2, Contact,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2, Contact, ClipboardList,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external" | "external-contacts";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external" | "external-contacts" | "boarding-templates";
 
 interface AdminGroup {
   label: string;
@@ -68,6 +69,7 @@ const adminGroups: AdminGroup[] = [
       { id: "news", label: "Nyheter", description: "Skapa, redigera och publicera nyheter", icon: Newspaper, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
       { id: "tools", label: "Verktyg", description: "Hantera snabblänkar på verktygssidan", icon: Link2, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
       { id: "workwear", label: "Profilkläder", description: "Statistik och beställningsöversikt", icon: Shirt, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
+      { id: "boarding-templates", label: "On-/Offboarding-mallar", description: "Mallar och uppgifter för on- och offboarding", icon: ClipboardList, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
     ],
   },
   {
@@ -154,6 +156,7 @@ export default function Admin() {
       case "email-log": content = <EmailLogDashboard />; break;
       case "external": content = <ExternalPartiesManager />; break;
       case "external-contacts": content = <ExternalContactsManager />; break;
+      case "boarding-templates": content = <BoardingTemplatesManager />; break;
     }
     return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
