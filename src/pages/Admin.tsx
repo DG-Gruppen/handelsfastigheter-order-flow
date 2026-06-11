@@ -153,6 +153,7 @@ export default function Admin() {
       case "integrations": content = <IntegrationsStatus />; break;
       case "email-log": content = <EmailLogDashboard />; break;
       case "external": content = <ExternalPartiesManager />; break;
+      case "external-contacts": content = <ExternalContactsManager />; break;
     }
     return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };
