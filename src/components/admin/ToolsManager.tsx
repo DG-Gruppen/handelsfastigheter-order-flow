@@ -384,18 +384,58 @@ export default function ToolsManager() {
             </div>
             <div>
               <Label>Systemägare <span className="text-destructive">*</span></Label>
-              <div className="mt-1.5 border border-border rounded-md p-2 space-y-1.5 max-h-48 overflow-y-auto">
-                {profiles.map(p => (
-                  <label key={p.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Checkbox
-                      checked={selectedOwners.includes(p.id)}
-                      onCheckedChange={() => toggleOwner(p.id)}
-                    />
-                    <span>{p.full_name}</span>
-                  </label>
-                ))}
+              <div className="mt-1.5 border border-border rounded-md p-2 space-y-3 max-h-64 overflow-y-auto">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    SHF-anställda
+                  </p>
+                  <div className="space-y-1.5">
+                    {profiles.map(p => {
+                      const key = `profile:${p.id}`;
+                      return (
+                        <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                          <Checkbox
+                            checked={selectedOwners.includes(key)}
+                            onCheckedChange={() => toggleOwner(key)}
+                          />
+                          <span>{p.full_name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border-t border-border pt-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Externa kontakter
+                  </p>
+                  {externalContacts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Inga externa kontakter ännu. Lägg till under Administration → Externa kontakter.
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {externalContacts.map(c => {
+                        const key = `external:${c.id}`;
+                        return (
+                          <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <Checkbox
+                              checked={selectedOwners.includes(key)}
+                              onCheckedChange={() => toggleOwner(key)}
+                            />
+                            <span>
+                              {c.full_name}
+                              {c.company_name && (
+                                <span className="text-muted-foreground"> · {c.company_name}</span>
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">En eller flera ansvariga personer — minst en krävs.</p>
+              <p className="text-xs text-muted-foreground mt-1">En eller flera ansvariga — minst en krävs.</p>
             </div>
             <div>
               <Label>Avdelningar som använder verktyget</Label>
