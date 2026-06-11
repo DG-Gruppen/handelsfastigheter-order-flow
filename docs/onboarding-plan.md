@@ -712,6 +712,19 @@ interface Props {
 }
 ```
 
+**Filer (levererade):**
+
+| Template key (registry) | Fil | Mottagare | Trigger |
+|---|---|---|---|
+| `onboarding-hr-new-application` | `supabase/functions/_shared/transactional-email-templates/onboarding-hr-new-application.tsx` | HR | Fas 1 → 2 (chef initierar) |
+| `onboarding-owner-task-batch` | `.../onboarding-owner-task-batch.tsx` | Tool-/area-owner, chef, extern kontakt (token i länken) | Fas 2 → 3 (HR bekräftar) |
+| `onboarding-reminder` | `.../onboarding-reminder.tsx` | Ansvarig med öppna tasks (+ närmaste chef vid T-1) | pg_cron T-7, T-3, T-1 |
+| `onboarding-completed` | `.../onboarding-completed.tsx` | HR + närmaste chef | Sista task avbockad |
+| `onboarding-cancelled` | `.../onboarding-cancelled.tsx` | Alla med öppna tasks | HR avbryter |
+
+Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintliga ordermejl). Alla mallar är registrerade i `transactional-email-templates/registry.ts` och har `previewData` så de syns direkt i Cloud → Emails → Preview.
+
+
 ### 13.5 Påminnelse-logik (definitiv)
 
 - pg_cron-jobb `onboarding-daily-reminders` kör 07:00 Europe/Stockholm.
