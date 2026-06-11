@@ -554,6 +554,45 @@ export type Database = {
         }
         Relationships: []
       }
+      external_contacts: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       external_invites: {
         Row: {
           accepted_at: string | null
@@ -2429,20 +2468,33 @@ export type Database = {
       tool_owners: {
         Row: {
           created_at: string
-          profile_id: string
+          external_contact_id: string | null
+          id: string
+          profile_id: string | null
           tool_id: string
         }
         Insert: {
           created_at?: string
-          profile_id: string
+          external_contact_id?: string | null
+          id?: string
+          profile_id?: string | null
           tool_id: string
         }
         Update: {
           created_at?: string
-          profile_id?: string
+          external_contact_id?: string | null
+          id?: string
+          profile_id?: string | null
           tool_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tool_owners_external_contact_id_fkey"
+            columns: ["external_contact_id"]
+            isOneToOne: false
+            referencedRelation: "external_contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tool_owners_profile_id_fkey"
             columns: ["profile_id"]
@@ -2468,7 +2520,7 @@ export type Database = {
           is_active: boolean
           is_starred: boolean
           name: string
-          owner_id: string
+          owner_id: string | null
           sort_order: number
           url: string
         }
@@ -2480,7 +2532,7 @@ export type Database = {
           is_active?: boolean
           is_starred?: boolean
           name: string
-          owner_id: string
+          owner_id?: string | null
           sort_order?: number
           url: string
         }
@@ -2492,7 +2544,7 @@ export type Database = {
           is_active?: boolean
           is_starred?: boolean
           name?: string
-          owner_id?: string
+          owner_id?: string | null
           sort_order?: number
           url?: string
         }
