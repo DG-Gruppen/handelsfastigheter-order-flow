@@ -20,6 +20,11 @@ import { template as onboardingOwnerTaskBatch } from './onboarding-owner-task-ba
 import { template as onboardingReminder } from './onboarding-reminder.tsx'
 import { template as onboardingCompleted } from './onboarding-completed.tsx'
 import { template as onboardingCancelled } from './onboarding-cancelled.tsx'
+import { template as offboardingHrNew } from './offboarding-hr-new.tsx'
+import { template as offboardingOwnerTaskBatch } from './offboarding-owner-task-batch.tsx'
+import { template as offboardingReminder } from './offboarding-reminder.tsx'
+import { template as offboardingCompleted } from './offboarding-completed.tsx'
+import { template as offboardingCancelled } from './offboarding-cancelled.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-order-approval': newOrderApproval,
@@ -33,4 +38,9 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'onboarding-reminder': onboardingReminder,
   'onboarding-completed': onboardingCompleted,
   'onboarding-cancelled': onboardingCancelled,
+  'offboarding-hr-new': offboardingHrNew,
+  'offboarding-owner-task-batch': offboardingOwnerTaskBatch,
+  'offboarding-reminder': offboardingReminder,
+  'offboarding-completed': offboardingCompleted,
+  'offboarding-cancelled': offboardingCancelled,
 }
