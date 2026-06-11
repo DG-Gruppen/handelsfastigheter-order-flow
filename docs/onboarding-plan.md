@@ -1,7 +1,7 @@
 # Onboarding / Offboarding — Plan
 
 > Levande dokument. Vi itererar här innan kod skrivs.
-> Senast uppdaterad: 2026-06-10
+> Senast uppdaterad: 2026-06-11
 
 ## 1. Vad Petra vill ha (kärnan)
 
@@ -375,10 +375,10 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 > - ✅ *Saker som inte är "verktyg" (nycklar, webbsida, fastighetslistor)?* Läggs som `responsibility_areas` — eget register, syns inte på `/verktyg`.
 > - ✅ *Externa personer (Agnes m.fl.)?* Läggs som `external_contacts` och kan stå som ägare på både verktyg och ansvarsområden. Inga inloggningar, ingen plats i personalkatalogen.
 
-1. **Mejlstrategi:** Ett samlat mejl per ansvarig med alla deras punkter — bekräfta?
-2. **Heartpace-trigger:** Befintlig schemalagd sync (dagligen) räcker, eller behöver vi webhook för snabbare reaktion?
+1. **Mejlstrategi:** ✅ Ett samlat mejl per ansvarig med alla deras punkter — antingen skapa konto i verktyget och bekräfta det, eller att man ska kolla till sin checklista innan personen börjar. Ingen separat mejl per enskild punkt.
+2. **Heartpace-trigger:** ✅ Befintlig schemalagd sync (dagligen) räcker. En som ska börja ska finnas inlagd i Heartpace minst 48 timmar innan startdatum — det finns rutiner på plats internt så ingen webhook eller snabbare trigg behövs.
 3. **"Om aktuellt"-punkter** (tjänstebil, ID06, bank, Creditsafe, iBinder, Metry): kryssas av HR vid start, eller skapas alltid och ansvarig markerar "ej aktuellt"?
-4. **In-app-notiser** utöver mejl? (Vi har redan `notifications`-tabellen.)
+4. **In-app-notiser:** ✅ Ja, utöver mejl. Notiser skickas till ansvariga i intranätet när de får nya onboarding-uppgifter (vi har redan `notifications`-tabellen).
 5. **Fastighetslistor som löpande process?** Ska "förändringar i fastighetslistor" trigga vid varje onboarding, eller är det en stående uppgift som inte hör hemma i mallen?
 
 ---
