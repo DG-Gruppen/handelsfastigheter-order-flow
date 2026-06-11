@@ -394,7 +394,7 @@ Hela onboarding-processen följer en strikt sekvens med två tydliga "grindar" i
 
 ## 8. Kopplingar till befintlig kod
 
-- Nuvarande `/onboarding`-orderflöde (dator/mobil/systembehörigheter) **behålls** som "Beställning av utrustning" — det är en av punkterna i checklistan ("Beställ dator och mobil via Onboarding-formuläret"). Vi länkar dit från checklistan istället för att ersätta.
+- Nuvarande `/onboarding`-orderflöde (dator/mobil/systembehörigheter) **konsolideras** in i nya onboarding-flödet — se avsnitt **14. Konsolidering av hårdvara & licenser**. Chefen fyller i ett (1) formulär.
 - `tool_owners` används för att auto-tilldela behörighetsuppgifter → mallen självuppdateras vid ägarbyten.
 
 ---
@@ -767,3 +767,138 @@ Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintli
 - **Agent F — pg_cron + notiser:** schemaläggning av `onboarding-reminders` via `cron.schedule` (projekt-URL + anon key), hookar i `notifications`. Beroende: B.
 
 **Klart för bygge:** ja, så snart fråga 7 (fastighetslistor) är besvarad eller medvetet skjuten till efter Etapp 1.
+
+---
+
+## 14. Konsolidering av hårdvara & licenser (bekräftad 2026-06-11)
+
+**Mål:** chefen ska aldrig behöva fylla i två formulär för en nyanställd. All utrustning + licenser/systembehörigheter beställs som en del av onboarding-ansökan i Fas 1. Samtidigt görs `/orders/new` mer generellt kapabel så att fristående hårdvaru-/licensbeställningar (utanför onboarding) använder samma byggblock.
+
+### 14.1 Dagsläge
+
+| Yta | Vad den gör idag | Tabeller |
+|---|---|---|
+| `src/pages/Onboarding.tsx` (834 rader) | Beställ dator/mobil/tillbehör **+** välj systembehörigheter (licenser). Egen wizard, eget godkännandeflöde. | `orders`, `order_items`, `order_systems` |
+| `src/pages/NewOrder.tsx` | Generiskt orderformulär (övriga ordertyper). **Saknar** systembehörighetsval. | `orders`, `order_items` |
+| `systems` | Lista över system/licenser som kan beställas behörighet till. | — |
+
+Problem: två formulär löser delvis samma sak, och `/orders/new` kan inte beställa licens till en befintlig anställd utan att gå via "onboarding"-formuläret.
+
+### 14.2 Mål-arkitektur
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│  Fas 1: Chef initierar onboarding (/onboarding/ny)           │
+│                                                              │
+│  • Personuppgifter (namn, email, befattning, startdatum)     │
+│  • Närmaste chef (förifylld)                                 │
+│  • "Om aktuellt"-checkboxar (nycklar, etc.)                  │
+│  • ▼ NYTT BLOCK: Beställ utrustning                          │
+│     – Datorval, mobilval, tillbehör, leveransadress, komm.   │
+│  • ▼ NYTT BLOCK: Licenser & systembehörigheter               │
+│     – <SystemsPicker /> (delad komponent)                    │
+│                                                              │
+│  [Spara] → 1 onboarding_instance                             │
+│         → 1 order (type='onboarding-equipment',              │
+│                    onboarding_instance_id=<id>,              │
+│                    auto-approved)                            │
+│         → N order_items + N order_systems                    │
+│         → "Beställ dator & licenser"-tasken auto-resolvas    │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│  /orders/new (fristående order, t.ex. "licens till X")       │
+│                                                              │
+│  • Välj ordertyp                                             │
+│  • Hårdvaru-items (om order_types.includes_items)            │
+│  • ▼ NYTT: <SystemsPicker /> (om order_types.includes_systems)│
+│  • Standardflöde fortsätter (godkännare, mejl, etc.)         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 14.3 Schemaändringar (1 migration)
+
+```sql
+-- Koppling order → onboarding (för "samla allt på samma sida")
+ALTER TABLE public.orders
+  ADD COLUMN onboarding_instance_id uuid NULL
+    REFERENCES public.onboarding_instances(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_orders_onboarding_instance ON public.orders(onboarding_instance_id)
+  WHERE onboarding_instance_id IS NOT NULL;
+
+-- Per-ordertyp: visar systems-pickern eller inte
+ALTER TABLE public.order_types
+  ADD COLUMN includes_systems boolean NOT NULL DEFAULT false,
+  ADD COLUMN includes_items   boolean NOT NULL DEFAULT true;
+
+-- Seed: aktivera systems-pickern på den ordertyp som motsvarar dagens onboarding-utrustning,
+-- och skapa en ny dedikerad ordertyp "Onboarding – utrustning & licenser" om den saknas.
+-- (Görs som data-insert i samma migration, ej DDL.)
+```
+
+RLS: `orders.onboarding_instance_id` ärver befintliga policies. Lägg till en extra läsregel så att HR + närmaste chef + onboarding-task-mottagare alltid får läsa kopplad order (utan att passera vanliga order-RLS):
+
+```sql
+CREATE POLICY "Onboarding-deltagare ser kopplad order"
+ON public.orders FOR SELECT TO authenticated
+USING (
+  onboarding_instance_id IS NOT NULL
+  AND (
+    public.is_in_hr_group(auth.uid())
+    OR EXISTS (
+      SELECT 1 FROM public.onboarding_instances oi
+      WHERE oi.id = orders.onboarding_instance_id
+        AND (oi.initiated_by = auth.uid() OR oi.manager_user_id = auth.uid())
+    )
+    OR public.has_onboarding_task(auth.uid(), onboarding_instance_id)
+  )
+);
+```
+
+### 14.4 Komponentextraktion
+
+Bryt ut från `src/pages/Onboarding.tsx`:
+
+| Ny komponent | Ansvar | Används av |
+|---|---|---|
+| `src/components/orders/SystemsPicker.tsx` | Lista `systems`, multi-select med beskrivning, kontrollerat värde `string[]` | `NewOrder.tsx`, `OnboardingInitiateForm.tsx` |
+| `src/components/orders/EquipmentPicker.tsx` | Dator/mobil/tillbehör + kvantitet + leveransadress + kommentar | `NewOrder.tsx`, `OnboardingInitiateForm.tsx` |
+| `src/lib/orders/createOrder.ts` | Server-call: skapa `orders` + `order_items` + `order_systems` atomiskt. Tar valfritt `onboardingInstanceId`. | Båda formulären |
+
+`SystemsPicker` och `EquipmentPicker` blir 100% presentation + lokalt state. All persistens går via `createOrder`.
+
+### 14.5 Auto-godkännande i onboarding-kontexten
+
+När en order skapas från onboarding-formuläret (`onboarding_instance_id != null`):
+
+- `status = 'approved'` direkt (chef + HR har redan godkänt genom själva ansökan).
+- Ingen approver-picker visas i UI.
+- IT får ordern i sitt vanliga orderflöde **+** notis "Onboarding-utrustning för [namn] inkommen".
+- Tasken `"Beställ dator, mobil och licenser"` i onboarding-mallen markeras `auto_resolved = true` direkt — ingen task-mottagare behöver göra något manuellt. Orderlänken visas inline i `/onboarding/<id>`-timelinen.
+
+### 14.6 Pensionering av gamla `/onboarding`-formuläret
+
+När 14.1–14.5 är levererat:
+
+- Route `/onboarding` pekar om till nya HR-listvyn (`OnboardingDashboard`).
+- `src/pages/Onboarding.tsx` raderas.
+- `src/hooks/useOrderFormData.tsx` behålls (används av `NewOrder.tsx`); de delar som var unika för gamla onboarding-formuläret flyttas till `EquipmentPicker`/`SystemsPicker`.
+- Eventuella länkar i navigation/kunskapsbank uppdateras automatiskt (en grep + replace).
+
+**Inga datatabeller försvinner.** `orders`, `order_items`, `order_systems` lever vidare oförändrade.
+
+### 14.7 Edge cases (tillägg till 13.7)
+
+| Scenario | Hantering |
+|---|---|
+| Chef fyller i onboarding men IT ska inte beställa nytt (intern flytt) | Checkbox **"Återanvänd befintlig utrustning"** högst upp i utrustnings-blocket → döljer hela blocket, ordern skapas inte, task `auto_resolved = true` med kommentar "Återanvänd". |
+| Order för onboarding-utrustning avvisas/justeras av IT | Status på ordern uppdateras som vanligt. Onboarding-tasken förblir resolverad, men `/onboarding/<id>` visar orderns status inline ("Levereras [datum]" / "Försenad"). |
+| HR avbryter onboarding (avsnitt 13.7) | Kopplad order sätts till `cancelled` om den fortfarande är `pending`/`approved`. Är den `delivered` lämnas den orörd. |
+| Licensval ändras mitt i pågående onboarding | "Lägg till uppgift"-knappen i `/onboarding/<id>` får parallell knapp **"Beställ ytterligare licens"** → öppnar `/orders/new` förifylld med `onboarding_instance_id` + samma profil. |
+
+### 14.8 Agent-split (tillägg till 13.8)
+
+- **Agent G — Konsolidering hårdvara/licens:** migration enligt 14.3, komponentextraktion enligt 14.4, integration i Fas-1-formuläret (Agent E) och `NewOrder.tsx`, pensionering enligt 14.6. **Beroende:** Agent A (datamodell) + Agent E (Fas-1-formulär skal).
+
+**Klart för bygge:** ja. Inga öppna frågor på avsnitt 14.
