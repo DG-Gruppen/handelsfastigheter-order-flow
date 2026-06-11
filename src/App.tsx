@@ -20,6 +20,7 @@ const OrgTree = lazy(() => import("./pages/OrgTree"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const OnboardingPlan = lazy(() => import("./pages/OnboardingPlan"));
 const OffboardingPlan = lazy(() => import("./pages/OffboardingPlan"));
+const BoardingPlan = lazy(() => import("./pages/BoardingPlan"));
 const ITInfo = lazy(() => import("./pages/ITInfo"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const History = lazy(() => import("./pages/History"));
@@ -84,7 +85,8 @@ const App = () => (
                       <Route path="/orders/new" element={<NewOrder />} />
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/onboarding-plan" element={<OnboardingPlan />} />
-                      <Route path="/offboarding-plan" element={<OffboardingPlan />} />
+                     <Route path="/offboarding-plan" element={<OffboardingPlan />} />
+                     <Route path="/boarding-plan" element={<BoardingPlan />} />
                       <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/orders/:id" element={<OrderDetail />} />
                       <Route path="/history" element={<History />} />
