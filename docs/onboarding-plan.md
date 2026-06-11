@@ -654,7 +654,7 @@ Externa bockar av via `onboarding-external-checkoff` (service-role); tabellen be
 
 Alla mejlutskick går via `send-transactional-email`. Endast `onboarding-external-checkoff` har `verify_jwt = false`.
 
-### 13.4 React Email-mallar (props-kontrakt)
+### 13.4 React Email-mallar (props-kontrakt) — ✅ levererade 2026-06-11
 
 Registreras i `supabase/functions/_shared/transactional-email-templates/registry.ts`.
 
@@ -712,6 +712,19 @@ interface Props {
 }
 ```
 
+**Filer (levererade):**
+
+| Template key (registry) | Fil | Mottagare | Trigger |
+|---|---|---|---|
+| `onboarding-hr-new-application` | `supabase/functions/_shared/transactional-email-templates/onboarding-hr-new-application.tsx` | HR | Fas 1 → 2 (chef initierar) |
+| `onboarding-owner-task-batch` | `.../onboarding-owner-task-batch.tsx` | Tool-/area-owner, chef, extern kontakt (token i länken) | Fas 2 → 3 (HR bekräftar) |
+| `onboarding-reminder` | `.../onboarding-reminder.tsx` | Ansvarig med öppna tasks (+ närmaste chef vid T-1) | pg_cron T-7, T-3, T-1 |
+| `onboarding-completed` | `.../onboarding-completed.tsx` | HR + närmaste chef | Sista task avbockad |
+| `onboarding-cancelled` | `.../onboarding-cancelled.tsx` | Alla med öppna tasks | HR avbryter |
+
+Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintliga ordermejl). Alla mallar är registrerade i `transactional-email-templates/registry.ts` och har `previewData` så de syns direkt i Cloud → Emails → Preview.
+
+
 ### 13.5 Påminnelse-logik (definitiv)
 
 - pg_cron-jobb `onboarding-daily-reminders` kör 07:00 Europe/Stockholm.
@@ -748,7 +761,7 @@ interface Props {
 
 - **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2. **Blockerar B–F** (regenererar `types.ts`).
 - **Agent B — Edge Functions:** alla 7 funktioner i 13.3 + `config.toml` för `onboarding-external-checkoff`. Beroende: A.
-- **Agent C — React Email-mallar:** 5 mallar enligt 13.4 + `registry.ts`. Parallellt med B.
+- **Agent C — React Email-mallar:** ✅ levererade (5 mallar + `_onboarding-shared.ts` + registry uppdaterad). Inga ändringar behövs av andra agenter.
 - **Agent D — Admin-UI:** `/admin/onboarding` (Översikt, Mallar, Ansvarsområden, Mejlmallar). Parallellt med B/C.
 - **Agent E — `/onboarding`-vyer:** chef-init-formulär, HR-bekräftelse, detalj-vy med timeline, "Mina onboarding-uppgifter"-widget, publik `/onboarding/extern`. Beroende: A.
 - **Agent F — pg_cron + notiser:** schemaläggning av `onboarding-reminders` via `cron.schedule` (projekt-URL + anon key), hookar i `notifications`. Beroende: B.
