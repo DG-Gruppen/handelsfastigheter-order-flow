@@ -599,6 +599,19 @@ CREATE TABLE public.onboarding_email_log (
   sent_at timestamptz NOT NULL DEFAULT now(),
   status text NOT NULL DEFAULT 'queued'
 );
+
+-- === Konsolidering hårdvara & licenser (avsnitt 14, se DDL nedan) ===
+
+ALTER TABLE public.orders
+  ADD COLUMN onboarding_instance_id uuid NULL
+    REFERENCES public.onboarding_instances(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_orders_onboarding_instance ON public.orders(onboarding_instance_id)
+  WHERE onboarding_instance_id IS NOT NULL;
+
+ALTER TABLE public.order_types
+  ADD COLUMN includes_systems boolean NOT NULL DEFAULT false,
+  ADD COLUMN includes_items   boolean NOT NULL DEFAULT true;
 ```
 
 ### 13.2 RLS-spec + helper-funktioner
