@@ -33,13 +33,14 @@ interface Tool {
   sort_order: number;
   is_active: boolean;
   is_starred: boolean;
-  owner_id: string;
-  owner_ids?: string[];
+  owner_id: string | null;
+  owner_keys?: string[];      // composite keys: "profile:<id>" | "external:<id>"
   owner_names?: string[];
   department_ids?: string[];
 }
 
 interface ProfileOpt { id: string; full_name: string; }
+interface ExternalContactOpt { id: string; full_name: string; company_name: string | null; }
 interface DepartmentOpt { id: string; name: string; }
 
 function SortableToolRow({
