@@ -654,7 +654,7 @@ Externa bockar av via `onboarding-external-checkoff` (service-role); tabellen be
 
 Alla mejlutskick går via `send-transactional-email`. Endast `onboarding-external-checkoff` har `verify_jwt = false`.
 
-### 13.4 React Email-mallar (props-kontrakt)
+### 13.4 React Email-mallar (props-kontrakt) — ✅ levererade 2026-06-11
 
 Registreras i `supabase/functions/_shared/transactional-email-templates/registry.ts`.
 
