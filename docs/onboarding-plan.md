@@ -599,6 +599,19 @@ CREATE TABLE public.onboarding_email_log (
   sent_at timestamptz NOT NULL DEFAULT now(),
   status text NOT NULL DEFAULT 'queued'
 );
+
+-- === Konsolidering hårdvara & licenser (avsnitt 14, se DDL nedan) ===
+
+ALTER TABLE public.orders
+  ADD COLUMN onboarding_instance_id uuid NULL
+    REFERENCES public.onboarding_instances(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_orders_onboarding_instance ON public.orders(onboarding_instance_id)
+  WHERE onboarding_instance_id IS NOT NULL;
+
+ALTER TABLE public.order_types
+  ADD COLUMN includes_systems boolean NOT NULL DEFAULT false,
+  ADD COLUMN includes_items   boolean NOT NULL DEFAULT true;
 ```
 
 ### 13.2 RLS-spec + helper-funktioner
@@ -639,6 +652,25 @@ Policyöversikt:
 | `onboarding_email_log` | HR/admin/IT | service_role | — | admin/IT |
 
 Externa bockar av via `onboarding-external-checkoff` (service-role); tabellen behöver inga publika policys.
+
+Extra läsregel för kopplade orders (onboarding-kontext):
+
+```sql
+CREATE POLICY "Onboarding-deltagare ser kopplad order"
+ON public.orders FOR SELECT TO authenticated
+USING (
+  onboarding_instance_id IS NOT NULL
+  AND (
+    public.is_in_hr_group(auth.uid())
+    OR EXISTS (
+      SELECT 1 FROM public.onboarding_instances oi
+      WHERE oi.id = orders.onboarding_instance_id
+        AND (oi.initiated_by = auth.uid() OR oi.manager_user_id = auth.uid())
+    )
+    OR public.has_onboarding_task(auth.uid(), onboarding_instance_id)
+  )
+);
+```
 
 ### 13.3 Edge Functions (komplett lista)
 
@@ -759,12 +791,20 @@ Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintli
 
 ### 13.8 Föreslagen agent-split (parallellt körbar)
 
-- **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2. **Blockerar B–F** (regenererar `types.ts`).
+```text
+A (schema + RLS) ──┬─► B (edge functions) ──► F (cron + notiser)
+                   ├─► D (admin-UI)
+                   ├─► E (chef/HR-vyer) ──► G (konsolidering hårdvara/licens)
+                   └─► C (React Email) ✅ färdig
+```
+
+- **Agent A — Datamodell & RLS:** migrationer enligt 13.1 + 13.2 (inklusive orders/order_types-tillägg för konsolideringen). **Blockerar B–F och G** (regenererar `types.ts`).
 - **Agent B — Edge Functions:** alla 7 funktioner i 13.3 + `config.toml` för `onboarding-external-checkoff`. Beroende: A.
 - **Agent C — React Email-mallar:** ✅ levererade (5 mallar + `_onboarding-shared.ts` + registry uppdaterad). Inga ändringar behövs av andra agenter.
 - **Agent D — Admin-UI:** `/admin/onboarding` (Översikt, Mallar, Ansvarsområden, Mejlmallar). Parallellt med B/C.
 - **Agent E — `/onboarding`-vyer:** chef-init-formulär, HR-bekräftelse, detalj-vy med timeline, "Mina onboarding-uppgifter"-widget, publik `/onboarding/extern`. Beroende: A.
 - **Agent F — pg_cron + notiser:** schemaläggning av `onboarding-reminders` via `cron.schedule` (projekt-URL + anon key), hookar i `notifications`. Beroende: B.
+- **Agent G — Konsolidering hårdvara/licens:** migration (DDL redan i 13.1), komponentextraktion (`SystemsPicker`, `EquipmentPicker`, `createOrder`), integration i Fas-1-formuläret (Agent E) och `NewOrder.tsx`, pensionering av gammalt formulär. Beroende: A + E.
 
 **Klart för bygge:** ja, så snart fråga 7 (fastighetslistor) är besvarad eller medvetet skjuten till efter Etapp 1.
 
@@ -773,6 +813,8 @@ Delade design-tokens ligger i `_onboarding-shared.ts` (samma palett som befintli
 ## 14. Konsolidering av hårdvara & licenser (bekräftad 2026-06-11)
 
 **Mål:** chefen ska aldrig behöva fylla i två formulär för en nyanställd. All utrustning + licenser/systembehörigheter beställs som en del av onboarding-ansökan i Fas 1. Samtidigt görs `/orders/new` mer generellt kapabel så att fristående hårdvaru-/licensbeställningar (utanför onboarding) använder samma byggblock.
+
+> **Implementation:** DDL finns i 13.1, RLS-policy i 13.2, agent-uppdelning i 13.8 (Agent G). Detta avsnitt beskriver *varför* och *arkitekturen*; bygginstruktionerna ligger där.
 
 ### 14.1 Dagsläge
 
@@ -816,47 +858,7 @@ Problem: två formulär löser delvis samma sak, och `/orders/new` kan inte best
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 14.3 Schemaändringar (1 migration)
-
-```sql
--- Koppling order → onboarding (för "samla allt på samma sida")
-ALTER TABLE public.orders
-  ADD COLUMN onboarding_instance_id uuid NULL
-    REFERENCES public.onboarding_instances(id) ON DELETE SET NULL;
-
-CREATE INDEX idx_orders_onboarding_instance ON public.orders(onboarding_instance_id)
-  WHERE onboarding_instance_id IS NOT NULL;
-
--- Per-ordertyp: visar systems-pickern eller inte
-ALTER TABLE public.order_types
-  ADD COLUMN includes_systems boolean NOT NULL DEFAULT false,
-  ADD COLUMN includes_items   boolean NOT NULL DEFAULT true;
-
--- Seed: aktivera systems-pickern på den ordertyp som motsvarar dagens onboarding-utrustning,
--- och skapa en ny dedikerad ordertyp "Onboarding – utrustning & licenser" om den saknas.
--- (Görs som data-insert i samma migration, ej DDL.)
-```
-
-RLS: `orders.onboarding_instance_id` ärver befintliga policies. Lägg till en extra läsregel så att HR + närmaste chef + onboarding-task-mottagare alltid får läsa kopplad order (utan att passera vanliga order-RLS):
-
-```sql
-CREATE POLICY "Onboarding-deltagare ser kopplad order"
-ON public.orders FOR SELECT TO authenticated
-USING (
-  onboarding_instance_id IS NOT NULL
-  AND (
-    public.is_in_hr_group(auth.uid())
-    OR EXISTS (
-      SELECT 1 FROM public.onboarding_instances oi
-      WHERE oi.id = orders.onboarding_instance_id
-        AND (oi.initiated_by = auth.uid() OR oi.manager_user_id = auth.uid())
-    )
-    OR public.has_onboarding_task(auth.uid(), onboarding_instance_id)
-  )
-);
-```
-
-### 14.4 Komponentextraktion
+### 14.3 Komponentextraktion
 
 Bryt ut från `src/pages/Onboarding.tsx`:
 
@@ -868,7 +870,7 @@ Bryt ut från `src/pages/Onboarding.tsx`:
 
 `SystemsPicker` och `EquipmentPicker` blir 100% presentation + lokalt state. All persistens går via `createOrder`.
 
-### 14.5 Auto-godkännande i onboarding-kontexten
+### 14.4 Auto-godkännande i onboarding-kontexten
 
 När en order skapas från onboarding-formuläret (`onboarding_instance_id != null`):
 
@@ -877,9 +879,9 @@ När en order skapas från onboarding-formuläret (`onboarding_instance_id != nu
 - IT får ordern i sitt vanliga orderflöde **+** notis "Onboarding-utrustning för [namn] inkommen".
 - Tasken `"Beställ dator, mobil och licenser"` i onboarding-mallen markeras `auto_resolved = true` direkt — ingen task-mottagare behöver göra något manuellt. Orderlänken visas inline i `/onboarding/<id>`-timelinen.
 
-### 14.6 Pensionering av gamla `/onboarding`-formuläret
+### 14.5 Pensionering av gamla `/onboarding`-formuläret
 
-När 14.1–14.5 är levererat:
+När 14.1–14.4 är levererat:
 
 - Route `/onboarding` pekar om till nya HR-listvyn (`OnboardingDashboard`).
 - `src/pages/Onboarding.tsx` raderas.
@@ -888,7 +890,7 @@ När 14.1–14.5 är levererat:
 
 **Inga datatabeller försvinner.** `orders`, `order_items`, `order_systems` lever vidare oförändrade.
 
-### 14.7 Edge cases (tillägg till 13.7)
+### 14.6 Edge cases (tillägg till 13.7)
 
 | Scenario | Hantering |
 |---|---|
@@ -896,9 +898,5 @@ När 14.1–14.5 är levererat:
 | Order för onboarding-utrustning avvisas/justeras av IT | Status på ordern uppdateras som vanligt. Onboarding-tasken förblir resolverad, men `/onboarding/<id>` visar orderns status inline ("Levereras [datum]" / "Försenad"). |
 | HR avbryter onboarding (avsnitt 13.7) | Kopplad order sätts till `cancelled` om den fortfarande är `pending`/`approved`. Är den `delivered` lämnas den orörd. |
 | Licensval ändras mitt i pågående onboarding | "Lägg till uppgift"-knappen i `/onboarding/<id>` får parallell knapp **"Beställ ytterligare licens"** → öppnar `/orders/new` förifylld med `onboarding_instance_id` + samma profil. |
-
-### 14.8 Agent-split (tillägg till 13.8)
-
-- **Agent G — Konsolidering hårdvara/licens:** migration enligt 14.3, komponentextraktion enligt 14.4, integration i Fas-1-formuläret (Agent E) och `NewOrder.tsx`, pensionering enligt 14.6. **Beroende:** Agent A (datamodell) + Agent E (Fas-1-formulär skal).
 
 **Klart för bygge:** ja. Inga öppna frågor på avsnitt 14.
