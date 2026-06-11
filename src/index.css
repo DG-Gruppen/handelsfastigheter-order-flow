@@ -105,7 +105,11 @@
   }
   html {
     overflow-y: scroll;
+    overflow-x: clip;
     scrollbar-gutter: stable;
+  }
+  body {
+    overflow-x: clip;
   }
   /* Prevent Radix RemoveScroll from hiding overflow and shifting layout */
   .with-scroll-bars-hidden {
