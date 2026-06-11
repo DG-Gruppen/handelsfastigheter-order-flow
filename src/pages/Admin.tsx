@@ -20,13 +20,14 @@ const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdmi
 const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
 const EmailLogDashboard = lazy(() => import("@/components/admin/EmailLogDashboard"));
 const ExternalPartiesManager = lazy(() => import("@/components/admin/ExternalPartiesManager"));
+const ExternalContactsManager = lazy(() => import("@/components/admin/ExternalContactsManager"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2, Contact,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external" | "external-contacts";
 
 interface AdminGroup {
   label: string;
