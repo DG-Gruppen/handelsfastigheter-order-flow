@@ -1,6 +1,8 @@
 # Offboarding-plan
 
-> Speglar `docs/onboarding-plan.md`. När en mekanism beskrivs där (mall-uppgifter med `assignee_source`, ägar-resolvning via `tool_owners`, batch-mejl per ansvarig, påminnelse-cron, HR-vy) återanvänds samma byggstenar här — det här dokumentet beskriver bara skillnaderna.
+> Speglar `docs/onboarding-plan.md` och **återanvänder samma tabeller, RLS-helpers, mejl-pipe och admin-komponenter** via `kind = 'offboarding'`. Det här dokumentet beskriver bara skillnaderna och de additiva schema-deltan offboarding lägger till.
+>
+> Senast uppdaterad: 2026-06-11 (synkad end-to-end med onboarding-planen)
 
 ## 1. Mål
 
@@ -13,174 +15,242 @@ Två vägar in (parallellt med onboarding):
 1. **Manuell start** (primär i fas 1) — HR eller chef öppnar `/offboarding/new`, väljer person, slutdatum, orsak (egen uppsägning / arbetsgivarens / pension / annat), och om utträdet är *normalt* eller *snabbavslut* (samma dag).
 2. **Heartpace-signal** (förberedd i fas 1, aktiveras i fas 2) — när `heartpace-sync-personnel` ser ett nytt `slutdatum` på en profil skapas ett utkast-instans automatiskt och HR får notis "Bekräfta offboarding för X".
 
-Trigger-källan loggas i `offboarding_instances.trigger_source` (`'manual' | 'heartpace'`).
+Trigger-källan loggas i `onboarding_instances.trigger_source` (`'manual' | 'heartpace'`).
 
-## 3. Datamodell
+## 3. Datamodell — delad med onboarding
 
-Återanvänder onboarding-mönstret rakt av. Tre tabeller:
+**Vi skapar inga `offboarding_*`-tabeller.** Allt går i de befintliga `onboarding_*`-tabellerna (§ 13.1 i onboarding-planen), filtrerat via `onboarding_templates.kind = 'offboarding'`. Det följer den ursprungliga designen i onboarding-planens § 5/9 ("Samma datamodell, separat mall").
+
+### 3.1 Additiva schema-deltan offboarding lägger till
 
 ```sql
--- Mall (en rad per återkommande offboarding-uppgift)
-offboarding_template_tasks (
-  id, sort_order, title, description,
-  assignee_source text,        -- 'static_profile' | 'tool_owner' | 'nearest_manager' | 'role' | 'hr'
-  assignee_profile_id uuid,
-  assignee_tool_id uuid,
-  assignee_role text,
-  due_offset_days int,         -- relativt slutdatum (negativt = före, positivt = efter)
-  category text,               -- 'system' | 'hardware' | 'access' | 'hr' | 'finance' | 'social'
-  conditional text,            -- 'always' | 'if_company_car' | 'if_keys' | 'if_phone' osv.
-  is_active boolean
-);
+-- Utöka instans-tabellen med offboarding-specifika fält
+ALTER TABLE public.onboarding_instances
+  ADD COLUMN trigger_source text NOT NULL DEFAULT 'manual'
+    CHECK (trigger_source IN ('manual', 'heartpace')),
+  ADD COLUMN last_day date,                     -- krävs när kind = 'offboarding'
+  ADD COLUMN exit_reason text                   -- 'voluntary' | 'employer' | 'retirement' | 'other'
+    CHECK (exit_reason IN ('voluntary','employer','retirement','other') OR exit_reason IS NULL),
+  ADD COLUMN exit_type text                     -- 'normal' | 'immediate'
+    CHECK (exit_type IN ('normal','immediate') OR exit_type IS NULL),
+  ADD COLUMN legal_hold boolean NOT NULL DEFAULT false;  -- stoppar arkivering
 
--- Instans per medarbetare som slutar
-offboarding_instances (
-  id, profile_id uuid,           -- den som slutar
-  initiated_by uuid,             -- HR/chef
-  trigger_source text,           -- 'manual' | 'heartpace'
-  last_day date not null,
-  reason text,                   -- 'voluntary' | 'employer' | 'retirement' | 'other'
-  exit_type text,                -- 'normal' | 'immediate'
-  notes text,
-  status text,                   -- 'draft' | 'active' | 'completed' | 'cancelled'
-  cancelled_reason text,
-  created_at, updated_at
-);
+-- Validering: när kind='offboarding' krävs last_day; när kind='onboarding' krävs start_date
+CREATE OR REPLACE FUNCTION public.onboarding_instance_validate()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE k onboarding_kind;
+BEGIN
+  SELECT kind INTO k FROM public.onboarding_templates WHERE id = NEW.template_id;
+  IF k = 'offboarding' AND NEW.last_day IS NULL THEN
+    RAISE EXCEPTION 'last_day krävs för offboarding-instans';
+  END IF;
+  RETURN NEW;
+END $$;
 
--- Uppgifter (snapshot av mall vid skapande)
-offboarding_tasks (
-  id, instance_id uuid,
-  template_task_id uuid,         -- för spårbarhet
-  title, description, category,
-  assignee_profile_id uuid,      -- resolvad ägare
-  due_date date,
-  status text,                   -- 'pending' | 'done' | 'not_applicable'
-  done_at, done_by,
-  auto_resolved boolean,         -- t.ex. "ingen tjänstebil" → markerad N/A direkt
-  notes text,
-  created_at, updated_at
-);
+CREATE TRIGGER trg_onboarding_instance_validate
+  BEFORE INSERT OR UPDATE ON public.onboarding_instances
+  FOR EACH ROW EXECUTE FUNCTION public.onboarding_instance_validate();
+
+-- Utöka mall-task med offboarding-specifika fält
+ALTER TABLE public.onboarding_template_tasks
+  ADD COLUMN category text,                     -- 'system' | 'hardware' | 'access' | 'hr' | 'finance' | 'social' | (null = onboarding-section)
+  ADD COLUMN conditional text NOT NULL DEFAULT 'always';  -- 'always' | 'if_company_car' | 'if_keys' | 'if_phone' | ...
+
+-- due_offset_days finns redan; för offboarding räknas det från last_day, för onboarding från start_date
+-- (resolvas i edge function vid Fas 2)
+
+-- Koppling order → offboarding-instans (för "pågående beställningar som leaver har"-vyn)
+ALTER TABLE public.orders
+  ADD COLUMN offboarding_instance_id uuid NULL
+    REFERENCES public.onboarding_instances(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_orders_offboarding_instance ON public.orders(offboarding_instance_id)
+  WHERE offboarding_instance_id IS NOT NULL;
 ```
 
-Identiska grants/RLS-mönster som onboarding-tabellerna.
+### 3.2 Vad som **inte** ändras (återanvänds rakt av)
+
+| Komponent | Återanvänds från onboarding |
+|---|---|
+| `onboarding_templates` (med `kind='offboarding'`) | ✓ |
+| `onboarding_template_tasks` med `assignee_source` enum | ✓ (`tool_owner`, `area_owner`, `role`, `nearest_manager`) |
+| `onboarding_tasks` (snapshot vid Fas 2) | ✓ — inkl. `done`, `done_at`, `note` |
+| `onboarding_external_tokens` (token-flöde för externa) | ✓ — Agnes på Spiris/Collectum stänger sina konton via samma `/onboarding/extern`-vy |
+| `onboarding_email_log` | ✓ — `template_key` får nya värden (`offboarding-*`) |
+| RLS-helpers `is_in_hr_group`, `has_onboarding_task` | ✓ |
+| `responsibility_areas` + `responsibility_owners` | ✓ — nycklar/passerkort pekar hit precis som i onboarding |
+| `external_contacts` | ✓ |
+
+> **Konsekvens:** Inga nya admin-flikar för "Offboarding-ansvarsområden" eller "Offboarding-externa kontakter" — samma register driver båda flödena. Mall-editorn under `/admin/onboarding` får en `kind`-toggle överst.
 
 ## 4. Mall — utgångsläge
 
-Kategoriserat efter ansvarig. Allt med `tool_owner` resolvas dynamiskt vid skapande.
+Kategoriserat efter ansvarig. Allt ägarskap löses via `assignee_source` (inga statiska namn — samma princip som onboarding § 2).
 
-### System & licenser (`tool_owner`)
-- Avsluta konto i: Google Workspace (IT), Heartpace (HR), Rillion, Vitec/3L, Rekyl, IT-hotellet, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, Bank
-- Återkalla shared-password access (Passwords-modulen)
-- Ta bort från relevanta grupper (`group_members`)
-- Arkivera mejl + Drive (IT, efter `last_day + 30 dagar`)
+### System & licenser (`assignee_source = 'tool_owner'`)
+En rad per system; ägaren av verktyget får uppgiften. Täcker: Google Workspace, Heartpace, Rillion, Vitec/3L, Rekyl, IT-hotellet, Creditsafe, Momentum, Webport, Bereko, iBinder, Metry, Vyer, Zendesk, Uniguide, Spiris, Collectum, Bank.
 
-### Hårdvara & passage (`role: it` eller `static: Christel`)
-- Återta dator, telefon, headset, nycklar/passerkort, kreditkort
-- Markera utrustning som "återlämnad" i framtida `equipment`-modul
+Standardtask per system: *"Avsluta [verktyg]-konto för [namn] senast [last_day + 1]"*. Externa ägare (t.ex. Agnes → Spiris/Collectum) får token-länk till `/onboarding/extern` via samma flöde som onboarding använder.
 
-### HR & ekonomi (`role: hr`)
+### Hårdvara, passage & nycklar (`area_owner`)
+- `keys-access` (Nycklar & passerkort) — återlämning på `last_day`
+- Återta dator, telefon, headset, kreditkort — `area_owner` på nytt område `equipment-return` (eller `role: it` om man hellre håller det på roll-nivå)
+- I framtida `equipment`-modul: samma task uppdaterar `status='returned'` på tilldelad utrustning
+
+### HR & ekonomi (`assignee_source = 'role'`, `assignee_role = 'hr'`)
 - Sluttidsrapport / semestersaldo
 - Sista lön + semesterersättning
 - Avregistrera försäkringar, Collectum, friskvård
 - Uppdatera anställningsförteckning
 - Skicka tjänstgöringsbetyg (om begärt)
 
-### Chef (`nearest_manager`)
+### Chef (`assignee_source = 'nearest_manager'`)
 - Slutsamtal / exit-intervju
 - Avtacka i teamet (mejl/lunch/blomma)
 - Fördela pågående ärenden
 - Uppdatera org-chart
+- Hantera ev. subordinates (om leaver är chef): flytta `manager_id`-pekare till ny chef
 
-### Konditionella (visas bara om relevant)
-- Tjänstebil → återlämning + drivmedelskort (`if_company_car`)
-- Hemmakontor-utrustning (`if_remote_equipment`)
-- Externa systembehörigheter hos kund (`if_external_access`)
+### Konditionella (visas bara om `conditional` matchar)
+- `if_company_car` — återlämning + drivmedelskort
+- `if_remote_equipment` — hemmakontor-utrustning
+- `if_external_access` — externa systembehörigheter hos kund
+- `if_keys` — extra nycklar utöver standard
 
-HR kan markera ej-tillämpliga punkter som `not_applicable` direkt vid start.
+HR markerar ej-tillämpliga punkter som `done=true, note='N/A'` direkt vid Fas 2, motsvarande onboardingens `optional_items_included`.
 
 ## 5. Återlämning — egen checklista, inte order
 
-Till skillnad från onboarding (där hårdvara/licens hanteras via `/orders/new`) hanteras återlämning **direkt i offboarding-instansen**:
+Till skillnad från onboarding (där hårdvara/licens hanteras via `/orders/new` och `onboarding_instance_id`) hanteras återlämning **direkt i instansen** via `onboarding_tasks`:
 
-- Varje hårdvaru-/system-uppgift har kryssruta + fritextfält ("status", "skick", "lämnad till X")
-- Ingen `orders`-rad skapas, ingen godkännandekedja
-- Motivering: återlämning saknar pris/leverans/godkännande-aspekt och passar bättre som en uppgift än som en order
+- Varje hårdvaru-/system-uppgift har kryssruta + `note`-fält ("status", "skick", "lämnad till X")
+- Ingen `orders`-rad skapas, ingen godkännandekedja, inget `offboarding_instance_id` används vid återlämning
+- Motivering: återlämning saknar pris/leverans/godkännande-aspekt och passar bättre som task än som order
+
+**`orders.offboarding_instance_id` används bara för att lista pågående *köp*-ordrar** som personen som slutar har lagt (avsnitt 10, edge case 6) — inte för återlämningen i sig.
 
 Om vi i framtiden inför en `equipment`-modul (tilldelad utrustning per profil) ska de raderna istället uppdateras till `status = 'returned'` av samma uppgift.
 
 ## 6. Tidslinje
 
-`due_offset_days` räknas från `last_day`:
+`due_offset_days` räknas från `last_day` när `kind='offboarding'` (resolvas i `onboarding-hr-confirm`):
 
 | Offset | Exempel |
 |---|---|
 | -14 | Slutsamtal bokas, avtacknings-planering |
 | -7 | Bekräfta återlämningslista med medarbetaren |
-| -3 | Påminnelse till alla system-ägare |
+| -3 | Påminnelse till alla system-ägare (utöver cron) |
 | 0 (sista dagen) | Återlämna hårdvara, nycklar, kort. Inaktivera Google-konto kl 17:00 |
 | +1 | Avsluta licenser i alla system |
 | +7 | Sista lön körd |
 | +30 | Arkivera mejl/Drive, ta bort från grupper |
-| +90 | Slutrensning (radera arkiv om inget juridiskt skäl finns) |
+| +90 | Slutrensning (radera arkiv om `legal_hold = false`) |
 
 ## 7. Mejl & notiser
 
-Återanvänd onboarding-pipen:
-- Batch-mejl per ansvarig (en mejl med alla deras uppgifter för instansen)
-- Daglig påminnelse-cron för försenade uppgifter
-- HR får sammanfattning när alla uppgifter är klara → status `completed`
+Återanvänd onboarding-pipen (`send-transactional-email`, `onboarding_email_log`, daglig cron).
 
-Nya mall-mejl (React Email, registry):
-- `offboarding-owner-task-batch` — speglar onboarding-varianten
-- `offboarding-reminder` — speglar onboarding-varianten
-- `offboarding-completed` — till HR + chef
-- `offboarding-cancelled` — om HR avbryter (medarbetaren stannar)
+### 7.1 Nya React Email-mallar (props-kontrakt)
+
+Speglar onboarding-mallarnas struktur (§ 13.4 i onboarding-planen). Registreras i samma `registry.ts`.
+
+| Template key | Mottagare | Trigger |
+|---|---|---|
+| `offboarding-hr-new` | HR | Manuell start av chef (motsv. `onboarding-hr-new-application`) eller Heartpace-utkast |
+| `offboarding-owner-task-batch` | Tool-/area-owner, chef, extern (token) | Fas 2 → 3 (HR bekräftar) |
+| `offboarding-reminder` | Ansvarig med öppna tasks | Cron, offset-baserad (T-3, T-0, T+1) |
+| `offboarding-completed` | HR + chef | Sista task avbockad |
+| `offboarding-cancelled` | Alla med öppna tasks | HR avbryter (medarbetaren stannar) |
+
+Props är identiska med onboarding-motsvarigheterna förutom att `startDate` ersätts av `lastDay` och `daysUntilStart` av `daysUntilExit`.
 
 ## 8. UI
 
-- `/offboarding` — HR-lista (aktiva, kommande, avslutade)
-- `/offboarding/new` — formulär (person, slutdatum, orsak, exit_type, notes)
-- `/offboarding/:id` — instansvy med uppgifter grupperade per kategori + ansvarig, kryssrutor + fritext
-- `/admin → Offboarding-mall` — CRUD för mall-rader (samma komponent som onboarding-mallen, generisk)
+- `/offboarding` — HR-lista (aktiva, kommande, avslutade). Återanvänder samma listkomponent som `/onboarding` med `kind`-filter.
+- `/offboarding/new` — formulär (person, slutdatum, orsak, exit_type, notes, conditional-kryss)
+- `/offboarding/:id` — instansvy med uppgifter grupperade per kategori + ansvarig, kryssrutor + fritext. Samma komponent som `/onboarding/:id` med `kind`-anpassad timeline.
+- `/admin/onboarding` — *befintlig sida*, får en `kind`-toggle (Onboarding / Offboarding) överst i flikarna **Översikt** och **Mallar**. Ansvarsområden, Externa kontakter och Mejlmallar är delade.
 
 Sidofält: under "HR" tillsammans med onboarding. Endast HR-grupp + admin ser sektionen.
 
 ## 9. Säkerhet / RLS
 
-- `offboarding_instances` & `offboarding_tasks`: SELECT/INSERT/UPDATE för HR-grupp + admin, samt `assignee_profile_id = auth.uid()` får uppdatera *sina egna* uppgifter
-- Den som slutar ser **inte** sin egen instans (känsligt — slutsamtal, orsak)
-- Chef ser endast instansens översikt för sin direktrapport (via `is_subordinate_order`-mönstret, omdöpt till hjälpfunktion)
+Återanvänder helpers `is_in_hr_group` och `has_onboarding_task` från onboarding-planen § 13.2. Inga nya helpers behövs.
+
+Tillägg/avvikelser:
+- Den som slutar (`onboarding_instances.profile_id` när `kind='offboarding'`) **får inte själv läsa instansen** — slutsamtal och orsak är känsliga. Lägg till villkor i SELECT-policyn: om `kind='offboarding'` exkluderas raden där `auth.uid() = profiles.user_id WHERE profiles.id = instance.profile_id`.
+- Chef (nearest manager) ser översikt + tasks men inte ev. konfidentiella note-fält märkta `is_sensitive=true` (framtida fält, fas 2).
+- RLS-policy för `orders.offboarding_instance_id` speglar onboarding-motsvarigheten:
+
+```sql
+CREATE POLICY "Offboarding-deltagare ser kopplad order"
+ON public.orders FOR SELECT TO authenticated
+USING (
+  offboarding_instance_id IS NOT NULL
+  AND (
+    public.is_in_hr_group(auth.uid())
+    OR EXISTS (
+      SELECT 1 FROM public.onboarding_instances oi
+      WHERE oi.id = orders.offboarding_instance_id
+        AND (oi.initiated_by = auth.uid()
+             OR EXISTS (SELECT 1 FROM public.profiles p
+                        WHERE p.id = oi.nearest_manager_id AND p.user_id = auth.uid()))
+    )
+    OR public.has_onboarding_task(auth.uid(), offboarding_instance_id)
+  )
+);
+```
 
 ## 10. Edge cases
 
 1. **Snabbavslut samma dag** (`exit_type='immediate'`) — alla system-uppgifter får `due_date = today`, Google-konto inaktiveras omedelbart, chef notifieras direkt.
-2. **Pensionering** — arkivering hålls längre (5 år), avtackning prioriteras.
-3. **Återanställning innan slutdatum** — HR sätter `status='cancelled'`, `cancelled_reason`, alla öppna uppgifter stängs.
-4. **Förlängt slutdatum** — `last_day` uppdateras → alla `due_date` räknas om för uppgifter som inte är klara.
-5. **Tvist / juridik** — flagga på instansen som stoppar arkivering tills HR släpper den.
-6. **Personen har pågående orders i `/orders`** — visas i instansvyn ("Pågående beställningar att hantera"); chef beslutar om de fullföljs eller annulleras.
-7. **Personen är chef för andra** — `manager_id`-pekare för subordinates måste flyttas; uppgift till HR + ny chef.
+2. **Pensionering** — `legal_hold` kan sättas av HR; arkivering hålls längre (5 år), avtackning prioriteras.
+3. **Återanställning innan slutdatum** — HR sätter `status='cancelled'`, `cancel_reason`, alla öppna tasks fryses (samma flöde som onboarding-cancel).
+4. **Förlängt slutdatum** — `last_day` uppdateras → `onboarding-hr-confirm` räknar om `deadline_date` på öppna tasks (`done=false`).
+5. **Tvist / juridik** — `legal_hold=true` på instansen stoppar arkiverings-tasken tills HR släpper.
+6. **Personen har pågående orders i `/orders`** — visas i instansvyn ("Pågående beställningar att hantera"). Chef beslutar fullfölj/annullera. Kopplas via `orders.offboarding_instance_id` som HR sätter manuellt i instansvyn.
+7. **Personen är chef för andra** — task till HR + ny chef: flytta `manager_id`-pekare för subordinates. Edge function `offboarding-reassign-subordinates` kan hjälpa till.
+8. **Tool får ny ägare under pågående offboarding** — snapshot → öppna tasks oförändrade (samma som onboarding edge case).
+9. **Heartpace markerar tidigare leaver som aktiv igen** — befintlig sync skapar/uppdaterar inte automatiskt; HR får notis "Möjlig återanställning för X" och beslutar manuellt.
 
 ## 11. Genomförande — agenter
 
-Bygg efter att onboarding-fas-1 (Agent A–F i `docs/onboarding-plan.md`) är levererad, så vi får återanvända samma komponenter och mejl-pipe.
+Bygg **efter** att onboarding-fas-1 (Agent A–G i `docs/onboarding-plan.md`) är levererad, så vi får återanvända samma tabeller, komponenter och mejl-pipe.
 
 ```text
-A-off (schema: 3 nya tabeller + grants + RLS)
+A-off (additiv schema: ALTER på 3 befintliga tabeller + validate-trigger + orders.offboarding_instance_id + RLS-tillägg)
    │
-   ├─► B-off (edge functions: skapa instans, resolva ägare, batch-mejl, cron-påminnelse)
-   ├─► C-off (mejl-mallar: 4 nya React Email-templates + registry)
-   ├─► D-off (admin-UI: mall-editor — generisk komponent delad med onboarding)
-   ├─► E-off (HR-UI: /offboarding, /offboarding/new, /offboarding/:id)
-   └─► F-off (Heartpace-trigger: utvidga heartpace-sync-personnel med slutdatum-detektion → utkast-instans)
+   ├─► B-off (edge functions: offboarding-initiate, -hr-confirm, -task-checkoff,
+   │          -reminders, -cancel, -complete-check, -reassign-subordinates)
+   ├─► C-off (mejl-mallar: 5 nya React Email-templates + registry-uppdatering)
+   ├─► D-off (admin-UI: kind-toggle i befintlig /admin/onboarding mall-editor)
+   ├─► E-off (HR-UI: /offboarding, /offboarding/new, /offboarding/:id —
+   │          återanvänder onboarding-komponenter med kind-prop)
+   └─► F-off (Heartpace-trigger: utvidga heartpace-sync-personnel med
+              slutdatum-detektion → skapar utkast-instans + notis till HR)
 ```
 
-A-off blockar resten (regenererad `types.ts`). C-off och D-off kan köras parallellt med B-off.
+A-off blockar resten (regenererad `types.ts`). C-off och D-off kan köras parallellt med B-off. E-off förutsätter A-off + befintliga onboarding-komponenter från onboarding-plan Agent E.
 
 ## 12. Öppna frågor
 
-1. Ska den som slutar få ett eget mejl med "checklista för dig" (lämna in saker, byt privat mejl i Heartpace, etc.)?
-2. Hur länge ska arkiverade Google-konton sparas innan slutradering? Förslag: 90 dagar standard, 5 år vid pensionering, juridisk-flagga blockerar.
-3. Ska slutsamtals-anteckningar lagras i instansen (känsligt) eller bara markeras "genomfört"?
-4. Ska vi automatiskt skapa en planner-kort i HR-boarden per offboarding för översikt?
-5. Behövs en "återrapportering" till chefen efter 30 dagar (allt klart, inget hänger)?
+1. Ska den som slutar få ett eget mejl med "checklista för dig" (lämna in saker, byt privat mejl i Heartpace, etc.)? Ny template `offboarding-leaver-checklist`?
+2. Default-arkivering: 90 dagar standard, 5 år vid pensionering, `legal_hold` blockerar — bekräftas?
+3. Ska slutsamtals-anteckningar lagras i instansen (känsligt → kräver `is_sensitive`-fält på `onboarding_tasks.note`) eller bara markeras "genomfört"?
+4. Ska vi automatiskt skapa ett planner-kort i HR-boarden per offboarding för översikt?
+5. Behövs "återrapportering" till chefen efter 30 dagar (allt klart, inget hänger)?
+6. Ska `offboarding-reassign-subordinates` köras automatiskt med "föreslagen ny chef = leavers manager" eller alltid kräva HR-input?
+
+---
+
+## Synk-kontrakt mot `docs/onboarding-plan.md`
+
+Detta dokument är giltigt så länge följande är sant i onboarding-planen:
+
+- `onboarding_kind`-enumet innehåller `'offboarding'` ✓ (§ 13.1)
+- `assignee_source`-enumet innehåller `tool_owner`, `area_owner`, `role`, `nearest_manager` ✓ (§ 13.1)
+- `onboarding_external_tokens` + `/onboarding/extern` är generiska (inte hårdkodade mot onboarding-text) ✓ (§ 13.6)
+- `responsibility_areas` och `external_contacts` är delade register ✓ (§ 2, § 5)
+- RLS-helpers `is_in_hr_group` och `has_onboarding_task` är delade ✓ (§ 13.2)
+
+Bryts något av ovanstående måste detta dokument uppdateras samtidigt.

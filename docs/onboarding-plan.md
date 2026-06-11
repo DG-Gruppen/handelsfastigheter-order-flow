@@ -401,7 +401,10 @@ Hela onboarding-processen följer en strikt sekvens med två tydliga "grindar" i
 
 ## 9. Återanvändning för offboarding
 
-Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil markeras avslutad i Heartpace eller manuellt av HR.
+Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas manuellt av HR/chef eller automatiskt när Heartpace-syncen ser ett `slutdatum`. Offboarding lägger till ett fåtal additiva kolumner (`trigger_source`, `last_day`, `exit_reason`, `exit_type`, `legal_hold` på `onboarding_instances`; `category`, `conditional` på `onboarding_template_tasks`; `offboarding_instance_id` på `orders`) men återanvänder allt annat: `assignee_source`-enumet, `responsibility_areas`, `external_contacts`, `onboarding_external_tokens`, `onboarding_email_log`, RLS-helpers och mall-editorn (med en `kind`-toggle).
+
+Detaljer i `docs/offboarding-plan.md`.
+
 
 ---
 
