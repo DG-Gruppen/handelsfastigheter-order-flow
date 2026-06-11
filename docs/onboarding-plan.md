@@ -151,8 +151,10 @@ Mall-uppgifter får en fälttyp `assignee_source` som styr **vem** som blir ansv
 ```text
 -- Nya ägarskaps-register (delas av onboarding/offboarding och framtida processer)
 
-external_contacts
-  id, name, email, organization, role_description, is_active
+external_contacts                  -- ✅ IMPLEMENTERAD (migration kör)
+  id, company_name (nullable), full_name, email (nullable),
+  phone (nullable), notes (nullable), is_active,
+  created_by, created_at, updated_at
 
 responsibility_areas              -- icke-system, t.ex. nycklar, webbsida
   id, slug, name, description, is_active
@@ -163,10 +165,14 @@ responsibility_owners             -- many-to-many; ägaren är intern ELLER exte
   external_contact_id nullable,
   CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
 
--- tool_owners utökas på samma sätt:
-tool_owners (befintlig, ALTER)
-  + external_contact_id nullable
-  + CHECK (num_nonnulls(profile_id, external_contact_id) = 1)
+-- tool_owners är redan utökad: ✅ IMPLEMENTERAD
+tool_owners (befintlig, ALTER körd)
+  + id (synthetic PK, ersätter gamla composite PK)
+  + external_contact_id nullable (FK → external_contacts ON DELETE CASCADE)
+  + profile_id nu nullable
+  + CHECK (exakt en av profile_id / external_contact_id är satt)
+  + unika index per (tool_id, profile_id) resp. (tool_id, external_contact_id)
+-- tools.owner_id är nu nullable så ett verktyg kan ägas av endast externa kontakter
 
 -- Onboarding-modellen
 
@@ -250,48 +256,66 @@ Drawer/dialog för redigering:
 - **Ägare:** lista över kopplingar i `responsibility_owners`. Sök/lägg till intern profil **eller** extern kontakt (`external_contacts`). Visar badge "Intern" / "Extern". Flera ägare tillåts.
 - **Används av:** läs-bara badges över de mall-tasks som pekar på området (`onboarding_template_tasks.assignee_area_id`), så admin ser konsekvenser innan något inaktiveras.
 
-### Externa kontakter (flik)
+### Externa kontakter (✅ Levererad i förskott — Etapp 0)
 
-Samma sida (`/admin/onboarding`), fliken **Externa kontakter**:
+Efter diskussion lyftes **Externa kontakter** ut ur `/admin/onboarding` och placerades istället direkt under **Administration → Organisation** (`/admin`, sektion `external-contacts`). Skälet är att registret även används av andra moduler (i första hand `Verktyg`), och det fanns redan en separat sida för **Externa parter** (inloggningsbara partners via `external_invites`). De två är medvetet separata koncept:
+
+| | **Externa parter** (befintlig) | **Externa kontakter** (ny) |
+|---|---|---|
+| Syfte | Bjuda in externa partners som ska **logga in** i intranätet | Register över personer som **aldrig loggar in**, bara används som mottagare/ägare |
+| Datakälla | `external_invites` + `profiles.is_external = true` | `external_contacts` (ren kontaktrad, ingen auth) |
+| Exempel | Konsult som behöver se planner/dokument | Agnes på Fastighetssnabben, revisor, försäkringsmäklare |
+| Kostar | En aktiv Supabase-användare per person | Bara en rad i en tabell |
 
 ```text
 ┌─ Externa kontakter ────────────────────────────────────────┐
-│  [+ Ny extern kontakt]                    [sök...]         │
+│  [+ Ny kontakt]                          [sök...]          │
 │                                                            │
-│  Namn                Organisation      Roll                │
-│  ─────────────────────────────────────────────────────   │
-│  Agnes Eriksson      Fastighetssnabben IT-drift            │
-│                                                            │
-│  Klick på rad → drawer med redigering + kopplade ägarskap   │
+│  🏢  Agnes Eriksson                                        │
+│      Fastighetssnabben AB                                  │
+│      ✉ agnes@fastighetssnabben.se  ☎ +46 70 123 45 67     │
+│                                              [✎] [🗑]      │
 └────────────────────────────────────────────────────────────┘
 ```
 
-Drawer/dialog för redigering:
-- **Grunddata:** namn, e-post (obligatorisk, unik), organisation (fritext), rollbeskrivning (kort text), `is_active`-toggle.
-- **Kopplade ägarskap:** läs-bara lista över alla `tool_owners` och `responsibility_owners` där kontakten står som ägare, med länkar till respektive verktyg/område. Gör det enkelt att se *varför* en kontakt finns i systemet och vilka mejl hen mottar.
-- **Användningshistorik:** antal pågående/completed onboardings där kontakten är ansvarig (via snapshot i `onboarding_tasks` + `onboarding_email_log`).
-
-**Implementation (Etapp 1, första leverans):**
-
-- **Route:** `/admin/onboarding` → flik `Externa kontakter` (default-flik om inga mallar finns ännu). Komponent: `src/pages/admin/onboarding/ExternalContactsTab.tsx`.
-- **Data:** `external_contacts` (id, full_name, email, organization, role_description, is_active, created_at, updated_at) + RLS som tillåter läs/skriv för admin- och HR-gruppen samt superadmin. Unikt index på `lower(email)`.
+- **Route:** `/admin` → sektion `Externa kontakter` under gruppen **Organisation** (egen kort + sidomeny-länk, ikon: `Contact`).
+- **Komponent:** `src/components/admin/ExternalContactsManager.tsx`, lazy-laddad i `src/pages/Admin.tsx`.
+- **Data:** tabell `external_contacts` med `company_name`, `full_name` (obligatoriskt), `email`, `phone`, `notes`, `is_active`, `created_by`. Trigger `update_updated_at_column` på UPDATE.
 - **CRUD:**
-  - **Lista:** React Query (`useExternalContacts`) med sortering på namn, kolumner Namn / Organisation / E-post / Roll / Aktiv / antal kopplingar. Inaktiva visas nedtonat och kan filtreras bort via toggle.
-  - **Skapa/Redigera:** drawer (shadcn `Sheet`) med formulär, sparas via Supabase upsert. Optimistisk uppdatering + toast.
-  - **Radera:** soft delete genom `is_active = false`. Hård radering tillåts endast om inga `tool_owners`/`responsibility_owners` pekar på kontakten — annars visas dialog med antal kopplingar och uppmaning att flytta dem först.
-- **Sök:** debounced (200 ms) textfält ovanför tabellen, ILIKE-matchning mot `full_name`, `email`, `organization`, `role_description`. Resultat-count visas bredvid sökfältet. Tom-state med CTA "Lägg till första externa kontakten".
-- **Validering:** zod-schema (`externalContactSchema`) — `full_name` 2–100 tecken (trim), `email` giltig + max 255, `organization` valfri max 100, `role_description` valfri max 200. Dubblettkontroll på e-post (case-insensitive) både i klient (mot cache) och via DB-constraint; visa fältfel om kollision. Alla fält trimmas före insert.
-- **Kopplade ägarskap:** drawern hämtar `tool_owners` + `responsibility_owners` joinat mot `tools` resp. `responsibility_areas`. Klick på rad navigerar till respektive admin-vy.
-- **Koppla till ansvarsområden direkt i vyn:** under "Kopplade ägarskap" finns en sektion **Ansvarsområden** med en multi-select (shadcn `Command` + `Popover`) som listar alla aktiva `responsibility_areas`. Markerade områden sparas som rader i `responsibility_owners` (`external_contact_id` satt, `profile_id` null) via en transaktion som diffar mot befintliga kopplingar — nya rader läggs till, avmarkerade tas bort. Visar badge med antal valda områden, samt en liten lista över aktuella kopplingar med "Ta bort"-knapp per rad för snabb hantering utan att öppna områdesvyn. Optimistisk uppdatering + toast; React Query invaliderar både `external-contacts` och `responsibility-areas`.
-- **Behörighet (rollbaserad, sanningskälla = RLS):**
-  - **Vem ser fliken?** Endast medlemmar i `admin`-gruppen, `hr`-gruppen, `superadmin` eller användare med `can_view` på modulen `onboarding-admin` (`module_permissions`). Övriga får inte ens fliken renderad i `/admin/onboarding`.
-  - **Vem kan skapa/redigera kontakter?** Kräver `can_edit` på `onboarding-admin` ELLER medlemskap i admin/HR/superadmin. Knappar "Ny kontakt", "Spara", "Inaktivera" döljs annars; backend speglar via `WITH CHECK` på `external_contacts`-RLS.
-  - **Vem kan radera (hård delete)?** Endast `can_delete` på `onboarding-admin` eller admin/superadmin. HR får bara soft delete (`is_active = false`).
-  - **Vem kan koppla till ansvarsområden?** Kräver `can_edit` på `onboarding-admin` **OCH** `can_edit` på modulen `responsibility-areas` (eller admin/superadmin). Annars är multi-selecten read-only och visar tooltip "Saknar behörighet att hantera ansvarsområden". RLS på `responsibility_owners` enforcar samma villkor via security definer-funktion `can_manage_responsibility_owners(auth.uid())` för att undvika rekursion.
-  - **Helper-hook:** `useOnboardingAdminAccess()` returnerar `{ canView, canEditContacts, canDeleteContacts, canLinkAreas }`. Komponenten använder dessa flaggor för att slå på/av knappar och fält; ingen logik dupliceras i flera filer.
-  - **RLS-policys** (på `external_contacts` och `responsibility_owners`) använder befintliga `is_in_admin_group`, `user_in_group_named(auth.uid(), 'HR')` och `has_module_slug_permission(auth.uid(), 'onboarding-admin', '<perm>')` — inga nya inline-subqueries mot egna tabeller.
+  - **Lista:** kortbaserad (grid 1–2 kolumner), sorterad på `company_name` därefter `full_name`. Inaktiva visas nedtonat (opacity 60%).
+  - **Skapa/Redigera:** shadcn `Dialog` med fälten ovan + Aktiv-toggle. `mailto:` / `tel:`-länkar genereras direkt i listan.
+  - **Radera:** hård delete med bekräftelse­dialog som varnar att alla `tool_owners`-kopplingar tas bort (FK ON DELETE CASCADE).
+- **Sök:** klient­side filter (ingen debounce nödvändig — listan är liten), matchar `company_name`, `full_name`, `email`, `phone`.
+- **Validering:** zod-schema (`contactSchema`) — `full_name` 1–120 (trim, krävs), `company_name` 0–120, `email` valid + max 255 (valfri), `phone` 0–40, `notes` 0–1000. Fel visas via `toast.error`.
+- **RLS:**
+  - **SELECT:** alla inloggade får läsa (behövs för verktygsägar-listor och framtida ansvarsområden).
+  - **INSERT/UPDATE/DELETE:** kräver `is_in_admin_group(auth.uid())` ELLER `has_role(auth.uid(), 'admin')` ELLER `has_role(auth.uid(), 'it')`. HR-rollen läggs till när onboarding-modulen byggs.
+- **Behörighet i UI:** sektionen är registrerad som admin-only i `useAdminAccess` (slug `null` → endast admin/IT ser kortet i `/admin`). RLS speglar samma villkor på databasnivå.
 
-> **Syfte:** Samla alla externa parter på ett ställe utan att blanda in dem i personalkatalogen eller behöva ge dem inloggning. Används idag för Agnes (Fastighetssnabben → Spiris/Collectum) men är generisk för framtida revisorer, försäkringsmäklare m.m. E-postadressen är nyckeln för utskick — ändras den uppdateras framtida mallar automatiskt. Pågående onboardings påverkas inte pga snapshot i `onboarding_tasks`.
+#### Koppling till verktygsägare (✅ Levererad)
+
+`ToolsManager` och `/verktyg` läser nu både `profile_id` och `external_contact_id` från `tool_owners`. I ägar-pickern visas två tydligt separerade sektioner under rubriken **Systemägare**:
+
+```text
+SHF-anställda
+  ☑ Anna Andersson
+  ☐ Bo Bengtsson
+  ...
+
+Externa kontakter
+  ☐ Agnes Eriksson · Fastighetssnabben AB
+  ☐ Erik Eriksson · Revisionsbyrån
+```
+
+Internt representeras varje val som en composite key `"profile:<id>"` eller `"external:<id>"` så att en post entydigt vet vilken tabell den ska skrivas mot. `tools.owner_id` (legacy, NOT NULL togs bort) sätts fortfarande till första interna profilen om någon är vald — annars `NULL`. På `/verktyg` visas externa ägare som "Förnamn Efternamn (Företag)" i samma popover som befintliga ägare.
+
+#### Återstår innan onboarding-modulen
+
+- **Ansvarsområden** (`responsibility_areas` + `responsibility_owners`) — egen flik under `/admin/onboarding` när den byggs. Återanvänder samma två-listors-mönster (interna profiler + externa kontakter) som verktygs­ägar-pickern.
+- **Multi-select direkt på en extern kontakt** för att snabbt koppla mot flera områden samtidigt — flyttas till `/admin/onboarding`-fliken när tabellerna finns.
+- **Behörighet utökas** med `user_in_group_named(auth.uid(), 'HR')` och `has_module_slug_permission(auth.uid(), 'onboarding-admin', ...)` när onboarding-modulen registreras.
+
+> **Syfte:** Samla alla externa parter på ett ställe utan att blanda in dem i personalkatalogen eller behöva ge dem inloggning. Används idag för Agnes (Fastighetssnabben → Spiris/Collectum) men är generisk för framtida revisorer, försäkringsmäklare m.m. Eftersom registret nu finns klart innan onboarding-modulen byggs kan vi redan börja koppla externa ägare på verktyg — när onboarding-mallarna sedan resolvar `assignee_source = 'tool_owner'` får vi externa mottagare på köpet.
 
 
 ### 7.2 Behörighet
@@ -317,6 +341,13 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 ---
 
 ## 10. Etapper
+
+**Etapp 0 — Förberedande (✅ levererad)**
+- `external_contacts`-tabell + RLS
+- `tool_owners` utökad med `external_contact_id` (synthetic PK, CHECK exactly-one, unika index)
+- `tools.owner_id` nullable
+- Admin-sida `Externa kontakter` under Organisation (CRUD + sök + zod-validering)
+- Verktygsägar-pickern visar interna + externa i separata sektioner; `/verktyg` renderar externa ägare med företagsnamn
 
 **Etapp 1 — Fundament**
 - Datamodell + admin-vy för mall (förladdad med Petras checklista)
