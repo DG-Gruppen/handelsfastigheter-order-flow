@@ -342,6 +342,13 @@ Samma datamodell, separat mall (`kind = 'offboarding'`). Triggas när profil mar
 
 ## 10. Etapper
 
+**Etapp 0 — Förberedande (✅ levererad)**
+- `external_contacts`-tabell + RLS
+- `tool_owners` utökad med `external_contact_id` (synthetic PK, CHECK exactly-one, unika index)
+- `tools.owner_id` nullable
+- Admin-sida `Externa kontakter` under Organisation (CRUD + sök + zod-validering)
+- Verktygsägar-pickern visar interna + externa i separata sektioner; `/verktyg` renderar externa ägare med företagsnamn
+
 **Etapp 1 — Fundament**
 - Datamodell + admin-vy för mall (förladdad med Petras checklista)
 - Manuell "Skapa onboarding"-knapp för HR (utan Heartpace-trigger än)
