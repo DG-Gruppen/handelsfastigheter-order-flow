@@ -23,6 +23,7 @@ const SECTION_SLUG_MAP: Record<string, string | null> = {
   integrations: null,  // admin-only
   external: "externa-parter",
   "external-contacts": null,  // admin-only
+  "boarding-templates": null, // admin-only (HR via admin role for now)
 };
 
 /**
