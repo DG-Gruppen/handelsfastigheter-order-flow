@@ -105,12 +105,21 @@
 :root {
   --removed-body-scroll-bar-size: 0px !important;
 }
-body[data-scroll-locked] {
-  overflow-y: auto !important;
+/* Higher specificity (0,1,1) than the library's injected
+   body[data-scroll-locked] (0,1,0) — wins regardless of @layer ordering. */
+html body[data-scroll-locked] {
+  overflow-y: scroll !important;
   overflow-x: clip !important;
   margin: 0 !important;
   padding-right: 0 !important;
   position: static !important;
+  top: auto !important;
+}
+html[data-scroll-locked] {
+  overflow-y: scroll !important;
+  overflow-x: clip !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
 }
 /* react-remove-scroll-bar compensation classes for fixed elements */
 .right-scroll-bar-position {
