@@ -1,7 +1,7 @@
 # Onboarding / Offboarding — Plan
 
 > Levande dokument. Vi itererar här innan kod skrivs.
-> Senast uppdaterad: 2026-06-10
+> Senast uppdaterad: 2026-06-11
 
 ## 1. Vad Petra vill ha (kärnan)
 
