@@ -1,0 +1,1 @@
+UPDATE public.modules SET route = '/boarding' WHERE slug = 'onboarding';
