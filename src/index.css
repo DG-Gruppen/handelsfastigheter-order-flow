@@ -105,7 +105,11 @@
   }
   html {
     overflow-y: scroll;
+    overflow-x: clip;
     scrollbar-gutter: stable;
+  }
+  body {
+    overflow-x: clip;
   }
   /* Prevent Radix RemoveScroll from hiding overflow and shifting layout */
   .with-scroll-bars-hidden {
@@ -113,7 +117,8 @@
     padding-right: 0px !important;
   }
   body[data-scroll-locked] {
-    overflow: auto !important;
+    overflow-y: auto !important;
+    overflow-x: clip !important;
     overscroll-behavior: auto !important;
     margin-right: 0px !important;
     padding-right: 0px !important;
@@ -121,7 +126,8 @@
     top: auto !important;
   }
   html[data-scroll-locked] {
-    overflow: auto !important;
+    overflow-y: scroll !important;
+    overflow-x: clip !important;
     margin-right: 0px !important;
     padding-right: 0px !important;
   }
