@@ -20,13 +20,14 @@ const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdmi
 const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
 const EmailLogDashboard = lazy(() => import("@/components/admin/EmailLogDashboard"));
 const ExternalPartiesManager = lazy(() => import("@/components/admin/ExternalPartiesManager"));
+const ExternalContactsManager = lazy(() => import("@/components/admin/ExternalContactsManager"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
-  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2,
+  Wrench, BookOpen, ShoppingCart, Cog, Activity, FolderOpen, Package, Link2, Database, Shirt, Plug, Mail, Building2, Contact,
 } from "lucide-react";
 
-type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external";
+type AdminSection = "menu" | "categories" | "equipment" | "systems" | "users" | "settings" | "it" | "knowledge" | "groups" | "permissions" | "tools" | "news" | "backup" | "workwear" | "integrations" | "email-log" | "external" | "external-contacts";
 
 interface AdminGroup {
   label: string;
@@ -77,6 +78,7 @@ const adminGroups: AdminGroup[] = [
       { id: "users", label: "Användare", description: "Hantera användare och roller", icon: Users, color: "from-warning to-warning", borderColor: "border-t-warning/40", bgColor: "bg-warning/10", textColor: "text-warning" },
       { id: "groups", label: "Grupper", description: "Skapa och hantera grupper", icon: Users, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
       { id: "external", label: "Externa parter", description: "Bjud in och hantera externa partners", icon: Building2, color: "from-accent to-accent", borderColor: "border-t-accent/40", bgColor: "bg-accent/10", textColor: "text-accent" },
+      { id: "external-contacts", label: "Externa kontakter", description: "Personer från leverantörer och konsulter", icon: Contact, color: "from-primary to-primary-glow", borderColor: "border-t-primary/40", bgColor: "bg-primary/10", textColor: "text-primary" },
     ],
   },
   {
@@ -151,6 +153,7 @@ export default function Admin() {
       case "integrations": content = <IntegrationsStatus />; break;
       case "email-log": content = <EmailLogDashboard />; break;
       case "external": content = <ExternalPartiesManager />; break;
+      case "external-contacts": content = <ExternalContactsManager />; break;
     }
     return content ? <Suspense fallback={lazyFallback}>{content}</Suspense> : null;
   };

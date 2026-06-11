@@ -33,13 +33,14 @@ interface Tool {
   sort_order: number;
   is_active: boolean;
   is_starred: boolean;
-  owner_id: string;
-  owner_ids?: string[];
+  owner_id: string | null;
+  owner_keys?: string[];      // composite keys: "profile:<id>" | "external:<id>"
   owner_names?: string[];
   department_ids?: string[];
 }
 
 interface ProfileOpt { id: string; full_name: string; }
+interface ExternalContactOpt { id: string; full_name: string; company_name: string | null; }
 interface DepartmentOpt { id: string; name: string; }
 
 function SortableToolRow({
@@ -111,6 +112,7 @@ function SortableToolRow({
 export default function ToolsManager() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [profiles, setProfiles] = useState<ProfileOpt[]>([]);
+  const [externalContacts, setExternalContacts] = useState<ExternalContactOpt[]>([]);
   const [departments, setDepartments] = useState<DepartmentOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -121,6 +123,7 @@ export default function ToolsManager() {
   const [description, setDescription] = useState("");
   const [emoji, setEmoji] = useState("🔗");
   const [url, setUrl] = useState("");
+  // Owner keys use the format "profile:<id>" or "external:<id>"
   const [selectedOwners, setSelectedOwners] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
@@ -130,18 +133,24 @@ export default function ToolsManager() {
   );
 
   const fetchAll = async () => {
-    const [toolsRes, profilesRes, deptsRes, deptLinksRes, ownerLinksRes] = await Promise.all([
+    const [toolsRes, profilesRes, extRes, deptsRes, deptLinksRes, ownerLinksRes] = await Promise.all([
       supabase.from("tools" as any).select("*").order("sort_order"),
       supabase.from("profiles").select("id, full_name").eq("is_external", false).eq("is_hidden", false).order("full_name"),
+      supabase.from("external_contacts" as any).select("id, full_name, company_name").eq("is_active", true).order("company_name", { nullsFirst: false }).order("full_name"),
       supabase.from("departments").select("id, name").order("name"),
       supabase.from("tool_departments" as any).select("tool_id, department_id"),
-      supabase.from("tool_owners" as any).select("tool_id, profile_id"),
+      supabase.from("tool_owners" as any).select("tool_id, profile_id, external_contact_id"),
     ]);
 
     const profs = (profilesRes.data ?? []) as ProfileOpt[];
+    const exts = ((extRes.data ?? []) as unknown) as ExternalContactOpt[];
     const depts = (deptsRes.data ?? []) as DepartmentOpt[];
     const deptLinks = ((deptLinksRes.data ?? []) as unknown) as { tool_id: string; department_id: string }[];
-    const ownerLinks = ((ownerLinksRes.data ?? []) as unknown) as { tool_id: string; profile_id: string }[];
+    const ownerLinks = ((ownerLinksRes.data ?? []) as unknown) as {
+      tool_id: string;
+      profile_id: string | null;
+      external_contact_id: string | null;
+    }[];
 
     const deptByTool = new Map<string, string[]>();
     for (const l of deptLinks) {
@@ -149,26 +158,45 @@ export default function ToolsManager() {
       arr.push(l.department_id);
       deptByTool.set(l.tool_id, arr);
     }
+
     const ownerByTool = new Map<string, string[]>();
     for (const l of ownerLinks) {
+      const key = l.profile_id
+        ? `profile:${l.profile_id}`
+        : l.external_contact_id
+          ? `external:${l.external_contact_id}`
+          : null;
+      if (!key) continue;
       const arr = ownerByTool.get(l.tool_id) ?? [];
-      arr.push(l.profile_id);
+      arr.push(key);
       ownerByTool.set(l.tool_id, arr);
     }
 
+    const nameForKey = (k: string): string | null => {
+      const [kind, id] = k.split(":");
+      if (kind === "profile") return profs.find(p => p.id === id)?.full_name ?? null;
+      if (kind === "external") {
+        const c = exts.find(e => e.id === id);
+        if (!c) return null;
+        return c.company_name ? `${c.full_name} (${c.company_name})` : c.full_name;
+      }
+      return null;
+    };
+
     const rawTools = ((toolsRes.data ?? []) as unknown) as Tool[];
     const decorated = rawTools.map(t => {
-      const ownerIds = ownerByTool.get(t.id) ?? (t.owner_id ? [t.owner_id] : []);
+      const ownerKeys = ownerByTool.get(t.id) ?? (t.owner_id ? [`profile:${t.owner_id}`] : []);
       return {
         ...t,
-        owner_ids: ownerIds,
-        owner_names: ownerIds.map(id => profs.find(p => p.id === id)?.full_name).filter(Boolean) as string[],
+        owner_keys: ownerKeys,
+        owner_names: ownerKeys.map(nameForKey).filter(Boolean) as string[],
         department_ids: deptByTool.get(t.id) ?? [],
       };
     });
 
     setTools(decorated);
     setProfiles(profs);
+    setExternalContacts(exts);
     setDepartments(depts);
     setLoading(false);
   };
@@ -186,7 +214,7 @@ export default function ToolsManager() {
     setEditing(tool);
     setName(tool.name); setDescription(tool.description);
     setEmoji(tool.emoji); setUrl(tool.url);
-    setSelectedOwners(tool.owner_ids ?? []);
+    setSelectedOwners(tool.owner_keys ?? []);
     setSelectedDepartments(tool.department_ids ?? []);
     setDialogOpen(true);
   };
@@ -200,18 +228,24 @@ export default function ToolsManager() {
     }
   };
 
-  const syncOwners = async (toolId: string, ownerIds: string[]) => {
+  const syncOwners = async (toolId: string, ownerKeys: string[]) => {
     await supabase.from("tool_owners" as any).delete().eq("tool_id", toolId);
-    if (ownerIds.length > 0) {
-      await supabase.from("tool_owners" as any).insert(
-        ownerIds.map(profile_id => ({ tool_id: toolId, profile_id })),
-      );
+    if (ownerKeys.length > 0) {
+      const rows = ownerKeys.map(k => {
+        const [kind, id] = k.split(":");
+        return kind === "external"
+          ? { tool_id: toolId, profile_id: null, external_contact_id: id }
+          : { tool_id: toolId, profile_id: id, external_contact_id: null };
+      });
+      await supabase.from("tool_owners" as any).insert(rows);
     }
   };
 
   const handleSave = async () => {
     if (!name.trim() || !url.trim() || selectedOwners.length === 0) return;
-    const primaryOwner = selectedOwners[0];
+    // tools.owner_id is now optional and is only set to the first internal profile owner (if any)
+    const firstProfileKey = selectedOwners.find(k => k.startsWith("profile:"));
+    const primaryOwner = firstProfileKey ? firstProfileKey.split(":")[1] : null;
 
     if (editing) {
       const { error } = await supabase.from("tools" as any).update({
@@ -235,6 +269,7 @@ export default function ToolsManager() {
     setDialogOpen(false);
     fetchAll();
   };
+
 
   const handleDelete = async (id: string) => {
     await supabase.from("tools" as any).delete().eq("id", id);
@@ -349,18 +384,58 @@ export default function ToolsManager() {
             </div>
             <div>
               <Label>Systemägare <span className="text-destructive">*</span></Label>
-              <div className="mt-1.5 border border-border rounded-md p-2 space-y-1.5 max-h-48 overflow-y-auto">
-                {profiles.map(p => (
-                  <label key={p.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Checkbox
-                      checked={selectedOwners.includes(p.id)}
-                      onCheckedChange={() => toggleOwner(p.id)}
-                    />
-                    <span>{p.full_name}</span>
-                  </label>
-                ))}
+              <div className="mt-1.5 border border-border rounded-md p-2 space-y-3 max-h-64 overflow-y-auto">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    SHF-anställda
+                  </p>
+                  <div className="space-y-1.5">
+                    {profiles.map(p => {
+                      const key = `profile:${p.id}`;
+                      return (
+                        <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                          <Checkbox
+                            checked={selectedOwners.includes(key)}
+                            onCheckedChange={() => toggleOwner(key)}
+                          />
+                          <span>{p.full_name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border-t border-border pt-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Externa kontakter
+                  </p>
+                  {externalContacts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      Inga externa kontakter ännu. Lägg till under Administration → Externa kontakter.
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {externalContacts.map(c => {
+                        const key = `external:${c.id}`;
+                        return (
+                          <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <Checkbox
+                              checked={selectedOwners.includes(key)}
+                              onCheckedChange={() => toggleOwner(key)}
+                            />
+                            <span>
+                              {c.full_name}
+                              {c.company_name && (
+                                <span className="text-muted-foreground"> · {c.company_name}</span>
+                              )}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">En eller flera ansvariga personer — minst en krävs.</p>
+              <p className="text-xs text-muted-foreground mt-1">En eller flera ansvariga — minst en krävs.</p>
             </div>
             <div>
               <Label>Avdelningar som använder verktyget</Label>

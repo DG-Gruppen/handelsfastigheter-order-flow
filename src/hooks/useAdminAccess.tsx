@@ -22,6 +22,7 @@ const SECTION_SLUG_MAP: Record<string, string | null> = {
   workwear: "workwear",
   integrations: null,  // admin-only
   external: "externa-parter",
+  "external-contacts": null,  // admin-only
 };
 
 /**
