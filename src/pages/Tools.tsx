@@ -14,7 +14,7 @@ interface Tool {
   emoji: string;
   url: string;
   sort_order: number;
-  owner_id: string;
+  owner_id: string | null;
   owner_names: string[];
   department_names: string[];
 }
