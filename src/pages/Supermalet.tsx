@@ -41,6 +41,14 @@ const NATIONALITIES = [
   "Tysk", "Ukrainsk", "Ungersk", "Österrikisk", "Annan",
 ];
 
+// Resedag — passet måste vara giltigt i minst 3 månader efter detta datum
+const TRAVEL_DATE = new Date("2026-11-28");
+const MIN_VALID_UNTIL = new Date(TRAVEL_DATE);
+MIN_VALID_UNTIL.setMonth(MIN_VALID_UNTIL.getMonth() + 3);
+const MIN_VALID_UNTIL_STR = MIN_VALID_UNTIL.toISOString().slice(0, 10);
+const isPassportValidEnough = (validUntil: string) =>
+  !!validUntil && new Date(validUntil) >= MIN_VALID_UNTIL;
+
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
@@ -100,6 +108,14 @@ export default function Supermalet() {
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       toast({ title: "Kontrollera fälten", description: parsed.error.issues[0]?.message, variant: "destructive" });
+      return;
+    }
+    if (!isPassportValidEnough(parsed.data.validUntil)) {
+      toast({
+        title: "Passet är inte giltigt tillräckligt länge",
+        description: `Passet måste vara giltigt minst 3 månader efter resedagen (${TRAVEL_DATE.toLocaleDateString("sv-SE")}). Tidigast giltigt till: ${MIN_VALID_UNTIL.toLocaleDateString("sv-SE")}.`,
+        variant: "destructive",
+      });
       return;
     }
     let finalNationality = parsed.data.nationality;
@@ -409,12 +425,23 @@ export default function Supermalet() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm">
               <Info className="h-4 w-4 mt-0.5 text-warning shrink-0" />
-              <p>Passet måste vara giltigt i minst 3 månader efter den dag du planerar att resa.</p>
+              <p>
+                Passet måste vara giltigt i minst 3 månader efter den dag du planerar att resa
+                ({TRAVEL_DATE.toLocaleDateString("sv-SE")}). Tidigast giltigt till:{" "}
+                <strong>{MIN_VALID_UNTIL.toLocaleDateString("sv-SE")}</strong>.
+              </p>
             </div>
             <Field id="passportNumber" label="Passnummer" value={form.passportNumber} onChange={(v) => update("passportNumber", v)} required />
             <div />
             <Field id="issuedDate" label="Utfärdat datum" type="date" value={form.issuedDate} onChange={(v) => update("issuedDate", v)} required />
-            <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required />
+            <div>
+              <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required min={MIN_VALID_UNTIL_STR} />
+              {form.validUntil && !isPassportValidEnough(form.validUntil) && (
+                <p className="mt-1.5 text-xs text-destructive">
+                  Passet går ut för tidigt – måste vara giltigt minst t.o.m. {MIN_VALID_UNTIL.toLocaleDateString("sv-SE")}.
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -526,15 +553,15 @@ export default function Supermalet() {
 }
 
 function Field({
-  id, label, value, onChange, required, type = "text",
+  id, label, value, onChange, required, type = "text", min,
 }: {
   id: string; label: string; value: string; onChange: (v: string) => void;
-  required?: boolean; type?: string;
+  required?: boolean; type?: string; min?: string;
 }) {
   return (
     <div>
       <Label htmlFor={id}>{label}{required && <span className="text-destructive"> *</span>}</Label>
-      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} className="mt-1.5" />
+      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} min={min} className="mt-1.5" />
     </div>
   );
 }
