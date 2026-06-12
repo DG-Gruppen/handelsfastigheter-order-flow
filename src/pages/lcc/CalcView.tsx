@@ -209,7 +209,7 @@ export default function CalcView() {
               </div>
               <Separator />
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Energipriser</h4>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <NumField label="El (kr/kWh)" value={priserEl} onChange={setPriserEl} step="0.01" />
                 <NumField label="Fjärrvärme (kr/kWh)" value={priserFjv} onChange={setPriserFjv} step="0.01" />
                 <NumField label="Olja (kr/kWh)" value={priserOlja} onChange={setPriserOlja} step="0.01" />
