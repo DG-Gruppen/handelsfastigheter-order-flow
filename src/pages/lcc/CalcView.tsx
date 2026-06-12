@@ -209,7 +209,7 @@ export default function CalcView() {
               </div>
               <Separator />
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Energipriser</h4>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <NumField label="El (kr/kWh)" value={priserEl} onChange={setPriserEl} step="0.01" />
                 <NumField label="Fjärrvärme (kr/kWh)" value={priserFjv} onChange={setPriserFjv} step="0.01" />
                 <NumField label="Olja (kr/kWh)" value={priserOlja} onChange={setPriserOlja} step="0.01" />
@@ -313,10 +313,11 @@ function NumField({ label, value, onChange, step }: { label: string; value: numb
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
         type="number"
+        inputMode="decimal"
         value={Number.isFinite(value) ? value : 0}
         step={step}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="tabular-nums"
+        className="tabular-nums text-base sm:text-sm"
       />
     </div>
   );

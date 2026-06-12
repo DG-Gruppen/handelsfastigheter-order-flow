@@ -40,18 +40,18 @@ export default function LccCalculator() {
       </Card>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full md:w-auto md:inline-flex print:hidden">
-          <TabsTrigger value="intro" className="gap-1.5">
+        <TabsList className="grid grid-cols-3 w-full md:w-auto md:inline-flex print:hidden h-auto">
+          <TabsTrigger value="intro" className="gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-sm flex-col sm:flex-row h-auto">
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Översikt</span>
+            <span>Översikt</span>
           </TabsTrigger>
-          <TabsTrigger value="lcc" className="gap-1.5">
+          <TabsTrigger value="lcc" className="gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-sm flex-col sm:flex-row h-auto">
             <Calculator className="h-4 w-4" />
-            <span className="hidden sm:inline">Kalkyl</span>
+            <span>Kalkyl</span>
           </TabsTrigger>
-          <TabsTrigger value="prio" className="gap-1.5">
+          <TabsTrigger value="prio" className="gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-sm flex-col sm:flex-row h-auto">
             <ListOrdered className="h-4 w-4" />
-            <span className="hidden sm:inline">Prioritering</span>
+            <span>Prioritering</span>
           </TabsTrigger>
         </TabsList>
 
