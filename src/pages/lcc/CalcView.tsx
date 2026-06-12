@@ -313,10 +313,11 @@ function NumField({ label, value, onChange, step }: { label: string; value: numb
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
         type="number"
+        inputMode="decimal"
         value={Number.isFinite(value) ? value : 0}
         step={step}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="tabular-nums"
+        className="tabular-nums text-base sm:text-sm"
       />
     </div>
   );
