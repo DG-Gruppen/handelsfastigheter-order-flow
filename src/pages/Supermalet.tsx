@@ -41,6 +41,14 @@ const NATIONALITIES = [
   "Tysk", "Ukrainsk", "Ungersk", "Österrikisk", "Annan",
 ];
 
+// Resedag — passet måste vara giltigt i minst 3 månader efter detta datum
+const TRAVEL_DATE = new Date("2026-11-28");
+const MIN_VALID_UNTIL = new Date(TRAVEL_DATE);
+MIN_VALID_UNTIL.setMonth(MIN_VALID_UNTIL.getMonth() + 3);
+const MIN_VALID_UNTIL_STR = MIN_VALID_UNTIL.toISOString().slice(0, 10);
+const isPassportValidEnough = (validUntil: string) =>
+  !!validUntil && new Date(validUntil) >= MIN_VALID_UNTIL;
+
 const schema = z.object({
   lastName: z.string().trim().min(1, "Efternamn krävs").max(100),
   firstName: z.string().trim().min(1, "För-/mellannamn krävs").max(100),
