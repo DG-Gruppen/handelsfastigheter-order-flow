@@ -110,6 +110,14 @@ export default function Supermalet() {
       toast({ title: "Kontrollera fälten", description: parsed.error.issues[0]?.message, variant: "destructive" });
       return;
     }
+    if (!isPassportValidEnough(parsed.data.validUntil)) {
+      toast({
+        title: "Passet är inte giltigt tillräckligt länge",
+        description: `Passet måste vara giltigt minst 3 månader efter resedagen (${TRAVEL_DATE.toLocaleDateString("sv-SE")}). Tidigast giltigt till: ${MIN_VALID_UNTIL.toLocaleDateString("sv-SE")}.`,
+        variant: "destructive",
+      });
+      return;
+    }
     let finalNationality = parsed.data.nationality;
     if (parsed.data.nationality === "Annan") {
       if (!form.otherNationality.trim()) {
