@@ -425,12 +425,23 @@ export default function Supermalet() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm">
               <Info className="h-4 w-4 mt-0.5 text-warning shrink-0" />
-              <p>Passet måste vara giltigt i minst 3 månader efter den dag du planerar att resa.</p>
+              <p>
+                Passet måste vara giltigt i minst 3 månader efter den dag du planerar att resa
+                ({TRAVEL_DATE.toLocaleDateString("sv-SE")}). Tidigast giltigt till:{" "}
+                <strong>{MIN_VALID_UNTIL.toLocaleDateString("sv-SE")}</strong>.
+              </p>
             </div>
             <Field id="passportNumber" label="Passnummer" value={form.passportNumber} onChange={(v) => update("passportNumber", v)} required />
             <div />
             <Field id="issuedDate" label="Utfärdat datum" type="date" value={form.issuedDate} onChange={(v) => update("issuedDate", v)} required />
-            <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required />
+            <div>
+              <Field id="validUntil" label="Giltigt till" type="date" value={form.validUntil} onChange={(v) => update("validUntil", v)} required min={MIN_VALID_UNTIL_STR} />
+              {form.validUntil && !isPassportValidEnough(form.validUntil) && (
+                <p className="mt-1.5 text-xs text-destructive">
+                  Passet går ut för tidigt – måste vara giltigt minst t.o.m. {MIN_VALID_UNTIL.toLocaleDateString("sv-SE")}.
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
