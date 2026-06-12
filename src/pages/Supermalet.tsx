@@ -553,15 +553,15 @@ export default function Supermalet() {
 }
 
 function Field({
-  id, label, value, onChange, required, type = "text",
+  id, label, value, onChange, required, type = "text", min,
 }: {
   id: string; label: string; value: string; onChange: (v: string) => void;
-  required?: boolean; type?: string;
+  required?: boolean; type?: string; min?: string;
 }) {
   return (
     <div>
       <Label htmlFor={id}>{label}{required && <span className="text-destructive"> *</span>}</Label>
-      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} className="mt-1.5" />
+      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} min={min} className="mt-1.5" />
     </div>
   );
 }
