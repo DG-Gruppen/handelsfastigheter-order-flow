@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Zap, Coins, TrendingUp, Leaf } from "lucide-react";
+import {
+  Building2, Zap, Coins, TrendingUp, Leaf, Plus, ChevronDown, ChevronUp,
+} from "lucide-react";
 import {
   ATGARDER, FASTIGHETER_RAW, BARARE_LABEL,
   type Atgard, type Fastighet,
@@ -13,14 +18,36 @@ import {
   getVarmeKalla, berakna, computeEPBD, fmtKr,
   EPBD_TROSKEL_2030, EPBD_TROSKEL_2033,
 } from "@/lib/lcc/calc";
+import { useLcc, type Category } from "./lcc-context";
 
 const VALFRI = FASTIGHETER_RAW[0];
 
+const CATEGORIES: { value: Category; label: string; icon: string; match: RegExp | null }[] = [
+  { value: "", label: "Alla", icon: "📋", match: null },
+  { value: "BRAND", label: "Brand & Säkerhet", icon: "🔥", match: /^BRAND/ },
+  { value: "BV", label: "Bergvärme", icon: "🌍", match: /^BV/ },
+  { value: "LED", label: "Belysning", icon: "💡", match: /^LED/ },
+  { value: "PV", label: "Solenergi", icon: "☀️", match: /^PV|^SOL/ },
+  { value: "VÅV", label: "Värmeåtervinning", icon: "♻️", match: /^VÅV/ },
+  { value: "VENT", label: "Ventilation", icon: "💨", match: /^VENT/ },
+];
+
 export default function CalcView() {
-  const [fastighetVis, setFastighetVis] = useState<string>(VALFRI.vis);
-  const [atgardIdx, setAtgardIdx] = useState<string>("");
+  const {
+    fastighetVis, setFastighetVis,
+    atgardIdx, setAtgardIdx,
+    category, setCategory,
+    paketAdd,
+  } = useLcc();
+
+  // Säkerställ giltigt val
+  useEffect(() => {
+    if (!FASTIGHETER_RAW.some((f) => f.vis === fastighetVis)) setFastighetVis(VALFRI.vis);
+  }, [fastighetVis, setFastighetVis]);
+
   const [ovBef, setOvBef] = useState<string>("auto");
   const [ovNy, setOvNy] = useState<string>("auto");
+  const [showCfTable, setShowCfTable] = useState(false);
 
   // Calc inputs
   const [p1, setP1] = useState(0);
@@ -49,17 +76,26 @@ export default function CalcView() {
     [atgardIdx]
   );
 
-  // Grouped åtgärder
+  // Grupperade åtgärder med kategori-filter
   const grouped = useMemo(() => {
+    const cat = CATEGORIES.find((c) => c.value === category);
+    const matchCat = (at: Atgard) => !cat?.match || cat.match.test(at.namn);
     if (!f || f.nr === "VALFRI") {
-      return { rek: ATGARDER.map((a, i) => ({ a, i })), ok: [] as { a: Atgard; i: number }[], nej: [] as { a: Atgard; i: number }[] };
+      return {
+        rek: ATGARDER.map((a, i) => ({ a, i })).filter(({ a }) => matchCat(a)),
+        ok: [] as { a: Atgard; i: number }[],
+        nej: [] as { a: Atgard; i: number }[],
+      };
     }
     const g: Record<string, { a: Atgard; i: number }[]> = { rek: [], ok: [], nej: [] };
-    ATGARDER.forEach((at, i) => g[atgardRelevans(at, f)].push({ a: at, i }));
+    ATGARDER.forEach((at, i) => {
+      if (!matchCat(at)) return;
+      g[atgardRelevans(at, f)].push({ a: at, i });
+    });
     return g;
-  }, [f]);
+  }, [f, category]);
 
-  // Reset values when åtgärd or fastighet changes
+  // Reset värden när åtgärd/fastighet ändras
   useEffect(() => {
     if (!a) return;
     const auto = f && f.nr !== "VALFRI" ? getAutoParams(a, f) : null;
@@ -74,7 +110,7 @@ export default function CalcView() {
     setOvBef("auto"); setOvNy("auto");
   }, [atgardIdx, fastighetVis]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // PV: auto-update p2 from kWp × spec × 0.85
+  // PV: auto-uppdatera p2 från kWp × spec × 0.85
   useEffect(() => {
     if (!a || a.typ !== "kWh_PV") return;
     const prod = p3 * p4 * 0.85;
@@ -99,10 +135,47 @@ export default function CalcView() {
     return computeEPBD(f, calc.energi_bef, calc.energi_ny, calc.bf.pef_bef, calc.bf.pef_ny);
   }, [a, calc, f]);
 
+  const handleAddToPaket = () => {
+    if (!a || !calc || !f) return;
+    paketAdd({
+      atgard: a.namn,
+      fastighet: f.vis,
+      energi_bef: calc.energi_bef,
+      energi_ny: calc.energi_ny,
+      kostbesparing: calc.kostbesparing,
+      invest,
+      livslangd,
+      pef_bef: calc.bf.pef_bef,
+      pef_ny: calc.bf.pef_ny,
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* LEFT: Inputs */}
+      {/* LEFT */}
       <div className="lg:col-span-2 space-y-4">
+        {/* Kategori-snabbfilter */}
+        <Card className="p-3 md:p-4 print:hidden">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+            Snabbfilter åtgärder
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.value || "all"}
+                onClick={() => setCategory(c.value)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                  category === c.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background hover:bg-muted border-border text-foreground"
+                }`}
+              >
+                <span className="mr-1">{c.icon}</span>{c.label}
+              </button>
+            ))}
+          </div>
+        </Card>
+
         <Card className="p-4 md:p-5 space-y-4">
           <h3 className="font-heading text-base font-bold flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" /> 1. Välj fastighet & åtgärd
@@ -219,7 +292,7 @@ export default function CalcView() {
         )}
       </div>
 
-      {/* RIGHT: Results */}
+      {/* RIGHT */}
       <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <Card className="p-4 md:p-5 space-y-3 bg-gradient-to-br from-primary/5 to-transparent border-primary/30">
           <h3 className="font-heading text-base font-bold flex items-center gap-2">
@@ -232,7 +305,14 @@ export default function CalcView() {
           <ResultRow label="LCC befintlig" value={calc ? `${fmtKr(calc.lcc_bef)} kr` : "—"} subtle />
           <ResultRow label="LCC ny" value={calc ? `${fmtKr(calc.lcc_ny)} kr` : "—"} subtle />
           <ResultRow label="NPV (nuvärde)" value={calc ? `${fmtKr(calc.npv)} kr` : "—"} highlight />
-          {calc && <PaybackBadge payback={calc.payback} kostbesparing={calc.kostbesparing} />}
+
+          {calc && <PaybackMeter payback={calc.payback} kostbesparing={calc.kostbesparing} />}
+
+          {a && f && f.nr !== "VALFRI" && calc && (
+            <Button onClick={handleAddToPaket} className="w-full mt-1 print:hidden" size="sm">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Lägg till i paket (Steg 6)
+            </Button>
+          )}
         </Card>
 
         {calc && (
@@ -284,6 +364,21 @@ export default function CalcView() {
           <Card className="p-4 md:p-5 space-y-2">
             <h4 className="text-sm font-semibold">Kassaflöde (kumulativt nuvärde)</h4>
             <CashflowChart cf={calc.cf} />
+            <button
+              onClick={() => setShowCfTable((v) => !v)}
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1 print:hidden"
+            >
+              {showCfTable ? <><ChevronUp className="h-3 w-3" /> Dölj tabell</> : <><ChevronDown className="h-3 w-3" /> Visa tabell</>}
+            </button>
+            {showCfTable && (
+              <CashflowTable
+                cf={calc.cf}
+                ekb={calc.energikostn_bef}
+                ekn={calc.energikostn_ny}
+                uhb={uhBef}
+                uhn={uhNy}
+              />
+            )}
           </Card>
         )}
 
@@ -332,19 +427,33 @@ function ResultRow({ label, value, highlight, subtle }: { label: string; value: 
   );
 }
 
-function PaybackBadge({ payback, kostbesparing }: { payback: number; kostbesparing: number }) {
-  let text: string, cls: string;
+function PaybackMeter({ payback, kostbesparing }: { payback: number; kostbesparing: number }) {
   if (!isFinite(payback) || kostbesparing <= 0) {
-    return <div className="text-xs text-center p-2 rounded-md bg-muted text-muted-foreground">
-      {kostbesparing <= 0 ? "Negativ besparing – justera indata" : "—"}
-    </div>;
+    return (
+      <div className="text-xs text-center p-2 rounded-md bg-muted text-muted-foreground">
+        {kostbesparing <= 0 ? "Negativ besparing – justera indata" : "—"}
+      </div>
+    );
   }
-  if (payback <= 2.5) { text = "🚀 SUPER investering"; cls = "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"; }
-  else if (payback <= 5) { text = "✅ Mycket god investering"; cls = "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30"; }
-  else if (payback <= 7) { text = "💡 Värdeskapande"; cls = "bg-lime-500/15 text-lime-700 dark:text-lime-400 border-lime-500/30"; }
-  else if (payback <= 12) { text = "🔍 Villkorligt OK"; cls = "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"; }
-  else { text = `⏳ Lång payback (${payback.toFixed(1)} år)`; cls = "bg-destructive/15 text-destructive border-destructive/30"; }
-  return <div className={`text-xs text-center font-semibold p-2 rounded-md border ${cls}`}>{text}</div>;
+  const pct = Math.min(100, (payback / 20) * 100);
+  let bar: string, text: string, cls: string;
+  if (payback <= 2.5) { bar = "from-emerald-600 to-emerald-400"; text = "🚀 SUPER investering – Beställ direkt!"; cls = "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"; }
+  else if (payback <= 5) { bar = "from-green-600 to-green-400"; text = "✅ Mycket god investering"; cls = "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30"; }
+  else if (payback <= 7) { bar = "from-lime-600 to-lime-400"; text = "💡 Värdeskapande – finns det fler skäl?"; cls = "bg-lime-500/15 text-lime-700 dark:text-lime-400 border-lime-500/30"; }
+  else if (payback <= 12) { bar = "from-amber-600 to-amber-400"; text = "🔍 Villkorligt OK – kräver motivering"; cls = "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"; }
+  else { bar = "from-destructive to-orange-400"; text = `⏳ Lång payback (${payback.toFixed(1)} år) – verifiera noga`; cls = "bg-destructive/15 text-destructive border-destructive/30"; }
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Payback-mätare</div>
+      <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+        <div className={`h-full bg-gradient-to-r ${bar} transition-all duration-300`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="flex justify-between text-[9px] text-muted-foreground tabular-nums">
+        <span>0</span><span>2,5</span><span>5</span><span>7</span><span>12</span><span>20+</span>
+      </div>
+      <div className={`text-xs text-center font-semibold p-2 rounded-md border ${cls}`}>{text}</div>
+    </div>
+  );
 }
 
 function EpbdBox({ letter, pet, title }: { letter: string; pet: number | null; title: string }) {
@@ -432,5 +541,51 @@ function CashflowChart({ cf }: { cf: { ar: number; kum: number; nv: number }[] }
       )}
       <text x={pad.left + cw / 2} y={h - 4} textAnchor="middle" fontSize="9" fill="hsl(var(--muted-foreground))">År (0 = idag)</text>
     </svg>
+  );
+}
+
+function CashflowTable({ cf, ekb, ekn, uhb, uhn }: {
+  cf: { ar: number; kum: number; nv: number }[]; ekb: number; ekn: number; uhb: number; uhn: number;
+}) {
+  const fmt = (n: number) => n !== 0 && isFinite(n) ? Math.round(n).toLocaleString("sv") : "–";
+  return (
+    <div className="overflow-x-auto max-h-72 -mx-4 md:mx-0 mt-2">
+      <table className="w-full text-[11px] tabular-nums min-w-[560px]">
+        <thead className="bg-muted/40 sticky top-0">
+          <tr className="text-right text-muted-foreground">
+            <th className="text-left py-1.5 px-2 font-medium">År</th>
+            <th className="py-1.5 px-2 font-medium">Energi bef</th>
+            <th className="py-1.5 px-2 font-medium">Energi ny</th>
+            <th className="py-1.5 px-2 font-medium">UH bef</th>
+            <th className="py-1.5 px-2 font-medium">UH ny</th>
+            <th className="py-1.5 px-2 font-medium">Netto</th>
+            <th className="py-1.5 px-2 font-medium">Nuvärde</th>
+            <th className="py-1.5 px-2 font-medium">Kum. NV</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cf.map((d) => {
+            const prev = cf[Math.max(0, d.ar - 1)];
+            const isBE = d.ar > 0 && d.kum >= 0 && prev.kum < 0;
+            const netto = d.ar === 0 ? 0 : (ekb - ekn) + (uhb - uhn);
+            const cls = isBE ? "bg-emerald-500/10 font-semibold" :
+              d.kum > 0 ? "text-emerald-700 dark:text-emerald-400" :
+              d.kum < 0 ? "text-destructive" : "";
+            return (
+              <tr key={d.ar} className={`border-b border-border/40 text-right ${cls}`}>
+                <td className="text-left px-2 py-1">{d.ar}{isBE && " ★"}</td>
+                <td className="px-2 py-1">{d.ar === 0 ? "–" : fmt(ekb)}</td>
+                <td className="px-2 py-1">{d.ar === 0 ? "–" : fmt(ekn)}</td>
+                <td className="px-2 py-1">{d.ar === 0 ? "–" : fmt(uhb)}</td>
+                <td className="px-2 py-1">{d.ar === 0 ? "–" : fmt(uhn)}</td>
+                <td className="px-2 py-1">{d.ar === 0 ? "–" : fmt(netto)}</td>
+                <td className="px-2 py-1">{fmt(d.nv)}</td>
+                <td className="px-2 py-1 font-bold">{fmt(d.kum)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
