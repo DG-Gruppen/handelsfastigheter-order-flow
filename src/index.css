@@ -299,3 +299,104 @@ html[data-scroll-locked] {
   border-radius: 2px;
   padding: 0 2px;
 }
+
+/* ============ LCC print styles ============ */
+.lcc-print-header { display: none; }
+
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide app chrome when printing the LCC page */
+  body:has(.lcc-page) aside,
+  body:has(.lcc-page) nav.fixed,
+  body:has(.lcc-page) [data-radix-popper-content-wrapper],
+  body:has(.lcc-page) .chat-bubble-root {
+    display: none !important;
+  }
+
+  /* Expand main content */
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .lcc-page .lcc-print-header {
+    display: flex !important;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 2px solid hsl(var(--primary));
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+  .lcc-page .lcc-print-header h1 {
+    font-family: 'Roboto Slab', serif;
+    font-size: 18pt;
+    font-weight: 700;
+    color: hsl(var(--primary));
+    margin: 0;
+    line-height: 1.15;
+  }
+  .lcc-page .lcc-print-header .meta {
+    font-size: 9pt;
+    color: #555;
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  /* Stack the right results column under inputs */
+  .lcc-page .lg\:grid-cols-3 { grid-template-columns: 1fr 1fr !important; }
+  .lcc-page .lg\:col-span-2 { grid-column: span 2 / span 2 !important; }
+  .lcc-page .lg\:sticky { position: static !important; }
+  .lcc-page .lg\:self-start { align-self: auto !important; }
+
+  /* Card styling for print */
+  .lcc-page [class*="rounded-lg"],
+  .lcc-page [class*="rounded-md"] {
+    box-shadow: none !important;
+    border: 1px solid #d4d4d4 !important;
+    background: #fff !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Tighter typography for print */
+  .lcc-page { font-size: 10pt; line-height: 1.4; color: #000; }
+  .lcc-page h1, .lcc-page h2, .lcc-page h3, .lcc-page h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Inputs render as plain bold text */
+  .lcc-page input,
+  .lcc-page [role="combobox"] {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+  .lcc-page button[aria-haspopup] svg { display: none !important; }
+  .lcc-page input[type="number"]::-webkit-inner-spin-button,
+  .lcc-page input[type="number"]::-webkit-outer-spin-button { display: none !important; -webkit-appearance: none; }
+
+  .lcc-page .space-y-4 > * + * { margin-top: 10px !important; }
+  .lcc-page .grid { break-inside: avoid; }
+
+  /* Hide elements that aren't useful on paper */
+  .lcc-page button:not([aria-haspopup]) { display: none !important; }
+
+  a[href]::after { content: ""; }
+}
+

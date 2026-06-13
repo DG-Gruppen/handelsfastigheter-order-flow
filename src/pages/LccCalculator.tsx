@@ -18,8 +18,26 @@ export default function LccCalculator() {
     if (typeof window !== "undefined") window.location.hash = tab;
   }, [tab]);
 
+  const today = new Date().toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+  const tabLabel = tab === "intro" ? "Översikt" : tab === "lcc" ? "Kalkyl" : "Prioritering";
+
   return (
-    <div className="space-y-4">
+    <div className="lcc-page space-y-4">
+      {/* Print-only header */}
+      <div className="lcc-print-header">
+        <div>
+          <h1>SHF · LCC-kalkylator</h1>
+          <div style={{ fontSize: "9pt", color: "#555", marginTop: 2 }}>
+            Livscykelkostnadsberäkning för energiåtgärder
+          </div>
+        </div>
+        <div className="meta">
+          <div><strong>{tabLabel}</strong></div>
+          <div>Utskriven {today}</div>
+          <div>Systemägare: Jörgen Larssen</div>
+        </div>
+      </div>
+
       <Card className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 print:hidden">
         <div>
           <h1 className="font-heading text-xl md:text-2xl font-bold text-foreground">
@@ -68,3 +86,4 @@ export default function LccCalculator() {
     </div>
   );
 }
+
