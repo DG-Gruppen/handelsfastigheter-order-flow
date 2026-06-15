@@ -4,14 +4,20 @@ import "./index.css";
 
 // ── Tvinga cache-tömning på mobiler/PWA ──
 // Bumpa CACHE_VERSION när du vill tvinga alla klienter (mobil + desktop) att rensa cache.
-const CACHE_VERSION = "2026-06-15-1";
+const CACHE_VERSION = "2026-06-15-2";
 (async () => {
   try {
     const stored = localStorage.getItem("app_cache_version");
     if (stored !== CACHE_VERSION) {
       if ("serviceWorker" in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister()));
+        await Promise.all(regs.map(async (registration) => {
+          try {
+            await registration.update();
+          } catch {
+            await registration.unregister();
+          }
+        }));
       }
       if ("caches" in window) {
         const keys = await caches.keys();
