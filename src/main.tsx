@@ -4,7 +4,7 @@ import "./index.css";
 
 // ── Tvinga cache-tömning på mobiler/PWA ──
 // Bumpa CACHE_VERSION när du vill tvinga alla klienter (mobil + desktop) att rensa cache.
-const CACHE_VERSION = "2026-05-26-1";
+const CACHE_VERSION = "2026-06-15-1";
 (async () => {
   try {
     const stored = localStorage.getItem("app_cache_version");
