@@ -73,7 +73,6 @@ export function ManagerDashboard() {
               <th className="px-2 py-1.5 font-semibold text-right">Vakanta</th>
               <th className="px-2 py-1.5 font-semibold text-right">Area (m²)</th>
               <th className="px-2 py-1.5 font-semibold text-right">Hyresvärde</th>
-              <th className="px-2 py-1.5 font-semibold w-40">Fördelning</th>
             </tr>
           </thead>
           <tbody>
