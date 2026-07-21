@@ -86,11 +86,6 @@ export function ManagerDashboard() {
                 </td>
                 <td className="px-2 py-1.5 text-right tabular-nums">{fmtNum(r.area)}</td>
                 <td className="px-2 py-1.5 text-right tabular-nums">{fmtKr(r.hvp)}</td>
-                <td className="px-2 py-1.5">
-                  <div className="h-2 rounded bg-muted overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${(r.hvp / maxHvp) * 100}%` }} />
-                  </div>
-                </td>
               </tr>
             ))}
           </tbody>
