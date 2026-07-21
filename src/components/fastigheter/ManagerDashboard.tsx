@@ -26,7 +26,7 @@ export function ManagerDashboard() {
       .sort((a, b) => b.antal_fastigheter - a.antal_fastigheter);
   }, [mode]);
 
-  const maxHvp = Math.max(1, ...rows.map((r) => r.hvp));
+  
 
   const totals = useMemo(() => {
     const t = { objekt: 0, vakanta: 0, area: 0, hyra: 0, hvp: 0, antal_fastigheter: 0 };
