@@ -44,6 +44,7 @@ const Prompts = lazy(() => import("./pages/Prompts"));
 const Supermalet = lazy(() => import("./pages/Supermalet"));
 const LccCalculator = lazy(() => import("./pages/LccCalculator"));
 const ExternalDashboard = lazy(() => import("./pages/ExternalDashboard"));
+const Fastigheter = lazy(() => import("./pages/Fastigheter"));
 
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const ExternalLogin = lazy(() => import("./pages/ExternalLogin"));
