@@ -117,6 +117,7 @@ const App = () => (
                       <Route path="/prompts" element={<Prompts />} />
                       <Route path="/supermalet" element={<Supermalet />} />
                       <Route path="/lcc" element={<LccCalculator />} />
+                      <Route path="/fastigheter" element={<Fastigheter />} />
                       
                       <Route path="/profile" element={<Profile />} />
                       <Route path="*" element={<NotFound />} />
