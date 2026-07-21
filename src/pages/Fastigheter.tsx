@@ -127,11 +127,11 @@ export default function Fastigheter() {
       </header>
 
       <Tabs defaultValue="karta" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex">
-          <TabsTrigger value="karta" className="gap-1.5"><MapIcon className="h-4 w-4" /><span className="hidden sm:inline">Karta</span></TabsTrigger>
-          <TabsTrigger value="hyresgaster" className="gap-1.5"><Users className="h-4 w-4" /><span className="hidden sm:inline">Hyresgäster</span></TabsTrigger>
-          <TabsTrigger value="kontrakt" className="gap-1.5"><CalendarClock className="h-4 w-4" /><span className="hidden sm:inline">Kontrakt</span></TabsTrigger>
-          <TabsTrigger value="forvaltare" className="gap-1.5"><BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Förvaltare</span></TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:w-auto md:inline-flex h-auto min-h-12 bg-muted/80 border shadow-sm p-1.5 gap-1">
+          <TabsTrigger value="karta" className="gap-2 px-3 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><MapIcon className="h-4 w-4" /><span>Karta</span></TabsTrigger>
+          <TabsTrigger value="hyresgaster" className="gap-2 px-3 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><Users className="h-4 w-4" /><span>Hyresgäster</span></TabsTrigger>
+          <TabsTrigger value="kontrakt" className="gap-2 px-3 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><CalendarClock className="h-4 w-4" /><span>Kontrakt</span></TabsTrigger>
+          <TabsTrigger value="forvaltare" className="gap-2 px-3 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><BarChart3 className="h-4 w-4" /><span>Förvaltare</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="karta" className="space-y-4">
