@@ -26,7 +26,7 @@ export function ManagerDashboard() {
       .sort((a, b) => b.antal_fastigheter - a.antal_fastigheter);
   }, [mode]);
 
-  const maxHvp = Math.max(1, ...rows.map((r) => r.hvp));
+  
 
   const totals = useMemo(() => {
     const t = { objekt: 0, vakanta: 0, area: 0, hyra: 0, hvp: 0, antal_fastigheter: 0 };
@@ -73,7 +73,6 @@ export function ManagerDashboard() {
               <th className="px-2 py-1.5 font-semibold text-right">Vakanta</th>
               <th className="px-2 py-1.5 font-semibold text-right">Area (m²)</th>
               <th className="px-2 py-1.5 font-semibold text-right">Hyresvärde</th>
-              <th className="px-2 py-1.5 font-semibold w-40">Fördelning</th>
             </tr>
           </thead>
           <tbody>
@@ -87,11 +86,6 @@ export function ManagerDashboard() {
                 </td>
                 <td className="px-2 py-1.5 text-right tabular-nums">{fmtNum(r.area)}</td>
                 <td className="px-2 py-1.5 text-right tabular-nums">{fmtKr(r.hvp)}</td>
-                <td className="px-2 py-1.5">
-                  <div className="h-2 rounded bg-muted overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${(r.hvp / maxHvp) * 100}%` }} />
-                  </div>
-                </td>
               </tr>
             ))}
           </tbody>
