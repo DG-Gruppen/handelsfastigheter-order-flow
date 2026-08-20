@@ -14,7 +14,6 @@ import { template as orderRejected } from './order-rejected.tsx'
 import { template as orderApproved } from './order-approved.tsx'
 import { template as orderDelivered } from './order-delivered.tsx'
 import { template as helpdeskOrder } from './helpdesk-order.tsx'
-import { template as supermaletExport } from './supermalet-export.tsx'
 import { template as onboardingHrNewApplication } from './onboarding-hr-new-application.tsx'
 import { template as onboardingOwnerTaskBatch } from './onboarding-owner-task-batch.tsx'
 import { template as onboardingReminder } from './onboarding-reminder.tsx'
@@ -32,7 +31,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'order-approved': orderApproved,
   'order-delivered': orderDelivered,
   'helpdesk-order': helpdeskOrder,
-  'supermalet-export': supermaletExport,
   'onboarding-hr-new-application': onboardingHrNewApplication,
   'onboarding-owner-task-batch': onboardingOwnerTaskBatch,
   'onboarding-reminder': onboardingReminder,
