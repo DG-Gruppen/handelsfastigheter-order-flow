@@ -41,7 +41,7 @@ const Workwear = lazy(() => import("./pages/Workwear"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const Kpi = lazy(() => import("./pages/Kpi"));
 const Prompts = lazy(() => import("./pages/Prompts"));
-const Supermalet = lazy(() => import("./pages/Supermalet"));
+
 const LccCalculator = lazy(() => import("./pages/LccCalculator"));
 const ExternalDashboard = lazy(() => import("./pages/ExternalDashboard"));
 const Fastigheter = lazy(() => import("./pages/Fastigheter"));
@@ -115,7 +115,7 @@ const App = () => (
                       <Route path="/statistik" element={<Statistics />} />
                       <Route path="/kpi" element={<Kpi />} />
                       <Route path="/prompts" element={<Prompts />} />
-                      <Route path="/supermalet" element={<Supermalet />} />
+                      
                       <Route path="/lcc" element={<LccCalculator />} />
                       <Route path="/fastigheter" element={<Fastigheter />} />
                       
