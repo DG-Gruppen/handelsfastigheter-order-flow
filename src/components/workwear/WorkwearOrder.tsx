@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShoppingBag, Minus, Plus, Trash2, Send, ExternalLink, Settings2, CalendarClock, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { enqueueEmail } from "@/lib/enqueueEmail";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { toast } from "sonner";
@@ -190,57 +189,25 @@ export default function WorkwearOrder() {
       });
       if (dbError) throw dbError;
 
-      const itemsHtml = cart
-        .map(
-          (c) =>
-            `<tr><td style="padding:8px 12px;border-bottom:1px solid #dde1e6;font-size:14px;">${c.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #dde1e6;font-size:14px;">${c.colorLabel}</td><td style="padding:8px 12px;border-bottom:1px solid #dde1e6;font-size:14px;">${c.size}</td><td style="padding:8px 12px;border-bottom:1px solid #dde1e6;font-size:14px;text-align:center;">${c.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #dde1e6;font-size:14px;"><a href="${c.url}" style="color:#2e4a62;">Länk</a></td></tr>`
-        )
-        .join("");
-
-      const html = `<!DOCTYPE html>
-<html lang="sv"><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f4f5f7;font-family:'Roboto','Segoe UI',Arial,sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:24px 16px;">
-<div style="background:linear-gradient(135deg,#2e4a62 0%,#3a5f7c 100%);padding:28px 32px;border-radius:12px 12px 0 0;">
-<h1 style="margin:0;font-size:20px;font-weight:600;color:#fff;">👔 Beställning av profilkläder</h1>
-</div>
-<div style="background:#fff;padding:32px;border:1px solid #dde1e6;border-top:none;border-radius:0 0 12px 12px;">
-<p style="margin:0 0 16px;font-size:15px;color:#3a4553;">
-<strong>${profile?.full_name || "Anställd"}</strong> har beställt profilkläder (${SEASON_LABELS[activeSeason]}):
-</p>
-<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:16px 0;border:1px solid #dde1e6;border-radius:8px;overflow:hidden;">
-<tr style="background:#f4f5f7;">
-<th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7685;text-transform:uppercase;">Plagg</th>
-<th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7685;text-transform:uppercase;">Färg</th>
-<th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7685;text-transform:uppercase;">Storlek</th>
-<th style="padding:8px 12px;text-align:center;font-size:12px;color:#6b7685;text-transform:uppercase;">Antal</th>
-<th style="padding:8px 12px;text-align:left;font-size:12px;color:#6b7685;text-transform:uppercase;">Produkt</th>
-</tr>
-${itemsHtml}
-</table>
-${notes ? `<p style="margin:16px 0 0;font-size:14px;color:#3a4553;"><strong>Kommentar:</strong> ${notes}</p>` : ""}
-<p style="margin:16px 0 0;font-size:13px;color:#6b7685;">E-post: ${profile?.email || user.email}</p>
-</div>
-<div style="padding:24px 16px;text-align:center;">
-<p style="margin:0;font-size:11px;color:#6b7685;">SHF Intra · Svensk Handelsfastigheter</p>
-</div>
-</div>
-</body></html>`;
-
-      const { data: settingData } = await supabase
-        .from("org_chart_settings")
-        .select("setting_value")
-        .eq("setting_key", "workwear_email")
-        .single();
-
-      const recipientEmail = settingData?.setting_value || (await getItEmail());
-
-      await enqueueEmail({
-        to: recipientEmail,
-        subject: `[SHF] Beställning profilkläder – ${profile?.full_name || "Anställd"}`,
-        html,
-        reply_to: profile?.email || user.email,
-      });
+      const { error: emailError } = await supabase.functions.invoke(
+        "send-workwear-order-email",
+        {
+          body: {
+            seasonLabel: SEASON_LABELS[activeSeason],
+            notes,
+            items: cart.map((c) => ({
+              productName: c.productName,
+              colorLabel: c.colorLabel,
+              size: c.size,
+              quantity: c.quantity,
+              url: c.url,
+            })),
+          },
+        }
+      );
+      if (emailError) {
+        console.error("Workwear order email error:", emailError);
+      }
 
       toast.success("Beställningen har skickats!");
       setCart([]);

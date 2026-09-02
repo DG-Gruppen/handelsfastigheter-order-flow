@@ -12,7 +12,7 @@ export async function getItContactEmail(): Promise<string> {
   return data?.setting_value || FALLBACK_IT_EMAIL;
 }
 
-// ─── Helper: invoke send-transactional-email Edge Function ───
+// ─── Helper: invoke the order email Edge Function ───
 
 async function sendTransactionalEmail(params: {
   templateName: string;
@@ -21,14 +21,14 @@ async function sendTransactionalEmail(params: {
   templateData: Record<string, any>;
 }) {
   const startedAt = Date.now();
-  console.log("[email] →invoke send-transactional-email", {
+  console.log("[email] →invoke send-order-email", {
     template: params.templateName,
     to: params.recipientEmail,
     idempotencyKey: params.idempotencyKey,
     at: new Date().toISOString(),
   });
 
-  const { data, error } = await supabase.functions.invoke("send-transactional-email", {
+  const { data, error } = await supabase.functions.invoke("send-order-email", {
     body: {
       templateName: params.templateName,
       recipientEmail: params.recipientEmail,

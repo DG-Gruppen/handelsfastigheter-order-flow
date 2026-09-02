@@ -1,6 +1,7 @@
 // Marks a task as done (or not_applicable). On all-done, completes the instance
 // and sends the completed email to HR + manager.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/send-app-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,20 +91,17 @@ Deno.serve(async (req) => {
 
       for (const email of recipients) {
         try {
-          await admin.functions.invoke('send-transactional-email', {
-            body: {
-              templateName: templateKey,
-              recipientEmail: email,
-              idempotencyKey: `${templateKey}-${inst.id}-${email}`,
-              templateData: {
+          await sendAppEmail(templateKey, email, {
+        idempotencyKey: `${templateKey}-${inst.id}-${email}`,
+        templateData: {
                 instanceId: inst.id,
                 newHireName,
                 startDate: inst.start_date,
                 lastDay: inst.last_day,
                 deepLink: `https://intra.handelsfastigheter.se/boarding/${inst.id}`,
               },
-            },
-          })
+        admin,
+      })
         } catch (e) {
           console.error('completed-email error', email, e)
         }

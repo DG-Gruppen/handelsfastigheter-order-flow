@@ -40,7 +40,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
     : undefined;
 
   try {
-    const { error } = await supabase.functions.invoke("send-transactional-email", {
+    const { error } = await supabase.functions.invoke("send-order-email", {
       body: {
         templateName: "helpdesk-order",
         recipientEmail: itEmail,

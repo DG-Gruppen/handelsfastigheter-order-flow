@@ -24,6 +24,7 @@ import { template as offboardingOwnerTaskBatch } from './offboarding-owner-task-
 import { template as offboardingReminder } from './offboarding-reminder.tsx'
 import { template as offboardingCompleted } from './offboarding-completed.tsx'
 import { template as offboardingCancelled } from './offboarding-cancelled.tsx'
+import { template as workwearOrder } from './workwear-order.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-order-approval': newOrderApproval,
@@ -41,4 +42,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'offboarding-reminder': offboardingReminder,
   'offboarding-completed': offboardingCompleted,
   'offboarding-cancelled': offboardingCancelled,
+  'workwear-order': workwearOrder,
 }

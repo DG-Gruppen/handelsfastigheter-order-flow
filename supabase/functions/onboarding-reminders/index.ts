@@ -1,6 +1,7 @@
 // Cron-friendly: sends reminders for open tasks based on offset to start_date / last_day.
 // Onboarding: T-7, T-3, T-1. Offboarding: T-3, T-0, T+1.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/send-app-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,12 +68,9 @@ Deno.serve(async (req) => {
 
     for (const [email, info] of byEmail.entries()) {
       try {
-        await admin.functions.invoke('send-transactional-email', {
-          body: {
-            templateName: templateKey,
-            recipientEmail: email,
-            idempotencyKey: `${templateKey}-${inst.id}-${email}-${baseStr}-${diffDays}`,
-            templateData: {
+        await sendAppEmail(templateKey, email, {
+        idempotencyKey: `${templateKey}-${inst.id}-${email}-${baseStr}-${diffDays}`,
+        templateData: {
               instanceId: inst.id,
               recipientFirstName: info.firstName,
               newHireName,
@@ -84,8 +82,8 @@ Deno.serve(async (req) => {
               deepLink: `https://intra.handelsfastigheter.se/boarding/${inst.id}`,
               escalatedToManager: escalateToManager && email === (inst.manager as any)?.email,
             },
-          },
-        })
+        admin,
+      })
         sent++
       } catch (e) {
         console.error('reminder error', email, e)
