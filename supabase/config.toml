@@ -19,11 +19,11 @@ project_id = "zafzwayqhlnxpsumfjps"
     verify_jwt = true
   [functions.preview-transactional-email]
     verify_jwt = false
-[functions.test-google-workspace]
-verify_jwt = false
   [functions.send-order-email]
     verify_jwt = true
   [functions.send-workwear-order-email]
     verify_jwt = true
   [functions.handle-email-events]
+    verify_jwt = false
+  [functions.test-google-workspace]
     verify_jwt = false
