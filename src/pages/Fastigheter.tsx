@@ -18,6 +18,7 @@ import { ManagerDashboard } from "@/components/fastigheter/ManagerDashboard";
 interface Property {
   fastighet: string;
   ort: string;
+  kommun?: string;
   forvaltare: string;
   teknisk: string;
   region: "Syd" | "Mitt" | "Nord";
@@ -26,6 +27,7 @@ interface Property {
 }
 
 const properties = propertiesData as Property[];
+
 
 const REGION_COLORS: Record<string, string> = {
   Syd: "#E53935",
