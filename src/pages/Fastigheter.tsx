@@ -73,22 +73,15 @@ export default function Fastigheter() {
   );
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const match = makeMatcher(search);
     return properties.filter((p) => {
       if (regionFilter !== "all" && p.region !== regionFilter) return false;
       if (forvFilter !== "all" && p.forvaltare !== forvFilter) return false;
       if (teknFilter !== "all" && p.teknisk !== teknFilter) return false;
-      if (q) {
-        return (
-          p.fastighet.toLowerCase().includes(q) ||
-          p.ort.toLowerCase().includes(q) ||
-          p.forvaltare.toLowerCase().includes(q) ||
-          p.teknisk.toLowerCase().includes(q)
-        );
-      }
-      return true;
+      return match([p.fastighet, p.ort, p.kommun, p.forvaltare, p.teknisk, p.region, ...tenantsFor(p.fastighet)]);
     });
   }, [search, regionFilter, forvFilter, teknFilter]);
+
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { Syd: 0, Mitt: 0, Nord: 0 };
