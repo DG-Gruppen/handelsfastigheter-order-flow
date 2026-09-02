@@ -14,6 +14,8 @@ import { PropertyDetailsPanel } from "@/components/fastigheter/PropertyDetailsPa
 import { TenantsView } from "@/components/fastigheter/TenantsView";
 import { ContractsView } from "@/components/fastigheter/ContractsView";
 import { ManagerDashboard } from "@/components/fastigheter/ManagerDashboard";
+import { makeMatcher } from "@/lib/search";
+import { tenantsFor } from "@/lib/rentroll";
 
 interface Property {
   fastighet: string;
@@ -146,7 +148,7 @@ export default function Fastigheter() {
                     <Popup maxWidth={320} minWidth={280}>
                       <PropertyDetailsPanel
                         fastighet={p.fastighet}
-                        ort={p.ort}
+                        ort={p.kommun && p.kommun !== p.ort ? `${p.ort}, ${p.kommun} kommun` : p.ort}
                         region={p.region}
                         regionColor={REGION_COLORS[p.region]}
                       />
@@ -171,7 +173,7 @@ export default function Fastigheter() {
               <div className="space-y-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sök fastighet, ort, förvaltare..." className="pl-8 h-9" />
+                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sök fastighet, ort, kommun, hyresgäst (t.ex. Ica*)..." className="pl-8 h-9" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -238,7 +240,7 @@ export default function Fastigheter() {
                         >
                           <div className="text-sm font-medium truncate">{p.fastighet}</div>
                           <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> {p.ort} · {p.forvaltare}
+                            <MapPin className="h-3 w-3" /> {p.ort}{p.kommun && p.kommun !== p.ort ? ` (${p.kommun})` : ""} · {p.forvaltare}
                           </div>
                         </button>
                       </li>
