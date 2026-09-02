@@ -134,28 +134,40 @@ export default function Fastigheter() {
         <TabsContent value="karta" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
             <Card className="overflow-hidden h-[520px] lg:h-[70vh] relative">
-              <MapContainer center={[62.5, 15.5]} zoom={5} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
+              <MapContainer
+                center={[62.5, 15.5]}
+                zoom={5}
+                scrollWheelZoom
+                touchZoom
+                tap={false}
+                zoomControl
+                style={{ height: "100%", width: "100%" }}
+              >
                 <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <FlyTo center={flyTarget} zoom={13} />
                 {filtered.map((p) => (
                   <CircleMarker
                     key={`${p.fastighet}-${p.lat}-${p.lng}`}
                     center={[p.lat, p.lng]}
-                    radius={selected?.fastighet === p.fastighet ? 9 : 6}
+                    radius={selected?.fastighet === p.fastighet ? (isMobile ? 11 : 9) : isMobile ? 9 : 6}
                     pathOptions={{ color: "#fff", weight: 1.5, fillColor: colorOf(p), fillOpacity: 0.9 }}
                     eventHandlers={{ click: () => setSelected(p) }}
                   >
-                    <Popup maxWidth={320} minWidth={280}>
+                    <Popup maxWidth={isMobile ? 240 : 320} minWidth={isMobile ? 200 : 280}>
                       <PropertyDetailsPanel
                         fastighet={p.fastighet}
-                        ort={p.kommun && p.kommun !== p.ort ? `${p.ort}, ${p.kommun} kommun` : p.ort}
+                        ort={p.ort}
                         region={p.region}
                         regionColor={REGION_COLORS[p.region]}
+                        compact={isMobile}
+                        lat={p.lat}
+                        lng={p.lng}
                       />
                     </Popup>
                   </CircleMarker>
                 ))}
               </MapContainer>
+
 
               <div className="absolute bottom-3 left-3 z-[400] bg-background/95 backdrop-blur rounded-md shadow-md border px-3 py-2 text-xs space-y-1">
                 <div className="font-semibold mb-1">Regioner</div>
