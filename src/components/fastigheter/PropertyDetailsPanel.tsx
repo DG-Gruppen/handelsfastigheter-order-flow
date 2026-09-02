@@ -1,17 +1,55 @@
 import { Badge } from "@/components/ui/badge";
-import { getAgg, unitsFor, fmtKr, fmtNum, fmtDate } from "@/lib/rentroll";
-import { Building2, MapPin, User, Wrench, Users, Home } from "lucide-react";
+import { getAgg, unitsFor, fmtKr, fmtNum, fmtDate, addressFor, googleMapsUrl } from "@/lib/rentroll";
+import { Building2, MapPin, User, Wrench, Users, Home, Navigation } from "lucide-react";
 
 interface Props {
   fastighet: string;
   ort: string;
   region: string;
   regionColor: string;
+  compact?: boolean;
+  lat?: number;
+  lng?: number;
 }
 
-export function PropertyDetailsPanel({ fastighet, ort, region, regionColor }: Props) {
+export function PropertyDetailsPanel({ fastighet, ort, region, regionColor, compact, lat, lng }: Props) {
   const agg = getAgg(fastighet);
   const units = unitsFor(fastighet);
+  const adress = addressFor(fastighet);
+  const mapsHref = googleMapsUrl(fastighet, lat, lng);
+
+  const MapsButton = (
+    <a
+      href={mapsHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-1.5 w-full rounded-md bg-primary text-primary-foreground text-xs font-semibold py-2 min-h-11 no-underline"
+    >
+      <Navigation className="h-3.5 w-3.5" /> Öppna i Google Maps
+    </a>
+  );
+
+  if (compact) {
+    return (
+      <div className="space-y-2 text-sm">
+        <div>
+          <div className="font-semibold text-base leading-tight">{fastighet}</div>
+          <div className="text-xs text-muted-foreground">{adress || ort}</div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <Badge style={{ backgroundColor: regionColor, color: "#fff" }} className="text-[10px]">{region}</Badge>
+          {agg && <span className="text-muted-foreground">{fmtNum(agg.objekt)} objekt · {fmtNum(agg.area, "m²")}</span>}
+        </div>
+        {agg && agg.vakanta > 0 && (
+          <div className="text-xs text-[hsl(var(--destructive))] font-medium">{fmtNum(agg.vakanta)} vakanta</div>
+        )}
+        {agg && agg.butiker.length > 0 && (
+          <div className="text-xs text-muted-foreground truncate">{agg.butiker.slice(0, 3).join(", ")}</div>
+        )}
+        {MapsButton}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 text-sm">
@@ -21,12 +59,14 @@ export function PropertyDetailsPanel({ fastighet, ort, region, regionColor }: Pr
           <span className="font-semibold text-base">{fastighet}</span>
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-          <MapPin className="h-3 w-3" /> {ort}
+          <MapPin className="h-3 w-3" /> {adress || ort}
         </div>
         <Badge style={{ backgroundColor: regionColor, color: "#fff" }} className="mt-2">
           Region {region}
         </Badge>
+        <div className="mt-2">{MapsButton}</div>
       </div>
+
 
       {agg && (
         <>
