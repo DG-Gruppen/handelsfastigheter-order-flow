@@ -315,7 +315,6 @@ export default function Kpi() {
                           }}
                         />
                       </Bar>
-                      <Bar dataKey={selectedKpi.budget_label ?? "Budget"} dataKey2={undefined as any} hide />
                       <Bar dataKey="Budget" name={selectedKpi.budget_label ?? "Budget"} fill="hsl(var(--muted-foreground) / 0.5)" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="Budget" position="top" fontSize={11} formatter={(v: any) => num(v)} />
                       </Bar>
