@@ -9,6 +9,7 @@ export interface KpiType {
   format: string;
   sort_order: number;
   higher_is_better: boolean;
+  budget_label?: string;
 }
 
 export interface KpiRow {
@@ -20,6 +21,7 @@ export interface KpiRow {
   kpi_type_id: string;
   budget: number | null;
   actual: number | null;
+  stretch: number | null;
   notes: string | null;
 }
 
@@ -52,6 +54,26 @@ export function useKpiData(year: number, quarter: number) {
     staleTime: 60 * 1000,
   });
 }
+
+/** Alla kvartal för ett år – används för YTD-vyn. */
+export function useKpiYearData(year: number) {
+  return useQuery({
+    queryKey: ["kpi-data-year", year],
+    queryFn: async (): Promise<KpiRow[]> => {
+      const { data } = await supabase
+        .from("kpi_data" as any)
+        .select("*")
+        .eq("year", year)
+        .order("quarter");
+      return (data as any) ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+/** KPI:er som ackumuleras över kvartal (flöden). Övriga är ögonblicksvärden. */
+export const FLOW_KPI_SLUGS = ["driftnetto", "nettouthyrning", "antal_kontrakt"];
+
 
 export function useKpiAvailablePeriods() {
   return useQuery({
