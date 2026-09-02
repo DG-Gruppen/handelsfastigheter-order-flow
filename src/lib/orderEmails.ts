@@ -28,7 +28,7 @@ async function sendTransactionalEmail(params: {
     at: new Date().toISOString(),
   });
 
-  const { data, error } = await supabase.functions.invoke("send-transactional-email", {
+  const { data, error } = await supabase.functions.invoke("send-order-email", {
     body: {
       templateName: params.templateName,
       recipientEmail: params.recipientEmail,
