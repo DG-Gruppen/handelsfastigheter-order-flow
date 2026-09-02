@@ -143,7 +143,7 @@ export default function Fastigheter() {
                 zoom={5}
                 scrollWheelZoom
                 touchZoom
-                tap={false}
+                zoomControl
                 zoomControl
                 style={{ height: "100%", width: "100%" }}
               >
