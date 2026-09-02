@@ -96,3 +96,17 @@ const tenantIndex: Record<string, string[]> = (() => {
 export function tenantsFor(fastighet: string): string[] {
   return tenantIndex[fastighet] || [];
 }
+
+/** Bästa kända gatuadress för en fastighet (första objektet med gata). */
+export function addressFor(fastighet: string): string | null {
+  const u = unitsFor(fastighet).find((x) => x.gata);
+  if (!u) return null;
+  return [u.gata, [u.post, u.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+}
+
+/** Google Maps-länk: adress om den finns, annars koordinater. */
+export function googleMapsUrl(fastighet: string, lat?: number, lng?: number): string {
+  const addr = addressFor(fastighet);
+  const q = addr ? `${addr}` : lat != null && lng != null ? `${lat},${lng}` : fastighet;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
