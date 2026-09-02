@@ -84,8 +84,9 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
             <Label>Excel-fil (.xlsx)</Label>
             <Input type="file" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             <p className="text-xs text-muted-foreground mt-2">
-              Filen ska innehålla en flik per KPI (t.ex. "Driftnetto", "Hyresvärde", "Vakansgrad", "Fastighetsvärde") med kolumnerna <strong>Region</strong>, <strong>Budget</strong> och <strong>Utfall</strong>.
+              Använd kvartalsfilen "Översikt stretch". Värdena hämtas från flikarna <strong>Sammanställning</strong> (driftnetto, överskottsgrad, vakansgrad, duration, fastighetsvärde), <strong>Fastigheter per region</strong> (hyresvärde, antal fastigheter) och <strong>Optionsprogram</strong> (aktiekurs) för valt kvartal.
             </p>
+
           </div>
         </div>
         <DialogFooter>
