@@ -144,7 +144,7 @@ export default function Fastigheter() {
                 scrollWheelZoom
                 touchZoom
                 zoomControl
-                zoomControl
+
                 style={{ height: "100%", width: "100%" }}
               >
                 <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
