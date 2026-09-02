@@ -221,16 +221,19 @@ function parseVakansDuration(wb: XLSX.WorkBook, year: number, quarter: number, a
   const durationCols = durationStart >= 0 ? colsIn(durationStart, durationStart + 6) : {};
   const vakansCols = vakansStart >= 0 ? colsIn(vakansStart, vakansStart + 6) : {};
 
+  const dateCol = (data[headerIdx] ?? []).findIndex((c) => normalize(c) === "datum");
   const endMonth = quarter * 3;
   let target: any[] | null = null;
   for (let i = headerIdx + 1; i < data.length; i++) {
-    const raw = (data[i] ?? [])[1];
+    const raw = (data[i] ?? [])[dateCol];
     if (!raw) continue;
     const d = raw instanceof Date ? raw : new Date(String(raw));
     if (isNaN(d.getTime())) continue;
-    if (d.getFullYear() === year && d.getMonth() + 1 === endMonth) { target = data[i]; break; }
+    if (d.getUTCFullYear() === year && d.getUTCMonth() + 1 === endMonth) { target = data[i]; break; }
   }
+  console.log("vakans parse", { headerIdx, dateCol, durationCols, vakansCols, found: !!target });
   if (!target) return;
+
 
   for (const [region, idx] of Object.entries(durationCols)) {
     put(acc, "duration", region, "actual", round2(parseNumber(target[idx])));
