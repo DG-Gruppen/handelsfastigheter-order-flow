@@ -9,6 +9,7 @@ export interface KpiType {
   format: string;
   sort_order: number;
   higher_is_better: boolean;
+  budget_label?: string;
 }
 
 export interface KpiRow {
@@ -20,6 +21,7 @@ export interface KpiRow {
   kpi_type_id: string;
   budget: number | null;
   actual: number | null;
+  stretch: number | null;
   notes: string | null;
 }
 
@@ -53,6 +55,26 @@ export function useKpiData(year: number, quarter: number) {
   });
 }
 
+/** Alla kvartal för ett år – används för YTD-vyn. */
+export function useKpiYearData(year: number) {
+  return useQuery({
+    queryKey: ["kpi-data-year", year],
+    queryFn: async (): Promise<KpiRow[]> => {
+      const { data } = await supabase
+        .from("kpi_data" as any)
+        .select("*")
+        .eq("year", year)
+        .order("quarter");
+      return (data as any) ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+/** KPI:er som ackumuleras över kvartal (flöden). Övriga är ögonblicksvärden. */
+export const FLOW_KPI_SLUGS = ["driftnetto", "nettouthyrning", "antal_kontrakt"];
+
+
 export function useKpiAvailablePeriods() {
   return useQuery({
     queryKey: ["kpi-periods"],
@@ -83,8 +105,13 @@ export function formatKpiValue(v: number | null | undefined, format: string, uni
     if (unit === "kr" && Math.abs(v) < 10000) {
       return `${v.toFixed(2).replace(".", ",")} ${unit}`;
     }
+    // Mkr-belopp under 1 000 visas med en decimal
+    if (Math.abs(v) < 1000) {
+      return `${v.toFixed(1).replace(".", ",")} ${unit}`;
+    }
     return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
   }
+
   if (format === "count") {
     // Duration uses 1 decimal (e.g. "4,2 år"), other counts are integers
     if (unit === "år") return `${v.toFixed(1).replace(".", ",")} ${unit}`;

@@ -12,6 +12,7 @@ interface ParsedRow {
   kpi_slug: string;
   budget: number | null;
   actual: number | null;
+  stretch: number | null;
 }
 
 function normalize(s: unknown): string {
@@ -31,10 +32,11 @@ function round2(n: number | null): number | null {
   return n === null ? null : Math.round(n * 100) / 100;
 }
 
-/** "Nord" -> "Region Nord", "Total" -> "Totalt" */
+/** "Nord" -> "Region Nord", "Total" -> "Totalt", "Afu + elimineringar" -> "Afu + Elimineringar" */
 function canonicalRegion(raw: string): string | null {
   const n = normalize(raw);
   if (!n) return null;
+  if (n.startsWith("afu")) return "Afu + Elimineringar";
   if (n.includes("nord")) return "Region Nord";
   if (n.includes("mitt")) return "Region Mitt";
   if (n.includes("syd")) return "Region Syd";
@@ -49,12 +51,12 @@ function put(
   acc: Acc,
   slug: string,
   region: string,
-  field: "budget" | "actual",
+  field: "budget" | "actual" | "stretch",
   value: number | null,
 ) {
   if (value === null) return;
   const key = `${slug}|${region}`;
-  const existing = acc.get(key) ?? { region, kpi_slug: slug, budget: null, actual: null };
+  const existing = acc.get(key) ?? { region, kpi_slug: slug, budget: null, actual: null, stretch: null };
   if (existing[field] === null) existing[field] = value;
   acc.set(key, existing);
 }
@@ -65,72 +67,184 @@ function sheetRows(wb: XLSX.WorkBook, name: string): any[][] | null {
   return XLSX.utils.sheet_to_json(wb.Sheets[match], { header: 1, defval: null }) as any[][];
 }
 
-/** "Sammanställning": one block per quarter with region columns. */
-function parseSummary(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
-  const data = sheetRows(wb, "Sammanställning");
-  if (!data) return;
+// ---------------------------------------------------------------------------
+// "Budget och Utfall": tre kolumnblock (Mål | Utfall | Varians) separerade av
+// tomma kolumner. Varje sektion har fyra kvartalsrader följt av en summarad.
+// ---------------------------------------------------------------------------
 
-  // Locate the block for the requested quarter
-  let start = -1;
-  for (let i = 0; i < data.length; i++) {
-    const cells = (data[i] ?? []).map(normalize);
-    if (cells.some((c) => c === `q${quarter}`)) {
-      start = i;
-      break;
-    }
-  }
-  if (start === -1) return;
+type BlockCols = { budget: Record<string, number>; actual: Record<string, number> };
 
-  // Header row with region names (next row containing a known region)
-  let headerIdx = -1;
-  const regionCols: Record<number, string> = {};
-  for (let i = start + 1; i < Math.min(start + 4, data.length); i++) {
-    const row = data[i] ?? [];
-    const found: Record<number, string> = {};
-    row.forEach((cell, idx) => {
-      const r = canonicalRegion(String(cell ?? ""));
-      if (r) found[idx] = r;
-    });
-    if (Object.keys(found).length >= 2) {
-      headerIdx = i;
-      Object.assign(regionCols, found);
-      break;
-    }
-  }
-  if (headerIdx === -1) return;
+/** Delar upp rubrikraden i block med hjälp av "Nord"-ankaret i varje block. */
+function headerBlocks(header: any[]): BlockCols | null {
+  const anchors: number[] = [];
+  header.forEach((cell, j) => {
+    if (normalize(cell) === "nord") anchors.push(j);
+  });
+  if (anchors.length < 2) return null;
 
-  const readRow = (
-    row: any[],
-    slug: string,
-    field: "budget" | "actual",
-    factor = 1,
-    includeTotal = false,
-  ) => {
-    for (const [idxStr, region] of Object.entries(regionCols)) {
-      if (region === "Totalt" && !includeTotal) continue;
-      const value = parseNumber(row[Number(idxStr)]);
-      put(acc, slug, region, field, value === null ? null : round2(value * factor));
+  const mapRange = (start: number, end: number) => {
+    const out: Record<string, number> = {};
+    for (let j = start; j < end; j++) {
+      const n = normalize(header[j]);
+      let region: string | null = null;
+      if (n === "nord total") region = "Region Nord";
+      else if (n === "mitt total") region = "Region Mitt";
+      else if (n === "syd total") region = "Region Syd";
+      else if (n.startsWith("afu +")) region = "Afu + Elimineringar";
+      else if (n === "totalt") region = "Totalt";
+      if (region && out[region] === undefined) out[region] = j;
     }
+    return out;
   };
 
-  for (let i = headerIdx + 1; i < data.length; i++) {
-    const row = data[i] ?? [];
-    const label = normalize(row.find((c, idx) => idx > 0 && c) ?? "");
-    // Stop when the next quarter block begins
-    if (row.some((c) => /^q[1-4]$/.test(normalize(c)))) break;
-    if (!label) continue;
+  const end1 = anchors[1];
+  const end2 = anchors[2] ?? header.length;
+  return { budget: mapRange(anchors[0], end1), actual: mapRange(end1, end2) };
+}
 
-    if (label === "driftnetto utfall") readRow(row, "driftnetto", "actual");
-    else if (label === "driftnetto budget") readRow(row, "driftnetto", "budget");
-    else if (label === "ög utfall" || label === "överskottsgrad utfall") readRow(row, "overskottsgrad", "actual", 100);
-    else if (label === "ög budget" || label === "överskottsgrad budget") readRow(row, "overskottsgrad", "budget", 100);
-    else if (label === "vakansgrad") readRow(row, "vakansgrad", "actual", 100);
-    else if (label === "duration") readRow(row, "duration", "actual");
-    else if (label.startsWith("fastighetsvärde")) readRow(row, "fastighetsvarde", "actual", 1000);
+
+/** Hittar rubrikraden ovanför en sektion (raden med "Nord Total"-kolumner). */
+function findHeaderAbove(data: any[][], rowIdx: number): BlockCols | null {
+  for (let i = rowIdx; i >= 0; i--) {
+    const row = data[i] ?? [];
+    const hits = row.filter((c) => /nord/i.test(String(c ?? ""))).length;
+    if (hits >= 2) return headerBlocks(row);
+  }
+  return null;
+}
+
+/** Returnerar raden för angivet kvartal bland de fyra raderna ovanför en summarad. */
+function quarterRowAbove(data: any[][], summaryIdx: number, quarter: number): any[] | null {
+  for (let i = summaryIdx - 1; i >= Math.max(0, summaryIdx - 6); i--) {
+    const label = normalize((data[i] ?? [])[1]);
+    if (label === `q${quarter}`) return data[i];
+  }
+  return null;
+}
+
+function findRow(data: any[][], test: (label: string) => boolean): number {
+  for (let i = 0; i < data.length; i++) {
+    if (test(normalize((data[i] ?? [])[1]))) return i;
+  }
+  return -1;
+}
+
+function parseBudgetOchUtfall(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
+  const data = sheetRows(wb, "Budget och Utfall");
+  if (!data) return;
+
+  const sections: { slug: string; budgetTest: (l: string) => boolean; stretchTest: (l: string) => boolean; factor: number }[] = [
+    {
+      slug: "driftnetto",
+      budgetTest: (l) => l.startsWith("budget (driftnetto"),
+      stretchTest: (l) => l.startsWith("stretch (driftnetto"),
+      factor: 1,
+    },
+    {
+      slug: "overskottsgrad",
+      budgetTest: (l) => l.startsWith("budget: överskottsgrad"),
+      stretchTest: (l) => l.startsWith("stretch: överskottsgrad"),
+      factor: 100,
+    },
+  ];
+
+  for (const s of sections) {
+    const budgetIdx = findRow(data, s.budgetTest);
+    if (budgetIdx === -1) continue;
+    const cols = findHeaderAbove(data, budgetIdx);
+    if (!cols) continue;
+
+    const budgetRow = quarterRowAbove(data, budgetIdx, quarter);
+    if (budgetRow) {
+      for (const [region, idx] of Object.entries(cols.budget)) {
+        put(acc, s.slug, region, "budget", round2(mul(parseNumber(budgetRow[idx]), s.factor)));
+      }
+      for (const [region, idx] of Object.entries(cols.actual)) {
+        put(acc, s.slug, region, "actual", round2(mul(parseNumber(budgetRow[idx]), s.factor)));
+      }
+    }
+
+    const stretchIdx = findRow(data, s.stretchTest);
+    const stretchRow = stretchIdx === -1 ? null : quarterRowAbove(data, stretchIdx, quarter);
+    if (stretchRow) {
+      for (const [region, idx] of Object.entries(cols.budget)) {
+        put(acc, s.slug, region, "stretch", round2(mul(parseNumber(stretchRow[idx]), s.factor)));
+      }
+    }
+  }
+
+  // Mål för vakansgrad, t.ex. "<2%"
+  const vakansIdx = findRow(data, (l) => l.startsWith("mål vakansgrad"));
+  if (vakansIdx >= 0) {
+    const target = parseNumber(
+      (data[vakansIdx] ?? []).map((c) => String(c ?? "")).find((c) => /%/.test(c)) ?? null,
+    );
+    if (target !== null) {
+      for (const region of ["Region Nord", "Region Mitt", "Region Syd", "Totalt"]) {
+        put(acc, "vakansgrad", region, "budget", target);
+      }
+    }
   }
 }
 
-/** "Fastigheter per region": columns per quarter (Q2-26), metric rows per region. */
+function mul(v: number | null, f: number): number | null {
+  return v === null ? null : v * f;
+}
+
+// ---------------------------------------------------------------------------
+// "Vakans & Duration": en rad per månad. Vi tar sista månaden i kvartalet.
+// ---------------------------------------------------------------------------
+function parseVakansDuration(wb: XLSX.WorkBook, year: number, quarter: number, acc: Acc) {
+  const data = sheetRows(wb, "Vakans & Duration");
+  if (!data) return;
+
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(data.length, 15); i++) {
+    if ((data[i] ?? []).some((c) => normalize(c) === "datum")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return;
+
+  const header = data[headerIdx];
+  // Kolumngrupper: "Duration ..." först, "Ekonomisk vakansgrad ..." sist
+  const groupTitles = data[headerIdx - 1] ?? [];
+  const durationStart = groupTitles.findIndex((c) => normalize(c).startsWith("duration"));
+  const vakansStart = groupTitles.findIndex((c) => normalize(c).startsWith("ekonomisk vakansgrad"));
+
+  const colsIn = (start: number, end: number) => {
+    const out: Record<string, number> = {};
+    for (let j = start; j < end; j++) {
+      const region = canonicalRegion(String(header[j] ?? ""));
+      if (region && out[region] === undefined) out[region] = j;
+    }
+    return out;
+  };
+  const durationCols = durationStart >= 0 ? colsIn(durationStart, durationStart + 6) : {};
+  const vakansCols = vakansStart >= 0 ? colsIn(vakansStart, vakansStart + 6) : {};
+
+  const dateCol = (data[headerIdx] ?? []).findIndex((c) => normalize(c) === "datum");
+  const endMonth = quarter * 3;
+  let target: any[] | null = null;
+  for (let i = headerIdx + 1; i < data.length; i++) {
+    const raw = (data[i] ?? [])[dateCol];
+    if (!raw) continue;
+    const d = raw instanceof Date ? raw : new Date(String(raw));
+    if (isNaN(d.getTime())) continue;
+    if (d.getUTCFullYear() === year && d.getUTCMonth() + 1 === endMonth) { target = data[i]; break; }
+  }
+  if (!target) return;
+
+
+  for (const [region, idx] of Object.entries(durationCols)) {
+    put(acc, "duration", region, "actual", round2(parseNumber(target[idx])));
+  }
+  for (const [region, idx] of Object.entries(vakansCols)) {
+    put(acc, "vakansgrad", region, "actual", round2(mul(parseNumber(target[idx]), 100)));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// "Fastigheter per region": kolumn per kvartal (Q1-26).
+// ---------------------------------------------------------------------------
 function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: Acc) {
   const data = sheetRows(wb, "Fastigheter per region");
   if (!data) return;
@@ -141,19 +255,13 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
   for (let i = 0; i < Math.min(data.length, 15); i++) {
     const row = (data[i] ?? []).map(normalize);
     const idx = row.findIndex((c) => c === `q${quarter}-${yy}` || c === `q${quarter} ${yy}`);
-    if (idx >= 0) {
-      headerIdx = i;
-      colIdx = idx;
-      break;
-    }
+    if (idx >= 0) { headerIdx = i; colIdx = idx; break; }
   }
   if (colIdx === -1) return;
 
   let currentRegion: string | null = null;
   for (let i = headerIdx + 1; i < data.length; i++) {
     const row = data[i] ?? [];
-    // Leading empty columns are trimmed away, so scan the label cells
-    // before the value column instead of assuming fixed positions.
     const labels: string[] = [];
     for (let c = 0; c < colIdx; c++) {
       const cell = String(row[c] ?? "").trim();
@@ -163,7 +271,7 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
       const region = canonicalRegion(label);
       if (region) currentRegion = region;
     }
-    if (!currentRegion || currentRegion === "Totalt") continue;
+    if (!currentRegion) continue;
 
     const value = parseNumber(row[colIdx]);
     if (value === null) continue;
@@ -172,12 +280,45 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
       const metric = normalize(label);
       if (metric.startsWith("hyresvärde")) put(acc, "hyresintakter", currentRegion, "actual", round2(value));
       else if (metric.startsWith("antal fastigheter")) put(acc, "antal_fastigheter", currentRegion, "actual", round2(value));
-      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value * 1000));
+      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value));
     }
   }
 }
 
-/** "Optionsprogram": share price per quarter, stored on "Totalt". */
+// ---------------------------------------------------------------------------
+// "Nettouthyrning": två block – belopp i SEK och antal nytecknade kontrakt.
+// ---------------------------------------------------------------------------
+function parseNettouthyrning(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
+  const data = sheetRows(wb, "Nettouthyrning");
+  if (!data) return;
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i] ?? [];
+    const first = normalize(row[1]);
+    const isAmount = first === "sek";
+    const isCount = first === "#";
+    if (!isAmount && !isCount) continue;
+
+    const cols: Record<string, number> = {};
+    row.forEach((cell, j) => {
+      const region = canonicalRegion(String(cell ?? ""));
+      if (region && cols[region] === undefined) cols[region] = j;
+    });
+
+    for (let k = i + 1; k < Math.min(i + 8, data.length); k++) {
+      const r = data[k] ?? [];
+      if (normalize(r[1]) !== `q${quarter}`) continue;
+      for (const [region, j] of Object.entries(cols)) {
+        const v = parseNumber(r[j]);
+        if (isAmount) put(acc, "nettouthyrning", region, "actual", round2(mul(v, 1 / 1_000_000)));
+        else put(acc, "antal_kontrakt", region, "actual", v);
+      }
+      break;
+    }
+  }
+}
+
+/** "Optionsprogram": aktiekurs per kvartal, lagras på "Totalt". */
 function parseOptions(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   const data = sheetRows(wb, "Optionsprogram");
   if (!data) return;
@@ -187,11 +328,7 @@ function parseOptions(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   for (let i = 0; i < Math.min(data.length, 10); i++) {
     const row = (data[i] ?? []).map(normalize);
     const idx = row.findIndex((c) => c.includes("aktiekurs"));
-    if (idx >= 0) {
-      headerIdx = i;
-      colIdx = idx;
-      break;
-    }
+    if (idx >= 0) { headerIdx = i; colIdx = idx; break; }
   }
   if (colIdx === -1) return;
 
@@ -205,10 +342,12 @@ function parseOptions(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
 
 function extractRows(wb: XLSX.WorkBook, year: number, quarter: number): ParsedRow[] {
   const acc: Acc = new Map();
-  parseSummary(wb, quarter, acc);
+  parseBudgetOchUtfall(wb, quarter, acc);
+  parseVakansDuration(wb, year, quarter, acc);
   parsePerRegion(wb, year, quarter, acc);
+  parseNettouthyrning(wb, quarter, acc);
   parseOptions(wb, quarter, acc);
-  return [...acc.values()].filter((r) => r.budget !== null || r.actual !== null);
+  return [...acc.values()].filter((r) => r.budget !== null || r.actual !== null || r.stretch !== null);
 }
 
 Deno.serve(async (req: Request) => {
@@ -251,13 +390,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const buf = new Uint8Array(await fileData.arrayBuffer());
-    const wb = XLSX.read(buf, { type: "array" });
+    const wb = XLSX.read(buf, { type: "array", cellDates: true });
     const rows = extractRows(wb, year, quarter);
 
     if (!rows.length) {
       return json({
         error:
-          `Hittade inga värden för Q${quarter} ${year} i filen. Kontrollera att fliken "Sammanställning" innehåller ett avsnitt för Q${quarter} med regionkolumner.`,
+          `Hittade inga värden för Q${quarter} ${year} i filen. Kontrollera att flikarna "Budget och Utfall", "Vakans & Duration", "Fastigheter per region" och "Nettouthyrning" finns med.`,
       }, 400);
     }
 
@@ -283,6 +422,7 @@ Deno.serve(async (req: Request) => {
         kpi_type_id,
         budget: r.budget,
         actual: r.actual,
+        stretch: r.stretch,
         created_by: user.id,
       });
     }
