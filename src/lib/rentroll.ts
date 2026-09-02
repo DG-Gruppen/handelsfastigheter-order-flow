@@ -74,3 +74,25 @@ export function getAgg(fastighet: string): Aggregate | undefined {
 export function unitsFor(fastighet: string): Unit[] {
   return units.filter((u) => u.fb === fastighet);
 }
+
+/** Alla hyresgästnamn och kedjor/butiksnamn kopplade till en fastighet (unika). */
+const tenantIndex: Record<string, string[]> = (() => {
+  const map: Record<string, Set<string>> = {};
+  units.forEach((u) => {
+    const set = (map[u.fb] ||= new Set<string>());
+    if (u.hg) set.add(u.hg);
+    if (u.vn_butik) set.add(u.vn_butik);
+  });
+  Object.values(aggregates).forEach(() => {});
+  Object.entries(aggregates).forEach(([fb, a]) => {
+    const set = (map[fb] ||= new Set<string>());
+    (a.butiker || []).forEach((b) => b && set.add(b));
+  });
+  const out: Record<string, string[]> = {};
+  Object.entries(map).forEach(([k, v]) => (out[k] = Array.from(v).sort((a, b) => a.localeCompare(b, "sv"))));
+  return out;
+})();
+
+export function tenantsFor(fastighet: string): string[] {
+  return tenantIndex[fastighet] || [];
+}
