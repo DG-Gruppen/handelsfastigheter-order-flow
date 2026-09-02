@@ -117,7 +117,7 @@ function parseSummary(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
     const row = data[i] ?? [];
     const label = normalize(row.find((c, idx) => idx > 0 && c) ?? "");
     // Stop when the next quarter block begins
-    if (/^q[1-4]$/.test(normalize(row[1]))) break;
+    if (row.some((c) => /^q[1-4]$/.test(normalize(c)))) break;
     if (!label) continue;
 
     if (label === "driftnetto utfall") readRow(row, "driftnetto", "actual");
@@ -152,17 +152,28 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
   let currentRegion: string | null = null;
   for (let i = headerIdx + 1; i < data.length; i++) {
     const row = data[i] ?? [];
-    const regionCell = canonicalRegion(String(row[1] ?? ""));
-    if (regionCell) currentRegion = regionCell;
+    // Leading empty columns are trimmed away, so scan the label cells
+    // before the value column instead of assuming fixed positions.
+    const labels: string[] = [];
+    for (let c = 0; c < colIdx; c++) {
+      const cell = String(row[c] ?? "").trim();
+      if (cell) labels.push(cell);
+    }
+    for (const label of labels) {
+      const region = canonicalRegion(label);
+      if (region) currentRegion = region;
+    }
     if (!currentRegion || currentRegion === "Totalt") continue;
 
-    const metric = normalize(row[2]);
     const value = parseNumber(row[colIdx]);
-    if (!metric || value === null) continue;
+    if (value === null) continue;
 
-    if (metric.startsWith("hyresvärde")) put(acc, "hyresintakter", currentRegion, "actual", round2(value));
-    else if (metric.startsWith("antal fastigheter")) put(acc, "antal_fastigheter", currentRegion, "actual", round2(value));
-    else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value * 1000));
+    for (const label of labels) {
+      const metric = normalize(label);
+      if (metric.startsWith("hyresvärde")) put(acc, "hyresintakter", currentRegion, "actual", round2(value));
+      else if (metric.startsWith("antal fastigheter")) put(acc, "antal_fastigheter", currentRegion, "actual", round2(value));
+      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value * 1000));
+    }
   }
 }
 
@@ -186,7 +197,7 @@ function parseOptions(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
 
   for (let i = headerIdx + 1; i < data.length; i++) {
     const row = data[i] ?? [];
-    if (normalize(row[1]) !== `q${quarter}`) continue;
+    if (!row.some((c) => normalize(c) === `q${quarter}`)) continue;
     put(acc, "optioner", "Totalt", "actual", round2(parseNumber(row[colIdx])));
     break;
   }
