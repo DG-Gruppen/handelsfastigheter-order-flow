@@ -74,39 +74,34 @@ function sheetRows(wb: XLSX.WorkBook, name: string): any[][] | null {
 
 type BlockCols = { budget: Record<string, number>; actual: Record<string, number> };
 
-/** Delar upp rubrikraden i block via tomma kolumner och mappar regioner. */
+/** Delar upp rubrikraden i block med hjälp av "Nord"-ankaret i varje block. */
 function headerBlocks(header: any[]): BlockCols | null {
-  const groups: { start: number; cols: { idx: number; label: string }[] }[] = [];
-  let current: { start: number; cols: { idx: number; label: string }[] } | null = null;
-  for (let j = 1; j < header.length + 1; j++) {
-    const label = String(header[j] ?? "").trim();
-    if (label) {
-      if (!current) { current = { start: j, cols: [] }; groups.push(current); }
-      current.cols.push({ idx: j, label });
-    } else if (current && j > current.start) {
-      current = null;
-    }
-  }
-  const usable = groups.filter((g) => g.cols.some((c) => canonicalRegion(c.label)));
-  if (usable.length < 2) return null;
+  const anchors: number[] = [];
+  header.forEach((cell, j) => {
+    if (normalize(cell) === "nord") anchors.push(j);
+  });
+  if (anchors.length < 2) return null;
 
-  const mapGroup = (g: typeof groups[number]) => {
+  const mapRange = (start: number, end: number) => {
     const out: Record<string, number> = {};
-    for (const { idx, label } of g.cols) {
-      const n = normalize(label);
+    for (let j = start; j < end; j++) {
+      const n = normalize(header[j]);
       let region: string | null = null;
-      if (n === "nord total" || n === "nord\ntotal") region = "Region Nord";
+      if (n === "nord total") region = "Region Nord";
       else if (n === "mitt total") region = "Region Mitt";
       else if (n === "syd total") region = "Region Syd";
       else if (n.startsWith("afu +")) region = "Afu + Elimineringar";
       else if (n === "totalt") region = "Totalt";
-      if (region && out[region] === undefined) out[region] = idx;
+      if (region && out[region] === undefined) out[region] = j;
     }
     return out;
   };
 
-  return { budget: mapGroup(usable[0]), actual: mapGroup(usable[1]) };
+  const end1 = anchors[1];
+  const end2 = anchors[2] ?? header.length;
+  return { budget: mapRange(anchors[0], end1), actual: mapRange(end1, end2) };
 }
+
 
 /** Hittar rubrikraden ovanför en sektion (raden med "Nord Total"-kolumner). */
 function findHeaderAbove(data: any[][], rowIdx: number): BlockCols | null {
