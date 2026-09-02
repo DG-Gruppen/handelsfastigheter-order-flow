@@ -231,7 +231,6 @@ function parseVakansDuration(wb: XLSX.WorkBook, year: number, quarter: number, a
     if (isNaN(d.getTime())) continue;
     if (d.getUTCFullYear() === year && d.getUTCMonth() + 1 === endMonth) { target = data[i]; break; }
   }
-  console.log("vakans parse", { headerIdx, dateCol, durationCols, vakansCols, found: !!target });
   if (!target) return;
 
 
