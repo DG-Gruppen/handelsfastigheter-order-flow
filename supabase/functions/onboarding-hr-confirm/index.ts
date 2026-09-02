@@ -1,6 +1,7 @@
 // Snapshots tasks from the template, resolves assignees, activates the instance
 // and triggers the owner-task-batch email to each unique recipient.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/send-app-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -157,13 +158,10 @@ Deno.serve(async (req) => {
       deepLink: `https://intra.handelsfastigheter.se/boarding/${instanceId}`,
     }
     try {
-      await admin.functions.invoke('send-transactional-email', {
-        body: {
-          templateName: templateKey,
-          recipientEmail: email,
-          idempotencyKey: `${templateKey}-${instanceId}-${email}`,
-          templateData: payload,
-        },
+      await sendAppEmail(templateKey, email, {
+        idempotencyKey: `${templateKey}-${instanceId}-${email}`,
+        templateData: payload,
+        admin,
       })
       sentLog.push({
         instance_id: instanceId,

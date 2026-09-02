@@ -1,5 +1,6 @@
 // Cancels an instance and notifies all assignees with still-open tasks.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendAppEmail } from '../_shared/send-app-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,18 +84,15 @@ Deno.serve(async (req) => {
 
   for (const email of emails) {
     try {
-      await admin.functions.invoke('send-transactional-email', {
-        body: {
-          templateName: templateKey,
-          recipientEmail: email,
-          idempotencyKey: `${templateKey}-${instanceId}-${email}`,
-          templateData: {
+      await sendAppEmail(templateKey, email, {
+        idempotencyKey: `${templateKey}-${instanceId}-${email}`,
+        templateData: {
             instanceId,
             newHireName,
             cancelReason: reason,
             cancelledByName: cancellerProfile?.full_name || 'HR',
           },
-        },
+        admin,
       })
     } catch (e) {
       console.error('cancel-email error', email, e)
