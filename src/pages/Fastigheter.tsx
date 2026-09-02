@@ -14,6 +14,8 @@ import { PropertyDetailsPanel } from "@/components/fastigheter/PropertyDetailsPa
 import { TenantsView } from "@/components/fastigheter/TenantsView";
 import { ContractsView } from "@/components/fastigheter/ContractsView";
 import { ManagerDashboard } from "@/components/fastigheter/ManagerDashboard";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 import { makeMatcher } from "@/lib/search";
 import { tenantsFor } from "@/lib/rentroll";
 
@@ -57,7 +59,9 @@ function FlyTo({ center, zoom }: { center: [number, number] | null; zoom: number
 }
 
 export default function Fastigheter() {
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
+
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [forvFilter, setForvFilter] = useState<string>("all");
   const [teknFilter, setTeknFilter] = useState<string>("all");
