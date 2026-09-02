@@ -923,6 +923,7 @@ export type Database = {
           quarter: number
           region_id: string | null
           region_name: string | null
+          stretch: number | null
           updated_at: string
           year: number
         }
@@ -937,6 +938,7 @@ export type Database = {
           quarter: number
           region_id?: string | null
           region_name?: string | null
+          stretch?: number | null
           updated_at?: string
           year: number
         }
@@ -951,6 +953,7 @@ export type Database = {
           quarter?: number
           region_id?: string | null
           region_name?: string | null
+          stretch?: number | null
           updated_at?: string
           year?: number
         }
@@ -973,6 +976,7 @@ export type Database = {
       }
       kpi_types: {
         Row: {
+          budget_label: string
           created_at: string
           format: string
           higher_is_better: boolean
@@ -984,6 +988,7 @@ export type Database = {
           unit: string
         }
         Insert: {
+          budget_label?: string
           created_at?: string
           format?: string
           higher_is_better?: boolean
@@ -995,6 +1000,7 @@ export type Database = {
           unit?: string
         }
         Update: {
+          budget_label?: string
           created_at?: string
           format?: string
           higher_is_better?: boolean
