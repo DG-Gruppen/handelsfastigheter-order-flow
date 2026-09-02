@@ -105,8 +105,13 @@ export function formatKpiValue(v: number | null | undefined, format: string, uni
     if (unit === "kr" && Math.abs(v) < 10000) {
       return `${v.toFixed(2).replace(".", ",")} ${unit}`;
     }
+    // Mkr-belopp under 1 000 visas med en decimal
+    if (Math.abs(v) < 1000) {
+      return `${v.toFixed(1).replace(".", ",")} ${unit}`;
+    }
     return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
   }
+
   if (format === "count") {
     // Duration uses 1 decimal (e.g. "4,2 år"), other counts are integers
     if (unit === "år") return `${v.toFixed(1).replace(".", ",")} ${unit}`;
