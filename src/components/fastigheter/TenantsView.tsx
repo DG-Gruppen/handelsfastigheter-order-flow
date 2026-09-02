@@ -5,6 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
+import { makeMatcher } from "@/lib/search";
+import propertiesData from "@/data/properties.json";
+
+const kommunByFastighet: Record<string, string> = Object.fromEntries(
+  (propertiesData as { fastighet: string; kommun?: string }[]).map((p) => [p.fastighet, p.kommun || ""])
+);
 
 export function TenantsView() {
   const [q, setQ] = useState("");
@@ -17,20 +23,12 @@ export function TenantsView() {
   );
 
   const rows = useMemo(() => {
-    const s = q.trim().toLowerCase();
+    const match = makeMatcher(q);
     return units.filter((u) => {
       if (typFilter !== "all" && u.typ !== typFilter) return false;
       if (vakOnly === "vak" && !u.vak) return false;
       if (vakOnly === "uth" && u.vak) return false;
-      if (s) {
-        return (
-          (u.hg || "").toLowerCase().includes(s) ||
-          (u.fb || "").toLowerCase().includes(s) ||
-          (u.ort || "").toLowerCase().includes(s) ||
-          (u.vn_butik || "").toLowerCase().includes(s)
-        );
-      }
-      return true;
+      return match([u.hg, u.fb, u.ort, u.vn_butik, u.vn_typ, u.gata, kommunByFastighet[u.fb]]);
     });
   }, [q, typFilter, vakOnly]);
 
@@ -45,7 +43,7 @@ export function TenantsView() {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_200px_200px] gap-2">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Sök hyresgäst, fastighet, ort, kedja..." className="pl-8 h-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Sök hyresgäst, fastighet, ort, kommun, kedja (wildcard: Ica*)" className="pl-8 h-9" />
         </div>
         <Select value={typFilter} onValueChange={setTypFilter}>
           <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Objektstyp" /></SelectTrigger>
