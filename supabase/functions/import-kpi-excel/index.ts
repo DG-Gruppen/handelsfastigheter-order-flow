@@ -280,7 +280,8 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
       const metric = normalize(label);
       if (metric.startsWith("hyresvärde")) put(acc, "hyresintakter", currentRegion, "actual", round2(value));
       else if (metric.startsWith("antal fastigheter")) put(acc, "antal_fastigheter", currentRegion, "actual", round2(value));
-      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value));
+      // Fastighetsvärde anges i mkr i Excel men lagras i mdr
+      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value / 1000));
     }
   }
 }

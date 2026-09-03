@@ -128,6 +128,7 @@ ${content}`;
       {
         source_table: "document_files",
         source_id: id,
+        chunk_index: 0,
         title: name,
         content: indexContent,
         metadata: {
@@ -138,7 +139,7 @@ ${content}`;
         },
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "source_table,source_id" }
+      { onConflict: "source_table,source_id,chunk_index" }
     );
 
     if (upsertErr) {
