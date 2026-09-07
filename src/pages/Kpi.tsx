@@ -306,10 +306,10 @@ export default function Kpi() {
   const hasData = data.size > 0;
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto py-6 space-y-6 max-w-7xl px-3 sm:px-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold font-heading">KPI – utfall mot budget och stretch</h1>
+          <h1 className="text-xl sm:text-2xl font-bold font-heading">KPI – utfall mot budget och stretch</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isYtd
               ? `Ackumulerat hittills i år (Q1–Q${quarter}) ${year}`
@@ -323,8 +323,9 @@ export default function Kpi() {
               {YEAR_OPTIONS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
+          {/* Perioden väljs i en knapplista på mobil och i en rullista på större skärmar */}
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[150px] hidden sm:flex"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[1, 2, 3, 4].map((q) => <SelectItem key={q} value={String(q)}>Q{q}</SelectItem>)}
               <SelectItem value="ytd">YTD (ackumulerat)</SelectItem>
@@ -334,11 +335,32 @@ export default function Kpi() {
         </div>
       </div>
 
+      <div className="sm:hidden -mt-3 flex gap-1.5 overflow-x-auto pb-1">
+        {[
+          ...[1, 2, 3, 4].map((q) => ({ value: String(q), label: `Q${q}` })),
+          { value: "ytd", label: "YTD" },
+        ].map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setPeriod(opt.value)}
+            className={`min-h-[44px] px-4 rounded-md text-sm font-medium border shrink-0 transition-colors ${
+              period === opt.value
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {isYtd && (
         <p className="text-xs text-muted-foreground -mt-3">
           Driftnetto, nettouthyrning och antal kontrakt summeras över kvartalen. Övriga nyckeltal är ögonblicksvärden och visar senaste kvartalet (Q{quarter}).
         </p>
       )}
+
 
       {!isLoading && incompleteNotes.length > 0 && (
         <Card className="glass-card border-destructive/40">
