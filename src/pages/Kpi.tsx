@@ -306,10 +306,10 @@ export default function Kpi() {
   const hasData = data.size > 0;
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto py-6 space-y-6 max-w-7xl px-3 sm:px-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold font-heading">KPI – utfall mot budget och stretch</h1>
+          <h1 className="text-xl sm:text-2xl font-bold font-heading">KPI – utfall mot budget och stretch</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isYtd
               ? `Ackumulerat hittills i år (Q1–Q${quarter}) ${year}`
@@ -323,8 +323,9 @@ export default function Kpi() {
               {YEAR_OPTIONS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
+          {/* Perioden väljs i en knapplista på mobil och i en rullista på större skärmar */}
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[150px] hidden sm:flex"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[1, 2, 3, 4].map((q) => <SelectItem key={q} value={String(q)}>Q{q}</SelectItem>)}
               <SelectItem value="ytd">YTD (ackumulerat)</SelectItem>
@@ -334,11 +335,32 @@ export default function Kpi() {
         </div>
       </div>
 
+      <div className="sm:hidden -mt-3 flex gap-1.5 overflow-x-auto pb-1">
+        {[
+          ...[1, 2, 3, 4].map((q) => ({ value: String(q), label: `Q${q}` })),
+          { value: "ytd", label: "YTD" },
+        ].map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setPeriod(opt.value)}
+            className={`min-h-[44px] px-4 rounded-md text-sm font-medium border shrink-0 transition-colors ${
+              period === opt.value
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {isYtd && (
         <p className="text-xs text-muted-foreground -mt-3">
           Driftnetto, nettouthyrning och antal kontrakt summeras över kvartalen. Övriga nyckeltal är ögonblicksvärden och visar senaste kvartalet (Q{quarter}).
         </p>
       )}
+
 
       {!isLoading && incompleteNotes.length > 0 && (
         <Card className="glass-card border-destructive/40">
@@ -389,7 +411,7 @@ export default function Kpi() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-4">
                   {regionKpiTypes.map((kpi) => {
                     const c = totalCells.get(kpi.id);
                     if (!c) return null;
@@ -407,17 +429,18 @@ export default function Kpi() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">{reg}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-1 md:gap-y-0 md:space-y-3">
                   {regionKpiTypes.map((kpi) => {
                     const c = data.get(reg)?.get(kpi.id);
                     if (!c) return null;
                     return (
-                      <div key={kpi.id} className="border-b border-border/50 last:border-0 pb-3 last:pb-0">
-                        <KpiBlock kpi={kpi} cell={c} />
+                      <div key={kpi.id} className="md:border-b md:border-border/50 md:last:border-0 md:pb-3 md:last:pb-0">
+                        <KpiBlock kpi={kpi} cell={c} compact />
                       </div>
                     );
                   })}
                 </CardContent>
+
               </Card>
             ))}
           </div>
@@ -428,14 +451,14 @@ export default function Kpi() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 gap-3 flex-wrap">
                 <CardTitle className="text-base">Jämförelse per region</CardTitle>
                 <Select value={selectedKpi.slug} onValueChange={setSelectedKpiSlug}>
-                  <SelectTrigger className="w-[260px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[260px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {regionKpiTypes.map((k) => <SelectItem key={k.slug} value={k.slug}>{k.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </CardHeader>
               <CardContent>
-                <div className="w-full h-[400px]">
+                <div className="w-full h-[280px] sm:h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 36, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -496,7 +519,7 @@ export default function Kpi() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Optionsprogram</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                 {footerTypes.map((kpi) => {
                   const c = findCell(data, kpi.id);
                   if (!c) return <div key={kpi.id} className="text-sm text-muted-foreground">{kpi.name}: —</div>;
@@ -528,7 +551,7 @@ function findCell(data: RegionData, kpiTypeId: string): Cell | undefined {
   return undefined;
 }
 
-function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: boolean }) {
+function KpiBlock({ kpi, cell, large, compact }: { kpi: KpiType; cell: Cell; large?: boolean; compact?: boolean }) {
   const budgetLabel = kpi.budget_label ?? "Budget";
   const incomplete = !!cell.incomplete;
   const diffBudget = !incomplete && cell.actual !== null && cell.budget !== null ? cell.actual - cell.budget : null;
@@ -536,34 +559,37 @@ function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: bool
   const positive = diffBudget !== null && (kpi.higher_is_better ? diffBudget >= 0 : diffBudget <= 0);
   const Icon = diffBudget === null || Math.abs(diffBudget) < 0.005 ? Minus : positive ? TrendingUp : TrendingDown;
   const color = diffBudget === null ? "text-muted-foreground" : positive ? "text-accent" : "text-destructive";
+  const missing = (cell.missingQuarters ?? []).map((q) => `Q${q}`).join(", ");
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-1">
+      <div className="flex items-start justify-between gap-1.5 mb-1 flex-wrap">
         <span className="text-xs font-medium text-muted-foreground leading-tight">{kpi.name}</span>
         {diffBudget !== null && (
-          <Badge variant="outline" className={`gap-1 shrink-0 ${color} border-current/30`}>
+          <Badge variant="outline" className={`gap-1 shrink-0 px-1.5 ${color} border-current/30`}>
             <Icon className="h-3 w-3" />
             {formatDiff(diffBudget, kpi)}
           </Badge>
         )}
         {incomplete && (
-          <Badge variant="outline" className="gap-1 shrink-0 text-destructive border-current/30">
+          <Badge variant="outline" className="gap-1 shrink-0 px-1.5 text-destructive border-current/30">
             <AlertTriangle className="h-3 w-3" />
-            Ofullständig
+            <span className={compact ? "sr-only sm:not-sr-only" : ""}>Ofullständig</span>
           </Badge>
         )}
       </div>
-      <div className={`${large ? "text-2xl" : "text-lg"} font-bold ${incomplete ? "text-muted-foreground" : ""}`}>
+      <div className={`${large ? "text-xl sm:text-2xl" : "text-base sm:text-lg"} font-bold ${incomplete ? "text-muted-foreground" : ""}`}>
         {formatKpiValue(cell.actual, kpi.format, kpi.unit)}
       </div>
       <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
         {incomplete && (
           <div className="text-destructive">
-            Saknar {(cell.missingQuarters ?? []).map((q) => `Q${q}`).join(", ")} – siffran är inte jämförbar.
+            {compact ? `Saknar ${missing}` : `Saknar ${missing} – siffran är inte jämförbar.`}
           </div>
         )}
-        {cell.derived && !incomplete && <div>Beräknat som summan av regionerna.</div>}
+        {cell.derived && !incomplete && (
+          <div className={compact ? "hidden md:block" : ""}>Beräknat som summan av regionerna.</div>
+        )}
         {cell.budget !== null && (
           <div>
             {budgetLabel} {formatKpiValue(cell.budget, kpi.format, kpi.unit)}
@@ -582,5 +608,6 @@ function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: bool
       </div>
     </div>
   );
+
 
 }
