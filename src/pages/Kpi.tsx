@@ -105,8 +105,9 @@ export default function Kpi() {
       const total = regions.get(TOTAL_REGION) ?? new Map<string, Cell>();
       for (const type of typeById.values()) {
         if (total.has(type.id)) continue;
-        // Andelar (procent) kan inte summeras – de härleds inte.
-        if (type.format === "percent") continue;
+        // Andelar och snittvärden (procent, duration) kan inte summeras – de härleds inte.
+        if (type.format === "percent" || NON_ADDITIVE_SLUGS.includes(type.slug)) continue;
+
         const acc: Cell = { budget: null, actual: null, stretch: null, derived: true };
         let any = false;
         for (const [reg, cells] of regions) {
