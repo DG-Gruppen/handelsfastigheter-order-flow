@@ -284,13 +284,18 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
     const value = parseNumber(row[colIdx]);
     if (value === null) continue;
 
+    const rowText = labels.map(normalize).join(" ");
     for (const label of labels) {
       const metric = normalize(label);
       if (metric.startsWith("hyresvärde")) put(acc, "hyresintakter", currentRegion, "actual", round2(value));
       else if (metric.startsWith("antal fastigheter")) put(acc, "antal_fastigheter", currentRegion, "actual", round2(value));
-      // Fastighetsvärde anges i mkr i Excel men lagras i mdr
-      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value / 1000));
+      // Fastighetsvärde lagras i mdr. Vissa filer anger mkr, andra mdr – styrs av etikett/enhet.
+      else if (metric.startsWith("fastighetsvärde")) {
+        const inMdr = /\bmdr\b/.test(rowText);
+        put(acc, "fastighetsvarde", currentRegion, "actual", round2(inMdr ? value : value / 1000));
+      }
     }
+
   }
 }
 
