@@ -432,20 +432,21 @@ export default function Kpi() {
           )}
 
           {/* Optionsprogram m.m. */}
-          {footerTypes.length > 0 && totalCells && (
+          {footerTypes.length > 0 && (
             <Card className="glass-card">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Optionsprogram</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {footerTypes.map((kpi) => {
-                  const c = totalCells.get(kpi.id);
+                  const c = findCell(data, kpi.id);
                   if (!c) return <div key={kpi.id} className="text-sm text-muted-foreground">{kpi.name}: —</div>;
                   return <KpiBlock key={kpi.id} kpi={kpi} cell={c} large />;
                 })}
               </CardContent>
             </Card>
           )}
+
         </>
       )}
     </div>
