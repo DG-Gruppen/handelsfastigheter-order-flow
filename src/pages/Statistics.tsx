@@ -36,7 +36,7 @@ const PAGE_NAMES: Record<string, string> = {
   "/admin": "Admin",
   "/it-info": "IT-support",
   "/personal": "Personal",
-  "/dokument": "Policys, riktlinjer och mallar",
+  "/dokument": "Policys, riktlinjer & mallar",
   "/kunskapsbanken": "Kunskapsbanken",
   "/mitt-shf": "Mitt SHF",
   "/planner": "Planner",
