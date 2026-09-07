@@ -458,10 +458,22 @@ function sum(a: number | null, b: number | null): number | null {
   return (a ?? 0) + (b ?? 0);
 }
 
+/** Hittar ett värde för ett nyckeltal oavsett vilken region det ligger på. */
+function findCell(data: RegionData, kpiTypeId: string): Cell | undefined {
+  const total = data.get(TOTAL_REGION)?.get(kpiTypeId);
+  if (total) return total;
+  for (const cells of data.values()) {
+    const c = cells.get(kpiTypeId);
+    if (c) return c;
+  }
+  return undefined;
+}
+
 function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: boolean }) {
   const budgetLabel = kpi.budget_label ?? "Budget";
-  const diffBudget = cell.actual !== null && cell.budget !== null ? cell.actual - cell.budget : null;
-  const diffStretch = cell.actual !== null && cell.stretch !== null ? cell.actual - cell.stretch : null;
+  const incomplete = !!cell.incomplete;
+  const diffBudget = !incomplete && cell.actual !== null && cell.budget !== null ? cell.actual - cell.budget : null;
+  const diffStretch = !incomplete && cell.actual !== null && cell.stretch !== null ? cell.actual - cell.stretch : null;
   const positive = diffBudget !== null && (kpi.higher_is_better ? diffBudget >= 0 : diffBudget <= 0);
   const Icon = diffBudget === null || Math.abs(diffBudget) < 0.005 ? Minus : positive ? TrendingUp : TrendingDown;
   const color = diffBudget === null ? "text-muted-foreground" : positive ? "text-accent" : "text-destructive";
@@ -476,11 +488,23 @@ function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: bool
             {formatDiff(diffBudget, kpi)}
           </Badge>
         )}
+        {incomplete && (
+          <Badge variant="outline" className="gap-1 shrink-0 text-destructive border-current/30">
+            <AlertTriangle className="h-3 w-3" />
+            Ofullständig
+          </Badge>
+        )}
       </div>
-      <div className={large ? "text-2xl font-bold" : "text-lg font-bold"}>
+      <div className={`${large ? "text-2xl" : "text-lg"} font-bold ${incomplete ? "text-muted-foreground" : ""}`}>
         {formatKpiValue(cell.actual, kpi.format, kpi.unit)}
       </div>
       <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+        {incomplete && (
+          <div className="text-destructive">
+            Saknar {(cell.missingQuarters ?? []).map((q) => `Q${q}`).join(", ")} – siffran är inte jämförbar.
+          </div>
+        )}
+        {cell.derived && !incomplete && <div>Beräknat som summan av regionerna.</div>}
         {cell.budget !== null && (
           <div>
             {budgetLabel} {formatKpiValue(cell.budget, kpi.format, kpi.unit)}
@@ -499,4 +523,5 @@ function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: bool
       </div>
     </div>
   );
+
 }
