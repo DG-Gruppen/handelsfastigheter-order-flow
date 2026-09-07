@@ -1,3 +1,4 @@
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FloatingWindow } from "@/components/chat/FloatingWindow";
 
-const Chat = lazy(() => import("@/pages/Chat"));
+const Chat = lazyWithRetry(() => import("@/pages/Chat"));
 
 export default function ChatBubble() {
   const [open, setOpen] = useState(false);

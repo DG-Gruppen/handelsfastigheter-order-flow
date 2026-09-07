@@ -1,27 +1,28 @@
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 import AdminDashboard from "@/components/admin/AdminDashboard";
 
-const CategoriesManager = lazy(() => import("@/components/admin/CategoriesManager"));
-const OrderTypesManager = lazy(() => import("@/components/admin/OrderTypesManager"));
-const SystemsManager = lazy(() => import("@/components/admin/SystemsManager"));
-const KbAdminPanel = lazy(() => import("@/components/kb/KbAdminPanel"));
-const NewsAdminPanel = lazy(() => import("@/components/news/NewsAdminPanel"));
-const ToolsManager = lazy(() => import("@/components/admin/ToolsManager"));
-const UsersContent = lazy(() => import("@/components/admin/UsersContent"));
-const GroupsManager = lazy(() => import("@/components/admin/GroupsManager"));
-const ModulePermissionsManager = lazy(() => import("@/components/admin/ModulePermissionsManager"));
-const SettingsContent = lazy(() => import("@/components/admin/SettingsContent"));
-const ITContent = lazy(() => import("@/components/admin/ITContent"));
-const DatabaseBackup = lazy(() => import("@/components/admin/DatabaseBackup"));
-const WorkwearAdminPanel = lazy(() => import("@/components/workwear/WorkwearAdminPanel"));
-const IntegrationsStatus = lazy(() => import("@/components/admin/IntegrationsStatus"));
-const EmailLogDashboard = lazy(() => import("@/components/admin/EmailLogDashboard"));
-const ExternalPartiesManager = lazy(() => import("@/components/admin/ExternalPartiesManager"));
-const ExternalContactsManager = lazy(() => import("@/components/admin/ExternalContactsManager"));
-const BoardingTemplatesManager = lazy(() => import("@/components/admin/BoardingTemplatesManager"));
+const CategoriesManager = lazyWithRetry(() => import("@/components/admin/CategoriesManager"));
+const OrderTypesManager = lazyWithRetry(() => import("@/components/admin/OrderTypesManager"));
+const SystemsManager = lazyWithRetry(() => import("@/components/admin/SystemsManager"));
+const KbAdminPanel = lazyWithRetry(() => import("@/components/kb/KbAdminPanel"));
+const NewsAdminPanel = lazyWithRetry(() => import("@/components/news/NewsAdminPanel"));
+const ToolsManager = lazyWithRetry(() => import("@/components/admin/ToolsManager"));
+const UsersContent = lazyWithRetry(() => import("@/components/admin/UsersContent"));
+const GroupsManager = lazyWithRetry(() => import("@/components/admin/GroupsManager"));
+const ModulePermissionsManager = lazyWithRetry(() => import("@/components/admin/ModulePermissionsManager"));
+const SettingsContent = lazyWithRetry(() => import("@/components/admin/SettingsContent"));
+const ITContent = lazyWithRetry(() => import("@/components/admin/ITContent"));
+const DatabaseBackup = lazyWithRetry(() => import("@/components/admin/DatabaseBackup"));
+const WorkwearAdminPanel = lazyWithRetry(() => import("@/components/workwear/WorkwearAdminPanel"));
+const IntegrationsStatus = lazyWithRetry(() => import("@/components/admin/IntegrationsStatus"));
+const EmailLogDashboard = lazyWithRetry(() => import("@/components/admin/EmailLogDashboard"));
+const ExternalPartiesManager = lazyWithRetry(() => import("@/components/admin/ExternalPartiesManager"));
+const ExternalContactsManager = lazyWithRetry(() => import("@/components/admin/ExternalContactsManager"));
+const BoardingTemplatesManager = lazyWithRetry(() => import("@/components/admin/BoardingTemplatesManager"));
 import {
   Shield, Users, ChevronLeft,
   Settings, Monitor, Newspaper,
