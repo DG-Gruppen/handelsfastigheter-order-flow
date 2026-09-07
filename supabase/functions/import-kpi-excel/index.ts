@@ -129,30 +129,37 @@ function findRow(data: any[][], test: (label: string) => boolean): number {
   return -1;
 }
 
+/** Alla rader vars etikett (kolumn B) matchar testet, i ordning uppifrån. */
+function findRows(data: any[][], test: (label: string) => boolean): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (test(normalize((data[i] ?? [])[1]))) out.push(i);
+  }
+  return out;
+}
+
 function parseBudgetOchUtfall(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   const data = sheetRows(wb, "Budget och Utfall");
   if (!data) return;
 
-  const sections: { slug: string; budgetTest: (l: string) => boolean; stretchTest: (l: string) => boolean; factor: number }[] = [
-    {
-      slug: "driftnetto",
-      budgetTest: (l) => l.startsWith("budget (driftnetto"),
-      stretchTest: (l) => l.startsWith("stretch (driftnetto"),
-      factor: 1,
-    },
-    {
-      slug: "overskottsgrad",
-      budgetTest: (l) => l.startsWith("budget: överskottsgrad"),
-      stretchTest: (l) => l.startsWith("stretch: överskottsgrad"),
-      factor: 100,
-    },
+  // Fliken har två sektioner i samma ordning: driftnetto (mkr) och överskottsgrad (andel).
+  // Etiketterna varierar mellan kvartalsfilerna, så vi matchar på "budget"/"stretch" och
+  // använder ordningen istället för exakta rubriker.
+  const isBudget = (l: string) => l.startsWith("budget (") || l.startsWith("budget:");
+  const isStretch = (l: string) => l.startsWith("stretch (") || l.startsWith("stretch:");
+  const budgetRows = findRows(data, isBudget);
+  const stretchRows = findRows(data, isStretch);
+
+  const sections: { slug: string; factor: number }[] = [
+    { slug: "driftnetto", factor: 1 },
+    { slug: "overskottsgrad", factor: 100 },
   ];
 
-  for (const s of sections) {
-    const budgetIdx = findRow(data, s.budgetTest);
-    if (budgetIdx === -1) continue;
+  sections.forEach((s, si) => {
+    const budgetIdx = budgetRows[si];
+    if (budgetIdx === undefined) return;
     const cols = findHeaderAbove(data, budgetIdx);
-    if (!cols) continue;
+    if (!cols) return;
 
     const budgetRow = quarterRowAbove(data, budgetIdx, quarter);
     if (budgetRow) {
@@ -164,14 +171,15 @@ function parseBudgetOchUtfall(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
       }
     }
 
-    const stretchIdx = findRow(data, s.stretchTest);
-    const stretchRow = stretchIdx === -1 ? null : quarterRowAbove(data, stretchIdx, quarter);
+    const stretchIdx = stretchRows[si];
+    const stretchRow = stretchIdx === undefined ? null : quarterRowAbove(data, stretchIdx, quarter);
     if (stretchRow) {
       for (const [region, idx] of Object.entries(cols.budget)) {
         put(acc, s.slug, region, "stretch", round2(mul(parseNumber(stretchRow[idx]), s.factor)));
       }
     }
-  }
+  });
+
 
   // Mål för vakansgrad, t.ex. "<2%"
   const vakansIdx = findRow(data, (l) => l.startsWith("mål vakansgrad"));
@@ -276,13 +284,18 @@ function parsePerRegion(wb: XLSX.WorkBook, year: number, quarter: number, acc: A
     const value = parseNumber(row[colIdx]);
     if (value === null) continue;
 
+    const rowText = labels.map(normalize).join(" ");
     for (const label of labels) {
       const metric = normalize(label);
       if (metric.startsWith("hyresvärde")) put(acc, "hyresintakter", currentRegion, "actual", round2(value));
       else if (metric.startsWith("antal fastigheter")) put(acc, "antal_fastigheter", currentRegion, "actual", round2(value));
-      // Fastighetsvärde anges i mkr i Excel men lagras i mdr
-      else if (metric.startsWith("fastighetsvärde")) put(acc, "fastighetsvarde", currentRegion, "actual", round2(value / 1000));
+      // Fastighetsvärde lagras i mdr. Vissa filer anger mkr, andra mdr – styrs av etikett/enhet.
+      else if (metric.startsWith("fastighetsvärde")) {
+        const inMdr = /\bmdr\b/.test(rowText);
+        put(acc, "fastighetsvarde", currentRegion, "actual", round2(inMdr ? value : value / 1000));
+      }
     }
+
   }
 }
 
