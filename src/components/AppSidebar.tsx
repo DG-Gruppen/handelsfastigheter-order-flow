@@ -325,7 +325,12 @@ export default function AppSidebar() {
                           )}
                         >
                           <Icon className="w-[18px] h-[18px] shrink-0" />
-                          {!collapsed && <span className="truncate">{displayName}</span>}
+                          {!collapsed && (
+                            <span className="min-w-0 whitespace-normal break-words leading-tight">
+                              {displayName.replace(/ & /g, " &\u00A0")}
+                            </span>
+                          )}
+
                         </Link>
                       );
                     })}

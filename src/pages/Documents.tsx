@@ -254,7 +254,7 @@ export default function Documents() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-            <FolderOpen className="h-7 w-7 text-primary" /> Policys, riktlinjer och mallar
+            <FolderOpen className="h-7 w-7 text-primary" /> Policys, riktlinjer &amp; mallar
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Hitta och hantera dokument</p>
         </div>

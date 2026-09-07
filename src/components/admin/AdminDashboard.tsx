@@ -218,7 +218,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     { label: "Beställningar", value: stats.ordersTotal, sub: `${stats.ordersPending} väntar · ${stats.orders7d} senaste veckan`, icon: ShoppingCart, color: "text-warning", bg: "bg-warning/10", section: "categories" },
     { label: "Artiklar", value: stats.kbArticles, sub: `${stats.kbArticlesPublished} publicerade`, icon: BookOpen, color: "text-accent", bg: "bg-accent/10", section: "knowledge" },
     { label: "Videor", value: stats.kbVideos, sub: `${stats.kbVideosPublished} publicerade`, icon: Video, color: "text-destructive", bg: "bg-destructive/10", section: "knowledge" },
-    { label: "Policys, riktlinjer och mallar", value: stats.documents, sub: `${stats.folders} mappar`, icon: FileText, color: "text-accent", bg: "bg-accent/10", section: null as string | null },
+    { label: "Policys, riktlinjer & mallar", value: stats.documents, sub: `${stats.folders} mappar`, icon: FileText, color: "text-accent", bg: "bg-accent/10", section: null as string | null },
   ];
 
   const activityCards = [
