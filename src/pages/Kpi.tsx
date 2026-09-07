@@ -429,17 +429,18 @@ export default function Kpi() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">{reg}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-1 md:gap-y-0 md:space-y-3">
                   {regionKpiTypes.map((kpi) => {
                     const c = data.get(reg)?.get(kpi.id);
                     if (!c) return null;
                     return (
-                      <div key={kpi.id} className="border-b border-border/50 last:border-0 pb-3 last:pb-0">
-                        <KpiBlock kpi={kpi} cell={c} />
+                      <div key={kpi.id} className="md:border-b md:border-border/50 md:last:border-0 md:pb-3 md:last:pb-0">
+                        <KpiBlock kpi={kpi} cell={c} compact />
                       </div>
                     );
                   })}
                 </CardContent>
+
               </Card>
             ))}
           </div>
