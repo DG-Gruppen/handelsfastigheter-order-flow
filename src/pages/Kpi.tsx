@@ -190,8 +190,47 @@ export default function Kpi() {
       }
       if (byKpi.size > 0) out.set(reg, byKpi);
     }
+
+    // "Hela bolaget" för YTD: räkna fram summan ur regionernas ackumulerade värden
+    // när koncernraden saknas eller är ofullständig för ett summerbart nyckeltal.
+    const total = out.get(TOTAL_REGION) ?? new Map<string, Cell>();
+    for (const type of typeById.values()) {
+      if (type.format === "percent" || NON_ADDITIVE_SLUGS.includes(type.slug)) continue;
+      const existing = total.get(type.id);
+      if (existing && !existing.incomplete && existing.actual !== null && existing.actual !== undefined) continue;
+
+      const acc: Cell = { budget: null, actual: null, stretch: null, derived: true };
+      const missing = new Set<number>();
+      let any = false;
+      let budgetComplete = true;
+      let stretchComplete = true;
+      for (const [reg, cells] of out) {
+        if (reg === TOTAL_REGION) continue;
+        const c = cells.get(type.id);
+        if (!c || c.actual === null || c.actual === undefined) continue;
+        any = true;
+        for (const q of c.missingQuarters ?? []) missing.add(q);
+        acc.actual = sum(acc.actual, c.actual);
+        if (c.budget === null || c.budget === undefined) budgetComplete = false;
+        else acc.budget = sum(acc.budget, c.budget);
+        if (c.stretch === null || c.stretch === undefined) stretchComplete = false;
+        else acc.stretch = sum(acc.stretch, c.stretch);
+      }
+      if (!any) continue;
+      total.set(type.id, {
+        actual: acc.actual,
+        budget: budgetComplete ? acc.budget : null,
+        stretch: stretchComplete ? acc.stretch : null,
+        derived: true,
+        incomplete: missing.size > 0,
+        missingQuarters: Array.from(missing).sort((a, b) => a - b),
+      });
+    }
+    if (total.size > 0) out.set(TOTAL_REGION, total);
+
     return out;
   }, [byQuarter, typeById, isYtd, quarter]);
+
 
   const regions = useMemo(
     () => Array.from(data.keys()).filter((r) => r !== TOTAL_REGION).sort(sortRegions),
