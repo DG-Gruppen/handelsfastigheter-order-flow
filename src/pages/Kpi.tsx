@@ -281,6 +281,28 @@ export default function Kpi() {
         </p>
       )}
 
+      {!isLoading && incompleteNotes.length > 0 && (
+        <Card className="glass-card border-destructive/40">
+          <CardContent className="p-4 flex gap-3 items-start">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">Ofullständigt underlag</p>
+              <ul className="text-muted-foreground mt-1 space-y-0.5">
+                {incompleteNotes.map((n) => (
+                  <li key={n.name}>
+                    {n.name} – siffror saknas för {n.quarters.map((q) => `Q${q}`).join(", ")}.
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground mt-1">
+                Berörda värden är markerade och räknas inte som avvikelse mot budget eller stretch.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
       {isLoading && (
         <div className="flex items-center justify-center h-64">
           <Activity className="h-8 w-8 text-muted-foreground/30 animate-pulse" />
