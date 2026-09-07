@@ -144,20 +144,35 @@ export default function Kpi() {
           const missing: number[] = [];
           let any = false;
           let derived = false;
+          let budgetComplete = true;
+          let stretchComplete = true;
           for (const q of quarters) {
             const c = byQuarter.get(q)?.get(reg)?.get(type.id);
             if (!c || c.actual === null || c.actual === undefined) {
               missing.push(q);
+              budgetComplete = false;
+              stretchComplete = false;
               continue;
             }
             any = true;
             derived = derived || !!c.derived;
             acc.actual = sum(acc.actual, c.actual);
-            acc.budget = sum(acc.budget, c.budget);
-            acc.stretch = sum(acc.stretch, c.stretch);
+            if (c.budget === null || c.budget === undefined) budgetComplete = false;
+            else acc.budget = sum(acc.budget, c.budget);
+            if (c.stretch === null || c.stretch === undefined) stretchComplete = false;
+            else acc.stretch = sum(acc.stretch, c.stretch);
           }
           if (!any) continue;
-          byKpi.set(type.id, { ...acc, derived, incomplete: missing.length > 0, missingQuarters: missing });
+          byKpi.set(type.id, {
+            actual: acc.actual,
+            // Delvis budget/stretch jämförs inte mot ett helt utfall.
+            budget: budgetComplete ? acc.budget : null,
+            stretch: stretchComplete ? acc.stretch : null,
+            derived,
+            incomplete: missing.length > 0,
+            missingQuarters: missing,
+          });
+
         } else {
           // Ögonblicksvärde: senaste kvartalet som faktiskt har ett utfall.
           for (let i = quarters.length - 1; i >= 0; i--) {
