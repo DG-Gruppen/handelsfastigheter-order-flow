@@ -24,6 +24,10 @@ const REGION_ORDER = [TOTAL_REGION, "Region Nord", "Region Mitt", "Region Syd", 
 /** KPI:er som visas separat längst ned (inte per region) */
 const FOOTER_SLUGS = ["optioner"];
 
+/** Nyckeltal som inte får summeras ihop till "Hela bolaget" (snitt-/genomsnittsvärden). */
+const NON_ADDITIVE_SLUGS = ["duration"];
+
+
 interface Cell {
   budget: number | null;
   actual: number | null;
