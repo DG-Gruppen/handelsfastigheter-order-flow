@@ -88,43 +88,90 @@ export default function Kpi() {
   const isYtd = period === "ytd";
   const quarter = isYtd ? (quartersWithData[quartersWithData.length - 1] ?? 1) : parseInt(period);
 
-  /** Aggregerar rader till region -> kpi -> värde för vald period. */
-  const data: RegionData = useMemo(() => {
-    const out: RegionData = new Map();
-    const relevant = yearRows.filter((r) => (isYtd ? r.quarter <= quarter : r.quarter === quarter));
-
-    for (const r of relevant) {
+  /** kvartal -> region -> kpi -> värde. "Hela bolaget" härleds ur regionerna om raden saknas. */
+  const byQuarter = useMemo(() => {
+    const out = new Map<number, RegionData>();
+    for (const r of yearRows) {
       const type = typeById.get(r.kpi_type_id);
       if (!type) continue;
+      if (!out.has(r.quarter)) out.set(r.quarter, new Map());
+      const regions = out.get(r.quarter)!;
       const reg = regionKey(r);
-      if (!out.has(reg)) out.set(reg, new Map());
-      const byKpi = out.get(reg)!;
-      const isFlow = FLOW_KPI_SLUGS.includes(type.slug);
-      const existing = byKpi.get(r.kpi_type_id);
+      if (!regions.has(reg)) regions.set(reg, new Map());
+      regions.get(reg)!.set(r.kpi_type_id, { budget: r.budget, actual: r.actual, stretch: r.stretch });
+    }
 
-      if (!existing) {
-        byKpi.set(r.kpi_type_id, { budget: r.budget, actual: r.actual, stretch: r.stretch });
-        continue;
+    for (const regions of out.values()) {
+      const total = regions.get(TOTAL_REGION) ?? new Map<string, Cell>();
+      for (const type of typeById.values()) {
+        if (total.has(type.id)) continue;
+        // Andelar (procent) kan inte summeras – de härleds inte.
+        if (type.format === "percent") continue;
+        const acc: Cell = { budget: null, actual: null, stretch: null, derived: true };
+        let any = false;
+        for (const [reg, cells] of regions) {
+          if (reg === TOTAL_REGION) continue;
+          const c = cells.get(type.id);
+          if (!c) continue;
+          any = true;
+          acc.budget = sum(acc.budget, c.budget);
+          acc.actual = sum(acc.actual, c.actual);
+          acc.stretch = sum(acc.stretch, c.stretch);
+        }
+        if (any) total.set(type.id, acc);
       }
-      if (!isYtd) continue;
-
-      if (isFlow) {
-        byKpi.set(r.kpi_type_id, {
-          budget: sum(existing.budget, r.budget),
-          actual: sum(existing.actual, r.actual),
-          stretch: sum(existing.stretch, r.stretch),
-        });
-      } else {
-        // Ögonblicksvärde: senaste kvartalet vinner (raderna kommer sorterade)
-        byKpi.set(r.kpi_type_id, {
-          budget: r.budget ?? existing.budget,
-          actual: r.actual ?? existing.actual,
-          stretch: r.stretch ?? existing.stretch,
-        });
-      }
+      if (total.size > 0) regions.set(TOTAL_REGION, total);
     }
     return out;
-  }, [yearRows, typeById, isYtd, quarter]);
+  }, [yearRows, typeById]);
+
+  /** Aggregerar till region -> kpi -> värde för vald period. */
+  const data: RegionData = useMemo(() => {
+    if (!isYtd) return byQuarter.get(quarter) ?? new Map();
+
+    const quarters = Array.from({ length: quarter }, (_, i) => i + 1);
+    const allRegions = new Set<string>();
+    for (const q of quarters) for (const reg of byQuarter.get(q)?.keys() ?? []) allRegions.add(reg);
+
+    const out: RegionData = new Map();
+    for (const reg of allRegions) {
+      const byKpi = new Map<string, Cell>();
+      for (const type of typeById.values()) {
+        if (FLOW_KPI_SLUGS.includes(type.slug)) {
+          // Flöden summeras – och saknade kvartal markeras istället för att döljas.
+          const acc: Cell = { budget: null, actual: null, stretch: null };
+          const missing: number[] = [];
+          let any = false;
+          let derived = false;
+          for (const q of quarters) {
+            const c = byQuarter.get(q)?.get(reg)?.get(type.id);
+            if (!c || c.actual === null || c.actual === undefined) {
+              missing.push(q);
+              continue;
+            }
+            any = true;
+            derived = derived || !!c.derived;
+            acc.actual = sum(acc.actual, c.actual);
+            acc.budget = sum(acc.budget, c.budget);
+            acc.stretch = sum(acc.stretch, c.stretch);
+          }
+          if (!any) continue;
+          byKpi.set(type.id, { ...acc, derived, incomplete: missing.length > 0, missingQuarters: missing });
+        } else {
+          // Ögonblicksvärde: senaste kvartalet som faktiskt har ett utfall.
+          for (let i = quarters.length - 1; i >= 0; i--) {
+            const c = byQuarter.get(quarters[i])?.get(reg)?.get(type.id);
+            if (c && c.actual !== null && c.actual !== undefined) {
+              byKpi.set(type.id, quarters[i] === quarter ? c : { ...c, incomplete: true, missingQuarters: [quarter] });
+              break;
+            }
+          }
+        }
+      }
+      if (byKpi.size > 0) out.set(reg, byKpi);
+    }
+    return out;
+  }, [byQuarter, typeById, isYtd, quarter]);
 
   const regions = useMemo(
     () => Array.from(data.keys()).filter((r) => r !== TOTAL_REGION).sort(sortRegions),
@@ -136,19 +183,41 @@ export default function Kpi() {
     if (!selectedKpi) return [];
     return [...regions, ...(totalCells ? [TOTAL_REGION] : [])].map((reg) => {
       const c = data.get(reg)?.get(selectedKpi.id);
+      const usable = c && !c.incomplete ? c : undefined;
       return {
         region: reg.replace("Region ", "").replace("Afu + Elimineringar", "Afu + elim."),
-        Utfall: c?.actual ?? null,
-        Budget: c?.budget ?? null,
-        Stretch: c?.stretch ?? null,
-        variance: c?.actual !== null && c?.actual !== undefined && c?.budget !== null && c?.budget !== undefined
-          ? c.actual - c.budget
-          : null,
+        Utfall: usable?.actual ?? null,
+        Budget: usable?.budget ?? null,
+        Stretch: usable?.stretch ?? null,
+        variance:
+          usable && usable.actual !== null && usable.budget !== null ? usable.actual - usable.budget : null,
       };
     });
   }, [regions, totalCells, data, selectedKpi]);
 
+  const chartHasStretch = chartData.some((d) => d.Stretch !== null && d.Stretch !== undefined);
+
+  /** Nyckeltal som saknar kvartal i den valda perioden – visas som varning. */
+  const incompleteNotes = useMemo(() => {
+    const notes = new Map<string, Set<number>>();
+    for (const cells of data.values()) {
+      for (const [typeId, c] of cells) {
+        if (!c.incomplete) continue;
+        const name = typeById.get(typeId)?.name;
+        if (!name) continue;
+        if (!notes.has(name)) notes.set(name, new Set());
+        for (const q of c.missingQuarters ?? []) notes.get(name)!.add(q);
+      }
+    }
+    return Array.from(notes.entries()).map(([name, qs]) => ({
+      name,
+      quarters: Array.from(qs).sort((a, b) => a - b),
+    }));
+  }, [data, typeById]);
+
   const footerTypes = kpiTypes.filter((t) => FOOTER_SLUGS.includes(t.slug));
+
+
 
   if (permissionLoading) {
     return (
