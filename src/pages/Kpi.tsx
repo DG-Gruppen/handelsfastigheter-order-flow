@@ -451,14 +451,14 @@ export default function Kpi() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 gap-3 flex-wrap">
                 <CardTitle className="text-base">Jämförelse per region</CardTitle>
                 <Select value={selectedKpi.slug} onValueChange={setSelectedKpiSlug}>
-                  <SelectTrigger className="w-[260px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[260px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {regionKpiTypes.map((k) => <SelectItem key={k.slug} value={k.slug}>{k.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </CardHeader>
               <CardContent>
-                <div className="w-full h-[400px]">
+                <div className="w-full h-[280px] sm:h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 36, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -519,7 +519,7 @@ export default function Kpi() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Optionsprogram</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                 {footerTypes.map((kpi) => {
                   const c = findCell(data, kpi.id);
                   if (!c) return <div key={kpi.id} className="text-sm text-muted-foreground">{kpi.name}: —</div>;
