@@ -28,9 +28,15 @@ interface Cell {
   budget: number | null;
   actual: number | null;
   stretch: number | null;
+  /** Sant när ett ackumulerat värde saknar ett eller flera kvartal. */
+  incomplete?: boolean;
+  missingQuarters?: number[];
+  /** Sant när "Hela bolaget" räknats fram som summan av regionerna. */
+  derived?: boolean;
 }
 
 type RegionData = Map<string, Map<string, Cell>>; // region -> kpiTypeId -> Cell
+
 
 function regionKey(r: KpiRow): string {
   return r.region_name ?? "Okänd";
