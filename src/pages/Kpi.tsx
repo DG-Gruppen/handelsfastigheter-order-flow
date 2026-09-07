@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Activity, AlertTriangle } from "lucide-react";
 import {
   useKpiYearData,
   useKpiTypes,
@@ -24,13 +24,23 @@ const REGION_ORDER = [TOTAL_REGION, "Region Nord", "Region Mitt", "Region Syd", 
 /** KPI:er som visas separat längst ned (inte per region) */
 const FOOTER_SLUGS = ["optioner"];
 
+/** Nyckeltal som inte får summeras ihop till "Hela bolaget" (snitt-/genomsnittsvärden). */
+const NON_ADDITIVE_SLUGS = ["duration"];
+
+
 interface Cell {
   budget: number | null;
   actual: number | null;
   stretch: number | null;
+  /** Sant när ett ackumulerat värde saknar ett eller flera kvartal. */
+  incomplete?: boolean;
+  missingQuarters?: number[];
+  /** Sant när "Hela bolaget" räknats fram som summan av regionerna. */
+  derived?: boolean;
 }
 
 type RegionData = Map<string, Map<string, Cell>>; // region -> kpiTypeId -> Cell
+
 
 function regionKey(r: KpiRow): string {
   return r.region_name ?? "Okänd";
@@ -82,43 +92,106 @@ export default function Kpi() {
   const isYtd = period === "ytd";
   const quarter = isYtd ? (quartersWithData[quartersWithData.length - 1] ?? 1) : parseInt(period);
 
-  /** Aggregerar rader till region -> kpi -> värde för vald period. */
-  const data: RegionData = useMemo(() => {
-    const out: RegionData = new Map();
-    const relevant = yearRows.filter((r) => (isYtd ? r.quarter <= quarter : r.quarter === quarter));
-
-    for (const r of relevant) {
+  /** kvartal -> region -> kpi -> värde. "Hela bolaget" härleds ur regionerna om raden saknas. */
+  const byQuarter = useMemo(() => {
+    const out = new Map<number, RegionData>();
+    for (const r of yearRows) {
       const type = typeById.get(r.kpi_type_id);
       if (!type) continue;
+      if (!out.has(r.quarter)) out.set(r.quarter, new Map());
+      const regions = out.get(r.quarter)!;
       const reg = regionKey(r);
-      if (!out.has(reg)) out.set(reg, new Map());
-      const byKpi = out.get(reg)!;
-      const isFlow = FLOW_KPI_SLUGS.includes(type.slug);
-      const existing = byKpi.get(r.kpi_type_id);
+      if (!regions.has(reg)) regions.set(reg, new Map());
+      regions.get(reg)!.set(r.kpi_type_id, { budget: r.budget, actual: r.actual, stretch: r.stretch });
+    }
 
-      if (!existing) {
-        byKpi.set(r.kpi_type_id, { budget: r.budget, actual: r.actual, stretch: r.stretch });
-        continue;
-      }
-      if (!isYtd) continue;
+    for (const regions of out.values()) {
+      const total = regions.get(TOTAL_REGION) ?? new Map<string, Cell>();
+      for (const type of typeById.values()) {
+        if (total.has(type.id)) continue;
+        // Andelar och snittvärden (procent, duration) kan inte summeras – de härleds inte.
+        if (type.format === "percent" || NON_ADDITIVE_SLUGS.includes(type.slug)) continue;
 
-      if (isFlow) {
-        byKpi.set(r.kpi_type_id, {
-          budget: sum(existing.budget, r.budget),
-          actual: sum(existing.actual, r.actual),
-          stretch: sum(existing.stretch, r.stretch),
-        });
-      } else {
-        // Ögonblicksvärde: senaste kvartalet vinner (raderna kommer sorterade)
-        byKpi.set(r.kpi_type_id, {
-          budget: r.budget ?? existing.budget,
-          actual: r.actual ?? existing.actual,
-          stretch: r.stretch ?? existing.stretch,
-        });
+        const acc: Cell = { budget: null, actual: null, stretch: null, derived: true };
+        let any = false;
+        for (const [reg, cells] of regions) {
+          if (reg === TOTAL_REGION) continue;
+          const c = cells.get(type.id);
+          if (!c) continue;
+          any = true;
+          acc.budget = sum(acc.budget, c.budget);
+          acc.actual = sum(acc.actual, c.actual);
+          acc.stretch = sum(acc.stretch, c.stretch);
+        }
+        if (any) total.set(type.id, acc);
       }
+      if (total.size > 0) regions.set(TOTAL_REGION, total);
     }
     return out;
-  }, [yearRows, typeById, isYtd, quarter]);
+  }, [yearRows, typeById]);
+
+  /** Aggregerar till region -> kpi -> värde för vald period. */
+  const data: RegionData = useMemo(() => {
+    if (!isYtd) return byQuarter.get(quarter) ?? new Map();
+
+    const quarters = Array.from({ length: quarter }, (_, i) => i + 1);
+    const allRegions = new Set<string>();
+    for (const q of quarters) for (const reg of byQuarter.get(q)?.keys() ?? []) allRegions.add(reg);
+
+    const out: RegionData = new Map();
+    for (const reg of allRegions) {
+      const byKpi = new Map<string, Cell>();
+      for (const type of typeById.values()) {
+        if (FLOW_KPI_SLUGS.includes(type.slug)) {
+          // Flöden summeras – och saknade kvartal markeras istället för att döljas.
+          const acc: Cell = { budget: null, actual: null, stretch: null };
+          const missing: number[] = [];
+          let any = false;
+          let derived = false;
+          let budgetComplete = true;
+          let stretchComplete = true;
+          for (const q of quarters) {
+            const c = byQuarter.get(q)?.get(reg)?.get(type.id);
+            if (!c || c.actual === null || c.actual === undefined) {
+              missing.push(q);
+              budgetComplete = false;
+              stretchComplete = false;
+              continue;
+            }
+            any = true;
+            derived = derived || !!c.derived;
+            acc.actual = sum(acc.actual, c.actual);
+            if (c.budget === null || c.budget === undefined) budgetComplete = false;
+            else acc.budget = sum(acc.budget, c.budget);
+            if (c.stretch === null || c.stretch === undefined) stretchComplete = false;
+            else acc.stretch = sum(acc.stretch, c.stretch);
+          }
+          if (!any) continue;
+          byKpi.set(type.id, {
+            actual: acc.actual,
+            // Delvis budget/stretch jämförs inte mot ett helt utfall.
+            budget: budgetComplete ? acc.budget : null,
+            stretch: stretchComplete ? acc.stretch : null,
+            derived,
+            incomplete: missing.length > 0,
+            missingQuarters: missing,
+          });
+
+        } else {
+          // Ögonblicksvärde: senaste kvartalet som faktiskt har ett utfall.
+          for (let i = quarters.length - 1; i >= 0; i--) {
+            const c = byQuarter.get(quarters[i])?.get(reg)?.get(type.id);
+            if (c && c.actual !== null && c.actual !== undefined) {
+              byKpi.set(type.id, quarters[i] === quarter ? c : { ...c, incomplete: true, missingQuarters: [quarter] });
+              break;
+            }
+          }
+        }
+      }
+      if (byKpi.size > 0) out.set(reg, byKpi);
+    }
+    return out;
+  }, [byQuarter, typeById, isYtd, quarter]);
 
   const regions = useMemo(
     () => Array.from(data.keys()).filter((r) => r !== TOTAL_REGION).sort(sortRegions),
@@ -130,19 +203,41 @@ export default function Kpi() {
     if (!selectedKpi) return [];
     return [...regions, ...(totalCells ? [TOTAL_REGION] : [])].map((reg) => {
       const c = data.get(reg)?.get(selectedKpi.id);
+      const usable = c && !c.incomplete ? c : undefined;
       return {
         region: reg.replace("Region ", "").replace("Afu + Elimineringar", "Afu + elim."),
-        Utfall: c?.actual ?? null,
-        Budget: c?.budget ?? null,
-        Stretch: c?.stretch ?? null,
-        variance: c?.actual !== null && c?.actual !== undefined && c?.budget !== null && c?.budget !== undefined
-          ? c.actual - c.budget
-          : null,
+        Utfall: usable?.actual ?? null,
+        Budget: usable?.budget ?? null,
+        Stretch: usable?.stretch ?? null,
+        variance:
+          usable && usable.actual !== null && usable.budget !== null ? usable.actual - usable.budget : null,
       };
     });
   }, [regions, totalCells, data, selectedKpi]);
 
+  const chartHasStretch = chartData.some((d) => d.Stretch !== null && d.Stretch !== undefined);
+
+  /** Nyckeltal som saknar kvartal i den valda perioden – visas som varning. */
+  const incompleteNotes = useMemo(() => {
+    const notes = new Map<string, Set<number>>();
+    for (const cells of data.values()) {
+      for (const [typeId, c] of cells) {
+        if (!c.incomplete) continue;
+        const name = typeById.get(typeId)?.name;
+        if (!name) continue;
+        if (!notes.has(name)) notes.set(name, new Set());
+        for (const q of c.missingQuarters ?? []) notes.get(name)!.add(q);
+      }
+    }
+    return Array.from(notes.entries()).map(([name, qs]) => ({
+      name,
+      quarters: Array.from(qs).sort((a, b) => a - b),
+    }));
+  }, [data, typeById]);
+
   const footerTypes = kpiTypes.filter((t) => FOOTER_SLUGS.includes(t.slug));
+
+
 
   if (permissionLoading) {
     return (
@@ -205,6 +300,28 @@ export default function Kpi() {
           Driftnetto, nettouthyrning och antal kontrakt summeras över kvartalen. Övriga nyckeltal är ögonblicksvärden och visar senaste kvartalet (Q{quarter}).
         </p>
       )}
+
+      {!isLoading && incompleteNotes.length > 0 && (
+        <Card className="glass-card border-destructive/40">
+          <CardContent className="p-4 flex gap-3 items-start">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">Ofullständigt underlag</p>
+              <ul className="text-muted-foreground mt-1 space-y-0.5">
+                {incompleteNotes.map((n) => (
+                  <li key={n.name}>
+                    {n.name} – siffror saknas för {n.quarters.map((q) => `Q${q}`).join(", ")}.
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground mt-1">
+                Berörda värden är markerade och räknas inte som avvikelse mot budget eller stretch.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       {isLoading && (
         <div className="flex items-center justify-center h-64">
@@ -318,9 +435,12 @@ export default function Kpi() {
                       <Bar dataKey="Budget" name={selectedKpi.budget_label ?? "Budget"} fill="hsl(var(--muted-foreground) / 0.5)" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="Budget" position="top" fontSize={11} formatter={(v: any) => num(v)} />
                       </Bar>
-                      <Bar dataKey="Stretch" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="Stretch" position="top" fontSize={11} formatter={(v: any) => num(v)} />
-                      </Bar>
+                      {chartHasStretch && (
+                        <Bar dataKey="Stretch" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="Stretch" position="top" fontSize={11} formatter={(v: any) => num(v)} />
+                        </Bar>
+                      )}
+
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -332,20 +452,21 @@ export default function Kpi() {
           )}
 
           {/* Optionsprogram m.m. */}
-          {footerTypes.length > 0 && totalCells && (
+          {footerTypes.length > 0 && (
             <Card className="glass-card">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Optionsprogram</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {footerTypes.map((kpi) => {
-                  const c = totalCells.get(kpi.id);
+                  const c = findCell(data, kpi.id);
                   if (!c) return <div key={kpi.id} className="text-sm text-muted-foreground">{kpi.name}: —</div>;
                   return <KpiBlock key={kpi.id} kpi={kpi} cell={c} large />;
                 })}
               </CardContent>
             </Card>
           )}
+
         </>
       )}
     </div>
@@ -357,10 +478,22 @@ function sum(a: number | null, b: number | null): number | null {
   return (a ?? 0) + (b ?? 0);
 }
 
+/** Hittar ett värde för ett nyckeltal oavsett vilken region det ligger på. */
+function findCell(data: RegionData, kpiTypeId: string): Cell | undefined {
+  const total = data.get(TOTAL_REGION)?.get(kpiTypeId);
+  if (total) return total;
+  for (const cells of data.values()) {
+    const c = cells.get(kpiTypeId);
+    if (c) return c;
+  }
+  return undefined;
+}
+
 function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: boolean }) {
   const budgetLabel = kpi.budget_label ?? "Budget";
-  const diffBudget = cell.actual !== null && cell.budget !== null ? cell.actual - cell.budget : null;
-  const diffStretch = cell.actual !== null && cell.stretch !== null ? cell.actual - cell.stretch : null;
+  const incomplete = !!cell.incomplete;
+  const diffBudget = !incomplete && cell.actual !== null && cell.budget !== null ? cell.actual - cell.budget : null;
+  const diffStretch = !incomplete && cell.actual !== null && cell.stretch !== null ? cell.actual - cell.stretch : null;
   const positive = diffBudget !== null && (kpi.higher_is_better ? diffBudget >= 0 : diffBudget <= 0);
   const Icon = diffBudget === null || Math.abs(diffBudget) < 0.005 ? Minus : positive ? TrendingUp : TrendingDown;
   const color = diffBudget === null ? "text-muted-foreground" : positive ? "text-accent" : "text-destructive";
@@ -375,11 +508,23 @@ function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: bool
             {formatDiff(diffBudget, kpi)}
           </Badge>
         )}
+        {incomplete && (
+          <Badge variant="outline" className="gap-1 shrink-0 text-destructive border-current/30">
+            <AlertTriangle className="h-3 w-3" />
+            Ofullständig
+          </Badge>
+        )}
       </div>
-      <div className={large ? "text-2xl font-bold" : "text-lg font-bold"}>
+      <div className={`${large ? "text-2xl" : "text-lg"} font-bold ${incomplete ? "text-muted-foreground" : ""}`}>
         {formatKpiValue(cell.actual, kpi.format, kpi.unit)}
       </div>
       <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+        {incomplete && (
+          <div className="text-destructive">
+            Saknar {(cell.missingQuarters ?? []).map((q) => `Q${q}`).join(", ")} – siffran är inte jämförbar.
+          </div>
+        )}
+        {cell.derived && !incomplete && <div>Beräknat som summan av regionerna.</div>}
         {cell.budget !== null && (
           <div>
             {budgetLabel} {formatKpiValue(cell.budget, kpi.format, kpi.unit)}
@@ -398,4 +543,5 @@ function KpiBlock({ kpi, cell, large }: { kpi: KpiType; cell: Cell; large?: bool
       </div>
     </div>
   );
+
 }
