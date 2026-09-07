@@ -1,3 +1,4 @@
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,44 +13,44 @@ import LayoutRoute from "./components/LayoutRoute";
 import { lazy, Suspense } from "react";
 
 // Lazy-loaded pages
-const Login = lazy(() => import("./pages/Login"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const NewOrder = lazy(() => import("./pages/NewOrder"));
-const Admin = lazy(() => import("./pages/Admin"));
-const OrgTree = lazy(() => import("./pages/OrgTree"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
-const OnboardingPlan = lazy(() => import("./pages/OnboardingPlan"));
-const OffboardingPlan = lazy(() => import("./pages/OffboardingPlan"));
-const BoardingPlan = lazy(() => import("./pages/BoardingPlan"));
-const Boarding = lazy(() => import("./pages/Boarding"));
-const BoardingNew = lazy(() => import("./pages/BoardingNew"));
-const BoardingDetail = lazy(() => import("./pages/BoardingDetail"));
-const ITInfo = lazy(() => import("./pages/ITInfo"));
-const OrderDetail = lazy(() => import("./pages/OrderDetail"));
-const History = lazy(() => import("./pages/History"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Personnel = lazy(() => import("./pages/Personnel"));
-const Documents = lazy(() => import("./pages/Documents"));
-const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
-const MySHF = lazy(() => import("./pages/MySHF"));
-const Planner = lazy(() => import("./pages/Planner"));
-const Tools = lazy(() => import("./pages/Tools"));
-const Passwords = lazy(() => import("./pages/Passwords"));
-const Culture = lazy(() => import("./pages/Culture"));
-const News = lazy(() => import("./pages/News"));
-const Workwear = lazy(() => import("./pages/Workwear"));
-const Statistics = lazy(() => import("./pages/Statistics"));
-const Kpi = lazy(() => import("./pages/Kpi"));
-const Prompts = lazy(() => import("./pages/Prompts"));
+const Login = lazyWithRetry(() => import("./pages/Login"));
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
+const NewOrder = lazyWithRetry(() => import("./pages/NewOrder"));
+const Admin = lazyWithRetry(() => import("./pages/Admin"));
+const OrgTree = lazyWithRetry(() => import("./pages/OrgTree"));
+const Onboarding = lazyWithRetry(() => import("./pages/Onboarding"));
+const OnboardingPlan = lazyWithRetry(() => import("./pages/OnboardingPlan"));
+const OffboardingPlan = lazyWithRetry(() => import("./pages/OffboardingPlan"));
+const BoardingPlan = lazyWithRetry(() => import("./pages/BoardingPlan"));
+const Boarding = lazyWithRetry(() => import("./pages/Boarding"));
+const BoardingNew = lazyWithRetry(() => import("./pages/BoardingNew"));
+const BoardingDetail = lazyWithRetry(() => import("./pages/BoardingDetail"));
+const ITInfo = lazyWithRetry(() => import("./pages/ITInfo"));
+const OrderDetail = lazyWithRetry(() => import("./pages/OrderDetail"));
+const History = lazyWithRetry(() => import("./pages/History"));
+const Profile = lazyWithRetry(() => import("./pages/Profile"));
+const Personnel = lazyWithRetry(() => import("./pages/Personnel"));
+const Documents = lazyWithRetry(() => import("./pages/Documents"));
+const KnowledgeBase = lazyWithRetry(() => import("./pages/KnowledgeBase"));
+const MySHF = lazyWithRetry(() => import("./pages/MySHF"));
+const Planner = lazyWithRetry(() => import("./pages/Planner"));
+const Tools = lazyWithRetry(() => import("./pages/Tools"));
+const Passwords = lazyWithRetry(() => import("./pages/Passwords"));
+const Culture = lazyWithRetry(() => import("./pages/Culture"));
+const News = lazyWithRetry(() => import("./pages/News"));
+const Workwear = lazyWithRetry(() => import("./pages/Workwear"));
+const Statistics = lazyWithRetry(() => import("./pages/Statistics"));
+const Kpi = lazyWithRetry(() => import("./pages/Kpi"));
+const Prompts = lazyWithRetry(() => import("./pages/Prompts"));
 
-const LccCalculator = lazy(() => import("./pages/LccCalculator"));
-const ExternalDashboard = lazy(() => import("./pages/ExternalDashboard"));
-const Fastigheter = lazy(() => import("./pages/Fastigheter"));
+const LccCalculator = lazyWithRetry(() => import("./pages/LccCalculator"));
+const ExternalDashboard = lazyWithRetry(() => import("./pages/ExternalDashboard"));
+const Fastigheter = lazyWithRetry(() => import("./pages/Fastigheter"));
 
-const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
-const ExternalLogin = lazy(() => import("./pages/ExternalLogin"));
-const ExternalInvite = lazy(() => import("./pages/ExternalInvite"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
+const ExternalLogin = lazyWithRetry(() => import("./pages/ExternalLogin"));
+const ExternalInvite = lazyWithRetry(() => import("./pages/ExternalInvite"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
