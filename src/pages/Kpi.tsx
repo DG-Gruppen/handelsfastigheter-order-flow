@@ -415,9 +415,12 @@ export default function Kpi() {
                       <Bar dataKey="Budget" name={selectedKpi.budget_label ?? "Budget"} fill="hsl(var(--muted-foreground) / 0.5)" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="Budget" position="top" fontSize={11} formatter={(v: any) => num(v)} />
                       </Bar>
-                      <Bar dataKey="Stretch" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="Stretch" position="top" fontSize={11} formatter={(v: any) => num(v)} />
-                      </Bar>
+                      {chartHasStretch && (
+                        <Bar dataKey="Stretch" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="Stretch" position="top" fontSize={11} formatter={(v: any) => num(v)} />
+                        </Bar>
+                      )}
+
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
