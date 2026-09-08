@@ -34,12 +34,13 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
   const handleUpload = async () => {
     if (!file) { toast.error("Välj en .xlsx-fil"); return; }
     setBusy(true);
+    setWarnings([]);
     try {
       const safeName = file.name
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `${year}-Q${quarter}/${Date.now()}-${safeName}`;
+      const path = `${year}-Q${quarter}/${Date.now()-${safeName}`;
       const { error: upErr } = await supabase.storage.from("kpi-uploads").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
 
@@ -49,11 +50,17 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
 
+      const returnedWarnings: ValidationIssue[] = (data as any)?.warnings ?? [];
       toast.success(`Importerade ${(data as any).inserted} rader för Q${quarter} ${year}`);
       qc.invalidateQueries({ queryKey: ["kpi-data"] });
       qc.invalidateQueries({ queryKey: ["kpi-periods"] });
-      setOpen(false);
-      setFile(null);
+
+      if (returnedWarnings.length > 0) {
+        setWarnings(returnedWarnings);
+      } else {
+        setOpen(false);
+        setFile(null);
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Import misslyckades");
     } finally {
