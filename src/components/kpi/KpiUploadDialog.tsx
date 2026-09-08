@@ -103,14 +103,33 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
               Siffrorna hämtas i första hand från fliken <strong>Sammanställning</strong> (driftnetto, överskottsgrad, vakansgrad, duration, fastighetsvärde, nettouthyrning och antal kontrakt) samt från <strong>Fastigheter per region</strong> (hyresvärde, antal fastigheter) och <strong>Optionsprogram</strong> (aktiekurs, optionsvärde). Ett kvartal i taget – välj kvartal ovan och ladda upp filen en gång per kvartal.
             </p>
 
+            {warnings.length > 0 && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Importen lyckades, men totalraden stämmer inte helt</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-4 mt-2 space-y-1 max-h-48 overflow-y-auto">
+                    {warnings.map((w, i) => (
+                      <li key={i} className="text-sm">{w.message}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Avbryt</Button>
-          <Button onClick={handleUpload} disabled={busy || !file}>
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Importera
-          </Button>
+          {warnings.length > 0 ? (
+            <Button onClick={() => { setOpen(false); setWarnings([]); setFile(null); }}>Stäng varningar</Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Avbryt</Button>
+              <Button onClick={handleUpload} disabled={busy || !file}>
+                {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Importera
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
