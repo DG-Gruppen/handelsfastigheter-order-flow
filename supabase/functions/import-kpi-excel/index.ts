@@ -600,6 +600,7 @@ Deno.serve(async (req: Request) => {
     const buf = new Uint8Array(await fileData.arrayBuffer());
     const wb = XLSX.read(buf, { type: "array", cellDates: true });
     const rows = extractRows(wb, year, quarter);
+    const warnings = validateConsistency(new Map(rows.map((r) => [`${r.kpi_slug}|${r.region}`, r])));
 
     if (!rows.length) {
       return json({
