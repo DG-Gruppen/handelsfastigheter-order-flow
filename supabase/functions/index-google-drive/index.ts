@@ -118,7 +118,7 @@ async function listFilesInFolder(
 ): Promise<{ files: DriveFile[]; nextPageToken?: string }> {
   const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
   const fields = encodeURIComponent("nextPageToken,files(id,name,mimeType,modifiedTime,size)");
-  let url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+  let url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&pageSize=100`;
   if (pageToken) url += `&pageToken=${pageToken}`;
 
   const res = await fetch(url, {
