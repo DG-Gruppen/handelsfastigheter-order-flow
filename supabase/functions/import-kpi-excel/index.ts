@@ -471,6 +471,79 @@ function parseSammanstallning(wb: XLSX.WorkBook, quarter: number, acc: Acc): boo
   return wrote;
 }
 
+interface ValidationIssue {
+  type: "total_mismatch" | "missing_region";
+  slug: string;
+  field: "actual" | "budget" | "stretch";
+  total: number | null;
+  sum: number | null;
+  diff: number;
+  message: string;
+}
+
+const ADDITIVE_SLUGS = new Set([
+  "driftnetto",
+  "nettouthyrning",
+  "antal_kontrakt",
+  "antal_fastigheter",
+  "hyresintakter",
+  "fastighetsvarde",
+]);
+
+/** Kontrollerar att "Totalt" stämmer överens med summan av regionerna för additiva KPI:er. */
+function validateConsistency(acc: Acc): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const byKey = new Map<string, ParsedRow>();
+  for (const row of acc.values()) byKey.set(`${row.kpi_slug}|${row.region}`, row);
+
+  for (const row of acc.values()) {
+    if (row.region !== "Totalt" || !ADDITIVE_SLUGS.has(row.kpi_slug)) continue;
+    const regions = ["Region Nord", "Region Mitt", "Region Syd", "Afu + Elimineringar"];
+
+    for (const field of ["actual", "budget", "stretch"] as const) {
+      const total = row[field];
+      if (total === null || total === undefined) continue;
+
+      let sum = 0;
+      const missing: string[] = [];
+      let hasValue = false;
+      for (const region of regions) {
+        const v = byKey.get(`${row.kpi_slug}|${region}`)?.[field];
+        if (v === null || v === undefined) missing.push(region);
+        else { sum += v; hasValue = true; }
+      }
+      if (!hasValue) continue;
+
+      if (missing.length > 0) {
+        issues.push({
+          type: "missing_region",
+          slug: row.kpi_slug,
+          field,
+          total,
+          sum: null,
+          diff: 0,
+          message: `${row.kpi_slug} ${field}: Totalt (${total}) kan inte stämmas av – saknar ${missing.join(", ")}.`,
+        });
+        continue;
+      }
+
+      const tolerance = Math.max(0.001, Math.abs(total) * 0.0001);
+      if (Math.abs(total - sum) > tolerance) {
+        issues.push({
+          type: "total_mismatch",
+          slug: row.kpi_slug,
+          field,
+          total,
+          sum,
+          diff: total - sum,
+          message: `${row.kpi_slug} ${field}: Totalt ${total.toFixed(3)} stämmer inte mot summan av regionerna ${sum.toFixed(3)} (diff ${(total - sum).toFixed(3)}).`,
+        });
+      }
+    }
+  }
+  return issues;
+}
+
 function extractRows(wb: XLSX.WorkBook, year: number, quarter: number): ParsedRow[] {
   const acc: Acc = new Map();
   // Fliken "Sammanställning" är facit. Äldre filer faller tillbaka på detaljflikarna.
