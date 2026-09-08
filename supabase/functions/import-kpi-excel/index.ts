@@ -28,8 +28,9 @@ function parseNumber(v: unknown): number | null {
   return isFinite(n) ? n : null;
 }
 
+/** Behåller full precision (6 decimaler) så att avvikelser räknas på exakta tal. */
 function round2(n: number | null): number | null {
-  return n === null ? null : Math.round(n * 100) / 100;
+  return n === null ? null : Math.round(n * 1e6) / 1e6;
 }
 
 /** "Nord" -> "Region Nord", "Total" -> "Totalt", "Afu + elimineringar" -> "Afu + Elimineringar" */
