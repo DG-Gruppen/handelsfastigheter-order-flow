@@ -639,7 +639,7 @@ Deno.serve(async (req: Request) => {
     const { error: insErr } = await supabase.from("kpi_data").insert(toInsert);
     if (insErr) return json({ error: insErr.message }, 500);
 
-    return json({ ok: true, inserted: toInsert.length, skipped: skipped.length, sample: toInsert.slice(0, 5) });
+    return json({ ok: true, inserted: toInsert.length, skipped: skipped.length, warnings, sample: toInsert.slice(0, 5) });
   } catch (e: any) {
     console.error("import-kpi-excel failed", e?.message ?? e);
     return json({ error: e?.message ?? "unknown" }, 500);
