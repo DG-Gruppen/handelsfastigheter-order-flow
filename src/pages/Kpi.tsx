@@ -395,7 +395,7 @@ export default function Kpi() {
 
       {isYtd && (
         <p className="text-xs text-muted-foreground -mt-3">
-          Driftnetto, nettouthyrning och antal kontrakt summeras över kvartalen. Övriga nyckeltal är ögonblicksvärden och visar senaste kvartalet (Q{quarter}).
+          Driftnetto, nettouthyrning och antal kontrakt summeras över kvartalen och överskottsgraden räknas om på hela perioden. Övriga nyckeltal är ögonblicksvärden och visar senaste kvartalet (Q{quarter}).
         </p>
       )}
 
