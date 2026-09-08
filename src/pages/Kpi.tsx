@@ -142,6 +142,7 @@ export default function Kpi() {
     if (!isYtd) return byQuarter.get(quarter) ?? new Map();
 
     const quarters = Array.from({ length: quarter }, (_, i) => i + 1);
+    const driftnettoType = Array.from(typeById.values()).find((t) => t.slug === "driftnetto");
     const allRegions = new Set<string>();
     for (const q of quarters) for (const reg of byQuarter.get(q)?.keys() ?? []) allRegions.add(reg);
 
@@ -180,6 +181,36 @@ export default function Kpi() {
             budget: budgetComplete ? acc.budget : null,
             stretch: stretchComplete ? acc.stretch : null,
             derived,
+            incomplete: missing.length > 0,
+            missingQuarters: missing,
+          });
+
+        } else if (type.slug === "overskottsgrad" && driftnettoType) {
+          // Periodmått: ackumulerad överskottsgrad = summa driftnetto / summa intäkter,
+          // där intäkterna härleds ur kvartalets driftnetto och överskottsgrad.
+          const acc = { actual: [0, 0], budget: [0, 0], stretch: [0, 0] } as Record<string, [number, number]>;
+          const missing: number[] = [];
+          let any = false;
+          for (const q of quarters) {
+            const og = byQuarter.get(q)?.get(reg)?.get(type.id);
+            const dn = byQuarter.get(q)?.get(reg)?.get(driftnettoType.id);
+            if (!og || !dn || og.actual === null || dn.actual === null) { missing.push(q); continue; }
+            any = true;
+            for (const field of ["actual", "budget", "stretch"] as const) {
+              const share = og[field];
+              const value = dn[field];
+              if (share === null || share === undefined || !share || value === null || value === undefined) continue;
+              acc[field][0] += value;
+              acc[field][1] += value / (share / 100);
+            }
+          }
+          if (!any) continue;
+          const ratio = (f: "actual" | "budget" | "stretch") =>
+            acc[f][1] !== 0 && missing.length === 0 ? (acc[f][0] / acc[f][1]) * 100 : null;
+          byKpi.set(type.id, {
+            actual: acc.actual[1] !== 0 ? (acc.actual[0] / acc.actual[1]) * 100 : null,
+            budget: ratio("budget"),
+            stretch: ratio("stretch"),
             incomplete: missing.length > 0,
             missingQuarters: missing,
           });
@@ -313,7 +344,7 @@ export default function Kpi() {
   const hasData = data.size > 0;
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-7xl px-3 sm:px-6">
+    <div className="kpi-page container mx-auto py-6 space-y-6 max-w-7xl px-3 sm:px-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold font-heading">KPI – utfall mot budget och stretch</h1>
@@ -323,7 +354,7 @@ export default function Kpi() {
               : `Q${quarter} ${year} – per region och för hela bolaget`}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap print-hidden">
           <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
             <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -342,7 +373,7 @@ export default function Kpi() {
         </div>
       </div>
 
-      <div className="sm:hidden -mt-3 flex gap-1.5 overflow-x-auto pb-1">
+      <div className="sm:hidden -mt-3 flex gap-1.5 overflow-x-auto pb-1 print-hidden">
         {[
           ...[1, 2, 3, 4].map((q) => ({ value: String(q), label: `Q${q}` })),
           { value: "ytd", label: "YTD" },
@@ -477,7 +508,7 @@ export default function Kpi() {
                       />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Bar dataKey="Utfall" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="Utfall" position="top" fontSize={11} formatter={(v: any) => num(v)} />
+                        <LabelList dataKey="Utfall" position="top" fontSize={11} formatter={(v: any) => num(v, selectedKpi)} />
                         <LabelList
                           dataKey="variance"
                           position="top"
@@ -502,11 +533,11 @@ export default function Kpi() {
                         />
                       </Bar>
                       <Bar dataKey="Budget" name={selectedKpi.budget_label ?? "Budget"} fill="hsl(var(--muted-foreground) / 0.5)" radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="Budget" position="top" fontSize={11} formatter={(v: any) => num(v)} />
+                        <LabelList dataKey="Budget" position="top" fontSize={11} formatter={(v: any) => num(v, selectedKpi)} />
                       </Bar>
                       {chartHasStretch && (
                         <Bar dataKey="Stretch" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]}>
-                          <LabelList dataKey="Stretch" position="top" fontSize={11} formatter={(v: any) => num(v)} />
+                          <LabelList dataKey="Stretch" position="top" fontSize={11} formatter={(v: any) => num(v, selectedKpi)} />
                         </Bar>
                       )}
 
@@ -599,7 +630,7 @@ function KpiBlock({ kpi, cell, large, compact }: { kpi: KpiType; cell: Cell; lar
         )}
         {cell.budget !== null && (
           <div>
-            {budgetLabel} {formatKpiValue(cell.budget, kpi.format, kpi.unit)}
+            {budgetLabel} {kpi.slug === "vakansgrad" ? "<" : ""}{formatKpiValue(cell.budget, kpi.format, kpi.unit)}
           </div>
         )}
         {cell.stretch !== null && (
