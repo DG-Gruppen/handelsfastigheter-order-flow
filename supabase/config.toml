@@ -26,4 +26,4 @@ project_id = "zafzwayqhlnxpsumfjps"
   [functions.handle-email-events]
     verify_jwt = false
   [functions.test-google-workspace]
-    verify_jwt = false
+    verify_jwt = true

@@ -1,5 +1,6 @@
 // Google Workspace Domain-Wide Delegation: fullständigt diagnostiktest
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +57,41 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Endast admin eller IT får köra testet – funktionen skapar och raderar
+  // riktiga konton och grupper i Google Workspace via domain-wide delegation.
+  const deny = (status: number, error: string) =>
+    new Response(JSON.stringify({ error }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return deny(401, "Unauthorized");
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: authErr } = await userClient.auth.getUser();
+  if (authErr || !user) return deny(401, "Unauthorized");
+
+  const adminClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: roles } = await adminClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+  const { data: groupRoles } = await adminClient
+    .from("group_members")
+    .select("group_id, groups!inner(role_equivalent)")
+    .eq("user_id", user.id);
+  const allRoles = [
+    ...(roles?.map((r: any) => r.role) || []),
+    ...(groupRoles?.map((g: any) => (g as any).groups?.role_equivalent).filter(Boolean) || []),
+  ];
+  if (!allRoles.includes("admin") && !allRoles.includes("it")) {
+    return deny(403, "Forbidden: admin or IT role required");
+  }
 
   const log: any[] = [];
   const ts = Date.now();
