@@ -1,4 +1,4 @@
-// Test Google Workspace Domain-Wide Delegation: create + delete a test user
+// Google Workspace Domain-Wide Delegation: fullständigt diagnostiktest
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
 const corsHeaders = {
