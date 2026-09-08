@@ -34,23 +34,26 @@ const DRIVE_FOLDER_IDS = [
 
 /* ── Google Auth (Service Account JWT) ─────────────── */
 
-async function getAccessToken(serviceAccountKey: Record<string, string>): Promise<string> {
+async function mintToken(
+  serviceAccountKey: Record<string, string>,
+  subject?: string,
+): Promise<Response> {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
+  const payload: Record<string, unknown> = {
     iss: serviceAccountKey.client_email,
     scope: "https://www.googleapis.com/auth/drive.readonly",
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600,
   };
+  if (subject) payload.sub = subject;
 
   const encoder = new TextEncoder();
   const headerB64 = base64url(encoder.encode(JSON.stringify(header)));
   const payloadB64 = base64url(encoder.encode(JSON.stringify(payload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import private key
   const pemContents = serviceAccountKey.private_key
     .replace(/-----BEGIN PRIVATE KEY-----/, "")
     .replace(/-----END PRIVATE KEY-----/, "")
@@ -73,19 +76,31 @@ async function getAccessToken(serviceAccountKey: Record<string, string>): Promis
 
   const jwt = `${unsignedToken}.${base64url(new Uint8Array(signature))}`;
 
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+  return fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
   });
+}
 
-  if (!tokenRes.ok) {
-    const errText = await tokenRes.text();
-    throw new Error(`Token exchange failed: ${tokenRes.status} ${errText}`);
+async function getAccessToken(serviceAccountKey: Record<string, string>): Promise<string> {
+  const subject = Deno.env.get("GOOGLE_ADMIN_SUBJECT_EMAIL");
+
+  // Försök först med domain-wide delegation (ser allt admin ser).
+  if (subject) {
+    const res = await mintToken(serviceAccountKey, subject);
+    if (res.ok) return (await res.json()).access_token;
+    console.warn(
+      `Domain-wide delegation ej aktiv för drive.readonly (${res.status}) – faller tillbaka till servicekontots egna delade mappar.`,
+    );
   }
 
-  const tokenData = await tokenRes.json();
-  return tokenData.access_token;
+  const res = await mintToken(serviceAccountKey);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Token exchange failed: ${res.status} ${errText}`);
+  }
+  return (await res.json()).access_token;
 }
 
 function base64url(data: Uint8Array): string {
@@ -142,11 +157,11 @@ async function downloadFile(accessToken: string, file: DriveFile): Promise<Blob 
 
   let url: string;
   if (fileType === "gdoc") {
-    url = `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`;
+    url = `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain&supportsAllDrives=true`;
   } else if (fileType === "gsheet") {
-    url = `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/csv`;
+    url = `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/csv&supportsAllDrives=true`;
   } else {
-    url = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+    url = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&supportsAllDrives=true`;
   }
 
   const res = await fetch(url, {
@@ -289,6 +304,8 @@ Deno.serve(async (req) => {
     console.log("🔑 Authenticating with Google...");
     const accessToken = await getAccessToken(saKey);
 
+    // Indexeringen körs i bakgrunden – kan ta flera minuter för stora mappar.
+    const job = async () => {
     // List all files from configured folders
     let totalFiles = 0;
     let indexedFiles = 0;
@@ -380,8 +397,25 @@ Deno.serve(async (req) => {
     await updateIntegrationStatus(supabase, finalStatus, resultMeta, errors[0]);
 
     console.log(`\n✅ Done: ${indexedFiles} indexed, ${skippedFiles} skipped, ${errorFiles} errors`);
+    };
 
-    return new Response(JSON.stringify({ success: true, ...resultMeta }), {
+    // @ts-ignore EdgeRuntime finns i Supabase Edge Functions
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(job().catch(async (e) => {
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        console.error("index-google-drive bakgrundsfel:", msg);
+        await updateIntegrationStatus(supabase, "error", undefined, msg);
+      }));
+    } else {
+      await job();
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      started: true,
+      message: "Indexering startad i bakgrunden – status uppdateras när den är klar.",
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
