@@ -99,17 +99,14 @@ export function useKpiAvailablePeriods() {
 export function formatKpiValue(v: number | null | undefined, format: string, unit: string): string {
   if (v === null || v === undefined) return "—";
   if (format === "percent") return `${v.toFixed(1).replace(".", ",")} %`;
-  if (format === "currency_bn") return `${v.toFixed(2).replace(".", ",")} ${unit}`;
+  if (format === "currency_bn") return `${v.toFixed(1).replace(".", ",")} ${unit}`;
   if (format === "currency") {
-    // For low-value currencies (per-share prices), show 2 decimals
+    // Kronbelopp per aktie/option visas med två decimaler
     if (unit === "kr" && Math.abs(v) < 10000) {
       return `${v.toFixed(2).replace(".", ",")} ${unit}`;
     }
-    // Mkr-belopp under 1 000 visas med en decimal
-    if (Math.abs(v) < 1000) {
-      return `${v.toFixed(1).replace(".", ",")} ${unit}`;
-    }
-    return `${Math.round(v).toLocaleString("sv-SE")} ${unit}`;
+    // Mkr-belopp visas alltid med en decimal
+    return `${v.toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${unit}`;
   }
 
   if (format === "count") {
