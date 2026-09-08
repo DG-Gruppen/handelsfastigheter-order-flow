@@ -531,7 +531,7 @@ Deno.serve(async (req: Request) => {
     if (!rows.length) {
       return json({
         error:
-          `Hittade inga värden för Q${quarter} ${year} i filen. Kontrollera att flikarna "Budget och Utfall", "Vakans & Duration", "Fastigheter per region" och "Nettouthyrning" finns med.`,
+          `Hittade inga värden för Q${quarter} ${year} i filen. Kontrollera att fliken "Sammanställning" innehåller ett block för Q${quarter}, eller att flikarna "Budget och Utfall", "Vakans & Duration", "Fastigheter per region" och "Nettouthyrning" finns med.`,
       }, 400);
     }
 
