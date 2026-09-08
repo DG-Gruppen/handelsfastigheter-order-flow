@@ -333,24 +333,31 @@ function parseNettouthyrning(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   }
 }
 
-/** "Optionsprogram": aktiekurs per kvartal, lagras på "Totalt". */
+/** "Optionsprogram": aktiekurs och optionsvärde per kvartal, lagras på "Totalt". */
 function parseOptions(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   const data = sheetRows(wb, "Optionsprogram");
   if (!data) return;
 
   let headerIdx = -1;
-  let colIdx = -1;
+  let priceCol = -1;
+  let optionCol = -1;
   for (let i = 0; i < Math.min(data.length, 10); i++) {
     const row = (data[i] ?? []).map(normalize);
     const idx = row.findIndex((c) => c.includes("aktiekurs"));
-    if (idx >= 0) { headerIdx = i; colIdx = idx; break; }
+    if (idx >= 0) {
+      headerIdx = i;
+      priceCol = idx;
+      optionCol = row.findIndex((c) => c.startsWith("optionsprogram") || c.startsWith("optionsvärde"));
+      break;
+    }
   }
-  if (colIdx === -1) return;
+  if (priceCol === -1) return;
 
   for (let i = headerIdx + 1; i < data.length; i++) {
     const row = data[i] ?? [];
     if (!row.some((c) => normalize(c) === `q${quarter}`)) continue;
-    put(acc, "optioner", "Totalt", "actual", round2(parseNumber(row[colIdx])));
+    put(acc, "optioner", "Totalt", "actual", round2(parseNumber(row[priceCol])));
+    if (optionCol >= 0) put(acc, "optionsvarde", "Totalt", "actual", round2(parseNumber(row[optionCol])));
     break;
   }
 }
