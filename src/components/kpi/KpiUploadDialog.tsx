@@ -4,10 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+
+interface ValidationIssue {
+  type: "total_mismatch" | "missing_region";
+  slug: string;
+  field: "actual" | "budget" | "stretch";
+  message: string;
+}
 
 interface Props {
   defaultYear: number;
@@ -20,6 +28,7 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
   const [quarter, setQuarter] = useState<number>(defaultQuarter);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [warnings, setWarnings] = useState<ValidationIssue[]>([]);
   const qc = useQueryClient();
 
   const handleUpload = async () => {
