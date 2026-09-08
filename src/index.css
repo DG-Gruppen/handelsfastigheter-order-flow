@@ -321,6 +321,17 @@ html[data-scroll-locked] {
     display: none !important;
   }
 
+  /* Hide app chrome when printing the KPI page */
+  body:has(.kpi-page) aside,
+  body:has(.kpi-page) nav,
+  body:has(.kpi-page) header,
+  body:has(.kpi-page) [data-radix-popper-content-wrapper],
+  body:has(.kpi-page) .chat-bubble-root {
+    display: none !important;
+  }
+  .kpi-page .print-hidden { display: none !important; }
+  .kpi-page > * { break-inside: avoid; }
+
   /* Expand main content */
   main {
     max-width: none !important;

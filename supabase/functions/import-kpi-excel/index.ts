@@ -28,8 +28,9 @@ function parseNumber(v: unknown): number | null {
   return isFinite(n) ? n : null;
 }
 
+/** Behåller full precision (6 decimaler) så att avvikelser räknas på exakta tal. */
 function round2(n: number | null): number | null {
-  return n === null ? null : Math.round(n * 100) / 100;
+  return n === null ? null : Math.round(n * 1e6) / 1e6;
 }
 
 /** "Nord" -> "Region Nord", "Total" -> "Totalt", "Afu + elimineringar" -> "Afu + Elimineringar" */
@@ -332,34 +333,154 @@ function parseNettouthyrning(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   }
 }
 
-/** "Optionsprogram": aktiekurs per kvartal, lagras på "Totalt". */
+/** "Optionsprogram": aktiekurs och optionsvärde per kvartal, lagras på "Totalt". */
 function parseOptions(wb: XLSX.WorkBook, quarter: number, acc: Acc) {
   const data = sheetRows(wb, "Optionsprogram");
   if (!data) return;
 
   let headerIdx = -1;
-  let colIdx = -1;
+  let priceCol = -1;
+  let optionCol = -1;
   for (let i = 0; i < Math.min(data.length, 10); i++) {
     const row = (data[i] ?? []).map(normalize);
     const idx = row.findIndex((c) => c.includes("aktiekurs"));
-    if (idx >= 0) { headerIdx = i; colIdx = idx; break; }
+    if (idx >= 0) {
+      headerIdx = i;
+      priceCol = idx;
+      optionCol = row.findIndex((c) => c.startsWith("optionsprogram") || c.startsWith("optionsvärde"));
+      break;
+    }
   }
-  if (colIdx === -1) return;
+  if (priceCol === -1) return;
 
   for (let i = headerIdx + 1; i < data.length; i++) {
     const row = data[i] ?? [];
     if (!row.some((c) => normalize(c) === `q${quarter}`)) continue;
-    put(acc, "optioner", "Totalt", "actual", round2(parseNumber(row[colIdx])));
+    put(acc, "optioner", "Totalt", "actual", round2(parseNumber(row[priceCol])));
+    if (optionCol >= 0) put(acc, "optionsvarde", "Totalt", "actual", round2(parseNumber(row[optionCol])));
     break;
   }
 }
 
+// ---------------------------------------------------------------------------
+// "Sammanställning": den officiella basen. Ett block per kvartal med
+// regionkolumner (Nord, Mitt, Syd, Afu + Elimineringar, Totalt).
+// Totalt = summan av regionerna, dvs. utan posten "Ej budgeterat".
+// ---------------------------------------------------------------------------
+function parseSammanstallning(wb: XLSX.WorkBook, quarter: number, acc: Acc): boolean {
+  const data = sheetRows(wb, "Sammanställning");
+  if (!data) return false;
+
+  // Hitta blocket för kvartalet: en cell med exakt "Qn" (inte "Qn YTD").
+  let labelRow = -1;
+  let startCol = -1;
+  let endCol = Infinity;
+  outer: for (let i = 0; i < data.length; i++) {
+    const row = data[i] ?? [];
+    for (let j = 0; j < row.length; j++) {
+      if (normalize(row[j]) !== `q${quarter}`) continue;
+      labelRow = i;
+      startCol = j;
+      endCol = Infinity;
+      for (let k = j + 1; k < row.length; k++) {
+        if (String(row[k] ?? "").trim()) { endCol = k; break; }
+      }
+      break outer;
+    }
+  }
+  if (labelRow === -1) return false;
+
+  // Rubrikraden med regionnamn ligger direkt under kvartalsetiketten.
+  let headerRow = -1;
+  const cols: Record<string, number> = {};
+  for (let i = labelRow; i < Math.min(labelRow + 4, data.length); i++) {
+    const row = data[i] ?? [];
+    const found: Record<string, number> = {};
+    for (let j = startCol; j < Math.min(endCol, row.length); j++) {
+      const region = canonicalRegion(String(row[j] ?? ""));
+      if (region && found[region] === undefined) found[region] = j;
+    }
+    if (Object.keys(found).length >= 3) {
+      headerRow = i;
+      Object.assign(cols, found);
+      break;
+    }
+  }
+  if (headerRow === -1) return false;
+
+  const minRegionCol = Math.min(...Object.values(cols));
+  let wrote = false;
+
+  for (let i = headerRow + 1; i < data.length; i++) {
+    const row = data[i] ?? [];
+    // Nytt kvartalsblock avslutar det här blocket.
+    if (row.some((c) => /^q[1-4]$/.test(normalize(c)))) break;
+
+    let label = "";
+    for (let j = minRegionCol - 1; j >= 0; j--) {
+      const cell = String(row[j] ?? "").trim();
+      if (cell) { label = normalize(cell); break; }
+    }
+    if (!label || label.startsWith("diff")) continue;
+
+    let slug: string | null = null;
+    let field: "actual" | "budget" | "stretch" = "actual";
+    let factor = 1;
+
+    const isDriftnetto = label.startsWith("driftnetto");
+    const isOg = label.startsWith("ög") || label.startsWith("överskottsgrad");
+    if (isDriftnetto || isOg) {
+      slug = isDriftnetto ? "driftnetto" : "overskottsgrad";
+      factor = isOg ? 100 : 1;
+      if (label.includes("budget")) field = "budget";
+      else if (label.includes("stretch")) field = "stretch";
+      else if (label.includes("utfall")) field = "actual";
+      else continue;
+    } else if (label.startsWith("vakansgrad")) {
+      slug = "vakansgrad";
+      factor = 100;
+    } else if (label.startsWith("duration")) {
+      slug = "duration";
+    } else if (label.startsWith("fastighetsvärde")) {
+      slug = "fastighetsvarde";
+    } else if (label.startsWith("nettouthyrning")) {
+      slug = "nettouthyrning";
+      // Kolumnrubriken anger enhet: mkr lämnas som den är, SEK skalas ned.
+      factor = label.includes("mkr") ? 1 : 1 / 1_000_000;
+    } else if (label.includes("nytecknade kontrakt")) {
+      slug = "antal_kontrakt";
+    } else if (label === "mål") {
+      const target = parseNumber(
+        row.map((c) => String(c ?? "")).find((c) => /%/.test(c)) ?? null,
+      );
+      if (target !== null) {
+        for (const region of Object.keys(cols)) put(acc, "vakansgrad", region, "budget", target);
+      }
+      continue;
+    }
+    if (!slug) continue;
+
+    for (const [region, j] of Object.entries(cols)) {
+      const v = parseNumber(row[j]);
+      if (v === null) continue;
+      put(acc, slug, region, field, round2(v * factor));
+      wrote = true;
+    }
+  }
+
+  return wrote;
+}
+
 function extractRows(wb: XLSX.WorkBook, year: number, quarter: number): ParsedRow[] {
   const acc: Acc = new Map();
-  parseBudgetOchUtfall(wb, quarter, acc);
-  parseVakansDuration(wb, year, quarter, acc);
+  // Fliken "Sammanställning" är facit. Äldre filer faller tillbaka på detaljflikarna.
+  const fromSummary = parseSammanstallning(wb, quarter, acc);
+  if (!fromSummary) {
+    parseBudgetOchUtfall(wb, quarter, acc);
+    parseVakansDuration(wb, year, quarter, acc);
+    parseNettouthyrning(wb, quarter, acc);
+  }
   parsePerRegion(wb, year, quarter, acc);
-  parseNettouthyrning(wb, quarter, acc);
   parseOptions(wb, quarter, acc);
   return [...acc.values()].filter((r) => r.budget !== null || r.actual !== null || r.stretch !== null);
 }
@@ -410,7 +531,7 @@ Deno.serve(async (req: Request) => {
     if (!rows.length) {
       return json({
         error:
-          `Hittade inga värden för Q${quarter} ${year} i filen. Kontrollera att flikarna "Budget och Utfall", "Vakans & Duration", "Fastigheter per region" och "Nettouthyrning" finns med.`,
+          `Hittade inga värden för Q${quarter} ${year} i filen. Kontrollera att fliken "Sammanställning" innehåller ett block för Q${quarter}, eller att flikarna "Budget och Utfall", "Vakans & Duration", "Fastigheter per region" och "Nettouthyrning" finns med.`,
       }, 400);
     }
 
