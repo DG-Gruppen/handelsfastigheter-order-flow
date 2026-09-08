@@ -30,7 +30,11 @@ async function getAccessToken(): Promise<string> {
     {
       iss: key.client_email,
       sub: subject,
-      scope: "https://www.googleapis.com/auth/admin.directory.user",
+      scope: [
+        "https://www.googleapis.com/auth/admin.directory.user",
+        "https://www.googleapis.com/auth/admin.directory.group",
+        "https://www.googleapis.com/auth/admin.directory.orgunit",
+      ].join(" "),
       aud: "https://oauth2.googleapis.com/token",
       exp: getNumericDate(3600),
       iat: getNumericDate(0),
