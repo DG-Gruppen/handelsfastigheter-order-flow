@@ -4,10 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+
+interface ValidationIssue {
+  type: "total_mismatch" | "missing_region";
+  slug: string;
+  field: "actual" | "budget" | "stretch";
+  message: string;
+}
 
 interface Props {
   defaultYear: number;
@@ -20,11 +28,13 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
   const [quarter, setQuarter] = useState<number>(defaultQuarter);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [warnings, setWarnings] = useState<ValidationIssue[]>([]);
   const qc = useQueryClient();
 
   const handleUpload = async () => {
     if (!file) { toast.error("Välj en .xlsx-fil"); return; }
     setBusy(true);
+    setWarnings([]);
     try {
       const safeName = file.name
         .normalize("NFD")
@@ -40,11 +50,17 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
 
+      const returnedWarnings: ValidationIssue[] = (data as any)?.warnings ?? [];
       toast.success(`Importerade ${(data as any).inserted} rader för Q${quarter} ${year}`);
       qc.invalidateQueries({ queryKey: ["kpi-data"] });
       qc.invalidateQueries({ queryKey: ["kpi-periods"] });
-      setOpen(false);
-      setFile(null);
+
+      if (returnedWarnings.length > 0) {
+        setWarnings(returnedWarnings);
+      } else {
+        setOpen(false);
+        setFile(null);
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Import misslyckades");
     } finally {
@@ -87,14 +103,33 @@ export default function KpiUploadDialog({ defaultYear, defaultQuarter }: Props) 
               Siffrorna hämtas i första hand från fliken <strong>Sammanställning</strong> (driftnetto, överskottsgrad, vakansgrad, duration, fastighetsvärde, nettouthyrning och antal kontrakt) samt från <strong>Fastigheter per region</strong> (hyresvärde, antal fastigheter) och <strong>Optionsprogram</strong> (aktiekurs, optionsvärde). Ett kvartal i taget – välj kvartal ovan och ladda upp filen en gång per kvartal.
             </p>
 
+            {warnings.length > 0 && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Importen lyckades, men totalraden stämmer inte helt</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-4 mt-2 space-y-1 max-h-48 overflow-y-auto">
+                    {warnings.map((w, i) => (
+                      <li key={i} className="text-sm">{w.message}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Avbryt</Button>
-          <Button onClick={handleUpload} disabled={busy || !file}>
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Importera
-          </Button>
+          {warnings.length > 0 ? (
+            <Button onClick={() => { setOpen(false); setWarnings([]); setFile(null); }}>Stäng varningar</Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Avbryt</Button>
+              <Button onClick={handleUpload} disabled={busy || !file}>
+                {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Importera
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
