@@ -52,11 +52,19 @@ function sortRegions(a: string, b: string) {
   return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b, "sv");
 }
 
-function num(v: number | null | undefined): string {
+/** Samma antal decimaler i kort, diagram och avvikelser för ett och samma nyckeltal. */
+function decimalsFor(kpi: KpiType): number {
+  if (kpi.format === "percent") return 1;
+  if (kpi.format === "currency_bn") return 1;
+  if (kpi.format === "currency") return kpi.unit === "kr" ? 2 : 1;
+  if (kpi.format === "count") return kpi.unit === "år" ? 1 : 0;
+  return 1;
+}
+
+function num(v: number | null | undefined, kpi?: KpiType): string {
   if (v === null || v === undefined) return "—";
-  const abs = Math.abs(v);
-  const decimals = abs >= 1000 ? 0 : abs >= 10 ? 1 : 2;
-  return v.toFixed(decimals).replace(".", ",");
+  const decimals = kpi ? decimalsFor(kpi) : Math.abs(v) >= 1000 ? 0 : Math.abs(v) >= 10 ? 1 : 2;
+  return v.toLocaleString("sv-SE", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 /** Skillnad formaterad enligt KPI-typ: procentenheter för procent, annars i enhet. */
@@ -64,8 +72,7 @@ function formatDiff(diff: number, kpi: KpiType): string {
   const sign = diff > 0 ? "+" : diff < 0 ? "−" : "";
   const v = Math.abs(diff);
   if (kpi.format === "percent") return `${sign}${v.toFixed(1).replace(".", ",")} p.p.`;
-  if (kpi.format === "count") return `${sign}${num(v)} ${kpi.unit}`;
-  return `${sign}${num(v)} ${kpi.unit}`;
+  return `${sign}${num(v, kpi)} ${kpi.unit}`;
 }
 
 export default function Kpi() {
