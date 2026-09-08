@@ -144,6 +144,14 @@ Deno.serve(async (req) => {
       if (!error) updated++;
     }
 
+    await supa.from("integration_status").update({
+      status: "ok",
+      last_sync_at: new Date().toISOString(),
+      last_error: null,
+      error_count: 0,
+      metadata: { last_action: "sync-personnel", heartpace_active: active.length, profiles_checked: profiles?.length ?? 0, updated },
+    }).eq("slug", "heartpace");
+
     return new Response(JSON.stringify({
       ok: true,
       heartpace_active: active.length,
@@ -156,6 +164,11 @@ Deno.serve(async (req) => {
       : (e && typeof e === "object") ? JSON.stringify(e)
       : String(e);
     console.error("sync-personnel error:", msg, e);
+    try {
+      await supa.from("integration_status").update({
+        status: "error", last_error: msg, last_sync_at: new Date().toISOString(),
+      }).eq("slug", "heartpace");
+    } catch (_) { /* ignore */ }
     return new Response(JSON.stringify({ ok: false, error: msg }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
