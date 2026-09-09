@@ -18,7 +18,6 @@ export type Database = {
         Row: {
           assignee_email: string | null
           assignee_external_contact_id: string | null
-          assignee_group_name: string | null
           assignee_label: string | null
           assignee_profile_id: string | null
           case_id: string
@@ -40,7 +39,6 @@ export type Database = {
         Insert: {
           assignee_email?: string | null
           assignee_external_contact_id?: string | null
-          assignee_group_name?: string | null
           assignee_label?: string | null
           assignee_profile_id?: string | null
           case_id: string
@@ -62,7 +60,6 @@ export type Database = {
         Update: {
           assignee_email?: string | null
           assignee_external_contact_id?: string | null
-          assignee_group_name?: string | null
           assignee_label?: string | null
           assignee_profile_id?: string | null
           case_id?: string
