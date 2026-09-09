@@ -3508,6 +3508,10 @@ export type Database = {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
       }
+      boarding_in_task_group: {
+        Args: { _group_name: string; _user_id: string }
+        Returns: boolean
+      }
       boarding_is_manager: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean

@@ -29,7 +29,7 @@ AS $$
   );
 $$;
 
--- Synlighet: den som har en uppgift – direkt eller via grupp – ser ärendet
+-- Synlighet: den som har en uppgift -- direkt eller via grupp -- ser ärendet
 CREATE OR REPLACE FUNCTION public.boarding_has_task(_user_id uuid, _case_id uuid)
 RETURNS boolean
 LANGUAGE sql
