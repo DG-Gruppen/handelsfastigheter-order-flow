@@ -113,7 +113,7 @@ testas alltså utan att röra Heartpace.
 Öppet: chefsobjektets form (`uuid`/`work_email` eller bara namn). Om bara namn →
 namnmatchning mot `profiles.full_name` med `manager_name_raw` som reserv och manuellt val i UI.
 
-## Seed (migrationen `20260909100000_boarding_v2.sql`)
+## Seed (migrationen `20260909094653_ba118a38-c474-4a74-965e-58b9e55c0739.sql`)
 
 - Grupp **HR** med Petra (fanns inte; `is_in_hr_group` matchar på namnet).
 - Verktyg **Rekyl**, **IT-hotellet**, **Bereko** (inaktiva, utan länk – syns inte på `/verktyg`
@@ -145,7 +145,8 @@ om "förändringar i fastighetslistor" ska vara en onboarding-uppgift eller en s
 
 ## Deploy
 
-Efter merge: Lovable synkar koden, men migrationer och edge functions applicerar sig inte
-själva. Be Lovable-agenten: *"applicera migrationen 20260909100000_boarding_v2.sql och
-deploya boarding-case-advance och boarding-task-checkoff"*. Sätt `BOARDING_EMAIL_REDIRECT`
-innan första testet.
+Applicerat 2026-09-09 via Lovable-agenten, som skrev migrationen som
+`20260909094653_ba118a38-…sql` (registrerad i `supabase_migrations.schema_migrations`)
+och deployade `boarding-case-advance` och `boarding-task-checkoff`. Kommande
+schemaändringar går samma väg: SQL i repot → merge → be agenten applicera.
+Sätt `BOARDING_EMAIL_REDIRECT` innan första testet.
