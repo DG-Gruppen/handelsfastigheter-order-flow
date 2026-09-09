@@ -7,13 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useModules } from "@/hooks/useModules";
 import { toast } from "sonner";
 import {
-  ChevronLeft, Check, X, Play, AlertCircle, RotateCcw, Send, ShieldCheck, Mail, Info, Sparkles,
+  ChevronLeft, Check, X, Play, AlertCircle, RotateCcw, Send, ShieldCheck, Mail, Info, Sparkles, Users, FlaskConical,
 } from "lucide-react";
 import { useBoardingAccess } from "./useBoardingAccess";
 import {
-  type BoardingCase, type BoardingCaseTask, type BoardingTemplateTask, type CaseStatus, type TaskStatus,
+  type BoardingCase, type BoardingCaseTask, type BoardingTemplateTask, type BoardingPreview, type CaseStatus, type TaskStatus,
   AUTO_CONDITION_KEYS, STATUS_CLASS, STATUS_LABEL, TRIGGER_LABEL, EXIT_REASON_LABEL,
   personName, kindLabel, formatDate,
 } from "./boardingV2";
@@ -33,6 +35,8 @@ export default function BoardingV2Detail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isStaff, profileId } = useBoardingAccess();
+  const { userGroupIds } = useModules();
+  const [myGroupNames, setMyGroupNames] = useState<string[]>([]);
 
   const [c, setCase] = useState<BoardingCase | null>(null);
   const [tasks, setTasks] = useState<BoardingCaseTask[]>([]);
@@ -47,8 +51,17 @@ export default function BoardingV2Detail() {
   const [managerNotes, setManagerNotes] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [preview, setPreview] = useState<BoardingPreview | null>(null);
+  const [previewAction, setPreviewAction] = useState<"manager_submit" | "hr_confirm" | null>(null);
 
   useEffect(() => { if (id) load(); }, [id]);
+
+  // Vilka grupper är jag med i? Styr om jag får bocka av gruppuppgifter (RLS avgör på riktigt).
+  useEffect(() => {
+    if (!userGroupIds.length) { setMyGroupNames([]); return; }
+    supabase.from("groups").select("name").in("id", userGroupIds)
+      .then(({ data }) => setMyGroupNames(((data ?? []) as { name: string }[]).map((g) => g.name.toLowerCase())));
+  }, [userGroupIds]);
 
   async function load() {
     if (!id) return;
@@ -154,12 +167,39 @@ export default function BoardingV2Detail() {
     load();
   }
 
-  const managerSubmit = () =>
-    advance(
-      { action: "manager_submit", selectedToolIds: Array.from(selectedTools), optionalKeys: Array.from(optionalKeys), notes: managerNotes || null },
-      c?.template?.require_hr_confirm ? "Dina val är skickade – HR bekräftar innan utskick" : "Uppgifter skapade och utskick gjort",
-    );
-  const hrConfirm = () => advance({ action: "hr_confirm" }, "Bekräftat – uppgifter skapade och utskick gjort");
+  // Visa vilka som får vad innan något skickas. Samma logik som aktiveringen, utan skrivning.
+  async function openPreview(action: "manager_submit" | "hr_confirm") {
+    if (!id) return;
+    setBusy(true);
+    const body: Record<string, unknown> = { action: "preview", caseId: id };
+    if (action === "manager_submit") {
+      body.selectedToolIds = Array.from(selectedTools);
+      body.optionalKeys = Array.from(optionalKeys);
+    }
+    const { data, error } = await supabase.functions.invoke("boarding-case-advance", { body });
+    setBusy(false);
+    if (error || data?.error) { toast.error(error?.message ?? data?.error); return; }
+    setPreview(data as BoardingPreview);
+    setPreviewAction(action);
+  }
+
+  async function confirmPreview() {
+    if (!previewAction) return;
+    const action = previewAction;
+    setPreview(null);
+    setPreviewAction(null);
+    if (action === "manager_submit") {
+      await advance(
+        { action: "manager_submit", selectedToolIds: Array.from(selectedTools), optionalKeys: Array.from(optionalKeys), notes: managerNotes || null },
+        c?.template?.require_hr_confirm ? "Dina val är skickade – HR bekräftar innan utskick" : "Uppgifter skapade och utskick gjort",
+      );
+    } else {
+      await advance({ action: "hr_confirm" }, "Bekräftat – uppgifter skapade och utskick gjort");
+    }
+  }
+
+  const managerSubmit = () => openPreview("manager_submit");
+  const hrConfirm = () => openPreview("hr_confirm");
   const cancel = () => {
     if (!cancelReason.trim()) { toast.error("Ange anledning"); return; }
     advance({ action: "cancel", reason: cancelReason }, "Ärendet är avbrutet").then(() => setShowCancel(false));
@@ -181,7 +221,7 @@ export default function BoardingV2Detail() {
   const requireHr = c.template?.require_hr_confirm === true;
   const managerName = c.manager?.full_name ?? c.manager_name_raw ?? null;
 
-  const grouped = groupTasks(tasks, profileId);
+  const grouped = groupTasks(tasks, profileId, myGroupNames);
 
   return (
     <div className="space-y-5 max-w-4xl mx-auto animate-fade-up">
@@ -309,7 +349,7 @@ export default function BoardingV2Detail() {
 
             <Button onClick={managerSubmit} disabled={busy}>
               <Send className="h-4 w-4 mr-1.5" />
-              {requireHr ? "Skicka mina val till HR" : "Skicka in och starta utskick"}
+              {requireHr ? "Granska och skicka mina val till HR" : "Granska och skicka in"}
             </Button>
           </Card>
         ) : (
@@ -355,12 +395,14 @@ export default function BoardingV2Detail() {
           {grouped.map(({ label, mine, list }) => (
             <Card key={label} className={`p-4 space-y-2 ${mine ? "border-primary/40" : ""}`}>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                {list[0]?.assignee_group_name && <Users className="h-3.5 w-3.5" />}
                 {label}{mine && <Badge variant="outline" className="text-[10px]">Dina</Badge>}
                 <span className="font-normal normal-case tracking-normal">· {list.filter((t) => t.status !== "pending").length}/{list.length}</span>
               </p>
               <div className="space-y-1">
                 {list.map((task) => {
-                  const mayCheck = isStaff || isManager || (!!profileId && task.assignee_profile_id === profileId);
+                  const inGroup = !!task.assignee_group_name && myGroupNames.includes(task.assignee_group_name.toLowerCase());
+                  const mayCheck = isStaff || isManager || inGroup || (!!profileId && task.assignee_profile_id === profileId);
                   const editable = mayCheck && c.status === "active";
                   return (
                     <div key={task.id} className="flex items-start gap-3 p-2 rounded hover:bg-secondary/40">
@@ -411,6 +453,64 @@ export default function BoardingV2Detail() {
           )}
         </Card>
       )}
+
+      {/* Förhandsvisning före utskick */}
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o) { setPreview(null); setPreviewAction(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {previewAction === "manager_submit" && requireHr ? "Dina val skickas till HR" : "Detta skickas nu"}
+            </DialogTitle>
+            <DialogDescription>
+              {previewAction === "manager_submit" && requireHr
+                ? "Inga uppgifter går ut än – HR granskar först. Så här ser listan ut med dina val:"
+                : `${preview?.totalTasks ?? 0} uppgifter fördelade på ${preview?.recipients.length ?? 0} mottagare. Varje mottagare får ett samlat mejl.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {preview?.redirect && (
+            <div className="text-xs rounded border border-warning/40 bg-warning/10 p-2 flex items-start gap-1.5">
+              <FlaskConical className="h-3.5 w-3.5 mt-0.5 shrink-0 text-warning" />
+              <span><strong>Testläge.</strong> Alla mejl omdirigeras till {preview.redirect}. Mottagarna nedan får ingenting.</span>
+            </div>
+          )}
+
+          <div className="max-h-[50vh] overflow-y-auto space-y-2 text-sm">
+            {preview?.recipients.map((r) => (
+              <div key={r.email} className="rounded border p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">
+                    {r.label}
+                    {r.viaGroups.length > 0 && <span className="text-xs text-muted-foreground"> · via {r.viaGroups.join(", ")}</span>}
+                  </span>
+                  <Badge variant="outline">{r.count}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{r.email}</p>
+                <ul className="mt-1 text-xs text-muted-foreground list-disc pl-4">
+                  {r.tasks.slice(0, 4).map((t) => <li key={t}>{t}</li>)}
+                  {r.tasks.length > 4 && <li>… och {r.tasks.length - 4} till</li>}
+                </ul>
+              </div>
+            ))}
+            {preview && preview.recipients.length === 0 && (
+              <p className="text-muted-foreground">Inga mottagare – inga uppgifter matchar valen.</p>
+            )}
+            {preview && preview.unassigned.length > 0 && (
+              <div className="text-xs rounded border border-destructive/40 bg-destructive/10 p-2">
+                <strong>Saknar ansvarig:</strong> {preview.unassigned.join(", ")}. Dessa skapas utan mottagare och måste tilldelas av HR.
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPreview(null); setPreviewAction(null); }}>Avbryt</Button>
+            <Button onClick={confirmPreview} disabled={busy}>
+              <Send className="h-4 w-4 mr-1.5" />
+              {previewAction === "manager_submit" && requireHr ? "Skicka till HR" : "Skicka"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mejllogg (staff) */}
       {isStaff && emailLog.length > 0 && (
@@ -499,11 +599,12 @@ function ChoicesSummary({
   );
 }
 
-function groupTasks(tasks: BoardingCaseTask[], profileId: string | null) {
+function groupTasks(tasks: BoardingCaseTask[], profileId: string | null, myGroupNames: string[]) {
   const map = new Map<string, { label: string; mine: boolean; list: BoardingCaseTask[] }>();
   for (const t of tasks) {
     const label = t.assignee?.full_name || t.assignee_label || UNASSIGNED;
-    const mine = !!profileId && t.assignee_profile_id === profileId;
+    const mine = (!!profileId && t.assignee_profile_id === profileId)
+      || (!!t.assignee_group_name && myGroupNames.includes(t.assignee_group_name.toLowerCase()));
     if (!map.has(label)) map.set(label, { label, mine, list: [] });
     map.get(label)!.list.push(t);
   }

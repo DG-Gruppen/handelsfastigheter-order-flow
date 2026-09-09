@@ -2,6 +2,8 @@
 //
 //   create          staff/chef skapar ärende (manuellt eller simulerad Heartpace-post)
 //                   → status awaiting_manager, mejl till närmaste chef
+//   preview         visar vilka som får vilka uppgifter om ärendet aktiveras nu –
+//                   samma logik som aktiveringen, men skriver ingenting
 //   manager_submit  chefen väljer system + "om aktuellt" och skickar in
 //                   → awaiting_hr om mallen kräver HR-bekräftelse, annars aktivering
 //   hr_confirm      HR/admin/IT bekräftar → aktivering
@@ -9,9 +11,11 @@
 //
 // Aktivering = mallen snapshottas till boarding_case_tasks (bara uppgifter
 // vars villkor är uppfyllda), ansvariga resolvas, ett samlat mejl per mottagare.
+// En mallrad med assignee_source = 'group' blir EN uppgift märkt med gruppnamnet;
+// mejlet går till alla medlemmar och vem som helst i gruppen kan bocka av.
 // Heartpace-intaget (senare etapp) anropar samma create-väg.
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { sendBoardingEmail, type BoardingDb } from '../_shared/boarding-email.ts'
+import { sendBoardingEmail, boardingEmailRedirect, type BoardingDb } from '../_shared/boarding-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,8 +41,35 @@ interface Caller {
 interface Assignee {
   profile_id: string | null
   external_contact_id: string | null
+  group_name: string | null
   email: string | null
   label: string
+}
+
+interface PlannedTask {
+  case_id: string
+  template_task_id: string
+  sort_order: number
+  title: string
+  description: string | null
+  category: string | null
+  condition_key: string | null
+  deadline_date: string | null
+  assignee_profile_id: string | null
+  assignee_external_contact_id: string | null
+  assignee_group_name: string | null
+  assignee_email: string | null
+  assignee_label: string
+}
+
+interface Recipient {
+  email: string
+  profileId: string | null
+  label: string
+  firstName: string
+  // Varför mottagaren får mejlet: egna uppgifter och/eller gruppens
+  viaGroups: string[]
+  tasks: { title: string; description: string | null; deadline: string | null }[]
 }
 
 const json = (body: unknown, status = 200) =>
@@ -78,6 +109,8 @@ Deno.serve(async (req) => {
     switch (body.action) {
       case 'create':
         return json(await createCase(admin, caller, body))
+      case 'preview':
+        return json(await previewCase(admin, caller, body))
       case 'manager_submit':
         return json(await managerSubmit(admin, caller, body))
       case 'hr_confirm':
@@ -126,6 +159,7 @@ async function loadCase(admin: AdminClient, caseId: string) {
 }
 
 const personName = (c: any) => `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Ny medarbetare'
+const firstNameOf = (label: string | null | undefined) => (label ?? '').split(' ')[0]
 
 function assertCanActAsManager(caller: Caller, c: any) {
   const isManager = !!caller.profileId && caller.profileId === c.nearest_manager_id
@@ -224,7 +258,7 @@ async function createCase(admin: AdminClient, caller: Caller, body: any) {
       templateData: {
         kind,
         caseId: c.id,
-        managerFirstName: (c.manager.full_name ?? '').split(' ')[0],
+        managerFirstName: firstNameOf(c.manager.full_name),
         personName: personName(c),
         position: c.title,
         department: c.department,
@@ -237,6 +271,52 @@ async function createCase(admin: AdminClient, caller: Caller, body: any) {
   }
 
   return { ok: true, caseId: c.id, managerNotified }
+}
+
+// --------------------------------------------------------------- preview
+// Vad skulle gå ut om ärendet aktiverades nu? Chefens val kan skickas med
+// (selectedToolIds, optionalKeys) för att förhandsvisa innan inskick.
+async function previewCase(admin: AdminClient, caller: Caller, body: any) {
+  const c = await loadCase(admin, String(body.caseId ?? ''))
+  assertCanActAsManager(caller, c)
+
+  const proposed = {
+    ...c,
+    selected_tool_ids: Array.isArray(body.selectedToolIds) ? body.selectedToolIds.map(String) : c.selected_tool_ids,
+    optional_keys: Array.isArray(body.optionalKeys) ? body.optionalKeys.map(String) : c.optional_keys,
+  }
+
+  const { count: existing } = await admin
+    .from('boarding_case_tasks')
+    .select('*', { count: 'exact', head: true })
+    .eq('case_id', c.id)
+
+  // Redan aktiverat ärende → visa det som faktiskt ligger, annars planen
+  let planned: PlannedTask[]
+  if ((existing ?? 0) > 0) {
+    const { data } = await admin.from('boarding_case_tasks').select('*').eq('case_id', c.id).eq('status', 'pending').order('sort_order')
+    planned = (data ?? []) as PlannedTask[]
+  } else {
+    planned = await planTasks(admin, proposed)
+  }
+
+  const recipients = await recipientsFor(admin, planned)
+  const unassigned = planned.filter((t) => !t.assignee_profile_id && !t.assignee_external_contact_id && !t.assignee_group_name).map((t) => t.title)
+
+  return {
+    ok: true,
+    alreadyActivated: (existing ?? 0) > 0,
+    totalTasks: planned.length,
+    redirect: boardingEmailRedirect(),
+    recipients: recipients.map((r) => ({
+      label: r.label,
+      email: r.email,
+      viaGroups: r.viaGroups,
+      count: r.tasks.length,
+      tasks: r.tasks.map((t) => t.title),
+    })),
+    unassigned,
+  }
 }
 
 // -------------------------------------------------------- manager_submit
@@ -275,7 +355,7 @@ async function managerSubmit(admin: AdminClient, caller: Caller, body: any) {
         templateData: {
           kind: c.kind,
           caseId: c.id,
-          recipientFirstName: a.label.split(' ')[0],
+          recipientFirstName: firstNameOf(a.label),
           personName: personName(c),
           position: c.title,
           startDate: c.start_date,
@@ -325,27 +405,18 @@ async function cancelCase(admin: AdminClient, caller: Caller, body: any) {
 
   const { data: openTasks } = await admin
     .from('boarding_case_tasks')
-    .select('assignee_email, assignee_profile_id, assignee:profiles!boarding_case_tasks_assignee_profile_id_fkey(email, full_name)')
+    .select('*')
     .eq('case_id', c.id)
     .eq('status', 'pending')
 
-  const recipients = new Map<string, { profileId: string | null; firstName: string }>()
-  for (const t of openTasks ?? []) {
-    const email = (t as any).assignee?.email || t.assignee_email
-    if (email && !recipients.has(email)) {
-      recipients.set(email, {
-        profileId: t.assignee_profile_id ?? null,
-        firstName: ((t as any).assignee?.full_name ?? '').split(' ')[0],
-      })
-    }
-  }
-  for (const [email, r] of recipients) {
+  const recipients = await recipientsFor(admin, (openTasks ?? []) as PlannedTask[])
+  for (const r of recipients) {
     await sendBoardingEmail(admin, {
       caseId: c.id,
       templateKey: 'boarding-cancelled',
-      to: email,
+      to: r.email,
       recipientProfileId: r.profileId,
-      idempotencyKey: `boarding-cancelled-${c.id}-${email}`,
+      idempotencyKey: `boarding-cancelled-${c.id}-${r.email}`,
       templateData: {
         kind: c.kind,
         caseId: c.id,
@@ -357,7 +428,7 @@ async function cancelCase(admin: AdminClient, caller: Caller, body: any) {
       },
     })
   }
-  return { ok: true, status: 'cancelled', notified: recipients.size }
+  return { ok: true, status: 'cancelled', notified: recipients.length }
 }
 
 // -------------------------------------------------------------- activate
@@ -369,43 +440,7 @@ async function activate(admin: AdminClient, c: any) {
 
   let tasksCreated = 0
   if ((existing ?? 0) === 0) {
-    const { data: templateTasks } = await admin
-      .from('boarding_template_tasks')
-      .select('*')
-      .eq('template_id', c.template_id)
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true })
-
-    const baseDate: string | null = c.kind === 'onboarding' ? c.start_date : c.last_day
-    const rows: any[] = []
-    for (const tt of templateTasks ?? []) {
-      if (!shouldInclude(tt, c)) continue
-      const deadline = baseDate ? addDays(baseDate, tt.due_offset_days ?? 0) : null
-      const assignees = await resolveAssignees(admin, tt, c)
-      const base = {
-        case_id: c.id,
-        template_task_id: tt.id,
-        sort_order: tt.sort_order,
-        title: tt.title,
-        description: tt.description,
-        category: tt.category,
-        condition_key: tt.condition_key,
-        deadline_date: deadline,
-      }
-      if (assignees.length === 0) {
-        rows.push({ ...base, assignee_label: '(ej tilldelad)' })
-      } else {
-        for (const a of assignees) {
-          rows.push({
-            ...base,
-            assignee_profile_id: a.profile_id,
-            assignee_external_contact_id: a.external_contact_id,
-            assignee_email: a.email,
-            assignee_label: a.label,
-          })
-        }
-      }
-    }
+    const rows = await planTasks(admin, c)
     if (rows.length) {
       const { error } = await admin.from('boarding_case_tasks').insert(rows)
       if (error) fail(error.message, 500)
@@ -416,36 +451,27 @@ async function activate(admin: AdminClient, c: any) {
   const { error: stErr } = await admin.from('boarding_cases').update({ status: 'active' }).eq('id', c.id)
   if (stErr) fail(stErr.message, 500)
 
-  // Ett samlat mejl per mottagare
+  // Ett samlat mejl per mottagare (gruppuppgifter går till varje medlem)
   const { data: tasks } = await admin
     .from('boarding_case_tasks')
-    .select('*, assignee:profiles!boarding_case_tasks_assignee_profile_id_fkey(full_name, email)')
+    .select('*')
     .eq('case_id', c.id)
     .eq('status', 'pending')
     .order('sort_order', { ascending: true })
 
-  const byEmail = new Map<string, any[]>()
-  for (const t of tasks ?? []) {
-    const email = (t as any).assignee?.email || t.assignee_email
-    if (!email) continue
-    if (!byEmail.has(email)) byEmail.set(email, [])
-    byEmail.get(email)!.push(t)
-  }
-
+  const recipients = await recipientsFor(admin, (tasks ?? []) as PlannedTask[])
   let emailsSent = 0
-  for (const [email, list] of byEmail) {
-    const first = list[0]
-    const label: string = (first as any).assignee?.full_name || first.assignee_label || ''
-    const r = await sendBoardingEmail(admin, {
+  for (const r of recipients) {
+    const res = await sendBoardingEmail(admin, {
       caseId: c.id,
       templateKey: 'boarding-owner-tasks',
-      to: email,
-      recipientProfileId: first.assignee_profile_id ?? null,
-      idempotencyKey: `boarding-owner-tasks-${c.id}-${email}`,
+      to: r.email,
+      recipientProfileId: r.profileId,
+      idempotencyKey: `boarding-owner-tasks-${c.id}-${r.email}`,
       templateData: {
         kind: c.kind,
         caseId: c.id,
-        recipientFirstName: label.split(' ')[0],
+        recipientFirstName: r.firstName,
         personName: personName(c),
         position: c.title,
         department: c.department,
@@ -453,14 +479,105 @@ async function activate(admin: AdminClient, c: any) {
         lastDay: c.last_day,
         managerName: c.manager?.full_name,
         costCentre: c.cost_centre,
-        tasks: list.map((t) => ({ title: t.title, description: t.description, deadline: t.deadline_date })),
+        tasks: r.tasks,
         deepLink: caseLink(c.id),
       },
     })
-    if (r.sent) emailsSent++
+    if (res.sent) emailsSent++
   }
 
-  return { tasksCreated, emailsSent, recipients: byEmail.size }
+  return { tasksCreated, emailsSent, recipients: recipients.length }
+}
+
+// Mallen → uppgiftsrader för ett ärende, enligt dess val och villkor.
+// Skriver ingenting – används av både aktivering och förhandsvisning.
+async function planTasks(admin: AdminClient, c: any): Promise<PlannedTask[]> {
+  const { data: templateTasks } = await admin
+    .from('boarding_template_tasks')
+    .select('*')
+    .eq('template_id', c.template_id)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  const baseDate: string | null = c.kind === 'onboarding' ? c.start_date : c.last_day
+  const rows: PlannedTask[] = []
+  for (const tt of templateTasks ?? []) {
+    if (!shouldInclude(tt, c)) continue
+    const deadline = baseDate ? addDays(baseDate, tt.due_offset_days ?? 0) : null
+    const assignees = await resolveAssignees(admin, tt, c)
+    const base = {
+      case_id: c.id,
+      template_task_id: tt.id,
+      sort_order: tt.sort_order,
+      title: tt.title,
+      description: tt.description,
+      category: tt.category,
+      condition_key: tt.condition_key,
+      deadline_date: deadline,
+    }
+    if (assignees.length === 0) {
+      rows.push({
+        ...base,
+        assignee_profile_id: null,
+        assignee_external_contact_id: null,
+        assignee_group_name: null,
+        assignee_email: null,
+        assignee_label: '(ej tilldelad)',
+      })
+      continue
+    }
+    for (const a of assignees) {
+      rows.push({
+        ...base,
+        assignee_profile_id: a.profile_id,
+        assignee_external_contact_id: a.external_contact_id,
+        assignee_group_name: a.group_name,
+        assignee_email: a.email,
+        assignee_label: a.label,
+      })
+    }
+  }
+  return rows
+}
+
+// Uppgifter → mottagare med varsin lista. Gruppuppgifter fläktas ut till
+// medlemmarna; en person som både har egna uppgifter och gruppens får ett mejl.
+async function recipientsFor(admin: AdminClient, tasks: PlannedTask[]): Promise<Recipient[]> {
+  const byEmail = new Map<string, Recipient>()
+  const add = (email: string, profileId: string | null, label: string, viaGroup: string | null, t: PlannedTask) => {
+    const key = email.toLowerCase()
+    let r = byEmail.get(key)
+    if (!r) {
+      r = { email, profileId, label, firstName: firstNameOf(label), viaGroups: [], tasks: [] }
+      byEmail.set(key, r)
+    }
+    if (viaGroup && !r.viaGroups.includes(viaGroup)) r.viaGroups.push(viaGroup)
+    r.tasks.push({ title: t.title, description: t.description, deadline: t.deadline_date })
+  }
+
+  const profileIds = Array.from(new Set(tasks.map((t) => t.assignee_profile_id).filter(Boolean))) as string[]
+  const profileById = new Map<string, any>()
+  if (profileIds.length) {
+    const { data } = await admin.from('profiles').select('id, full_name, email').in('id', profileIds)
+    for (const p of data ?? []) profileById.set(p.id, p)
+  }
+  const groupMembers = new Map<string, Assignee[]>()
+
+  for (const t of tasks) {
+    if (t.assignee_group_name) {
+      const key = t.assignee_group_name.toLowerCase()
+      if (!groupMembers.has(key)) groupMembers.set(key, await resolveGroupMembers(admin, t.assignee_group_name))
+      for (const m of groupMembers.get(key)!) {
+        if (m.email) add(m.email, m.profile_id, m.label, t.assignee_group_name, t)
+      }
+      continue
+    }
+    const p = t.assignee_profile_id ? profileById.get(t.assignee_profile_id) : null
+    const email = p?.email || t.assignee_email
+    if (!email) continue
+    add(email, t.assignee_profile_id ?? null, p?.full_name || t.assignee_label || email, null, t)
+  }
+  return Array.from(byEmail.values())
 }
 
 function shouldInclude(tt: any, c: any): boolean {
@@ -487,12 +604,14 @@ function addDays(iso: string, days: number): string {
 const profileAssignee = (p: any): Assignee => ({
   profile_id: p.id,
   external_contact_id: null,
+  group_name: null,
   email: p.email ?? null,
   label: p.full_name ?? p.email ?? '',
 })
 const externalAssignee = (e: any): Assignee => ({
   profile_id: null,
   external_contact_id: e.id,
+  group_name: null,
   email: e.email ?? null,
   label: e.company_name ? `${e.full_name} (${e.company_name})` : e.full_name,
 })
@@ -535,8 +654,19 @@ async function resolveAssignees(admin: AdminClient, tt: any, c: any): Promise<As
         .eq('area_id', tt.assignee_area_id)
       return ((data ?? []) as any[]).filter((r) => r.profile).map((r) => profileAssignee(r.profile))
     }
-    case 'group':
-      return tt.assignee_group_name ? resolveGroupMembers(admin, tt.assignee_group_name) : []
+    case 'group': {
+      // EN uppgift för hela gruppen – bara om gruppen finns och har medlemmar
+      if (!tt.assignee_group_name) return []
+      const members = await resolveGroupMembers(admin, tt.assignee_group_name)
+      if (!members.length) return []
+      return [{
+        profile_id: null,
+        external_contact_id: null,
+        group_name: tt.assignee_group_name,
+        email: null,
+        label: `${tt.assignee_group_name} (grupp)`,
+      }]
+    }
     case 'nearest_manager':
       return c.manager ? [profileAssignee(c.manager)] : []
     case 'external_contact': {

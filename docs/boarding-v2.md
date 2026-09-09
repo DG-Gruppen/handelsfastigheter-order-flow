@@ -61,7 +61,7 @@ Ansvarig resolvas vid aktivering via `assignee_source`:
 |---|---|
 | `tool_owner` | `tool_owners` för `assignee_tool_id` (profiler **och** externa kontakter) |
 | `area_owner` | `responsibility_owners` för `assignee_area_id` |
-| `group` | medlemmar i gruppen `assignee_group_name` (exakt namn, t.ex. `HR`, `IT`) |
+| `group` | **en** uppgift för gruppen `assignee_group_name` (t.ex. `HR`, `IT`); alla medlemmar får mejlet, vem som helst i gruppen bockar av |
 | `nearest_manager` | ärendets `nearest_manager_id` |
 | `external_contact` | `external_contacts` (`assignee_external_contact_id`) |
 | `static_profile` | `assignee_profile_id` (undviks – planens princip är inga hårdkodade namn) |
@@ -74,7 +74,8 @@ kommande provisionering. `trigger_source`: `heartpace` | `manual` | `simulated`.
 Unikt index hindrar två öppna ärenden av samma typ för samma Heartpace-id.
 
 **`boarding_case_tasks`** – snapshot av mallen per ärende. En rad per ansvarig och
-uppgift. `assignee_email` fylls alltid så att utskick fungerar även för externa.
+uppgift, utom gruppuppgifter som är en rad per grupp (`assignee_group_name`).
+`assignee_email` fylls för personer och externa så att utskick fungerar.
 
 **`boarding_email_log`** – varje utskick, inklusive `redirected_from` i testläge.
 
@@ -84,6 +85,19 @@ uppgift. `assignee_email` fylls alltid så att utskick fungerar även för exter
 närmaste chef, den som skapade det, den som har en uppgift i det, och (onboarding)
 personen själv. Uppgifter bockas av av ansvarig, chef eller staff. Statusövergångar går
 via edge function med service role.
+
+## Förhandsvisning innan utskick
+
+Chefens *Granska och skicka in* och HR:s *Bekräfta* anropar först `action = preview`,
+som kör exakt samma villkors- och ansvarslogik som aktiveringen men skriver ingenting.
+Dialogen visar varje mottagare, antal uppgifter, de första rubrikerna, om mottagaren
+får mejlet via en grupp, och en varning för uppgifter utan ansvarig. Är
+`BOARDING_EMAIL_REDIRECT` satt står det överst i dialogen. Först efter bekräftelse
+körs `manager_submit` / `hr_confirm`.
+
+Bakgrund: systemvalet styr bara raderna med `is_system_access`. Resten av Petras
+checklista (HR, Fastighetssnabben, nycklar, webb, Google-konto) gäller varje nyanställd
+och går ut oavsett — förhandsvisningen gör det synligt innan något skickas.
 
 ## Testläge för mejl
 
@@ -144,6 +158,10 @@ om "förändringar i fastighetslistor" ska vara en onboarding-uppgift eller en s
 4. `_boarding-shared.tsx` får egna designtokens när `_onboarding-shared.ts` försvinner.
 
 ## Deploy
+
+Grupp-uppgifter: `20260909110000_boarding_v2_group_tasks.sql` (kolumnen
+`assignee_group_name`, `boarding_in_task_group`, uppdaterad `boarding_has_task` och
+avbocknings-policy).
 
 Applicerat 2026-09-09 via Lovable-agenten, som skrev migrationen som
 `20260909094653_ba118a38-…sql` (registrerad i `supabase_migrations.schema_migrations`)

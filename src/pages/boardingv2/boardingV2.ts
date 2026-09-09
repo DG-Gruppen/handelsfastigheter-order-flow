@@ -80,6 +80,7 @@ export interface BoardingCaseTask {
   condition_key: string | null;
   assignee_profile_id: string | null;
   assignee_external_contact_id: string | null;
+  assignee_group_name: string | null;
   assignee_email: string | null;
   assignee_label: string | null;
   deadline_date: string | null;
@@ -130,3 +131,13 @@ export const kindLabel = (kind: BoardingKind) => (kind === "onboarding" ? "Onboa
 
 export const formatDate = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString("sv-SE") : "";
+
+/** Svar från boarding-case-advance action=preview. */
+export interface BoardingPreview {
+  ok: boolean;
+  alreadyActivated: boolean;
+  totalTasks: number;
+  redirect: string | null;
+  recipients: { label: string; email: string; viaGroups: string[]; count: number; tasks: string[] }[];
+  unassigned: string[];
+}
