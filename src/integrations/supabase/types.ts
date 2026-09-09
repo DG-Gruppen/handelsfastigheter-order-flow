@@ -3504,6 +3504,14 @@ export type Database = {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
       }
+      boarding_case_progress: {
+        Args: { _case_id: string }
+        Returns: {
+          done: number
+          pending: number
+          total: number
+        }[]
+      }
       boarding_has_task: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
