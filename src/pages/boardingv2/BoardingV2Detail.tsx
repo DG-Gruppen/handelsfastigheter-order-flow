@@ -34,7 +34,7 @@ const UNASSIGNED = "(ej tilldelad)";
 export default function BoardingV2Detail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isStaff, profileId } = useBoardingAccess();
+  const { isStaff, isStab, profileId } = useBoardingAccess();
   const { userGroupIds } = useModules();
   const [myGroupNames, setMyGroupNames] = useState<string[]>([]);
 
@@ -43,6 +43,7 @@ export default function BoardingV2Detail() {
   const [templateTasks, setTemplateTasks] = useState<BoardingTemplateTask[]>([]);
   const [toolOwners, setToolOwners] = useState<Record<string, string[]>>({});
   const [emailLog, setEmailLog] = useState<EmailLogRow[]>([]);
+  const [progress, setProgress] = useState<{ total: number; done: number; pending: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -66,7 +67,7 @@ export default function BoardingV2Detail() {
   async function load() {
     if (!id) return;
     setLoading(true);
-    const [caseRes, taskRes, logRes] = await Promise.all([
+    const [caseRes, taskRes, logRes, progressRes] = await Promise.all([
       supabase
         .from("boarding_cases")
         .select("*, template:boarding_templates(id, kind, name, description, is_default, require_hr_confirm), manager:profiles!boarding_cases_nearest_manager_id_fkey(id, full_name, email)")
@@ -82,7 +83,10 @@ export default function BoardingV2Detail() {
         .select("id, template_key, recipient_email, redirected_from, sent_at, error")
         .eq("case_id", id)
         .order("sent_at", { ascending: false }),
+      // Övergripande status oavsett hur många rader jag själv får se
+      supabase.rpc("boarding_case_progress", { _case_id: id }).maybeSingle(),
     ]);
+    setProgress((progressRes.data as { total: number; done: number; pending: number } | null) ?? null);
 
     const loaded = (caseRes.data ?? null) as unknown as BoardingCase | null;
     setCase(loaded);
@@ -124,6 +128,10 @@ export default function BoardingV2Detail() {
 
   const isManager = !!profileId && !!c && c.nearest_manager_id === profileId;
   const canAct = isStaff || isManager;
+  // Staff och chef ser hela checklistan; övriga ser bara sina egna rader (RLS).
+  const seesAllTasks = isStaff || isManager;
+  // Personuppgifter i huvudet: staff, chef och Stab.
+  const canSeePersonal = isStaff || isManager || isStab;
 
   const systemOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -251,12 +259,18 @@ export default function BoardingV2Detail() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <Meta label="Arbetsmejl" value={c.work_email} />
-          <Meta label="Privat e-post" value={c.personal_email} />
-          <Meta label="Kostnadsställe" value={c.cost_centre} />
-          <Meta label="Anställningsform" value={c.employment_form} />
+          {canSeePersonal && <Meta label="Privat e-post" value={c.personal_email} />}
+          {canSeePersonal && <Meta label="Kostnadsställe" value={c.cost_centre} />}
+          {canSeePersonal && <Meta label="Anställningsform" value={c.employment_form} />}
         </div>
 
         <Timeline status={c.status} requireHr={requireHr} />
+        {progress && progress.total > 0 && (c.status === "active" || c.status === "completed") && (
+          <p className="text-xs text-muted-foreground">
+            Hela ärendet: <span className="font-medium text-foreground">{progress.done} av {progress.total}</span> uppgifter klara
+            {progress.pending > 0 ? ` · ${progress.pending} öppna` : ""}
+          </p>
+        )}
 
         {c.notes && c.status !== "awaiting_manager" && (
           <div className="text-sm bg-secondary/40 rounded p-3">
@@ -390,8 +404,11 @@ export default function BoardingV2Detail() {
       {tasks.length > 0 && (
         <div className="space-y-4">
           <h2 className="font-heading font-bold text-lg">
-            Uppgifter ({tasks.filter((t) => t.status !== "pending").length}/{tasks.length} klara)
+            {seesAllTasks ? "Uppgifter" : "Dina uppgifter"} ({tasks.filter((t) => t.status !== "pending").length}/{tasks.length} klara)
           </h2>
+          {!seesAllTasks && (
+            <p className="text-xs text-muted-foreground -mt-2">Du ser de uppgifter som ligger på dig. Chef och HR ser hela checklistan.</p>
+          )}
           {grouped.map(({ label, mine, list }) => (
             <Card key={label} className={`p-4 space-y-2 ${mine ? "border-primary/40" : ""}`}>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">

@@ -25,6 +25,8 @@ export function useBoardingAccess() {
   const isHr = !!hrGroupId && userGroupIds.includes(hrGroupId);
   const isStaff = roles.includes("admin") || roles.includes("it") || isHr;
   const isManagerGroup = roles.includes("manager");
+  // Stab (role_equivalent "staff") får se personuppgifterna i ärendets huvud, men är inte boarding-staff.
+  const isStab = roles.includes("staff");
 
-  return { isStaff, isHr, isManagerGroup, profileId: profile?.id ?? null };
+  return { isStaff, isHr, isManagerGroup, isStab, profileId: profile?.id ?? null };
 }

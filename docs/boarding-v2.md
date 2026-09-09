@@ -82,9 +82,19 @@ uppgift, utom gruppuppgifter som är en rad per grupp (`assignee_group_name`).
 ### RLS
 
 `boarding_is_staff(uid)` = admin **eller** HR **eller** IT. Ett ärende syns för staff,
-närmaste chef, den som skapade det, den som har en uppgift i det, och (onboarding)
-personen själv. Uppgifter bockas av av ansvarig, chef eller staff. Statusövergångar går
-via edge function med service role.
+närmaste chef, den som skapade det, den som har en uppgift i det (direkt eller via grupp),
+och (onboarding) personen själv.
+
+**Uppgifter:** staff och närmaste chef ser hela checklistan. Övriga ansvariga ser **bara
+sina egna rader** (direkt eller via grupp) — planens §7.3. Personen själv ser inga
+uppgifter. `boarding_case_progress(case_id)` ger "x av y klara" till alla som får se
+ärendet utan att avslöja raderna. Uppgifter bockas av av ansvarig, gruppmedlem, chef
+eller staff. Statusövergångar går via edge function med service role.
+
+**Personuppgifter i ärendets huvud** (privat e-post, kostnadsställe, anställningsform)
+visas i UI:t bara för staff, chef och Stab. Det är en UI-regel, inte en RLS-gräns —
+raden är läsbar för alla som får se ärendet. Blir det ett krav flyttas fälten till en
+egen tabell med stramare RLS.
 
 ## Förhandsvisning innan utskick
 
@@ -159,9 +169,10 @@ om "förändringar i fastighetslistor" ska vara en onboarding-uppgift eller en s
 
 ## Deploy
 
-Grupp-uppgifter: `20260909110000_boarding_v2_group_tasks.sql` (kolumnen
-`assignee_group_name`, `boarding_in_task_group`, uppdaterad `boarding_has_task` och
-avbocknings-policy).
+Grupp-uppgifter: `20260909101130_67d10123-….sql` (kolumnen `assignee_group_name`,
+`boarding_in_task_group`, uppdaterad `boarding_has_task` och avbocknings-policy).
+Uppgiftssynlighet: `20260909120000_boarding_v2_task_visibility.sql` (SELECT-policy
+"ansvarig ser sina", `boarding_case_progress`).
 
 Applicerat 2026-09-09 via Lovable-agenten, som skrev migrationen som
 `20260909094653_ba118a38-…sql` (registrerad i `supabase_migrations.schema_migrations`)
