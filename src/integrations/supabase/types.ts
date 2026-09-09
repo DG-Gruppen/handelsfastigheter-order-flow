@@ -3517,10 +3517,6 @@ export type Database = {
         Returns: boolean
       }
       boarding_is_staff: { Args: { _user_id: string }; Returns: boolean }
-      boarding_case_progress: {
-        Args: { _case_id: string }
-        Returns: { total: number; done: number; pending: number }[]
-      }
       create_dm_channel: { Args: { _target_user_id: string }; Returns: string }
       create_notification: {
         Args: {
