@@ -14,6 +14,435 @@ export type Database = {
   }
   public: {
     Tables: {
+      boarding_case_tasks: {
+        Row: {
+          assignee_email: string | null
+          assignee_external_contact_id: string | null
+          assignee_label: string | null
+          assignee_profile_id: string | null
+          case_id: string
+          category: string | null
+          condition_key: string | null
+          created_at: string
+          deadline_date: string | null
+          description: string | null
+          done_at: string | null
+          done_by: string | null
+          id: string
+          note: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["boarding_task_status"]
+          template_task_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_email?: string | null
+          assignee_external_contact_id?: string | null
+          assignee_label?: string | null
+          assignee_profile_id?: string | null
+          case_id: string
+          category?: string | null
+          condition_key?: string | null
+          created_at?: string
+          deadline_date?: string | null
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          note?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["boarding_task_status"]
+          template_task_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_email?: string | null
+          assignee_external_contact_id?: string | null
+          assignee_label?: string | null
+          assignee_profile_id?: string | null
+          case_id?: string
+          category?: string | null
+          condition_key?: string | null
+          created_at?: string
+          deadline_date?: string | null
+          description?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          id?: string
+          note?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["boarding_task_status"]
+          template_task_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_case_tasks_assignee_external_contact_id_fkey"
+            columns: ["assignee_external_contact_id"]
+            isOneToOne: false
+            referencedRelation: "external_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_case_tasks_assignee_profile_id_fkey"
+            columns: ["assignee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_case_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "boarding_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_case_tasks_template_task_id_fkey"
+            columns: ["template_task_id"]
+            isOneToOne: false
+            referencedRelation: "boarding_template_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_cases: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          cost_centre: string | null
+          created_at: string
+          department: string | null
+          employment_form: string | null
+          exit_reason: string | null
+          exit_type: string | null
+          first_name: string
+          google_account_email: string | null
+          google_account_status: string
+          heartpace_employee_id: string | null
+          hr_confirmed_at: string | null
+          hr_confirmed_by: string | null
+          id: string
+          initiated_by: string | null
+          kind: Database["public"]["Enums"]["boarding_kind"]
+          last_day: string | null
+          last_name: string
+          location: string | null
+          manager_name_raw: string | null
+          manager_submitted_at: string | null
+          manager_submitted_by: string | null
+          nearest_manager_id: string | null
+          notes: string | null
+          optional_keys: string[]
+          personal_email: string | null
+          profile_id: string | null
+          selected_tool_ids: string[]
+          start_date: string | null
+          status: Database["public"]["Enums"]["boarding_case_status"]
+          template_id: string
+          title: string | null
+          trigger_source: Database["public"]["Enums"]["boarding_trigger_source"]
+          updated_at: string
+          work_email: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          cost_centre?: string | null
+          created_at?: string
+          department?: string | null
+          employment_form?: string | null
+          exit_reason?: string | null
+          exit_type?: string | null
+          first_name: string
+          google_account_email?: string | null
+          google_account_status?: string
+          heartpace_employee_id?: string | null
+          hr_confirmed_at?: string | null
+          hr_confirmed_by?: string | null
+          id?: string
+          initiated_by?: string | null
+          kind: Database["public"]["Enums"]["boarding_kind"]
+          last_day?: string | null
+          last_name: string
+          location?: string | null
+          manager_name_raw?: string | null
+          manager_submitted_at?: string | null
+          manager_submitted_by?: string | null
+          nearest_manager_id?: string | null
+          notes?: string | null
+          optional_keys?: string[]
+          personal_email?: string | null
+          profile_id?: string | null
+          selected_tool_ids?: string[]
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["boarding_case_status"]
+          template_id: string
+          title?: string | null
+          trigger_source?: Database["public"]["Enums"]["boarding_trigger_source"]
+          updated_at?: string
+          work_email?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          cost_centre?: string | null
+          created_at?: string
+          department?: string | null
+          employment_form?: string | null
+          exit_reason?: string | null
+          exit_type?: string | null
+          first_name?: string
+          google_account_email?: string | null
+          google_account_status?: string
+          heartpace_employee_id?: string | null
+          hr_confirmed_at?: string | null
+          hr_confirmed_by?: string | null
+          id?: string
+          initiated_by?: string | null
+          kind?: Database["public"]["Enums"]["boarding_kind"]
+          last_day?: string | null
+          last_name?: string
+          location?: string | null
+          manager_name_raw?: string | null
+          manager_submitted_at?: string | null
+          manager_submitted_by?: string | null
+          nearest_manager_id?: string | null
+          notes?: string | null
+          optional_keys?: string[]
+          personal_email?: string | null
+          profile_id?: string | null
+          selected_tool_ids?: string[]
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["boarding_case_status"]
+          template_id?: string
+          title?: string | null
+          trigger_source?: Database["public"]["Enums"]["boarding_trigger_source"]
+          updated_at?: string
+          work_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_cases_nearest_manager_id_fkey"
+            columns: ["nearest_manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_cases_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_cases_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "boarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_email_log: {
+        Row: {
+          case_id: string
+          error: string | null
+          id: string
+          payload: Json | null
+          recipient_email: string
+          recipient_profile_id: string | null
+          redirected_from: string | null
+          sent_at: string
+          template_key: string
+        }
+        Insert: {
+          case_id: string
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          recipient_email: string
+          recipient_profile_id?: string | null
+          redirected_from?: string | null
+          sent_at?: string
+          template_key: string
+        }
+        Update: {
+          case_id?: string
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          recipient_email?: string
+          recipient_profile_id?: string | null
+          redirected_from?: string | null
+          sent_at?: string
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_email_log_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "boarding_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_email_log_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_template_tasks: {
+        Row: {
+          assignee_area_id: string | null
+          assignee_external_contact_id: string | null
+          assignee_group_name: string | null
+          assignee_profile_id: string | null
+          assignee_source: Database["public"]["Enums"]["boarding_assignee_source"]
+          assignee_tool_id: string | null
+          category: string | null
+          condition_key: string | null
+          condition_label: string | null
+          created_at: string
+          description: string | null
+          due_offset_days: number
+          id: string
+          is_active: boolean
+          is_system_access: boolean
+          sort_order: number
+          template_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_area_id?: string | null
+          assignee_external_contact_id?: string | null
+          assignee_group_name?: string | null
+          assignee_profile_id?: string | null
+          assignee_source: Database["public"]["Enums"]["boarding_assignee_source"]
+          assignee_tool_id?: string | null
+          category?: string | null
+          condition_key?: string | null
+          condition_label?: string | null
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          is_active?: boolean
+          is_system_access?: boolean
+          sort_order?: number
+          template_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_area_id?: string | null
+          assignee_external_contact_id?: string | null
+          assignee_group_name?: string | null
+          assignee_profile_id?: string | null
+          assignee_source?: Database["public"]["Enums"]["boarding_assignee_source"]
+          assignee_tool_id?: string | null
+          category?: string | null
+          condition_key?: string | null
+          condition_label?: string | null
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          is_active?: boolean
+          is_system_access?: boolean
+          sort_order?: number
+          template_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boarding_template_tasks_assignee_area_id_fkey"
+            columns: ["assignee_area_id"]
+            isOneToOne: false
+            referencedRelation: "responsibility_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_template_tasks_assignee_external_contact_id_fkey"
+            columns: ["assignee_external_contact_id"]
+            isOneToOne: false
+            referencedRelation: "external_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_template_tasks_assignee_profile_id_fkey"
+            columns: ["assignee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_template_tasks_assignee_tool_id_fkey"
+            columns: ["assignee_tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boarding_template_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "boarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boarding_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          kind: Database["public"]["Enums"]["boarding_kind"]
+          name: string
+          require_hr_confirm: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind: Database["public"]["Enums"]["boarding_kind"]
+          name: string
+          require_hr_confirm?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind?: Database["public"]["Enums"]["boarding_kind"]
+          name?: string
+          require_hr_confirm?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -3068,6 +3497,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      boarding_can_view_case: {
+        Args: { _case_id: string; _user_id: string }
+        Returns: boolean
+      }
+      boarding_has_task: {
+        Args: { _case_id: string; _user_id: string }
+        Returns: boolean
+      }
+      boarding_is_manager: {
+        Args: { _case_id: string; _user_id: string }
+        Returns: boolean
+      }
+      boarding_is_staff: { Args: { _user_id: string }; Returns: boolean }
       create_dm_channel: { Args: { _target_user_id: string }; Returns: string }
       create_notification: {
         Args: {
@@ -3188,6 +3630,22 @@ export type Database = {
     }
     Enums: {
       app_role: "employee" | "manager" | "admin" | "staff" | "it"
+      boarding_assignee_source:
+        | "static_profile"
+        | "tool_owner"
+        | "area_owner"
+        | "group"
+        | "nearest_manager"
+        | "external_contact"
+      boarding_case_status:
+        | "awaiting_manager"
+        | "awaiting_hr"
+        | "active"
+        | "completed"
+        | "cancelled"
+      boarding_kind: "onboarding" | "offboarding"
+      boarding_task_status: "pending" | "done" | "not_applicable"
+      boarding_trigger_source: "heartpace" | "manual" | "simulated"
       integration_status_level: "ok" | "warning" | "error"
       onboarding_assignee_source:
         | "static_profile"
@@ -3333,6 +3791,24 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["employee", "manager", "admin", "staff", "it"],
+      boarding_assignee_source: [
+        "static_profile",
+        "tool_owner",
+        "area_owner",
+        "group",
+        "nearest_manager",
+        "external_contact",
+      ],
+      boarding_case_status: [
+        "awaiting_manager",
+        "awaiting_hr",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+      boarding_kind: ["onboarding", "offboarding"],
+      boarding_task_status: ["pending", "done", "not_applicable"],
+      boarding_trigger_source: ["heartpace", "manual", "simulated"],
       integration_status_level: ["ok", "warning", "error"],
       onboarding_assignee_source: [
         "static_profile",
