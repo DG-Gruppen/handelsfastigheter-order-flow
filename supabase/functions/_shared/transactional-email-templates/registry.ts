@@ -25,6 +25,12 @@ import { template as offboardingReminder } from './offboarding-reminder.tsx'
 import { template as offboardingCompleted } from './offboarding-completed.tsx'
 import { template as offboardingCancelled } from './offboarding-cancelled.tsx'
 import { template as workwearOrder } from './workwear-order.tsx'
+// On-/offboarding v2 (byggs vid sidan av onboarding-*)
+import { template as boardingManagerAction } from './boarding-manager-action.tsx'
+import { template as boardingOwnerTasks } from './boarding-owner-tasks.tsx'
+import { template as boardingHrConfirm } from './boarding-hr-confirm.tsx'
+import { template as boardingCompleted } from './boarding-completed.tsx'
+import { template as boardingCancelled } from './boarding-cancelled.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-order-approval': newOrderApproval,
@@ -43,4 +49,9 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'offboarding-completed': offboardingCompleted,
   'offboarding-cancelled': offboardingCancelled,
   'workwear-order': workwearOrder,
+  'boarding-manager-action': boardingManagerAction,
+  'boarding-owner-tasks': boardingOwnerTasks,
+  'boarding-hr-confirm': boardingHrConfirm,
+  'boarding-completed': boardingCompleted,
+  'boarding-cancelled': boardingCancelled,
 }

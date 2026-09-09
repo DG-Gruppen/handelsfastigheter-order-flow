@@ -25,6 +25,9 @@ const BoardingPlan = lazyWithRetry(() => import("./pages/BoardingPlan"));
 const Boarding = lazyWithRetry(() => import("./pages/Boarding"));
 const BoardingNew = lazyWithRetry(() => import("./pages/BoardingNew"));
 const BoardingDetail = lazyWithRetry(() => import("./pages/BoardingDetail"));
+const BoardingV2List = lazyWithRetry(() => import("./pages/boardingv2/BoardingV2List"));
+const BoardingV2New = lazyWithRetry(() => import("./pages/boardingv2/BoardingV2New"));
+const BoardingV2Detail = lazyWithRetry(() => import("./pages/boardingv2/BoardingV2Detail"));
 const ITInfo = lazyWithRetry(() => import("./pages/ITInfo"));
 const OrderDetail = lazyWithRetry(() => import("./pages/OrderDetail"));
 const History = lazyWithRetry(() => import("./pages/History"));
@@ -96,6 +99,9 @@ const App = () => (
                      <Route path="/boarding" element={<Boarding />} />
                      <Route path="/boarding/ny" element={<BoardingNew />} />
                      <Route path="/boarding/:id" element={<BoardingDetail />} />
+                     <Route path="/boardingv2" element={<BoardingV2List />} />
+                     <Route path="/boardingv2/ny" element={<BoardingV2New />} />
+                     <Route path="/boardingv2/:id" element={<BoardingV2Detail />} />
                       <Route path="/approvals" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/orders/:id" element={<OrderDetail />} />
                       <Route path="/history" element={<History />} />

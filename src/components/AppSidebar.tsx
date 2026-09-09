@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const GROUP_CONFIG: { label: string; slugs: string[] }[] = [
   { label: "Information", slugs: ["nyheter", "strategy", "kpi", "kunskapsbanken", "documents", "properties"] },
-  { label: "Beställningar", slugs: ["new-order", "onboarding", "history"] },
+  { label: "Beställningar", slugs: ["new-order", "onboarding", "boarding-v2", "history"] },
   { label: "Organisation", slugs: ["org", "personnel", "kulturen", "workwear", "pulse"] },
   { label: "IT & Verktyg", slugs: ["it-support", "planner", "tools", "losenord", "prompts", "statistik", "chatt"] },
   { label: "Personligt", slugs: ["my-shf"] },
