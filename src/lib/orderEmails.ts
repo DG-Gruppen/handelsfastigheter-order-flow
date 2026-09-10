@@ -341,6 +341,8 @@ export async function sendApprovalEmail(params: {
   approverName?: string;
   items: { name: string; quantity?: number }[];
   isAutoApproved?: boolean;
+  /** Distinguishes sends of the same order to different people. */
+  keySuffix?: string;
 }) {
   const orderUrl = `${getAppBaseUrl()}/orders/${params.orderId}`;
 
@@ -348,7 +350,7 @@ export async function sendApprovalEmail(params: {
     await sendTransactionalEmail({
       templateName: "order-approved",
       recipientEmail: params.recipientEmail,
-      idempotencyKey: `order-approved-${params.orderId}`,
+      idempotencyKey: `order-approved-${params.orderId}${params.keySuffix ? `-${params.keySuffix}` : ""}`,
       templateData: {
         recipientName: params.recipientName,
         title: params.title,
