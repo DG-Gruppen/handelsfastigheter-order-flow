@@ -172,6 +172,25 @@ export default function OrderDetail() {
           comment,
         });
       }
+
+      // The person the order was placed for
+      const orderRecipient = await findProfileByName(order.recipient_name);
+      if (orderRecipient && orderRecipient.user_id !== order.requester_id) {
+        await supabase.rpc("create_notification", {
+          _user_id: orderRecipient.user_id, _title: "Beställning levererad",
+          _message: notifMessage, _type: "order_delivered", _reference_id: order.id,
+        });
+        if (orderRecipient.email) {
+          await sendDeliveryEmail({
+            orderId: order.id,
+            recipientName: orderRecipient.full_name,
+            recipientEmail: orderRecipient.email,
+            title: order.title,
+            orderRecipientName: order.recipient_name,
+            comment,
+          });
+        }
+      }
     }
     setMarking(false);
   };
