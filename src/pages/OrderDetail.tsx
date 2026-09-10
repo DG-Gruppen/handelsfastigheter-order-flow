@@ -178,7 +178,10 @@ export default function OrderDetail() {
       if (orderRecipient && orderRecipient.user_id !== order.requester_id) {
         await supabase.rpc("create_notification", {
           _user_id: orderRecipient.user_id, _title: "Beställning levererad",
-          _message: notifMessage, _type: "order_delivered", _reference_id: order.id,
+          _message: comment
+            ? `Beställningen "${order.title}" som gjordes åt dig har levererats.\n\nKommentar från IT: ${comment}`
+            : `Beställningen "${order.title}" som gjordes åt dig har levererats.`,
+          _type: "order_delivered", _reference_id: order.id,
         });
         if (orderRecipient.email) {
           await sendDeliveryEmail({
@@ -188,6 +191,7 @@ export default function OrderDetail() {
             title: order.title,
             orderRecipientName: order.recipient_name,
             comment,
+            keySuffix: "recipient",
           });
         }
       }
