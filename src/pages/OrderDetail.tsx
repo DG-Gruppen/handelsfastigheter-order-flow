@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useModulePermission } from "@/hooks/useModulePermission";
 import { sendHelpdeskEmail } from "@/lib/sendHelpdeskEmail";
-import { sendRejectionEmail, sendApprovalEmail, sendDeliveryEmail } from "@/lib/orderEmails";
+import { sendRejectionEmail, sendApprovalEmail, sendDeliveryEmail, findProfileByName } from "@/lib/orderEmails";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
