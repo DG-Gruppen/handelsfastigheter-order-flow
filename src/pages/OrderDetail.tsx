@@ -227,6 +227,27 @@ export default function OrderDetail() {
         });
       }
 
+      // The person the order was placed for
+      const orderRecipient = await findProfileByName(order.recipient_name);
+      if (orderRecipient && orderRecipient.user_id !== order.requester_id) {
+        await supabase.rpc("create_notification", {
+          _user_id: orderRecipient.user_id, _title: "Beställning godkänd",
+          _message: `Beställningen "${order.title}" som gjordes åt dig har godkänts.`,
+          _type: "order_approved", _reference_id: order.id,
+        });
+        if (orderRecipient.email) {
+          await sendApprovalEmail({
+            orderId: order.id,
+            recipientName: orderRecipient.full_name,
+            recipientEmail: orderRecipient.email,
+            title: order.title,
+            approverName: approverProfile?.full_name || "Attestanten",
+            items: items.map((i) => ({ name: i.name, quantity: i.quantity })),
+            keySuffix: "recipient",
+          });
+        }
+      }
+
       const systemsList = orderSystems.map((os) => ({ name: os.system?.name || "", description: os.system?.description || null }));
       await sendHelpdeskEmail({
         orderId: order.id, title: order.title, description: order.description,
