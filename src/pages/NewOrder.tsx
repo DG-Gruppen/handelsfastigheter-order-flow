@@ -234,6 +234,29 @@ export default function NewOrder() {
       }
     }
 
+    // Confirmation notification to the requester (both flows)
+    await supabase.rpc("create_notification", {
+      _user_id: user.id,
+      _title: autoApprove ? "Beställning godkänd" : "Beställning skickad för attestering",
+      _message: autoApprove
+        ? `Din beställning "${title}" godkändes automatiskt och har skickats till IT.`
+        : `Din beställning "${title}" har skickats för attestering.`,
+      _type: autoApprove ? "order_approved" : "order_submitted",
+      _reference_id: order.id,
+    });
+
+    // Notify the person the order is placed for
+    if (recipientUserId && recipientUserId !== user.id) {
+      const orderedByName = allProfiles.find((p) => p.user_id === user.id)?.full_name || "En kollega";
+      await supabase.rpc("create_notification", {
+        _user_id: recipientUserId,
+        _title: "Beställning gjord åt dig",
+        _message: `${orderedByName} har lagt en beställning åt dig: ${title}`,
+        _type: "order_submitted",
+        _reference_id: order.id,
+      });
+    }
+
     const successMsg = autoApprove
       ? "Beställningen har godkänts automatiskt och är redo att skickas till extern IT!"
       : needsCeoApproval
