@@ -74,6 +74,31 @@ async function sendTransactionalEmail(params: {
   });
 }
 
+// ─── Look up the person an order is placed for (by name) ───
+
+export interface BasicProfile {
+  user_id: string;
+  full_name: string;
+  email: string | null;
+}
+
+/**
+ * Resolve the profile of the person an order is for, based on the stored
+ * recipient_name. Returns null when the name is empty or ambiguous, so we
+ * never notify the wrong person.
+ */
+export async function findProfileByName(name?: string | null): Promise<BasicProfile | null> {
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("user_id, full_name, email")
+    .eq("full_name", trimmed)
+    .limit(2);
+  if (error || !data || data.length !== 1) return null;
+  return data[0] as BasicProfile;
+}
+
 // ─── Email to approver when a new order is created ───
 
 interface NewOrderEmailParams {
@@ -316,6 +341,8 @@ export async function sendApprovalEmail(params: {
   approverName?: string;
   items: { name: string; quantity?: number }[];
   isAutoApproved?: boolean;
+  /** Distinguishes sends of the same order to different people. */
+  keySuffix?: string;
 }) {
   const orderUrl = `${getAppBaseUrl()}/orders/${params.orderId}`;
 
@@ -323,7 +350,7 @@ export async function sendApprovalEmail(params: {
     await sendTransactionalEmail({
       templateName: "order-approved",
       recipientEmail: params.recipientEmail,
-      idempotencyKey: `order-approved-${params.orderId}`,
+      idempotencyKey: `order-approved-${params.orderId}${params.keySuffix ? `-${params.keySuffix}` : ""}`,
       templateData: {
         recipientName: params.recipientName,
         title: params.title,
@@ -347,6 +374,8 @@ export async function sendDeliveryEmail(params: {
   title: string;
   orderRecipientName?: string | null;
   comment?: string | null;
+  /** Distinguishes sends of the same order to different people. */
+  keySuffix?: string;
 }) {
   const orderUrl = `${getAppBaseUrl()}/orders/${params.orderId}`;
 
@@ -354,7 +383,7 @@ export async function sendDeliveryEmail(params: {
     await sendTransactionalEmail({
       templateName: "order-delivered",
       recipientEmail: params.recipientEmail,
-      idempotencyKey: `order-delivered-${params.orderId}`,
+      idempotencyKey: `order-delivered-${params.orderId}${params.keySuffix ? `-${params.keySuffix}` : ""}`,
       templateData: {
         recipientName: params.recipientName,
         title: params.title,
