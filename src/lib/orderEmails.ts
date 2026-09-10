@@ -374,6 +374,8 @@ export async function sendDeliveryEmail(params: {
   title: string;
   orderRecipientName?: string | null;
   comment?: string | null;
+  /** Distinguishes sends of the same order to different people. */
+  keySuffix?: string;
 }) {
   const orderUrl = `${getAppBaseUrl()}/orders/${params.orderId}`;
 
@@ -381,7 +383,7 @@ export async function sendDeliveryEmail(params: {
     await sendTransactionalEmail({
       templateName: "order-delivered",
       recipientEmail: params.recipientEmail,
-      idempotencyKey: `order-delivered-${params.orderId}`,
+      idempotencyKey: `order-delivered-${params.orderId}${params.keySuffix ? `-${params.keySuffix}` : ""}`,
       templateData: {
         recipientName: params.recipientName,
         title: params.title,
