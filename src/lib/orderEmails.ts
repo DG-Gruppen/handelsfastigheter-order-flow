@@ -74,6 +74,31 @@ async function sendTransactionalEmail(params: {
   });
 }
 
+// ─── Look up the person an order is placed for (by name) ───
+
+export interface BasicProfile {
+  user_id: string;
+  full_name: string;
+  email: string | null;
+}
+
+/**
+ * Resolve the profile of the person an order is for, based on the stored
+ * recipient_name. Returns null when the name is empty or ambiguous, so we
+ * never notify the wrong person.
+ */
+export async function findProfileByName(name?: string | null): Promise<BasicProfile | null> {
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("user_id, full_name, email")
+    .eq("full_name", trimmed)
+    .limit(2);
+  if (error || !data || data.length !== 1) return null;
+  return data[0] as BasicProfile;
+}
+
 // ─── Email to approver when a new order is created ───
 
 interface NewOrderEmailParams {
