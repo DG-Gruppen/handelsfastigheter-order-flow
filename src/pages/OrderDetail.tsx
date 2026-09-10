@@ -278,28 +278,40 @@ export default function OrderDetail() {
     setRejectionReason("");
     invalidate();
 
+    const approverName = approverProfile?.full_name || "Attestanten";
+
     if (user && order.requester_id !== user.id) {
-      const approverName = approverProfile?.full_name || "Attestanten";
       await supabase.rpc("create_notification", {
         _user_id: order.requester_id, _title: "Beställning avslagen",
         _message: `${approverName} har avslagit: ${order.title}${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}`,
         _type: "order_rejected", _reference_id: order.id,
       });
+    }
 
-      if (requesterProfile?.email) {
-        try {
-          await sendRejectionEmail({
-            orderId: order.id,
-            title: order.title,
-            requesterName: requesterProfile.full_name,
-            requesterEmail: requesterProfile.email,
-            approverName,
-            rejectionReason: rejectionReason.trim() || null,
-          });
-        } catch (err) {
-          console.error("Failed to send rejection email:", err);
-        }
+    // Rejection mail always goes to the requester, also when they rejected it themselves
+    if (requesterProfile?.email) {
+      try {
+        await sendRejectionEmail({
+          orderId: order.id,
+          title: order.title,
+          requesterName: requesterProfile.full_name,
+          requesterEmail: requesterProfile.email,
+          approverName,
+          rejectionReason: rejectionReason.trim() || null,
+        });
+      } catch (err) {
+        console.error("Failed to send rejection email:", err);
       }
+    }
+
+    // The person the order was placed for
+    const orderRecipient = await findProfileByName(order.recipient_name);
+    if (orderRecipient && orderRecipient.user_id !== order.requester_id) {
+      await supabase.rpc("create_notification", {
+        _user_id: orderRecipient.user_id, _title: "Beställning avslagen",
+        _message: `Beställningen "${order.title}" som gjordes åt dig har avslagits${rejectionReason.trim() ? ` – "${rejectionReason.trim()}"` : ""}.`,
+        _type: "order_rejected", _reference_id: order.id,
+      });
     }
   };
 
