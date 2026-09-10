@@ -160,6 +160,10 @@ export default function NewOrder() {
       return;
     }
 
+    const recipientUserId = isPrivileged && selectedExistingRecipient !== "self"
+      ? selectedExistingRecipient
+      : null;
+
     // Notification + email for approver (if not auto-approved)
     if (!autoApprove && resolvedApproverId && resolvedApproverId !== user.id) {
       const requesterName = allProfiles.find(p => p.user_id === user.id)?.full_name || "Någon";
