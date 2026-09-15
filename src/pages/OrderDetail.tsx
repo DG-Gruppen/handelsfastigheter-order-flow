@@ -28,13 +28,14 @@ interface Order {
   order_reason: string | null; recipient_type: string | null; recipient_name: string | null;
   recipient_department: string | null; recipient_start_date: string | null;
   rejection_reason: string | null; delivery_comment: string | null; updated_at: string;
+  delivery_address: string | null;
 }
 
 interface OrderItem { id: string; name: string; description: string | null; quantity: number; category_id: string | null; order_type_id: string | null; }
 interface Profile { full_name: string; email: string; department?: string | null; phone?: string | null; region_id?: string | null; }
 interface OrderSystem { id: string; system: { id: string; name: string; description: string; icon: string; }; }
 
-const ORDER_COLUMNS = "id,title,description,status,category,created_at,approved_at,requester_id,approver_id,order_reason,recipient_type,recipient_name,recipient_department,recipient_start_date,rejection_reason,delivery_comment,updated_at";
+const ORDER_COLUMNS = "id,title,description,status,category,created_at,approved_at,requester_id,approver_id,order_reason,recipient_type,recipient_name,recipient_department,recipient_start_date,rejection_reason,delivery_comment,delivery_address,updated_at";
 const ORDER_ITEM_COLUMNS = "id,name,description,quantity,category_id,order_type_id";
 
 async function fetchOrderDetail(id: string) {
@@ -259,6 +260,7 @@ export default function OrderDetail() {
         requesterPhone: requesterProfile?.phone,
         items: items.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
         systems: systemsList,
+        deliveryAddress: order.delivery_address,
       });
     }
     setApproving(false);
