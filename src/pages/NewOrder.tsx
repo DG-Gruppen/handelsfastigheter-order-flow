@@ -86,6 +86,11 @@ export default function NewOrder() {
       return;
     }
 
+    if (!resolvedDeliveryAddress) {
+      toast.error("Ange en leveransadress");
+      return;
+    }
+
     setSubmitting(true);
 
     const isCeo = !!(ceoProfile && ceoProfile.user_id === user.id);
@@ -135,6 +140,7 @@ export default function NewOrder() {
         recipient_start_date: null,
         recipient_department: "",
         order_reason: "broken_equipment",
+        delivery_address: resolvedDeliveryAddress,
         status: autoApprove ? "approved" : "pending",
         approved_at: autoApprove ? new Date().toISOString() : null,
       } as any)
