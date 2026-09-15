@@ -391,6 +391,33 @@ export default function NewOrder() {
               </Button>
             </div>
 
+            {/* Delivery address */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Leveransadress *</Label>
+              <Select value={addressChoice} onValueChange={setAddressChoice}>
+                <SelectTrigger className="h-12 md:h-10">
+                  <SelectValue placeholder="Välj leveransadress..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_ADDRESSES.map((a) => (
+                    <SelectItem key={a.label} value={a.label} className="py-3 md:py-2">
+                      {a.label} – {a.address}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom" className="py-3 md:py-2">Annan adress...</SelectItem>
+                </SelectContent>
+              </Select>
+              {addressChoice === "custom" && (
+                <Input
+                  value={customAddress}
+                  onChange={(e) => setCustomAddress(e.target.value)}
+                  placeholder="Gatuadress, postnummer och ort"
+                  maxLength={200}
+                  className="h-12 md:h-10"
+                />
+              )}
+            </div>
+
             {/* Comment */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Kommentar</Label>
