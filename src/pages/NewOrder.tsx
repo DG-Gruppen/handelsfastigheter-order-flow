@@ -235,6 +235,7 @@ export default function NewOrder() {
         requesterRegion,
         requesterPhone: reqFullProfile?.phone,
         items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+        deliveryAddress: resolvedDeliveryAddress,
       });
 
       if (requesterEmail) {
