@@ -17,6 +17,7 @@ interface HelpdeskEmailParams {
   requesterPhone?: string | null;
   items: { name: string; description?: string | null; quantity: number }[];
   systems?: { name: string; description?: string | null }[];
+  deliveryAddress?: string | null;
 }
 
 export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
@@ -24,7 +25,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
     orderId, title, description, recipientName, recipientDepartment,
     recipientStartDate, orderReason, requesterName,
     requesterDepartment, requesterRegion, requesterPhone,
-    items, systems = [],
+    items, systems = [], deliveryAddress,
   } = params;
 
   const itEmail = await getItContactEmail();

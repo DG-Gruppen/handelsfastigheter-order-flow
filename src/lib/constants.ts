@@ -37,3 +37,10 @@ export const FALLBACK_IT_EMAIL = "helpdesk@dggruppen.se";
 
 /** App base URL */
 export const APP_BASE_URL = "https://intra.handelsfastigheter.se";
+
+/** Predefined delivery addresses for hardware orders */
+export const DELIVERY_ADDRESSES = [
+  { label: "Regionkontor Nord", address: "Maskinistgatan 8, 781 70 Borlänge" },
+  { label: "Regionkontor Syd", address: "Grustagsgatan 4, 254 64 Helsingborg" },
+  { label: "Huvudkontor (Sthlm)", address: "Holländargatan 10, 111 36 Stockholm" },
+] as const;
