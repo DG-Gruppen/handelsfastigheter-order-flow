@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { DELIVERY_ADDRESSES } from "@/lib/constants";
 import { toast } from "sonner";
 import { Send, Plus, Trash2 } from "lucide-react";
 import { getIcon } from "@/lib/icons";
@@ -41,7 +43,14 @@ export default function NewOrder() {
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
   const [items, setItems] = useState<OrderItem[]>([{ uid: crypto.randomUUID(), typeId: "" }]);
   const [description, setDescription] = useState("");
+  const [addressChoice, setAddressChoice] = useState<string>(DELIVERY_ADDRESSES[0].label);
+  const [customAddress, setCustomAddress] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const resolvedDeliveryAddress =
+    addressChoice === "custom"
+      ? customAddress.trim()
+      : `${addressChoice}, ${DELIVERY_ADDRESSES.find((a) => a.label === addressChoice)?.address ?? ""}`;
 
   // Derived approval state
   const isManager = roles.includes("manager");
