@@ -155,6 +155,13 @@ const HelpdeskOrderEmail = ({
             </>
           )}
 
+          {deliveryAddress && (
+            <>
+              <Heading style={sectionHeading}>Leveransadress</Heading>
+              <Text style={text}>{deliveryAddress}</Text>
+            </>
+          )}
+
           {description && (
             <>
               <Heading style={sectionHeading}>Kommentar</Heading>
