@@ -39,6 +39,7 @@ const HelpdeskOrderEmail = ({
   description,
   items = [],
   systems = [],
+  deliveryAddress,
   orderUrl = SITE_URL,
 }: Props) => (
   <Html lang="sv" dir="ltr">
