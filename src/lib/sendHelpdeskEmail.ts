@@ -69,6 +69,7 @@ export async function sendHelpdeskEmail(params: HelpdeskEmailParams) {
               name: s.name,
               description: s.description || undefined,
             })),
+          deliveryAddress: deliveryAddress || undefined,
           orderUrl,
         },
       },

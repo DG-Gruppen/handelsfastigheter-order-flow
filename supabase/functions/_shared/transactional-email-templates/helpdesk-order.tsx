@@ -21,6 +21,7 @@ interface Props {
   description?: string
   items?: { name: string; quantity?: number; description?: string }[]
   systems?: { name: string; description?: string }[]
+  deliveryAddress?: string
   orderUrl?: string
 }
 
