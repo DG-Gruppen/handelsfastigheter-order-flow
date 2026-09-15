@@ -21,6 +21,7 @@ interface Props {
   description?: string
   items?: { name: string; quantity?: number; description?: string }[]
   systems?: { name: string; description?: string }[]
+  deliveryAddress?: string
   orderUrl?: string
 }
 
@@ -38,6 +39,7 @@ const HelpdeskOrderEmail = ({
   description,
   items = [],
   systems = [],
+  deliveryAddress,
   orderUrl = SITE_URL,
 }: Props) => (
   <Html lang="sv" dir="ltr">
@@ -150,6 +152,13 @@ const HelpdeskOrderEmail = ({
                   </li>
                 ))}
               </ul>
+            </>
+          )}
+
+          {deliveryAddress && (
+            <>
+              <Heading style={sectionHeading}>Leveransadress</Heading>
+              <Text style={text}>{deliveryAddress}</Text>
             </>
           )}
 

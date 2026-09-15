@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { DELIVERY_ADDRESSES } from "@/lib/constants";
 import { toast } from "sonner";
 import { Send, Plus, Trash2 } from "lucide-react";
 import { getIcon } from "@/lib/icons";
@@ -41,7 +43,14 @@ export default function NewOrder() {
   const [selectedExistingRecipient, setSelectedExistingRecipient] = useState<string>("self");
   const [items, setItems] = useState<OrderItem[]>([{ uid: crypto.randomUUID(), typeId: "" }]);
   const [description, setDescription] = useState("");
+  const [addressChoice, setAddressChoice] = useState<string>(DELIVERY_ADDRESSES[0].label);
+  const [customAddress, setCustomAddress] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const resolvedDeliveryAddress =
+    addressChoice === "custom"
+      ? customAddress.trim()
+      : `${addressChoice}, ${DELIVERY_ADDRESSES.find((a) => a.label === addressChoice)?.address ?? ""}`;
 
   // Derived approval state
   const isManager = roles.includes("manager");
@@ -74,6 +83,11 @@ export default function NewOrder() {
       toast.error(!myManagerProfile && !isPrivileged
         ? "Du har ingen chef kopplad till din profil. Kontakta din administratör."
         : "Lägg till minst en utrustning");
+      return;
+    }
+
+    if (!resolvedDeliveryAddress) {
+      toast.error("Ange en leveransadress");
       return;
     }
 
@@ -126,6 +140,7 @@ export default function NewOrder() {
         recipient_start_date: null,
         recipient_department: "",
         order_reason: "broken_equipment",
+        delivery_address: resolvedDeliveryAddress,
         status: autoApprove ? "approved" : "pending",
         approved_at: autoApprove ? new Date().toISOString() : null,
       } as any)
@@ -220,6 +235,7 @@ export default function NewOrder() {
         requesterRegion,
         requesterPhone: reqFullProfile?.phone,
         items: orderItemsToInsert.map((i) => ({ name: i.name, description: i.description, quantity: i.quantity })),
+        deliveryAddress: resolvedDeliveryAddress,
       });
 
       if (requesterEmail) {
@@ -373,6 +389,33 @@ export default function NewOrder() {
                 <Plus className="h-4 w-4" />
                 Lägg till utrustning
               </Button>
+            </div>
+
+            {/* Delivery address */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Leveransadress *</Label>
+              <Select value={addressChoice} onValueChange={setAddressChoice}>
+                <SelectTrigger className="h-12 md:h-10">
+                  <SelectValue placeholder="Välj leveransadress..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_ADDRESSES.map((a) => (
+                    <SelectItem key={a.label} value={a.label} className="py-3 md:py-2">
+                      {a.label} – {a.address}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom" className="py-3 md:py-2">Annan adress...</SelectItem>
+                </SelectContent>
+              </Select>
+              {addressChoice === "custom" && (
+                <Input
+                  value={customAddress}
+                  onChange={(e) => setCustomAddress(e.target.value)}
+                  placeholder="Gatuadress, postnummer och ort"
+                  maxLength={200}
+                  className="h-12 md:h-10"
+                />
+              )}
             </div>
 
             {/* Comment */}
