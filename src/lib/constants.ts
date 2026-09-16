@@ -42,5 +42,6 @@ export const APP_BASE_URL = "https://intra.handelsfastigheter.se";
 export const DELIVERY_ADDRESSES = [
   { label: "Regionkontor Nord", address: "Maskinistgatan 8, 781 70 Borlänge" },
   { label: "Regionkontor Syd", address: "Grustagsgatan 4, 254 64 Helsingborg" },
+  { label: "Regionkontor Mitt", address: "Ulvsundavägen 185, 168 67 Bromma" },
   { label: "Huvudkontor (Sthlm)", address: "Holländargatan 10, 111 36 Stockholm" },
 ] as const;
