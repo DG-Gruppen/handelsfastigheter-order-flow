@@ -12,6 +12,7 @@ import { Save, Moon, Phone, Building2, Mail, Shield, MapPin } from "lucide-react
 import { toast } from "sonner";
 import { useRegions } from "@/hooks/useRegions";
 import MyEffectivePermissions from "@/components/MyEffectivePermissions";
+import PushNotificationSettings from "@/components/PushNotificationSettings";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
@@ -188,6 +189,8 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        <PushNotificationSettings />
 
         <MyEffectivePermissions />
       </div>
