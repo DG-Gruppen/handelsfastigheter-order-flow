@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Smartphone, Monitor, Download, Apple, Chrome } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { isInStandaloneMode, isIos, isSamsungBrowser } from "@/lib/pwa";
 
 type Platform = "ios" | "android-chrome" | "android-samsung" | "desktop";
 
@@ -53,10 +54,9 @@ function getSteps(platform: Platform) {
 }
 
 function detectPlatform(): Platform {
-  const ua = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(ua)) return "ios";
-  if (/samsungbrowser/.test(ua)) return "android-samsung";
-  if (/android/.test(ua)) return "android-chrome";
+  if (isIos()) return "ios";
+  if (isSamsungBrowser()) return "android-samsung";
+  if (/android/i.test(navigator.userAgent)) return "android-chrome";
   return "desktop";
 }
 
@@ -80,7 +80,7 @@ export default function PwaInstallGuide() {
     };
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", installedHandler);
-    if (window.matchMedia("(display-mode: standalone)").matches) setInstalled(true);
+    if (isInStandaloneMode()) setInstalled(true);
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
       window.removeEventListener("appinstalled", installedHandler);

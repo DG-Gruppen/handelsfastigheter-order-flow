@@ -8,6 +8,7 @@ import {
   removeToken,
   requestToken,
 } from "@/lib/firebasePush";
+import { isInStandaloneMode, isIos } from "@/lib/pwa";
 
 export type PushState =
   | "loading"
@@ -17,17 +18,6 @@ export type PushState =
   | "off"
   | "on";
 
-function isStandalone() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as unknown as { standalone?: boolean }).standalone === true
-  );
-}
-
-function isIos() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
 export function usePushNotifications() {
   const { user } = useAuth();
   const [state, setState] = useState<PushState>("loading");
@@ -36,7 +26,7 @@ export function usePushNotifications() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (isIos() && !isStandalone()) {
+      if (isIos() && !isInStandaloneMode()) {
         if (!cancelled) setState("needs-install");
         return;
       }

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Globe, ChevronDown, ChevronUp, Smartphone, Download } from "lucide-react";
+import { X, Globe, ChevronDown, ChevronUp, Smartphone, Download, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isInStandaloneMode, isIos, isSamsungBrowser } from "@/lib/pwa";
 
 type BrowserType = "chrome" | "firefox" | "safari" | "edge" | "opera" | "other";
 
@@ -14,21 +15,6 @@ function detectBrowser(): BrowserType {
   if (ua.includes("safari") && !ua.includes("chrome") && !ua.includes("crios")) return "safari";
   if (ua.includes("chrome") || ua.includes("crios")) return "chrome";
   return "other";
-}
-
-function isIos() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-function isSamsungBrowser() {
-  return /samsungbrowser/i.test(navigator.userAgent);
-}
-
-function isInStandaloneMode() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as any).standalone === true
-  );
 }
 
 const BROWSER_LABELS: Record<BrowserType, string> = {
@@ -82,7 +68,7 @@ const IOS_PWA_STEPS = [
   "Tryck på Dela-ikonen ⬆ (fyrkant med pil uppåt) längst ner i Safari",
   "Scrolla ner i menyn och tryck på \"Lägg till på hemskärmen\" 📲",
   "Skriv \"SHF\" som namn och tryck \"Lägg till\" uppe till höger",
-  "Appen finns nu som en ikon på din hemskärm — öppna den därifrån för bästa upplevelse!",
+  "Appen finns nu som en ikon på din hemskärm — öppna den därifrån för pushnotiser!",
 ];
 
 const ANDROID_CHROME_PWA_STEPS = [
@@ -90,7 +76,7 @@ const ANDROID_CHROME_PWA_STEPS = [
   "Tryck på de tre prickarna ⋮ uppe till höger",
   "Välj \"Installera app\" eller \"Lägg till på startskärmen\"",
   "Tryck \"Installera\" i dialogrutan som visas",
-  "Appen finns nu i din applista och på hemskärmen — tryck på ikonen för att öppna!",
+  "Appen finns nu i din applista och på hemskärmen — öppna den därifrån för pushnotiser!",
 ];
 
 const ANDROID_SAMSUNG_PWA_STEPS = [
@@ -98,10 +84,8 @@ const ANDROID_SAMSUNG_PWA_STEPS = [
   "Tryck på hamburgermenyn ☰ (tre streck) längst ner",
   "Välj \"Lägg till sida på\" → \"Startskärm\"",
   "Namnge genvägen \"SHF\" och tryck \"Lägg till\"",
-  "Appen finns nu som en ikon på din hemskärm!",
+  "Appen finns nu som en ikon på din hemskärm — öppna den därifrån för pushnotiser!",
 ];
-
-const STORAGE_KEY = "shf-homepage-dismissed";
 
 export default function HomepageSuggestion() {
   const [visible, setVisible] = useState(false);
@@ -112,8 +96,9 @@ export default function HomepageSuggestion() {
   const deferredPromptRef = useRef<any>(null);
   const [canInstallPwa, setCanInstallPwa] = useState(false);
   const [showPwaTab, setShowPwaTab] = useState(false);
+  const [installStatus, setInstallStatus] = useState<"idle" | "accepted" | "dismissed" | "unsupported">("idle");
 
-  // Listen for the beforeinstallprompt event (Chrome/Edge/Android)
+  // Listen for the native beforeinstallprompt event (Chrome/Edge on Android/desktop)
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
@@ -124,25 +109,14 @@ export default function HomepageSuggestion() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Always show the card when the app is not installed as PWA (persistent reminder)
   useEffect(() => {
-    // Don't show if already installed as PWA
-    if (isInStandaloneMode()) return;
-
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (!dismissed) {
-      const t = setTimeout(() => setVisible(true), 2000);
-      return () => clearTimeout(t);
-    }
-  }, []);
-
-  // Auto-dismiss after 30 seconds of no interaction
-  useEffect(() => {
-    if (!visible) return;
-    const t = setTimeout(() => {
+    if (isInStandaloneMode()) {
       setVisible(false);
-    }, 30000);
-    return () => clearTimeout(t);
-  }, [visible, expanded]);
+      return;
+    }
+    setVisible(true);
+  }, []);
 
   // Default to PWA tab on mobile
   useEffect(() => {
@@ -151,7 +125,6 @@ export default function HomepageSuggestion() {
 
   const dismiss = () => {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, "1");
   };
 
   const copyUrl = async () => {
@@ -162,14 +135,22 @@ export default function HomepageSuggestion() {
 
   const handleInstallPwa = async () => {
     if (deferredPromptRef.current) {
+      setInstallStatus("idle");
       deferredPromptRef.current.prompt();
       const { outcome } = await deferredPromptRef.current.userChoice;
       if (outcome === "accepted") {
-        dismiss();
+        setInstallStatus("accepted");
+        deferredPromptRef.current = null;
+        setCanInstallPwa(false);
+      } else {
+        setInstallStatus("dismissed");
       }
-      deferredPromptRef.current = null;
-      setCanInstallPwa(false);
+      return;
     }
+
+    // No native prompt available — expand instructions so the user can install manually
+    setExpanded(true);
+    setInstallStatus("unsupported");
   };
 
   const pwaSteps = isIos()
@@ -183,6 +164,8 @@ export default function HomepageSuggestion() {
     : isSamsungBrowser()
       ? "Android (Samsung Internet)"
       : "Android (Chrome)";
+
+  if (!visible) return null;
 
   return (
     <AnimatePresence>
@@ -205,32 +188,54 @@ export default function HomepageSuggestion() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold leading-tight">
-                {isMobile ? "Installera SHF som app" : "Gör SHF till din startsida"}
+                {isMobile ? "Installera SHF för pushnotiser" : "Gör SHF till din startsida"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {isMobile
-                  ? "Lägg till SHF på din hemskärm för snabb åtkomst"
+                  ? "Lägg till SHF på hemskärmen — då fungerar pushnotiser även när appen är stängd"
                   : `Få snabb åtkomst varje gång du öppnar ${BROWSER_LABELS[browser]}`}
               </p>
             </div>
             <button
               onClick={dismiss}
               className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Dölj"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Native install button (Chrome/Edge on Android) */}
-          {canInstallPwa && isMobile && (
+          {/* Install button — always visible on mobile when not installed */}
+          {isMobile && (
             <div className="px-4 pb-2">
               <button
                 onClick={handleInstallPwa}
                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium transition-colors hover:bg-primary/90"
               >
                 <Download className="h-4 w-4" />
-                Installera SHF
+                Installera SHF-appen
               </button>
+            </div>
+          )}
+
+          {/* Status feedback after install attempt */}
+          {installStatus !== "idle" && (
+            <div className="px-4 pb-2">
+              <p className={cn(
+                "rounded-lg px-3 py-2 text-xs",
+                installStatus === "accepted"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-secondary/60 text-foreground/80"
+              )}>
+                {installStatus === "accepted" && (
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Installationen startade — leta efter SHF-ikonen på hemskärmen.
+                  </span>
+                )}
+                {installStatus === "dismissed" && "Installationen avbröts. Tryck på knappen igen när du vill."}
+                {installStatus === "unsupported" && "Din webbläsare visade ingen installera-ruta än. Följ stegen nedan i stället."}
+              </p>
             </div>
           )}
 
@@ -319,7 +324,7 @@ export default function HomepageSuggestion() {
                     onClick={dismiss}
                     className="w-full text-xs text-muted-foreground hover:text-foreground py-1 transition-colors"
                   >
-                    Påminn mig inte igen
+                    Dölj den här rutan
                   </button>
                 </div>
               </motion.div>
