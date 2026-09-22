@@ -1,11 +1,11 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
 
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:it@handelsfastigheter.se";
 const PUSH_TRIGGER_SECRET = Deno.env.get("PUSH_TRIGGER_SECRET") ?? "";
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const FIREBASE_MESSAGING_API_KEY = Deno.env.get("FIREBASE_MESSAGING_API_KEY") ?? "";
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
+const APP_ORIGIN = "https://intra.handelsfastigheter.se";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    return json({ error: "VAPID keys not configured" }, 500);
+  if (!LOVABLE_API_KEY || !FIREBASE_MESSAGING_API_KEY) {
+    return json({ error: "Firebase-anslutningen är inte konfigurerad" }, 500);
   }
 
   // Interna anrop (databastrigger) autentiseras med delad hemlighet.
@@ -66,44 +66,65 @@ Deno.serve(async (req) => {
     return json({ error: "Forbidden" }, 403);
   }
 
-  const { data: subs, error } = await supabase
-    .from("push_subscriptions")
-    .select("id, endpoint, p256dh, auth")
+  const { data: devices, error } = await supabase
+    .from("fcm_tokens")
+    .select("id, token")
     .in("user_id", [...targets]);
 
   if (error) return json({ error: error.message }, 500);
-  if (!subs || subs.length === 0) return json({ sent: 0, removed: 0 });
+  if (!devices || devices.length === 0) return json({ sent: 0, removed: 0 });
 
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-
-  const message = JSON.stringify({
-    title: payload.title,
-    body: payload.body ?? "",
-    url: payload.url ?? "/dashboard",
-    tag: payload.tag,
-  });
+  const path = payload.url ?? "/dashboard";
+  const link = path.startsWith("http") ? path : `${APP_ORIGIN}${path}`;
 
   let sent = 0;
   const stale: string[] = [];
 
   await Promise.all(
-    subs.map(async (sub) => {
+    devices.map(async (device) => {
       try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          message,
-        );
-        sent++;
+        const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "X-Connection-Api-Key": FIREBASE_MESSAGING_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: {
+              token: device.token,
+              notification: { title: payload.title, body: payload.body ?? "" },
+              data: { url: path },
+              webpush: {
+                notification: {
+                  icon: "/pwa-icon-192.png",
+                  badge: "/pwa-icon-192.png",
+                  tag: payload.tag ?? undefined,
+                },
+                fcm_options: { link },
+              },
+            },
+          }),
+        });
+
+        if (res.ok) {
+          sent++;
+          return;
+        }
+
+        const errorBody = await res.text();
+        console.error(`FCM send failed [${res.status}]: ${errorBody}`);
+        if (res.status === 404 || (res.status === 400 && errorBody.includes("INVALID_ARGUMENT"))) {
+          stale.push(device.id);
+        }
       } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode;
-        console.error(`push failed [${status}]:`, (err as Error).message);
-        if (status === 404 || status === 410) stale.push(sub.id);
+        console.error("FCM send error:", (err as Error).message);
       }
     }),
   );
 
   if (stale.length > 0) {
-    await supabase.from("push_subscriptions").delete().in("id", stale);
+    await supabase.from("fcm_tokens").delete().in("id", stale);
   }
 
   return json({ sent, removed: stale.length });
