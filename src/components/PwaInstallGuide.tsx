@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Smartphone, Monitor, Download, Apple, Chrome } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { isInStandaloneMode, isIos, isSamsungBrowser } from "@/lib/pwa";
 
 type Platform = "ios" | "android-chrome" | "android-samsung" | "desktop";
 
