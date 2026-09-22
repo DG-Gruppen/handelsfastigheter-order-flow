@@ -26,7 +26,7 @@ export function usePushNotifications() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (isIos() && !isStandalone()) {
+      if (isIos() && !isInStandaloneMode()) {
         if (!cancelled) setState("needs-install");
         return;
       }
