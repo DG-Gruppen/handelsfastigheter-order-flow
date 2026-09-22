@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-// Publik VAPID-nyckel (publicerbar, får ligga i koden)
-export const VAPID_PUBLIC_KEY =
-  "BG6snRcxjeGkDkonqiOXEB6t2vlsOhbJb-iOnbUM9q6A8tzJjQAd9Ss99ud5EIFR-15tBNO06fcJF2vj-GofiA4";
-
-const SW_URL = "/push-sw.js";
+import {
+  getExistingToken,
+  isFirebaseConfigured,
+  pushSupported,
+  removeToken,
+  requestToken,
+} from "@/lib/firebasePush";
 
 export type PushState =
   | "loading"
@@ -15,15 +16,6 @@ export type PushState =
   | "denied"
   | "off"
   | "on";
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const output = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
-  return output;
-}
 
 function isStandalone() {
   return (
@@ -41,78 +33,66 @@ export function usePushNotifications() {
   const [state, setState] = useState<PushState>("loading");
   const [busy, setBusy] = useState(false);
 
-  const supported =
-    typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
-    "PushManager" in window &&
-    "Notification" in window;
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!supported) {
-        setState(isIos() && !isStandalone() ? "needs-install" : "unsupported");
+      if (isIos() && !isStandalone()) {
+        if (!cancelled) setState("needs-install");
         return;
       }
-      // iOS kräver att appen är installerad på hemskärmen
-      if (isIos() && !isStandalone()) {
-        setState("needs-install");
+      if (!isFirebaseConfigured() || !(await pushSupported())) {
+        if (!cancelled) setState("unsupported");
         return;
       }
       if (Notification.permission === "denied") {
-        setState("denied");
+        if (!cancelled) setState("denied");
         return;
       }
-      try {
-        const reg = await navigator.serviceWorker.getRegistration(SW_URL);
-        const sub = reg ? await reg.pushManager.getSubscription() : null;
-        if (!cancelled) setState(sub ? "on" : "off");
-      } catch {
+      if (Notification.permission !== "granted") {
         if (!cancelled) setState("off");
+        return;
       }
+      const token = await getExistingToken();
+      if (cancelled) return;
+      if (!token || !user) {
+        setState(token ? "on" : "off");
+        return;
+      }
+      const { data } = await supabase
+        .from("fcm_tokens")
+        .select("id")
+        .eq("token", token)
+        .maybeSingle();
+      if (!cancelled) setState(data ? "on" : "off");
     })();
     return () => {
       cancelled = true;
     };
-  }, [supported]);
+  }, [user]);
 
   const enable = useCallback(async () => {
     if (!user) return { ok: false, reason: "no-user" as const };
     if (window.top !== window.self) return { ok: false, reason: "iframe" as const };
     setBusy(true);
     try {
-      const permission =
-        Notification.permission === "granted"
-          ? "granted"
-          : await Notification.requestPermission();
-      if (permission !== "granted") {
-        setState(permission === "denied" ? "denied" : "off");
-        return { ok: false, reason: "denied" as const };
+      const res = await requestToken();
+      if (res.status !== "registered") {
+        setState(res.status === "denied" ? "denied" : "off");
+        return { ok: false, reason: res.status === "denied" ? ("denied" as const) : ("error" as const) };
       }
 
-      const reg = await navigator.serviceWorker.register(SW_URL);
-      await navigator.serviceWorker.ready;
-
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-      }
-
-      const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh: string; auth: string } };
-      const { error } = await supabase.from("push_subscriptions").upsert(
+      const { error } = await supabase.from("fcm_tokens").upsert(
         {
           user_id: user.id,
-          endpoint: json.endpoint!,
-          p256dh: json.keys!.p256dh,
-          auth: json.keys!.auth,
+          token: res.token,
           user_agent: navigator.userAgent.slice(0, 300),
         } as never,
-        { onConflict: "endpoint" },
+        { onConflict: "token" },
       );
-      if (error) return { ok: false, reason: "save-failed" as const };
+      if (error) {
+        console.error("Kunde inte spara enheten", error);
+        return { ok: false, reason: "save-failed" as const };
+      }
 
       setState("on");
       return { ok: true as const };
@@ -127,11 +107,10 @@ export function usePushNotifications() {
   const disable = useCallback(async () => {
     setBusy(true);
     try {
-      const reg = await navigator.serviceWorker.getRegistration(SW_URL);
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
-      if (sub) {
-        await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
-        await sub.unsubscribe();
+      const token = await getExistingToken();
+      if (token) {
+        await supabase.from("fcm_tokens").delete().eq("token", token);
+        await removeToken();
       }
       setState("off");
       return { ok: true as const };
@@ -150,6 +129,7 @@ export function usePushNotifications() {
         url: "/dashboard",
       },
     });
+    if (error) console.error("Testnotis misslyckades", error);
     return !error;
   }, [user]);
 
