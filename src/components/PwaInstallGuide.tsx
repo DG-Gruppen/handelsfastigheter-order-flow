@@ -64,6 +64,8 @@ export default function PwaInstallGuide() {
   const [platform, setPlatform] = useState<Platform>(detectPlatform);
   const deferredPromptRef = useRef<any>(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [installed, setInstalled] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -71,14 +73,38 @@ export default function PwaInstallGuide() {
       deferredPromptRef.current = e;
       setCanInstall(true);
     };
+    const installedHandler = () => {
+      setInstalled(true);
+      setCanInstall(false);
+      setStatus("Appen är installerad — leta efter SHF-ikonen i din applista eller på hemskärmen.");
+    };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", installedHandler);
+    if (window.matchMedia("(display-mode: standalone)").matches) setInstalled(true);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPromptRef.current) return;
-    deferredPromptRef.current.prompt();
-    await deferredPromptRef.current.userChoice;
+    const prompt = deferredPromptRef.current;
+    if (!prompt) {
+      setStatus("Webbläsaren kunde inte starta installationen. Följ stegen nedan i stället.");
+      return;
+    }
+    setStatus(null);
+    try {
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      if (choice?.outcome === "accepted") {
+        setStatus("Installationen har startat — SHF-ikonen dyker upp i din applista om en liten stund.");
+      } else {
+        setStatus("Installationen avbröts. Du kan trycka på knappen igen när du vill.");
+      }
+    } catch {
+      setStatus("Något gick fel. Följ stegen nedan för att installera manuellt.");
+    }
     deferredPromptRef.current = null;
     setCanInstall(false);
   };
