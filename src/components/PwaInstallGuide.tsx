@@ -64,6 +64,8 @@ export default function PwaInstallGuide() {
   const [platform, setPlatform] = useState<Platform>(detectPlatform);
   const deferredPromptRef = useRef<any>(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [installed, setInstalled] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -71,14 +73,38 @@ export default function PwaInstallGuide() {
       deferredPromptRef.current = e;
       setCanInstall(true);
     };
+    const installedHandler = () => {
+      setInstalled(true);
+      setCanInstall(false);
+      setStatus("Appen är installerad — leta efter SHF-ikonen i din applista eller på hemskärmen.");
+    };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", installedHandler);
+    if (window.matchMedia("(display-mode: standalone)").matches) setInstalled(true);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPromptRef.current) return;
-    deferredPromptRef.current.prompt();
-    await deferredPromptRef.current.userChoice;
+    const prompt = deferredPromptRef.current;
+    if (!prompt) {
+      setStatus("Webbläsaren kunde inte starta installationen. Följ stegen nedan i stället.");
+      return;
+    }
+    setStatus(null);
+    try {
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      if (choice?.outcome === "accepted") {
+        setStatus("Installationen har startat — SHF-ikonen dyker upp i din applista om en liten stund.");
+      } else {
+        setStatus("Installationen avbröts. Du kan trycka på knappen igen när du vill.");
+      }
+    } catch {
+      setStatus("Något gick fel. Följ stegen nedan för att installera manuellt.");
+    }
     deferredPromptRef.current = null;
     setCanInstall(false);
   };
@@ -119,7 +145,7 @@ export default function PwaInstallGuide() {
         </div>
 
         {/* Native install button */}
-        {canInstall && (
+        {canInstall && !installed && (
           <button
             onClick={handleInstall}
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium transition-colors hover:bg-primary/90"
@@ -127,6 +153,16 @@ export default function PwaInstallGuide() {
             <Download className="h-4 w-4" />
             Installera SHF direkt
           </button>
+        )}
+
+        {status && (
+          <p className="rounded-lg bg-secondary/60 px-3 py-2 text-xs text-foreground/80">{status}</p>
+        )}
+
+        {installed && !status && (
+          <p className="rounded-lg bg-secondary/60 px-3 py-2 text-xs text-foreground/80">
+            SHF är redan installerad på den här enheten.
+          </p>
         )}
 
         {/* Steps */}
