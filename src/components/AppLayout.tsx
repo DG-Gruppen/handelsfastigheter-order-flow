@@ -10,6 +10,7 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 const AiChatBubble = lazyWithRetry(() => import("@/components/AiChatBubble"));
 const ChatBubble = lazyWithRetry(() => import("@/components/ChatBubble"));
+const PushEnablePrompt = lazyWithRetry(() => import("@/components/PushEnablePrompt"));
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
@@ -55,6 +56,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           <AiChatBubble />
         </Suspense>
+
+        <Suspense fallback={null}>
+          <PushEnablePrompt />
+        </Suspense>
+
 
       </div>
     </>
