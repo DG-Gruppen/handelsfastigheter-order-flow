@@ -145,7 +145,7 @@ export default function PwaInstallGuide() {
         </div>
 
         {/* Native install button */}
-        {canInstall && (
+        {canInstall && !installed && (
           <button
             onClick={handleInstall}
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium transition-colors hover:bg-primary/90"
@@ -153,6 +153,16 @@ export default function PwaInstallGuide() {
             <Download className="h-4 w-4" />
             Installera SHF direkt
           </button>
+        )}
+
+        {status && (
+          <p className="rounded-lg bg-secondary/60 px-3 py-2 text-xs text-foreground/80">{status}</p>
+        )}
+
+        {installed && !status && (
+          <p className="rounded-lg bg-secondary/60 px-3 py-2 text-xs text-foreground/80">
+            SHF är redan installerad på den här enheten.
+          </p>
         )}
 
         {/* Steps */}
