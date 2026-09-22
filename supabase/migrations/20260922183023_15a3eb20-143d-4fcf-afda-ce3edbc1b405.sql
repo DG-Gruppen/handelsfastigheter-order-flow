@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.notify_push_on_notification() FROM anon, authenticated, public;
