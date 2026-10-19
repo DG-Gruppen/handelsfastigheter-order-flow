@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
+import { getPreviewKind } from "@/lib/documentPreview";
 
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -28,8 +29,8 @@ export function isOfficeMime(mime: string) {
   return OFFICE_MIMES.includes(mime);
 }
 
-export function canPreview(mime: string) {
-  return mime.startsWith("image/") || mime === "application/pdf" || mime.startsWith("text/") || isOfficeMime(mime);
+export function canPreview(mime: string, name = "") {
+  return getPreviewKind(mime, name) !== "unsupported";
 }
 
 export const ALL_ROLES = [
@@ -41,10 +42,13 @@ export const ALL_ROLES = [
 
 export function TextPreview({ url }: { url: string }) {
   const [text, setText] = useState("Laddar…");
-  const fetchedRef = useRef(false);
-  if (!fetchedRef.current) {
-    fetchedRef.current = true;
-    fetch(url).then(r => r.text()).then(setText).catch(() => setText("Kunde inte läsa filen."));
-  }
+  useEffect(() => {
+    const controller = new AbortController();
+    setText("Laddar…");
+    fetch(url, { signal: controller.signal }).then(r => r.text()).then(setText).catch(() => {
+      if (!controller.signal.aborted) setText("Kunde inte läsa filen.");
+    });
+    return () => controller.abort();
+  }, [url]);
   return <pre className="whitespace-pre-wrap text-sm font-mono bg-secondary/50 rounded p-4 max-h-[60vh] overflow-auto">{text}</pre>;
 }

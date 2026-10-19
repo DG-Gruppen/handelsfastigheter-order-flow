@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import FileRow from "@/components/documents/FileRow";
-import { TextPreview, formatFileSize, canPreview, isOfficeMime, getFileIcon } from "@/components/documents/documentHelpers";
+import { formatFileSize, getFileIcon } from "@/components/documents/documentHelpers";
+import DocumentPreview from "@/components/documents/DocumentPreview";
 import {
   NewFolderDialog, RenameDialog, MoveDialog, AccessDialog, DeleteConfirmDialog, ChangeIconDialog,
 } from "@/components/documents/DocumentDialogs";
@@ -55,6 +56,9 @@ export default function Documents() {
   const [bulkMoveDialog, setBulkMoveDialog] = useState(false);
   const [previewFile, setPreviewFile] = useState<DocFile | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const previewRequest = useRef(0);
   const [uploadProgress, setUploadProgress] = useState<{ total: number; done: number } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,26 +138,25 @@ export default function Documents() {
 
   // ── Preview ──
   const openPreview = async (file: DocFile) => {
-    if (file.mime_type === "application/pdf" || isOfficeMime(file.mime_type)) {
-      const { data, error } = await supabase.storage.from("documents").createSignedUrl(file.storage_path, 3600);
-      if (error || !data?.signedUrl) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
-      if (isOfficeMime(file.mime_type)) {
-        const officeUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(data.signedUrl)}`;
-        setPreviewUrl(officeUrl);
-      } else {
-        setPreviewUrl(data.signedUrl);
-      }
-      setPreviewFile(file);
-      return;
-    }
-    const { data, error } = await supabase.storage.from("documents").download(file.storage_path);
-    if (error || !data) { toast({ title: "Kunde inte öppna filen", variant: "destructive" }); return; }
-    setPreviewUrl(URL.createObjectURL(data));
+    const request = ++previewRequest.current;
     setPreviewFile(file);
+    setPreviewUrl(null);
+    setPreviewLoading(true);
+    setPreviewError(false);
+    try {
+      const { data, error } = await supabase.storage.from("documents").createSignedUrl(file.storage_path, 3600);
+      if (request !== previewRequest.current) return;
+      if (error || !data?.signedUrl) throw new Error("Preview unavailable");
+      setPreviewUrl(data.signedUrl);
+    } catch {
+      if (request === previewRequest.current) setPreviewError(true);
+    } finally {
+      if (request === previewRequest.current) setPreviewLoading(false);
+    }
   };
 
   const closePreview = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    ++previewRequest.current;
     setPreviewUrl(null);
     setPreviewFile(null);
   };
@@ -531,25 +534,17 @@ export default function Documents() {
 
       {/* File preview dialog */}
       <Dialog open={!!previewFile} onOpenChange={closePreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col min-w-0">
           <DialogHeader>
-            <DialogTitle className="truncate">{previewFile?.name}</DialogTitle>
+            <DialogTitle className="break-words pr-6">{previewFile?.name}</DialogTitle>
             <DialogDescription>
               {previewFile && `${formatFileSize(previewFile.file_size)} · ${new Date(previewFile.created_at).toLocaleDateString("sv-SE")}`}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-auto min-h-0">
-            {previewFile && previewUrl && (
-              <>
-                {previewFile.mime_type.startsWith("image/") && (
-                  <img src={previewUrl} alt={previewFile.name} className="max-w-full h-auto mx-auto rounded" />
-                )}
-                {(previewFile.mime_type === "application/pdf" || isOfficeMime(previewFile.mime_type)) && (
-                  <iframe src={previewUrl} className="w-full h-[70vh] rounded border border-border" title={previewFile.name} />
-                )}
-                {previewFile.mime_type.startsWith("text/") && <TextPreview url={previewUrl} />}
-              </>
-            )}
+            {previewLoading && <p role="status" className="p-4 text-muted-foreground">Öppnar filen…</p>}
+            {previewError && <p role="alert" className="p-4 text-destructive">Kunde inte öppna filen. Försök igen.</p>}
+            {previewFile && previewUrl && <DocumentPreview key={previewFile.id} file={previewFile} url={previewUrl} />}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => previewFile && downloadFile(previewFile)}>

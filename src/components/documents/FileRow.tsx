@@ -25,7 +25,7 @@ function FileRowBase({
   file, isSelected, canWrite,
   onToggleSelect, onPreview, onDownload, onRename, onMove, onDelete,
 }: Props) {
-  const previewable = canPreview(file.mime_type);
+  const previewable = canPreview(file.mime_type, file.name);
 
   return (
     <div className={`group flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors border ${
