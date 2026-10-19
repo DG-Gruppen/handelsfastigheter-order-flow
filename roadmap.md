@@ -1,6 +1,6 @@
 - [x] Add server-enforced knowledge-base trash with 10-day retention and restore.
 - [x] Add deletion confirmation and trash view for articles, videos and categories.
 - [x] Verify delete, cancel and restore with tests and signed-in UI.
-- [ ] Inventory document formats and extend inline previews for existing formats.
-- [ ] Verify actual documents open without downloading and report limitations.
-- [ ] Check whether Pernilla Kjellen's approved order was emailed to helpdesk on October 18.
+- [x] Inventory 72 documents and extend inline previews for all existing format categories.
+- [x] Verify representative real documents on desktop/mobile; report Word layout simplification, spreadsheet bounds, static HTML, Microsoft consent and failed MP4 playback.
+- [x] Confirm Pernilla Kjellen's approved order was emailed to helpdesk on October 18 at 09:34:47 Stockholm time in both send and provider logs.
