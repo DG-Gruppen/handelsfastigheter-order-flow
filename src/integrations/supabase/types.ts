@@ -3590,6 +3590,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backup_schema_manifest: { Args: never; Returns: Json }
       boarding_can_view_case: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean

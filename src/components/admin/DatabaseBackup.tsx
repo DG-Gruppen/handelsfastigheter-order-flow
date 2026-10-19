@@ -60,7 +60,7 @@ export default function DatabaseBackup() {
       <div>
         <h2 className="font-heading text-xl font-bold text-foreground">Databasbackup</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Exportera en fullständig backup av alla databastabeller som JSON.
+          Exportera allt som behövs för att återskapa intranätet på en annan plattform.
         </p>
       </div>
 
@@ -79,8 +79,15 @@ export default function DatabaseBackup() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Skapar en komplett export av alla tabeller i databasen och laddar ner den som en JSON-fil.
+            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+              <li>Alla tabeller och alla rader</li>
+              <li>Databasens uppbyggnad: kolumner, regler, behörigheter, funktioner och schemalagda jobb</li>
+              <li>Användarkonton (utan lösenord)</li>
+              <li>Alla filer som nedladdningslänkar, giltiga i 7 dagar</li>
+              <li>Namn på de hemliga nycklar som måste läggas in igen</li>
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              Komplettera gärna med plattformens egen databasexport för en direkt återläsbar kopia.
             </p>
             <Button
               onClick={handleDownloadBackup}
