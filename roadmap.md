@@ -3,3 +3,4 @@
 - [x] Verify delete, cancel and restore with tests and signed-in UI.
 - [ ] Inventory document formats and extend inline previews for existing formats.
 - [ ] Verify actual documents open without downloading and report limitations.
+- [ ] Check whether Pernilla Kjellen's approved order was emailed to helpdesk on October 18.
