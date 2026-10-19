@@ -237,24 +237,44 @@ Deno.serve(async (req) => {
     console.log("[backup] assembling final JSON");
     const metaJson = JSON.stringify(meta);
     const schemaJson = JSON.stringify(schema);
-    console.log(`[backup] schema ${schemaJson.length} chars`);
-    const tablesJson = tableChunks.join(",");
-    tableChunks.length = 0;
-    console.log(`[backup] tables ${tablesJson.length} chars`);
     const authJson = JSON.stringify(authUsers);
     const storageJson = JSON.stringify(storage);
-    console.log(`[backup] auth ${authJson.length} chars, storage ${storageJson.length} chars`);
     const secretsJson = JSON.stringify(secretNames);
-    const backupJson =
-      `{"_meta":${metaJson},"schema":${schemaJson},"tables":{${tablesJson}},"auth_users":${authJson},"storage":${storageJson},"secrets_required":${secretsJson}}`;
-    console.log(`[backup] final JSON ${backupJson.length} chars`);
     const filename = `shf-backup-${createdAt.slice(0, 10)}.json`;
 
     if (uploadToDrive) {
-      // Gzip before upload: 55 MB JSON compresses to a few MB, which keeps
-      // the worker under its memory limit and makes the upload fast.
-      const gzBytes = await gzipString(backupJson);
+      // Stream gzip directly from the chunks — the full 55 MB JSON string is
+      // never assembled, which keeps the worker under its memory limit.
+      const cs = new CompressionStream("gzip");
+      const writer = cs.writable.getWriter();
+      const gzChunks: Uint8Array[] = [];
+      const pump = (async () => {
+        const reader = cs.readable.getReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          gzChunks.push(value);
+        }
+      })();
+      const enc = new TextEncoder();
+      const write = async (s: string) => { await writer.write(enc.encode(s)); };
+
+      await write(`{"_meta":${metaJson},"schema":${schemaJson},"tables":{`);
+      for (let i = 0; i < tableChunks.length; i++) {
+        await write((i > 0 ? "," : "") + tableChunks[i]);
+        tableChunks[i] = ""; // free as we go
+      }
+      tableChunks.length = 0;
+      await write(`},"auth_users":${authJson},"storage":${storageJson},"secrets_required":${secretsJson}}`);
+      await writer.close();
+      await pump;
+
+      const gzSize = gzChunks.reduce((n, c) => n + c.length, 0);
+      const gzBytes = new Uint8Array(gzSize);
+      let off = 0;
+      for (const c of gzChunks) { gzBytes.set(c, off); off += c.length; }
       console.log(`[backup] gzipped to ${gzBytes.length} bytes`);
+
       const gzFilename = filename.replace(/\.json$/, ".json.gz");
       const file = await uploadBackupToDrive(gzFilename, gzBytes, "application/gzip");
       return json({
@@ -264,6 +284,10 @@ Deno.serve(async (req) => {
         meta,
       });
     }
+
+    const backupJson =
+      `{"_meta":${metaJson},"schema":${schemaJson},"tables":{${tableChunks.join(",")}},"auth_users":${authJson},"storage":${storageJson},"secrets_required":${secretsJson}}`;
+    console.log(`[backup] final JSON ${backupJson.length} chars`);
 
     return new Response(backupJson, {
       headers: {
