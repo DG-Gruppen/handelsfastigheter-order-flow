@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { confirmKbMutation } from "@/lib/kbMutation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +56,7 @@ type DialogMode = "article" | "video" | "category" | null;
 
 export default function KbAdminPanel({ onDataChange }: { onDataChange: () => void }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [categories, setCategories] = useState<KbCategory[]>([]);
   const [articles, setArticles] = useState<KbArticle[]>([]);
   const [videos, setVideos] = useState<KbVideo[]>([]);
@@ -79,6 +82,20 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
 
   useEffect(() => { fetchAll(); }, []);
 
+  const persistChange = async (mutation: Parameters<typeof confirmKbMutation>[0], success?: string) => {
+    try {
+      await confirmKbMutation(mutation);
+      await queryClient.invalidateQueries({ queryKey: ["kb-data"] });
+      await fetchAll();
+      onDataChange();
+      if (success) toast.success(success);
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Kunde inte spara ändringen");
+      return false;
+    }
+  };
+
   const slugify = (s: string) => s.toLowerCase().replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
   // Category CRUD
@@ -97,24 +114,19 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
     if (!categoryForm.name.trim()) { toast.error("Ange ett namn"); return; }
     setSubmitting(true);
     const slug = categoryForm.slug || slugify(categoryForm.name);
-    if (editId) {
-      await supabase.from("kb_categories").update({ name: categoryForm.name, slug, icon: categoryForm.icon } as any).eq("id", editId);
-      toast.success("Kategori uppdaterad");
-    } else {
-      await supabase.from("kb_categories").insert({ name: categoryForm.name, slug, icon: categoryForm.icon } as any);
-      toast.success("Kategori skapad");
+    const payload = { name: categoryForm.name, slug, icon: categoryForm.icon };
+    try {
+      const mutation = editId
+        ? supabase.from("kb_categories").update(payload).eq("id", editId).select("id").single()
+        : supabase.from("kb_categories").insert(payload).select("id").single();
+      if (await persistChange(mutation, editId ? "Kategori uppdaterad" : "Kategori skapad")) setDialogMode(null);
+    } finally {
+      setSubmitting(false);
     }
-    setDialogMode(null);
-    setSubmitting(false);
-    fetchAll();
-    onDataChange();
   };
 
   const deleteCategory = async (id: string) => {
-    await supabase.from("kb_categories").delete().eq("id", id);
-    toast.success("Kategori borttagen");
-    fetchAll();
-    onDataChange();
+    await persistChange(supabase.from("kb_categories").delete().eq("id", id).select("id").single(), "Kategori borttagen");
   };
 
   // Article CRUD
@@ -133,6 +145,7 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
   };
 
   const saveArticle = async () => {
+    if (!user) { toast.error("Logga in igen för att spara"); return; }
     if (!articleForm.title.trim()) { toast.error("Ange en titel"); return; }
     setSubmitting(true);
     const payload = {
@@ -143,33 +156,25 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
       category_id: articleForm.category_id || null,
       tags: articleForm.tags.split(",").map(t => t.trim()).filter(Boolean),
       is_published: articleForm.is_published,
-      author_id: user!.id,
+      author_id: user.id,
     };
-    if (editId) {
+    try {
       const { author_id, ...updatePayload } = payload;
-      await supabase.from("kb_articles").update(updatePayload as any).eq("id", editId);
-      toast.success("Artikel uppdaterad");
-    } else {
-      await supabase.from("kb_articles").insert(payload as any);
-      toast.success("Artikel skapad");
+      const mutation = editId
+        ? supabase.from("kb_articles").update(updatePayload).eq("id", editId).select("id").single()
+        : supabase.from("kb_articles").insert(payload).select("id").single();
+      if (await persistChange(mutation, editId ? "Artikel uppdaterad" : "Artikel skapad")) setDialogMode(null);
+    } finally {
+      setSubmitting(false);
     }
-    setDialogMode(null);
-    setSubmitting(false);
-    fetchAll();
-    onDataChange();
   };
 
   const deleteArticle = async (id: string) => {
-    await supabase.from("kb_articles").delete().eq("id", id);
-    toast.success("Artikel borttagen");
-    fetchAll();
-    onDataChange();
+    await persistChange(supabase.from("kb_articles").delete().eq("id", id).select("id").single(), "Artikel borttagen");
   };
 
   const toggleArticlePublish = async (id: string, current: boolean) => {
-    await supabase.from("kb_articles").update({ is_published: !current } as any).eq("id", id);
-    fetchAll();
-    onDataChange();
+    await persistChange(supabase.from("kb_articles").update({ is_published: !current }).eq("id", id).select("id").single());
   };
 
   // Video CRUD
@@ -190,6 +195,7 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
   };
 
   const saveVideo = async () => {
+    if (!user) { toast.error("Logga in igen för att spara"); return; }
     if (!videoForm.title.trim() || !videoForm.video_url.trim()) { toast.error("Ange titel och video-URL"); return; }
     setSubmitting(true);
     const payload = {
@@ -201,33 +207,25 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
       tags: videoForm.tags.split(",").map(t => t.trim()).filter(Boolean),
       is_published: videoForm.is_published,
       duration_seconds: videoForm.duration_seconds ? parseInt(videoForm.duration_seconds) : null,
-      author_id: user!.id,
+      author_id: user.id,
     };
-    if (editId) {
+    try {
       const { author_id, ...updatePayload } = payload;
-      await supabase.from("kb_videos").update(updatePayload as any).eq("id", editId);
-      toast.success("Video uppdaterad");
-    } else {
-      await supabase.from("kb_videos").insert(payload as any);
-      toast.success("Video skapad");
+      const mutation = editId
+        ? supabase.from("kb_videos").update(updatePayload).eq("id", editId).select("id").single()
+        : supabase.from("kb_videos").insert(payload).select("id").single();
+      if (await persistChange(mutation, editId ? "Video uppdaterad" : "Video skapad")) setDialogMode(null);
+    } finally {
+      setSubmitting(false);
     }
-    setDialogMode(null);
-    setSubmitting(false);
-    fetchAll();
-    onDataChange();
   };
 
   const deleteVideo = async (id: string) => {
-    await supabase.from("kb_videos").delete().eq("id", id);
-    toast.success("Video borttagen");
-    fetchAll();
-    onDataChange();
+    await persistChange(supabase.from("kb_videos").delete().eq("id", id).select("id").single(), "Video borttagen");
   };
 
   const toggleVideoPublish = async (id: string, current: boolean) => {
-    await supabase.from("kb_videos").update({ is_published: !current } as any).eq("id", id);
-    fetchAll();
-    onDataChange();
+    await persistChange(supabase.from("kb_videos").update({ is_published: !current }).eq("id", id).select("id").single());
   };
 
   // Scraping states
@@ -439,8 +437,8 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
               <Input value={videoForm.title} onChange={e => setVideoForm(f => ({ ...f, title: e.target.value }))} className="h-11" />
             </div>
             <div className="space-y-2">
-              <Label>Video-URL * (YouTube/Vimeo)</Label>
-              <Input value={videoForm.video_url} onChange={e => setVideoForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="h-11" />
+              <Label>Video-URL * (länk till video)</Label>
+              <Input value={videoForm.video_url} onChange={e => setVideoForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://… (MP4, Google Drive, YouTube…)" className="h-11" />
             </div>
             <div className="space-y-2">
               <Label>Beskrivning</Label>
