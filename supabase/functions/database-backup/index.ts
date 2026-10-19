@@ -22,18 +22,75 @@ const getCorsHeaders = (origin: string | null) => ({
 
 const PAGE = 1000;
 const SIGNED_URL_SECONDS = 7 * 24 * 3600;
+const DRIVE_GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
+const DRIVE_FOLDER_NAME = "SHF Intra Backups";
+
+function driveHeaders() {
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const connKey = Deno.env.get("GOOGLE_DRIVE_API_KEY");
+  if (!lovableKey || !connKey) throw new Error("Google Drive-anslutning saknas (GOOGLE_DRIVE_API_KEY)");
+  return { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": connKey };
+}
+
+async function driveApi(path: string, init: RequestInit = {}) {
+  const res = await fetch(`${DRIVE_GATEWAY}${path}`, {
+    ...init,
+    headers: { ...driveHeaders(), ...(init.headers ?? {}) },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Google Drive ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+async function ensureDriveFolder(): Promise<string> {
+  const q = encodeURIComponent(
+    `name = '${DRIVE_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+  );
+  const found = await driveApi(`/drive/v3/files?q=${q}&fields=files(id,name)`);
+  if (found.files?.length) return found.files[0].id;
+  const created = await driveApi("/drive/v3/files", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: DRIVE_FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }),
+  });
+  return created.id;
+}
+
+async function uploadBackupToDrive(filename: string, bytes: Uint8Array): Promise<{ id: string; name: string }> {
+  const folderId = await ensureDriveFolder();
+  // 1. Create the file metadata, 2. upload content as raw media (avoids multipart copies in memory)
+  const created = await driveApi("/drive/v3/files?fields=id,name", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: filename, parents: [folderId] }),
+  });
+  const res = await fetch(
+    `${DRIVE_GATEWAY}/upload/drive/v3/files/${created.id}?uploadType=media&fields=id,name,webViewLink`,
+    { method: "PATCH", headers: { ...driveHeaders(), "Content-Type": "application/json" }, body: bytes }
+  );
+  if (!res.ok) throw new Error(`Google Drive ${res.status}: ${await res.text()}`);
+  return res.json();
+}
 // Platform-managed env vars that are recreated automatically on any Supabase host.
 const PLATFORM_ENV = /^(SUPABASE_|DENO_|SB_|PATH$|HOME$|HOSTNAME$|PWD$|LANG$|TZ$|EDGE_|AWS_|LOVABLE_API_KEY$)/;
 
-async function dumpTable(client: SupabaseClient, table: string) {
-  const rows: unknown[] = [];
+// Streams each row to JSON text immediately, so the full table never
+// exists as a JS object graph in memory (keeps peak memory low).
+async function dumpTableJson(client: SupabaseClient, table: string): Promise<{ json: string; count: number; error: string | null }> {
+  const rowParts: string[] = [];
+  let count = 0;
+  let error: string | null = null;
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await client.from(table).select("*").range(from, from + PAGE - 1);
-    if (error) return { count: rows.length, rows, error: error.message };
-    rows.push(...(data ?? []));
+    const { data, error: err } = await client.from(table).select("*").range(from, from + PAGE - 1);
+    if (err) { error = err.message; break; }
+    for (const row of data ?? []) rowParts.push(JSON.stringify(row));
+    count += data?.length ?? 0;
     if (!data || data.length < PAGE) break;
   }
-  return { count: rows.length, rows, error: null };
+  const json = `{"count":${count},"rows":[${rowParts.join(",")}],"error":${error ? JSON.stringify(error) : "null"}}`;
+  return { json, count, error };
 }
 
 async function listBucket(client: SupabaseClient, bucket: string, prefix = ""): Promise<any[]> {
@@ -76,15 +133,21 @@ Deno.serve(async (req) => {
     const { data: schema, error: schemaErr } = await admin.rpc("backup_schema_manifest");
     if (schemaErr) throw new Error(`Schema: ${schemaErr.message}`);
     const tableNames: string[] = (schema as any).tables ?? [];
+    console.log(`[backup] schema ok, ${tableNames.length} tables`);
 
-    // 2. All rows of every table, paginated
-    const tables: Record<string, unknown> = {};
+    // 2. All rows of every table, paginated — streamed to JSON strings per table
+    //    to keep peak memory low (no full object graph + full string at once).
+    const tableChunks: string[] = [];
     const errors: string[] = [];
+    let rowCount = 0;
     for (const t of tableNames) {
-      const res = await dumpTable(admin, t);
-      tables[t] = res;
+      const res = await dumpTableJson(admin, t);
+      rowCount += res.count;
       if (res.error) errors.push(`${t}: ${res.error}`);
+      tableChunks.push(`${JSON.stringify(t)}:${res.json}`);
+      console.log(`[backup] table ${t}: ${res.count} rows, ${res.json.length} chars`);
     }
+    console.log(`[backup] tables done, ${rowCount} rows`);
 
     // 3. User accounts (no password hashes available through the API)
     const authUsers: unknown[] = [];
@@ -124,37 +187,60 @@ Deno.serve(async (req) => {
     const secretNames = Object.keys(Deno.env.toObject()).filter((k) => !PLATFORM_ENV.test(k)).sort();
 
     const createdAt = new Date().toISOString();
-    const backup = {
-      _meta: {
-        format: "shf-intra-backup/v2",
-        created_at: createdAt,
-        created_by: claims.user.email,
-        table_count: tableNames.length,
-        row_count: Object.values(tables).reduce((s: number, t: any) => s + t.count, 0),
-        user_count: authUsers.length,
-        file_count: fileCount,
-        file_bytes: totalBytes,
-        download_links_valid_until: new Date(Date.now() + SIGNED_URL_SECONDS * 1000).toISOString(),
-        errors,
-        notes: [
-          "Kod och migrationer finns i GitHub-repot.",
-          "Lösenord för användarkonton ingår inte; inloggning sker via Google och fungerar igen när Google-inloggning konfigureras.",
-          "Hemliga nycklar (secrets) ingår endast som namn och måste läggas in på nytt.",
-          "Filer ingår som nedladdningslänkar; ladda ner dem innan länkarna slutar gälla.",
-        ],
-      },
-      schema,
-      tables,
-      auth_users: authUsers,
-      storage,
-      secrets_required: secretNames,
+    const meta = {
+      format: "shf-intra-backup/v2",
+      created_at: createdAt,
+      created_by: claims.user.email,
+      table_count: tableNames.length,
+      row_count: rowCount,
+      user_count: authUsers.length,
+      file_count: fileCount,
+      file_bytes: totalBytes,
+      download_links_valid_until: new Date(Date.now() + SIGNED_URL_SECONDS * 1000).toISOString(),
+      errors,
+      notes: [
+        "Kod och migrationer finns i GitHub-repot.",
+        "Lösenord för användarkonton ingår inte; inloggning sker via Google och fungerar igen när Google-inloggning konfigureras.",
+        "Hemliga nycklar (secrets) ingår endast som namn och måste läggas in på nytt.",
+        "Filer ingår som nedladdningslänkar; ladda ner dem innan länkarna slutar gälla.",
+      ],
     };
 
-    return new Response(JSON.stringify(backup), {
+    // Optional: upload to Google Drive instead of returning the file
+    let uploadToDrive = false;
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        uploadToDrive = body?.upload_to_drive === true;
+      } catch { /* empty body */ }
+    }
+
+    // Assemble the final JSON from pre-stringified chunks (key order is irrelevant).
+    console.log("[backup] assembling final JSON");
+    const backupJson =
+      `{"_meta":${JSON.stringify(meta)},"schema":${JSON.stringify(schema)},"tables":{` +
+      tableChunks.join(",") +
+      `},"auth_users":${JSON.stringify(authUsers)},"storage":${JSON.stringify(storage)},"secrets_required":${JSON.stringify(secretNames)}}`;
+    tableChunks.length = 0;
+    console.log(`[backup] final JSON ${backupJson.length} chars`);
+    const filename = `shf-backup-${createdAt.slice(0, 10)}.json`;
+
+    if (uploadToDrive) {
+      const bytes = new TextEncoder().encode(backupJson);
+      const file = await uploadBackupToDrive(filename, bytes);
+      return json({
+        success: true,
+        drive_file: file,
+        folder: DRIVE_FOLDER_NAME,
+        meta,
+      });
+    }
+
+    return new Response(backupJson, {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="backup-${createdAt.slice(0, 10)}.json"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch (err) {
