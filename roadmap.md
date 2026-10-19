@@ -1,0 +1,3 @@
+- [x] Add server-enforced knowledge-base trash with 10-day retention and restore.
+- [x] Add deletion confirmation and trash view for articles, videos and categories.
+- [x] Verify delete, cancel and restore with tests and signed-in UI.
