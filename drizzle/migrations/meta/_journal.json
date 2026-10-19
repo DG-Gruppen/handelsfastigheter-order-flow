@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792395483571,
+      "tag": "0000_fix_video_and_faq_index_conflict_target",
+      "breakpoints": true
+    }
+  ]
+}
