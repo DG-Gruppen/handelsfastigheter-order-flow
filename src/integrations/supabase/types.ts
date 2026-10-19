@@ -1311,6 +1311,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_trash: {
+        Row: {
+          deleted_at: string
+          deleted_by: string | null
+          expires_at: string
+          id: string
+          payload: Json
+          source_id: string
+          source_table: string
+          title: string
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by?: string | null
+          expires_at?: string
+          id?: string
+          payload: Json
+          source_id: string
+          source_table: string
+          title: string
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string | null
+          expires_at?: string
+          id?: string
+          payload?: Json
+          source_id?: string
+          source_table?: string
+          title?: string
+        }
+        Relationships: []
+      }
       kb_videos: {
         Row: {
           author_id: string
@@ -3669,6 +3702,12 @@ export type Database = {
       is_subordinate_order: {
         Args: { _requester_id: string; _viewer_id: string }
         Returns: boolean
+      }
+      restore_kb_trash: {
+        Args: { _trash_id: string }
+        Returns: {
+          id: string
+        }[]
       }
       search_content: {
         Args: { match_limit?: number; query_text: string }
