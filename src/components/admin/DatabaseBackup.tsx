@@ -7,33 +7,36 @@ import { toast } from "sonner";
 
 export default function DatabaseBackup() {
   const [downloading, setDownloading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
+  const [lastDriveBackup, setLastDriveBackup] = useState<{ name: string; webViewLink?: string } | null>(null);
+
+  const callBackup = async (uploadToDrive: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Du måste vara inloggad");
+      return null;
+    }
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    return fetch(`https://${projectId}.supabase.co/functions/v1/database-backup`, {
+      method: uploadToDrive ? "POST" : "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: uploadToDrive ? JSON.stringify({ upload_to_drive: true }) : undefined,
+    });
+  };
 
   const handleDownloadBackup = async () => {
     setDownloading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Du måste vara inloggad");
-        return;
-      }
-
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/database-backup`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
+      const res = await callBackup(false);
+      if (!res) return;
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Backup misslyckades");
       }
-
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -44,7 +47,6 @@ export default function DatabaseBackup() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-
       setLastBackup(new Date().toLocaleString("sv-SE"));
       toast.success("Backup nedladdad!");
     } catch (err: any) {
@@ -52,6 +54,23 @@ export default function DatabaseBackup() {
       toast.error(err.message || "Kunde inte skapa backup");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDriveBackup = async () => {
+    setUploading(true);
+    try {
+      const res = await callBackup(true);
+      if (!res) return;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Uppladdning misslyckades");
+      setLastDriveBackup({ name: data.drive_file?.name, webViewLink: data.drive_file?.webViewLink });
+      toast.success("Backup sparad i Google Drive!");
+    } catch (err: any) {
+      console.error("Drive backup error:", err);
+      toast.error(err.message || "Kunde inte spara till Google Drive");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -115,30 +134,53 @@ export default function DatabaseBackup() {
           </CardContent>
         </Card>
 
-        {/* Google Drive placeholder */}
-        <Card className="border-t-4 border-t-muted-foreground/20 opacity-70">
+        {/* Google Drive backup */}
+        <Card className="border-t-4 border-t-accent/40">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-muted-foreground/40 to-muted-foreground/20 shadow-lg">
-                <Cloud className="h-5 w-5 text-muted-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent/40 shadow-lg">
+                <Cloud className="h-5 w-5 text-accent-foreground" />
               </div>
               <div>
                 <CardTitle className="text-base">Google Drive</CardTitle>
-                <CardDescription>Automatisk molnbackup</CardDescription>
+                <CardDescription>Spara backup i molnet</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Spara backuper automatiskt till Google Drive. Kräver att Google Drive-anslutning konfigureras.
+              Skapar samma fullständiga backup och sparar den i mappen <strong>SHF Intra Backups</strong> i det anslutna Google-kontots Drive.
             </p>
-            <Button variant="outline" disabled className="w-full">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Ej konfigurerad
+            <Button
+              onClick={handleDriveBackup}
+              disabled={uploading || downloading}
+              variant="outline"
+              className="w-full"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Laddar upp till Drive...
+                </>
+              ) : (
+                <>
+                  <Cloud className="h-4 w-4 mr-2" />
+                  Spara backup till Google Drive
+                </>
+              )}
             </Button>
-            <p className="text-xs text-muted-foreground">
-              Kontakta administratören för att aktivera Google Drive-integration.
-            </p>
+            {lastDriveBackup && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                {lastDriveBackup.webViewLink ? (
+                  <a href={lastDriveBackup.webViewLink} target="_blank" rel="noreferrer" className="underline">
+                    {lastDriveBackup.name}
+                  </a>
+                ) : (
+                  <span>Senast uppladdad: {lastDriveBackup.name}</span>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
