@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { confirmKbMutation } from "@/lib/kbMutation";
+import KbTrashPanel, { type KbTrashItem } from "@/components/kb/KbTrashPanel";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +65,8 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [trash, setTrash] = useState<KbTrashItem[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<{ table: "kb_articles" | "kb_videos" | "kb_categories"; id: string; title: string } | null>(null);
 
   // Form states
   const [articleForm, setArticleForm] = useState({ title: "", content: "", excerpt: "", category_id: "", tags: "", is_published: false });
@@ -70,17 +74,21 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
   const [categoryForm, setCategoryForm] = useState({ name: "", slug: "", icon: "folder" });
 
   const fetchAll = async () => {
-    const [catRes, artRes, vidRes] = await Promise.all([
+    const [catRes, artRes, vidRes, trashRes] = await Promise.all([
       supabase.from("kb_categories").select("*").order("sort_order"),
       supabase.from("kb_articles").select("*").order("created_at", { ascending: false }),
       supabase.from("kb_videos").select("*").order("created_at", { ascending: false }),
+      supabase.from("kb_trash").select("id,title,source_table,expires_at").order("deleted_at", { ascending: false }),
     ]);
+    const error = catRes.error || artRes.error || vidRes.error || trashRes.error;
+    if (error) throw new Error(error.message);
     setCategories((catRes.data as KbCategory[]) ?? []);
     setArticles((artRes.data as KbArticle[]) ?? []);
     setVideos((vidRes.data as KbVideo[]) ?? []);
+    setTrash(trashRes.data ?? []);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll().catch(error => toast.error(error.message)); }, []);
 
   const persistChange = async (mutation: Parameters<typeof confirmKbMutation>[0], success?: string) => {
     try {
@@ -125,8 +133,24 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
     }
   };
 
-  const deleteCategory = async (id: string) => {
-    await persistChange(supabase.from("kb_categories").delete().eq("id", id).select("id").single(), "Kategori borttagen");
+  const confirmDelete = async () => {
+    if (!pendingDelete || submitting) return;
+    setSubmitting(true);
+    try {
+      if (await persistChange(supabase.from(pendingDelete.table).delete().eq("id", pendingDelete.id).select("id").single(), "Flyttad till papperskorgen")) setPendingDelete(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const restoreItem = async (id: string) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await persistChange(supabase.rpc("restore_kb_trash", { _trash_id: id }).single(), "Innehållet har återställts");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Article CRUD
@@ -167,10 +191,6 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const deleteArticle = async (id: string) => {
-    await persistChange(supabase.from("kb_articles").delete().eq("id", id).select("id").single(), "Artikel borttagen");
   };
 
   const toggleArticlePublish = async (id: string, current: boolean) => {
@@ -218,10 +238,6 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const deleteVideo = async (id: string) => {
-    await persistChange(supabase.from("kb_videos").delete().eq("id", id).select("id").single(), "Video borttagen");
   };
 
   const toggleVideoPublish = async (id: string, current: boolean) => {
@@ -291,10 +307,11 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
         </CardHeader>
         <CardContent className="px-4 md:px-6">
           <Tabs defaultValue="articles">
-            <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto mb-4">
               <TabsTrigger value="articles" className="text-xs"><FileText className="h-3.5 w-3.5 mr-1.5" />Artiklar ({articles.length})</TabsTrigger>
               <TabsTrigger value="videos" className="text-xs"><Video className="h-3.5 w-3.5 mr-1.5" />Videor ({videos.length})</TabsTrigger>
               <TabsTrigger value="categories" className="text-xs"><FolderOpen className="h-3.5 w-3.5 mr-1.5" />Kategorier ({categories.length})</TabsTrigger>
+              <TabsTrigger value="trash" className="text-xs min-h-11"><Trash2 className="h-3.5 w-3.5 mr-1.5" />Papperskorg ({trash.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="articles" className="space-y-2">
@@ -318,7 +335,7 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openArticleDialog(a)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteArticle(a.id)}>
+                  <Button variant="ghost" size="icon" aria-label={`Radera ${a.title}`} className="h-11 w-11 text-destructive" onClick={() => setPendingDelete({ table: "kb_articles", id: a.id, title: a.title })}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -345,7 +362,7 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openVideoDialog(v)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteVideo(v.id)}>
+                  <Button variant="ghost" size="icon" aria-label={`Radera ${v.title}`} className="h-11 w-11 text-destructive" onClick={() => setPendingDelete({ table: "kb_videos", id: v.id, title: v.title })}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -365,16 +382,32 @@ export default function KbAdminPanel({ onDataChange }: { onDataChange: () => voi
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCategoryDialog(c)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteCategory(c.id)}>
+                  <Button variant="ghost" size="icon" aria-label={`Radera ${c.name}`} className="h-11 w-11 text-destructive" onClick={() => setPendingDelete({ table: "kb_categories", id: c.id, title: c.name })}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
               {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Inga kategorier ännu</p>}
             </TabsContent>
+            <TabsContent value="trash">
+              <KbTrashPanel items={trash} busy={submitting} onRestore={restoreItem} />
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      <AlertDialog open={pendingDelete !== null} onOpenChange={open => { if (!open && !submitting) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Flytta till papperskorgen?</AlertDialogTitle>
+            <AlertDialogDescription>”{pendingDelete?.title}” tas bort från Kunskapsbanken och kan återställas i 10 dagar. Därefter går det inte att återställa innehållet.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" disabled={submitting} onClick={() => setPendingDelete(null)}>Avbryt</Button>
+            <Button variant="destructive" disabled={submitting} onClick={confirmDelete}>{submitting ? "Flyttar…" : "Flytta till papperskorgen"}</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Article Dialog */}
       <Dialog open={dialogMode === "article"} onOpenChange={(v) => !v && setDialogMode(null)}>
