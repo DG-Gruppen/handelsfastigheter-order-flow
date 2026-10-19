@@ -58,7 +58,25 @@ async function ensureDriveFolder(): Promise<string> {
   return created.id;
 }
 
-async function uploadBackupToDrive(filename: string, bytes: Uint8Array): Promise<{ id: string; name: string }> {
+async function gzipString(s: string): Promise<Uint8Array> {
+  const cs = new CompressionStream("gzip");
+  const writer = cs.writable.getWriter();
+  writer.write(new TextEncoder().encode(s));
+  writer.close();
+  const chunks: Uint8Array[] = [];
+  const reader = cs.readable.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+  }
+  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
+}
+
+async function uploadBackupToDrive(filename: string, bytes: Uint8Array, contentType: string): Promise<{ id: string; name: string }> {
   const folderId = await ensureDriveFolder();
   // 1. Create the file metadata, 2. upload content as raw media (avoids multipart copies in memory)
   const created = await driveApi("/drive/v3/files?fields=id,name", {
@@ -68,7 +86,7 @@ async function uploadBackupToDrive(filename: string, bytes: Uint8Array): Promise
   });
   const res = await fetch(
     `${DRIVE_GATEWAY}/upload/drive/v3/files/${created.id}?uploadType=media&fields=id,name,webViewLink`,
-    { method: "PATCH", headers: { ...driveHeaders(), "Content-Type": "application/json" }, body: bytes }
+    { method: "PATCH", headers: { ...driveHeaders(), "Content-Type": contentType }, body: bytes }
   );
   if (!res.ok) throw new Error(`Google Drive ${res.status}: ${await res.text()}`);
   return res.json();
