@@ -251,8 +251,12 @@ Deno.serve(async (req) => {
     const filename = `shf-backup-${createdAt.slice(0, 10)}.json`;
 
     if (uploadToDrive) {
-      const bytes = new TextEncoder().encode(backupJson);
-      const file = await uploadBackupToDrive(filename, bytes);
+      // Gzip before upload: 55 MB JSON compresses to a few MB, which keeps
+      // the worker under its memory limit and makes the upload fast.
+      const gzBytes = await gzipString(backupJson);
+      console.log(`[backup] gzipped to ${gzBytes.length} bytes`);
+      const gzFilename = filename.replace(/\.json$/, ".json.gz");
+      const file = await uploadBackupToDrive(gzFilename, gzBytes, "application/gzip");
       return json({
         success: true,
         drive_file: file,
