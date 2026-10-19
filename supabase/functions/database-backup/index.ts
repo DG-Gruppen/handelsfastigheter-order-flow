@@ -217,11 +217,18 @@ Deno.serve(async (req) => {
 
     // Assemble the final JSON from pre-stringified chunks (key order is irrelevant).
     console.log("[backup] assembling final JSON");
-    const backupJson =
-      `{"_meta":${JSON.stringify(meta)},"schema":${JSON.stringify(schema)},"tables":{` +
-      tableChunks.join(",") +
-      `},"auth_users":${JSON.stringify(authUsers)},"storage":${JSON.stringify(storage)},"secrets_required":${JSON.stringify(secretNames)}}`;
+    const metaJson = JSON.stringify(meta);
+    const schemaJson = JSON.stringify(schema);
+    console.log(`[backup] schema ${schemaJson.length} chars`);
+    const tablesJson = tableChunks.join(",");
     tableChunks.length = 0;
+    console.log(`[backup] tables ${tablesJson.length} chars`);
+    const authJson = JSON.stringify(authUsers);
+    const storageJson = JSON.stringify(storage);
+    console.log(`[backup] auth ${authJson.length} chars, storage ${storageJson.length} chars`);
+    const secretsJson = JSON.stringify(secretNames);
+    const backupJson =
+      `{"_meta":${metaJson},"schema":${schemaJson},"tables":{${tablesJson}},"auth_users":${authJson},"storage":${storageJson},"secrets_required":${secretsJson}}`;
     console.log(`[backup] final JSON ${backupJson.length} chars`);
     const filename = `shf-backup-${createdAt.slice(0, 10)}.json`;
 
