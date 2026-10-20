@@ -127,6 +127,7 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
     if (!user) { toast.error("Logga in igen"); return; }
     setSubmitting(true);
     let uploadedPath: string | null = null;
+    let persisted = false;
     try {
       if (videoFile) {
         setUploadProgress(0);
@@ -145,6 +146,7 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
         ? await supabase.from("news").update(update).eq("id", editId).select("id").single()
         : await supabase.from("news").insert(payload).select("id").single();
       if (result.error || !result.data?.id) throw result.error ?? new Error("Nyheten kunde inte sparas.");
+      persisted = true;
       const oldPath = articles.find(article => article.id === editId)?.video_path;
       if (oldPath && oldPath !== savedPath) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([oldPath]);
       toast.success(editId ? "Nyhet uppdaterad" : "Nyhet skapad");
@@ -152,7 +154,7 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
       setVideoFile(null);
       await refreshNews();
     } catch (error) {
-      if (uploadedPath) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([uploadedPath]);
+      if (uploadedPath && !persisted) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([uploadedPath]);
       toast.error(error instanceof Error ? error.message : "Nyheten kunde inte sparas. Försök igen.");
     } finally {
       setSubmitting(false);
@@ -161,10 +163,12 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
   };
 
   const deleteArticle = async (id: string) => {
-    await supabase.from("news" as any).delete().eq("id", id);
+    const path = articles.find(article => article.id === id)?.video_path;
+    const { data, error } = await supabase.from("news").delete().eq("id", id).select("id").single();
+    if (error || !data) { toast.error("Nyheten kunde inte tas bort."); return; }
+    if (path) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([path]);
     toast.success("Nyhet borttagen");
-    fetchArticles();
-    onDataChange();
+    await refreshNews();
   };
 
   const togglePublish = async (id: string, current: boolean) => {
