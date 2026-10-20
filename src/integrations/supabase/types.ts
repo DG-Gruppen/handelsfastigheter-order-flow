@@ -1707,6 +1707,7 @@ export type Database = {
           source_url: string | null
           title: string
           updated_at: string
+          video_path: string | null
         }
         Insert: {
           author_id: string
@@ -1723,6 +1724,7 @@ export type Database = {
           source_url?: string | null
           title: string
           updated_at?: string
+          video_path?: string | null
         }
         Update: {
           author_id?: string
@@ -1739,6 +1741,7 @@ export type Database = {
           source_url?: string | null
           title?: string
           updated_at?: string
+          video_path?: string | null
         }
         Relationships: []
       }

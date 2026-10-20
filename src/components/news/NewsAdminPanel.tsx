@@ -1,4 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import NewsVideoPlayer from "@/components/news/NewsVideoPlayer";
+import { NEWS_VIDEO_BUCKET, uploadNewsVideo, validateNewsVideo } from "@/lib/newsVideo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RichTextEditor from "@/components/kb/RichTextEditor";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Pin, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Pin, Search, ChevronLeft, ChevronRight, Video, Upload, X } from "lucide-react";
 
 interface NewsArticle {
   id: string;
@@ -25,6 +28,7 @@ interface NewsArticle {
   published_at: string | null;
   created_at: string;
   source?: string;
+  video_path?: string | null;
 }
 
 const EMOJI_OPTIONS = ["📰", "📊", "🏗️", "🌱", "🏆", "👤", "💼", "🎉", "📢", "🔔"];
@@ -33,6 +37,26 @@ const PAGE_SIZES = [10, 20, 30] as const;
 
 export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => void }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPath, setVideoPath] = useState<string | null>(null);
+  const [localVideoUrl, setLocalVideoUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  useEffect(() => {
+    if (!videoFile) { setLocalVideoUrl(null); return; }
+    const url = URL.createObjectURL(videoFile);
+    setLocalVideoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [videoFile]);
+  const refreshNews = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["news-articles"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-latest-news"] }),
+    ]);
+    await fetchArticles();
+    onDataChange();
+  };
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -81,6 +105,9 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const openDialog = (art?: NewsArticle) => {
+    setVideoFile(null);
+    setVideoPath(art?.video_path ?? null);
+    setUploadProgress(null);
     if (art) {
       setForm({
         title: art.title, body: art.body, excerpt: art.excerpt,
@@ -97,41 +124,60 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
 
   const save = async () => {
     if (!form.title.trim()) { toast.error("Ange en titel"); return; }
+    if (!user) { toast.error("Logga in igen"); return; }
     setSubmitting(true);
-    const payload = {
-      ...form,
-      excerpt: form.excerpt || form.body.replace(/<[^>]*>/g, "").slice(0, 200),
-      author_id: user!.id,
-      published_at: form.is_published ? new Date().toISOString() : null,
-    };
-    if (editId) {
+    let uploadedPath: string | null = null;
+    let persisted = false;
+    try {
+      if (videoFile) {
+        setUploadProgress(0);
+        uploadedPath = await uploadNewsVideo(videoFile, user.id, setUploadProgress);
+      }
+      const savedPath = uploadedPath ?? videoPath;
+      const payload = {
+        ...form,
+        video_path: savedPath,
+        excerpt: form.excerpt || form.body.replace(/<[^>]*>/g, "").slice(0, 200),
+        author_id: user.id,
+        published_at: form.is_published ? new Date().toISOString() : null,
+      };
       const { author_id, ...update } = payload;
-      await supabase.from("news" as any).update(update).eq("id", editId);
-      toast.success("Nyhet uppdaterad");
-    } else {
-      await supabase.from("news" as any).insert(payload);
-      toast.success("Nyhet skapad");
+      const result = editId
+        ? await supabase.from("news").update(update).eq("id", editId).select("id").single()
+        : await supabase.from("news").insert(payload).select("id").single();
+      if (result.error || !result.data?.id) throw result.error ?? new Error("Nyheten kunde inte sparas.");
+      persisted = true;
+      const oldPath = articles.find(article => article.id === editId)?.video_path;
+      if (oldPath && oldPath !== savedPath) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([oldPath]);
+      toast.success(editId ? "Nyhet uppdaterad" : "Nyhet skapad");
+      setDialogOpen(false);
+      setVideoFile(null);
+      await refreshNews();
+    } catch (error) {
+      if (uploadedPath && !persisted) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([uploadedPath]);
+      toast.error(error instanceof Error ? error.message : "Nyheten kunde inte sparas. Försök igen.");
+    } finally {
+      setSubmitting(false);
+      setUploadProgress(null);
     }
-    setDialogOpen(false);
-    setSubmitting(false);
-    fetchArticles();
-    onDataChange();
   };
 
   const deleteArticle = async (id: string) => {
-    await supabase.from("news" as any).delete().eq("id", id);
+    const path = articles.find(article => article.id === id)?.video_path;
+    const { data, error } = await supabase.from("news").delete().eq("id", id).select("id").single();
+    if (error || !data) { toast.error("Nyheten kunde inte tas bort."); return; }
+    if (path) await supabase.storage.from(NEWS_VIDEO_BUCKET).remove([path]);
     toast.success("Nyhet borttagen");
-    fetchArticles();
-    onDataChange();
+    await refreshNews();
   };
 
   const togglePublish = async (id: string, current: boolean) => {
-    await supabase.from("news" as any).update({
+    const { data, error } = await supabase.from("news").update({
       is_published: !current,
       published_at: !current ? new Date().toISOString() : null,
-    } as any).eq("id", id);
-    fetchArticles();
-    onDataChange();
+    }).eq("id", id).select("id").single();
+    if (error || !data) { toast.error("Publiceringen kunde inte ändras."); return; }
+    await refreshNews();
   };
 
   // Unique categories from data
@@ -200,6 +246,7 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
                 </div>
               </div>
               {a.is_pinned && <Pin className="h-3 w-3 text-accent shrink-0" />}
+              {a.video_path && <Video className="h-4 w-4 text-primary shrink-0" aria-label="Video" />}
               <Badge variant={a.is_published ? "default" : "secondary"} className="text-[10px] shrink-0">
                 {a.is_published ? "Publicerad" : "Utkast"}
               </Badge>
@@ -267,12 +314,13 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={(v) => !v && setDialogOpen(false)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <Dialog open={dialogOpen} onOpenChange={(v) => !v && !submitting && setDialogOpen(false)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" onEscapeKeyDown={e => submitting && e.preventDefault()} onInteractOutside={e => submitting && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editId ? "Redigera nyhet" : "Ny nyhet"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <fieldset disabled={submitting} className="space-y-4">
             <div className="space-y-2">
               <Label>Titel *</Label>
               <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="h-11" />
@@ -286,6 +334,24 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
               <RichTextEditor content={form.body} onChange={(html) => setForm(f => ({ ...f, body: html }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label>Video (MP4, max 500 MB)</Label>
+                <input ref={fileInput} type="file" accept=".mp4,video/mp4" aria-label="Välj MP4-video" className="hidden" onChange={event => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  const error = validateNewsVideo(file);
+                  if (error) { toast.error(error); return; }
+                  setVideoFile(file);
+                }} />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button type="button" variant="outline" className="min-h-11" onClick={() => fileInput.current?.click()}><Upload className="h-4 w-4 mr-2" />{videoFile || videoPath ? "Byt video" : "Lägg till video"}</Button>
+                  {(videoFile || videoPath) && <Button type="button" variant="ghost" size="icon" className="h-11 w-11" title="Ta bort video" aria-label="Ta bort video" onClick={() => { setVideoFile(null); setVideoPath(null); }}><X className="h-4 w-4" /></Button>}
+                  {videoFile && <span className="text-sm text-muted-foreground break-all">{videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(1)} MB)</span>}
+                </div>
+                {localVideoUrl ? <video src={localVideoUrl} controls playsInline preload="metadata" className="w-full aspect-video rounded-md bg-muted object-contain" /> : videoPath ? <NewsVideoPlayer path={videoPath} title={form.title} /> : null}
+                {uploadProgress !== null && <div role="status" className="text-sm text-muted-foreground">Laddar upp video… {uploadProgress}%<progress value={uploadProgress} max={100} className="block w-full mt-2" /></div>}
+              </div>
               <div className="space-y-2">
                 <Label>Kategori</Label>
                 <select
@@ -322,9 +388,10 @@ export default function NewsAdminPanel({ onDataChange }: { onDataChange: () => v
                 <Label>Pinnad</Label>
               </div>
             </div>
+            </fieldset>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Avbryt</Button>
+            <Button variant="outline" disabled={submitting} onClick={() => setDialogOpen(false)}>Avbryt</Button>
             <Button onClick={save} disabled={submitting}>{submitting ? "Sparar..." : "Spara"}</Button>
           </DialogFooter>
         </DialogContent>

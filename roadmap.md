@@ -1,3 +1,5 @@
+- [x] Add private MP4 upload to news editor and playback in news feed/detail.
+- [x] Verify authenticated upload, save, playback and cleanup.
 - [x] Add server-enforced knowledge-base trash with 10-day retention and restore.
 - [x] Add deletion confirmation and trash view for articles, videos and categories.
 - [x] Verify delete, cancel and restore with tests and signed-in UI.

@@ -1,0 +1,5 @@
+ALTER TABLE public.news ADD COLUMN IF NOT EXISTS video_path text;
+ALTER TABLE public.news ADD CONSTRAINT news_video_path_format CHECK (video_path IS NULL OR video_path ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}\.mp4$');
+CREATE POLICY "News editors upload MP4" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'news-videos' AND (storage.foldername(name))[1] = auth.uid()::text AND lower(storage.extension(name)) = 'mp4' AND (metadata->>'mimetype') = 'video/mp4' AND (public.is_in_admin_group(auth.uid()) OR public.has_module_slug_permission(auth.uid(), 'nyheter', 'edit')));
+CREATE POLICY "News videos follow article access" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'news-videos' AND ((public.is_in_admin_group(auth.uid()) OR public.has_module_slug_permission(auth.uid(), 'nyheter', 'edit')) OR EXISTS (SELECT 1 FROM public.news n WHERE n.video_path = name AND n.is_published = true)));
+CREATE POLICY "News editors remove videos" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'news-videos' AND (public.is_in_admin_group(auth.uid()) OR public.has_module_slug_permission(auth.uid(), 'nyheter', 'edit')));
