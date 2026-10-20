@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Newspaper, Globe, Pin, ExternalLink, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NewsVideoPlayer from "@/components/news/NewsVideoPlayer";
 
 /* ── Types ── */
 interface NewsArticle {
@@ -24,6 +25,7 @@ interface NewsArticle {
   published_at: string;
   source: string;
   source_url: string | null;
+  video_path: string | null;
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -285,6 +287,7 @@ export default function News() {
                       </div>
                       <h3 className="text-sm md:text-base font-semibold text-foreground leading-snug">{news.title}</h3>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{news.excerpt}</p>
+                      {news.video_path && <div className="mt-3 max-w-xl"><NewsVideoPlayer path={news.video_path} title={news.title} /></div>}
                       {isCision && news.source_url && (
                         <a
                           href={news.source_url}
@@ -376,6 +379,7 @@ export default function News() {
                 </div>
                 <DialogTitle className="font-heading text-xl">{selectedArticle.title}</DialogTitle>
               </DialogHeader>
+              {selectedArticle.video_path && <NewsVideoPlayer key={selectedArticle.video_path} path={selectedArticle.video_path} title={selectedArticle.title} />}
               {(() => {
                 const body = selectedArticle.body || "";
                 const isFullDoc = /<!DOCTYPE|<html[\s>]|<head[\s>]/i.test(body);
