@@ -65,8 +65,8 @@ export default function ITInfo() {
     };
   }, [queryClient]);
 
-  const remoteHelpUrl = settings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU";
-  const remoteHelpLabel = settings["it_remote_help_label"] || "Fjärrhjälp (Splashtop)";
+  const remoteHelpUrl = settings["it_remote_help_url"] || "https://helpdesk.dggruppen.se/portal/fjarrsupport";
+  const remoteHelpLabel = settings["it_remote_help_label"] || "Fjärrhjälp";
   const showRemoteHelp = settings["it_remote_help_visible"] !== "false";
 
   const contactEmail = settings["it_contact_email"] || "helpdesk@dggruppen.se";

@@ -184,7 +184,7 @@ const Login = () => {
               </div>
               {remoteHelpSettings["it_remote_help_visible"] !== "false" && (
                 <a
-                  href={remoteHelpSettings["it_remote_help_url"] || "https://my.splashtop.eu/sos/packages/download/37PXZW4LPWXTEU"}
+                  href={remoteHelpSettings["it_remote_help_url"] || "https://helpdesk.dggruppen.se/portal/fjarrsupport"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
