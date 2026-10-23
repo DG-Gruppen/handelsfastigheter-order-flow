@@ -10,6 +10,7 @@ import { Mail, Phone, Clock, ExternalLink, HelpCircle, Headphones, Settings, Che
 import { toast } from "sonner";
 import FaqManager from "@/components/FaqManager";
 import PwaInstallGuide from "@/components/PwaInstallGuide";
+import { isNativeApp } from "@/lib/native/platform";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface FaqItem {
@@ -331,8 +332,8 @@ export default function ITInfo() {
         </Card>
       ) : null}
 
-      {/* PWA Installation Guide */}
-      <PwaInstallGuide />
+      {/* PWA Installation Guide (inte relevant i Android/iOS-appen) */}
+      {!isNativeApp() && <PwaInstallGuide />}
     </div>
   );
 }

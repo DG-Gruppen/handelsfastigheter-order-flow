@@ -4,11 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   getExistingToken,
   isFirebaseConfigured,
+  pushPermission,
   pushSupported,
   removeToken,
   requestToken,
 } from "@/lib/firebasePush";
 import { isInStandaloneMode, isIos } from "@/lib/pwa";
+import { isNativeApp, nativePlatform } from "@/lib/native/platform";
 
 export type PushState =
   | "loading"
@@ -17,6 +19,12 @@ export type PushState =
   | "denied"
   | "off"
   | "on";
+
+/** Sparas i fcm_tokens.user_agent så att appens enheter går att skilja från webbläsare. */
+function deviceLabel() {
+  const prefix = isNativeApp() ? `SHF Intra ${nativePlatform() === "ios" ? "iOS" : "Android"}-app; ` : "";
+  return (prefix + navigator.userAgent).slice(0, 300);
+}
 
 export function usePushNotifications() {
   const { user } = useAuth();
@@ -34,11 +42,12 @@ export function usePushNotifications() {
         if (!cancelled) setState("unsupported");
         return;
       }
-      if (Notification.permission === "denied") {
+      const permission = await pushPermission();
+      if (permission === "denied") {
         if (!cancelled) setState("denied");
         return;
       }
-      if (Notification.permission !== "granted") {
+      if (permission !== "granted") {
         if (!cancelled) setState("off");
         return;
       }
@@ -75,7 +84,7 @@ export function usePushNotifications() {
         {
           user_id: user.id,
           token: res.token,
-          user_agent: navigator.userAgent.slice(0, 300),
+          user_agent: deviceLabel(),
         } as never,
         { onConflict: "token" },
       );

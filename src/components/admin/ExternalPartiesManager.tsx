@@ -15,6 +15,7 @@ import { UserPlus, Copy, ExternalLink, Trash2, CheckCircle2, Clock, XCircle, Bui
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { publicAppOrigin } from "@/lib/native/platform";
 
 interface ExternalInvite {
   id: string;
@@ -112,7 +113,7 @@ export default function ExternalPartiesManager() { // rebuild
   });
 
   const copyInviteLink = (token: string) => {
-    const url = `${window.location.origin}/extern/invite/${token}`;
+    const url = `${publicAppOrigin()}/extern/invite/${token}`;
     navigator.clipboard.writeText(url);
     toast.success("Inbjudningslänk kopierad!");
   };
@@ -258,7 +259,7 @@ export default function ExternalPartiesManager() { // rebuild
                   size="sm"
                   className="gap-1.5 text-xs shrink-0 ml-4"
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/extern`);
+                    navigator.clipboard.writeText(`${publicAppOrigin()}/extern`);
                     toast.success("Inloggningslänk kopierad!");
                   }}
                 >

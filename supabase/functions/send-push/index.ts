@@ -95,6 +95,14 @@ Deno.serve(async (req) => {
               token: device.token,
               notification: { title: payload.title, body: payload.body ?? "" },
               data: { url: path },
+              // Android/iOS-appen (Firebase native). Kanalen skapas av appen, se NativeAppBridge.
+              android: {
+                priority: "high",
+                notification: { channel_id: "shf_default", tag: payload.tag ?? undefined },
+              },
+              apns: {
+                payload: { aps: { sound: "default", "thread-id": payload.tag ?? undefined } },
+              },
               webpush: {
                 notification: {
                   icon: "/pwa-icon-192.png",

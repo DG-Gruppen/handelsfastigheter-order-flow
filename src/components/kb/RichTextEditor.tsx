@@ -22,6 +22,8 @@ import {
   Link as LinkIcon, Image as ImageIcon, Quote, Code,
   Undo, Redo, Highlighter, Type, Code2, Upload, Loader2,
 } from "lucide-react";
+import { isNativeApp } from "@/lib/native/platform";
+import { pickImageNative } from "@/lib/native/camera";
 
 interface Props {
   content: string;
@@ -272,7 +274,11 @@ export default function RichTextEditor({ content, onChange }: Props) {
             />
             <ToolBtn
               active={false}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() =>
+                isNativeApp()
+                  ? void pickImageNative().then((file) => file && handleImageUpload(file))
+                  : fileInputRef.current?.click()
+              }
               icon={uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
               title="Ladda upp bild"
               disabled={uploading}

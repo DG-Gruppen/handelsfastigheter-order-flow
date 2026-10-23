@@ -414,7 +414,7 @@ export default function AppSidebar() {
       </aside>
 
       {/* ─── MOBILE TOP HEADER ─── */}
-      <header className="sticky top-0 z-50 border-b glass-nav md:hidden">
+      <header className="sticky top-0 z-50 border-b glass-nav md:hidden pt-[env(safe-area-inset-top,0px)]">
         <div className="flex h-14 items-center justify-between px-4">
           <Link to="/dashboard" className="flex items-center">
             <img src={shfLogo} alt="SHF" className="h-10 w-auto dark:invert" />

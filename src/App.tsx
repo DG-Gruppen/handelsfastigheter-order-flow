@@ -11,6 +11,7 @@ import { ModulesProvider } from "@/hooks/useModules";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LayoutRoute from "./components/LayoutRoute";
 import { lazy, Suspense } from "react";
+import { isNativeApp } from "@/lib/native/platform";
 
 // Lazy-loaded pages
 const Login = lazyWithRetry(() => import("./pages/Login"));
@@ -54,6 +55,7 @@ const Unsubscribe = lazyWithRetry(() => import("./pages/Unsubscribe"));
 const ExternalLogin = lazyWithRetry(() => import("./pages/ExternalLogin"));
 const ExternalInvite = lazyWithRetry(() => import("./pages/ExternalInvite"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+const NativeAppBridge = isNativeApp() ? lazyWithRetry(() => import("./components/NativeAppBridge")) : null;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +82,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          {NativeAppBridge && <Suspense fallback={null}><NativeAppBridge /></Suspense>}
           <AuthProvider>
             <NavSettingsProvider>
               <ModulesProvider>
