@@ -6,9 +6,9 @@ import {
   type SendTemplateEmailResult,
 } from './transactional-email-templates/send-email.ts'
 
-type AdminClient = ReturnType<typeof createClient>
+type AdminClient = ReturnType<typeof logClient>
 
-function logClient(): AdminClient {
+function logClient() {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,

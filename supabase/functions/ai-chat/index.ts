@@ -459,7 +459,7 @@ Deno.serve(async (req) => {
       // Log search query anonymously for analytics
       try {
         const dateKey = new Date().toISOString().slice(0, 10);
-        const hashRaw = new TextEncoder().encode(`${userId}-${dateKey}-anon-salt-shf-2024`);
+        const hashRaw = new TextEncoder().encode(`${user.id}-${dateKey}-anon-salt-shf-2024`);
         const hashBuf = await crypto.subtle.digest("SHA-256", hashRaw);
         const sessionHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
         await supabase.from("search_log").insert({
