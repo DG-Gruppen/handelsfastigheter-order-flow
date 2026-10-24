@@ -1,12 +1,31 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
+// Native Android/iOS-app för SHF Intra. Webbappen byggs till dist/ och bäddas in i appen.
+// appId får aldrig ändras efter första publiceringen i Google Play / App Store.
 const config: CapacitorConfig = {
-  appId: "app.lovable.f7f1daf3c896424983779f364aa10a9c",
-  appName: "handelsfastigheter",
+  appId: "se.handelsfastigheter.intra",
+  appName: "SHF Intra",
   webDir: "dist",
-  server: {
-    url: "https://f7f1daf3-c896-4249-8377-9f364aa10a9c.lovableproject.com?forceHideBadge=true",
-    cleartext: true,
+  plugins: {
+    SplashScreen: {
+      // Döljs av NativeAppBridge när webbappen har laddat; tiden är bara en övre gräns.
+      launchShowDuration: 3000,
+      backgroundColor: "#2e4a63",
+      showSpinner: false,
+    },
+    SystemBars: {
+      insetsHandling: "css",
+      initialViewportFitValueHint: "cover",
+    },
+    FirebaseMessaging: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
+  },
+  experimental: {
+    ios: {
+      // Krävs av @capacitor-firebase/messaging med Swift Package Manager (iOS).
+      spm: { packageOptions: { "@capacitor-firebase/messaging": { symlink: true } } },
+    },
   },
 };
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, HardDrive, Loader2, CheckCircle2, AlertCircle, Cloud } from "lucide-react";
 import { toast } from "sonner";
+import { saveBlob } from "@/lib/native/files";
 
 export default function DatabaseBackup() {
   const [downloading, setDownloading] = useState(false);
@@ -38,15 +39,8 @@ export default function DatabaseBackup() {
         throw new Error(err.error || "Backup misslyckades");
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
       const date = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `shf-backup-${date}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveBlob(blob, `shf-backup-${date}.json`);
       setLastBackup(new Date().toLocaleString("sv-SE"));
       toast.success("Backup nedladdad!");
     } catch (err: any) {

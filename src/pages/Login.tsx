@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { isNativeApp, publicAppOrigin } from "@/lib/native/platform";
+import { startNativeGoogleSignIn } from "@/lib/native/googleSignIn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +41,14 @@ const Login = () => {
   }, []);
 
   const handleGoogleSignIn = async () => {
+    if (isNativeApp()) {
+      // Sessionen kommer tillbaka via appens URL-schema och hanteras i NativeAppBridge.
+      await startNativeGoogleSignIn().catch((error) => {
+        console.error("Login error:", error);
+        toast.error("Kunde inte öppna inloggningen");
+      });
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/login",
       extraParams: {
@@ -71,7 +81,7 @@ const Login = () => {
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: publicAppOrigin() },
       });
       if (error) {
         toast.error(error.message);

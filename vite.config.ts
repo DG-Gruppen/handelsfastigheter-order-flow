@@ -19,4 +19,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        // Inloggningssida för Android/iOS-appen, se src/app-auth/main.ts
+        "app-auth": path.resolve(__dirname, "app-auth.html"),
+      },
+    },
+  },
 });

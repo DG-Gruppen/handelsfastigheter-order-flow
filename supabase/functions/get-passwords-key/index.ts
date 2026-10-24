@@ -6,6 +6,7 @@
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isNativeAppOrigin } from "../_shared/appOrigins.ts";
 
 const PRIMARY_ORIGIN = "https://intra.handelsfastigheter.se";
 
@@ -16,7 +17,8 @@ const isAllowedOrigin = (origin: string | null) => {
     origin === "https://handelsfastigheter.lovable.app" ||
     origin.endsWith(".lovableproject.com") ||
     origin.endsWith(".lovable.app") ||
-    origin === "http://localhost:5173"
+    origin === "http://localhost:5173" ||
+    isNativeAppOrigin(origin)
   );
 };
 

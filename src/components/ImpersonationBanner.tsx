@@ -21,7 +21,7 @@ export default function ImpersonationBanner() {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-warning text-warning-foreground px-4 py-2 flex items-center justify-center gap-3 shadow-lg">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-warning text-warning-foreground px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] flex items-center justify-center gap-3 shadow-lg">
       <Eye className="h-4 w-4 shrink-0" />
       <span className="text-sm font-medium">
         Du är inloggad som <strong>{profile?.full_name || "annan användare"}</strong> (impersonation)

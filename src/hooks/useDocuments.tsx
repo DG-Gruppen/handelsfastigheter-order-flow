@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { saveBlob } from "@/lib/native/files";
 
 export interface DocFolder {
   id: string;
@@ -202,12 +203,9 @@ export function useDocuments() {
   const downloadFile = async (file: DocFile) => {
     const { data, error } = await supabase.storage.from("documents").download(file.storage_path);
     if (error || !data) { toast({ title: "Fel", description: "Kunde inte ladda ner filen", variant: "destructive" }); return; }
-    const url = URL.createObjectURL(data);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    a.click();
-    URL.revokeObjectURL(url);
+    await saveBlob(data, file.name).catch(() =>
+      toast({ title: "Fel", description: "Kunde inte spara filen", variant: "destructive" }),
+    );
   };
 
   return {

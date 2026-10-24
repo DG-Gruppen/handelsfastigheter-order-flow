@@ -1,6 +1,9 @@
-/** True when the PWA is running in an installed/standalone context. */
+import { isNativeApp } from "@/lib/native/platform";
+
+/** True when the PWA is running in an installed/standalone context, or inside the Android/iOS app. */
 export function isInStandaloneMode(): boolean {
   return (
+    isNativeApp() ||
     window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as unknown as { standalone?: boolean }).standalone === true
   );

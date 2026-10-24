@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { allowNativeAppOrigins } from "../_shared/appOrigins.ts";
 
 const ALLOWED_ORIGIN = 'https://intra.handelsfastigheter.se'
 
@@ -24,7 +25,7 @@ function checkRateLimit(key: string): boolean {
   return true
 }
 
-Deno.serve(async (req) => {
+Deno.serve(allowNativeAppOrigins(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -149,4 +150,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
-})
+}))

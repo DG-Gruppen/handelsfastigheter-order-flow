@@ -10,6 +10,7 @@ import PrioView from "./lcc/PrioView";
 import PaketView from "./lcc/PaketView";
 import { LccProvider, useLcc } from "./lcc/lcc-context";
 import { FASTIGHETER_RAW } from "@/lib/lcc/calc";
+import { isNativeApp } from "@/lib/native/platform";
 
 export default function LccCalculator() {
   return (
@@ -58,14 +59,17 @@ function LccInner() {
             Livscykelkostnadsberäkning för energiåtgärder · Systemägare: Jörgen Larssen
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.print()}
-          className="gap-1.5 self-start md:self-auto"
-        >
-          <Printer className="h-4 w-4" /> Skriv ut / PDF
-        </Button>
+        {/* Utskrift stöds inte i Android/iOS-appens webbvy */}
+        {!isNativeApp() && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="gap-1.5 self-start md:self-auto"
+          >
+            <Printer className="h-4 w-4" /> Skriv ut / PDF
+          </Button>
+        )}
       </Card>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">

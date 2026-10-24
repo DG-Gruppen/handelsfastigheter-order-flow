@@ -22,6 +22,8 @@ import { LinkPreview } from "@/components/chat/LinkPreview";
 import { sv } from "date-fns/locale";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
+import { isNativeApp } from "@/lib/native/platform";
+import { pickImageNative } from "@/lib/native/camera";
 
 // ─── Types ───
 interface Channel {
@@ -1620,7 +1622,11 @@ function ComposeBar({ onSend, disabled, placeholder, mentionProfiles = [], userI
         </Popover>
 
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() =>
+            isNativeApp()
+              ? void pickImageNative().then((file) => file && uploadImage(file))
+              : fileInputRef.current?.click()
+          }
           disabled={disabled || uploading}
           className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0 self-end"
           title="Bifoga bild"
