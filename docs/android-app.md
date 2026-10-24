@@ -29,11 +29,10 @@ Utskrift i LCC-kalkylatorn döljs i appen, eftersom webbvyn inte kan skriva ut.
    `send-push`, `send-email`, `get-passwords-key`, `scrape-website`, `scrape-allabolag`,
    `import-google-workspace`, `notify-workwear-season` och `sync-content-index` måste driftsättas
    med de nya ändringarna.
-2. **Firebase (push).** Öppna samma Firebase-projekt som webbpushen använder (projekt-id i `.env`,
-   `VITE_LOVABLE_CONNECTOR_FIREBASE_MESSAGING_PROJECT_ID`). Gå till *Project settings → Add app →
-   Android* och ange paketnamnet `se.handelsfastigheter.intra`. Ladda ner `google-services.json` och
-   lägg den i `android/app/`. Filen innehåller inga hemligheter och kan checkas in. Den kan också läggas
-   som GitHub-secret `GOOGLE_SERVICES_JSON`. Utan filen byggs appen, men push fungerar inte.
+2. **Firebase (push).** Android-appen är registrerad i Firebase-projektet `intra-notifications-bf349`
+   (samma som webbpushen), och `android/app/google-services.json` är incheckad. Filen innehåller bara
+   publika id:n. Om filen behöver bytas ut kan den även anges som GitHub-secret `GOOGLE_SERVICES_JSON`,
+   och då ersätter den filen i bygget.
 3. **Signeringsnyckel (upload key).** Skapa nyckeln en gång och förvara den säkert. Om den tappas bort
    kan Google återställa den när *Play App Signing* används.
    ```bash
