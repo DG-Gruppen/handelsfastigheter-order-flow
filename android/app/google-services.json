@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "842896519933",
+    "project_id": "intra-notifications-bf349",
+    "storage_bucket": "intra-notifications-bf349.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842896519933:android:cae8264f71dfa7901bc494",
+        "android_client_info": {
+          "package_name": "se.handelsfastigheter.intra"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6wEsqJAPaNH-MRzROvYOaQq1fYR1wgAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
