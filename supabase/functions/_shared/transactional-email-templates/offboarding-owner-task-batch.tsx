@@ -38,7 +38,7 @@ const Email = ({
     <Html lang="sv" dir="ltr">
       <Head />
       <Preview>
-        Du har {tasks.length} offboarding-{tasks.length === 1 ? 'uppgift' : 'uppgifter'} för {newHireName}
+        {`Du har ${tasks.length} offboarding-${tasks.length === 1 ? 'uppgift' : 'uppgifter'} för ${newHireName}`}
       </Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>

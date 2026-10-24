@@ -33,7 +33,7 @@ const Email = ({
     <Html lang="sv" dir="ltr">
       <Head />
       <Preview>
-        Påminnelse: {newHireName} börjar om {daysUntilStart} {daysUntilStart === 1 ? 'dag' : 'dagar'}
+        {`Påminnelse: ${newHireName} börjar om ${daysUntilStart} ${daysUntilStart === 1 ? 'dag' : 'dagar'}`}
       </Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
